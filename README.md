@@ -4,7 +4,7 @@ Roguelike a turni in stile *Slay the Spire* con atmosfere alla *Darkest Dungeon*
 
 ## Come si gioca
 
-Apri `gemini-code 1.html` in un browser moderno. Non serve installare nulla: tutto il gioco (HTML, CSS e JavaScript) è in un unico file.
+Apri `index.html` in un browser moderno. Non serve installare nulla né avviare un server: basta il doppio click sul file.
 
 - Scegli una campagna, componi la compagnia e assegna abilità ed equipaggiamento iniziale.
 - Avanza sulla mappa affrontando scontri, sfide, tesori, mercanti e aree di riposo.
@@ -14,15 +14,19 @@ Apri `gemini-code 1.html` in un browser moderno. Non serve installare nulla: tut
 ## Struttura
 
 ```
-gemini-code 1.html   gioco completo (logica, dati delle campagne e interfaccia)
+index.html           struttura delle schermate (markup)
+css/style.css        stile e animazioni dell'interfaccia
+js/game.js           logica di gioco e dati delle campagne
 immagini/icone/      icone di oggetti, abilità e risorse
+immagini/ritratti/   ritratti degli eroi
+audio/               musica e effetti sonori
 ```
 
 Le illustrazioni degli eventi vanno messe nella cartella `immagini/` con i nomi indicati nei dati delle campagne; se un'immagine manca, il gioco mostra un riquadro segnaposto.
 
 ## Icone personalizzate
 
-Le icone si associano nel file del gioco tramite tre tabelle:
+Le icone si associano in `js/game.js` tramite tre tabelle:
 
 - `ITEM_IMAGES_BY_ID` — icona per singolo oggetto (per `id`)
 - `ITEM_IMAGES` — icona per tipo di oggetto (`sword`, `axe`, `shield`, ...)

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campagne della Famiglia Dignitas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="no-party">
+
+    <!-- Gradienti condivisi per le icone SVG inline -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+            <linearGradient id="gradGold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#fff0b0"/>
+                <stop offset=".5" stop-color="#c9982f"/>
+                <stop offset="1" stop-color="#6b4a12"/>
+            </linearGradient>
+            <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#a8241a"/>
+                <stop offset="1" stop-color="#3a0604"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="embers" id="embers" aria-hidden="true"></div>
+
+    <!-- Barra superiore: risorse della Compagnia -->
+    <div class="party-topbar" id="partyTopBar">
+        <div class="topbar-side">
+            <div class="res" id="topBarCoinsWrap" data-tip="Monete||Il tesoro della Compagnia, da spendere presso i mercanti.">
+                <span class="res-ico res-ico-img"><img src="immagini/icone/BTNChestOfGold.png" alt=""></span>
+                <span class="res-label">Monete</span>
+                <span class="res-val" id="topBarCoins">0</span>
+            </div>
+            <div class="topbar-actions">
+                <button onclick="saveGame()" data-tip="Salva||Salva lo stato attuale della partita.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>
+                    <span>Salva</span>
+                </button>
+                <button onclick="loadGame()" data-tip="Carica||Carica l'ultimo salvataggio.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/><path d="M12 17v-5M9.5 14.5L12 12l2.5 2.5"/></svg>
+                    <span>Carica</span>
+                </button>
+                <button onclick="openJournal()" data-tip="Diario||Eroi, oggetti, reliquie, maledizioni e statistiche della spedizione.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6M9 11h4"/></svg>
+                    <span>Diario</span>
+                </button>
+                <button onclick="openOptions()" data-tip="Opzioni||Velocità del testo, volumi ed effetti animati.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+                    <span>Opzioni</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Musica dei menu: dalla schermata iniziale fino alla fine della scelta di eroi ed equipaggiamento -->
+        <audio id="menuMusic" src="audio/menu_theme.mp3" loop preload="auto"></audio>
+
+        <div class="topbar-plate">
+            <svg class="brand-crest" viewBox="0 0 64 72" aria-hidden="true">
+                <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
+                <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
+                <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
+            </svg>
+            <span class="brand-name">Famiglia Dignitas</span>
+        </div>
+
+        <div class="topbar-side">
+            <div class="res" id="topBarRelicsWrap" data-tip="Reliquie||Nessuna reliquia ottenuta.">
+                <span class="res-ico res-ico-img">
+                    <img src="immagini/icone/BTNEnchantedGemstone-Reforged.png" alt="">
+                </span>
+                <span class="res-label">Reliquie</span>
+                <span class="res-val relic" id="topBarRelics">0</span>
+            </div>
+            <div class="res" id="topBarCursesWrap" data-tip="Maledizioni||Nessuna maledizione attiva.">
+                <span class="res-ico res-ico-img">
+                    <img src="immagini/icone/BTNOrbOfCorruption-Reforged.png" alt="">
+                </span>
+                <span class="res-label">Maledizioni</span>
+                <span class="res-val curse" id="topBarCurses">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Console inferiore: la Compagnia -->
+    <div class="party-console" id="partyConsole">
+        <div class="console-plaque">
+            <div class="plaque-title">Compagnia</div>
+            <div class="plaque-count" id="consoleCount">—</div>
+            <div class="plaque-sub">eroi in piedi</div>
+        </div>
+        <div class="party-heroes-container" id="partyStatusBarContent">
+            <div class="console-empty">Nessun eroe reclutato</div>
+        </div>
+        <div class="console-hint">
+            <div><b>Comandi</b></div>
+            <div><span class="keycap">Q</span><span class="keycap">W</span><span class="keycap">E</span><span class="keycap">R</span><span class="keycap">T</span> azioni</div>
+            <div><span class="keycap">Spazio</span> tira il dado</div>
+            <div>Clicca una pozione nello zaino per usarla.</div>
+        </div>
+    </div>
+
+    <div class="game-layout">
+        <div class="container" id="gameContainer">
+            <div id="screenStart" class="screen-start">
+                <svg class="start-crest" viewBox="0 0 64 72" aria-hidden="true">
+                    <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
+                    <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
+                    <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
+                </svg>
+                <h1 class="game-title"><small>Campagne della</small>Famiglia Dignitas</h1>
+                <div class="start-image-box">
+                    <img src="immagini/copertina.jfif" alt="Copertina Campagna">
+                </div>
+                <p class="tagline">Le gesta, le battaglie e le sventure della Famiglia Dignitas.</p>
+                <div class="main-menu">
+                    <button class="menu-btn" onclick="goToCampaigns()">Nuova Partita</button>
+                    <button id="btnContinueSavedGame" class="menu-btn btn-proceed hidden" onclick="loadGame()">Carica Partita</button>
+                </div>
+            </div>
+
+            <div id="screenCampaigns" class="hidden">
+                <h2>Campagne Disponibili</h2>
+                <div class="campaign-carousel">
+                    <button class="carousel-arrow prev" id="campaignPrev" onclick="scrollCampaigns(-1)" aria-label="Campagna precedente">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+                    </button>
+                    <div class="campaigns-track" id="campaignsGridList" tabindex="0" aria-label="Campagne disponibili"></div>
+                    <button class="carousel-arrow next" id="campaignNext" onclick="scrollCampaigns(1)" aria-label="Campagna successiva">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+                <div class="carousel-dots" id="campaignDots"></div>
+            </div>
+
+            <div id="screenParty" class="hidden">
+                <h2 id="partyHeaderTitle">Creazione del Party</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img src="immagini/creazione_armeria.jpg" alt="Creazione / Armeria">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" id="partyNarrativeBox">
+                                <strong>Descrizione:</strong> Raduna i membri della spedizione e seleziona il loro equipaggiamento iniziale.
+                            </div>
+
+                            <div id="partyConfigArea">
+                                <p id="partyStepText" class="panel-label">Scegli quanti membri comporranno la spedizione:</p>
+                                <select id="partySizeSelect"></select>
+                                <button onclick="confirmPartySize()" class="btn-block">Conferma Dimensione</button>
+                            </div>
+
+                            <div id="heroCreationArea" class="hidden">
+                                <h3 id="currentHeroTitle">Seleziona Eroe</h3>
+                                <div id="heroGridButtons" class="armory-grid"></div>
+                            </div>
+
+                            <div id="abilityArea" class="hidden">
+                                <h3>Scegli Abilità</h3>
+                                <div id="abilityButtons"></div>
+                            </div>
+
+                            <div id="armoryArea" class="hidden">
+                                <h3>Armeria Iniziale</h3>
+                                <p id="inventoryCountText" class="panel-label" style="font-style: italic; color: var(--wc-yellow);">Scegli 1 oggetto per questo eroe:</p>
+                                <div id="armoryButtons" class="armory-grid"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button id="btnProceedHero" class="btn-proceed hidden" onclick="nextHero()" disabled>Conferma Eroe / Avanti</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenCampaignIntro" class="hidden">
+                <h2 id="campaignIntroTitle">Inizio della Spedizione</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img id="campaignIntroImg" src="immagini/inizio_campagna.png" alt="Inizio Campagna">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" id="campaignIntroDesc">
+                                <strong>Descrizione:</strong>
+                            </div>
+                        </div>
+                        <button onclick="startExpedition()" class="btn-proceed">Inizia</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenMap" class="hidden">
+                <h2 id="mapCampaignHeader">Mappa della Spedizione</h2>
+                <div class="expedition-progress" id="expeditionProgress"></div>
+                <div class="sts-map-wrapper" id="stsMapWrapper">
+                    <div class="sts-map-nodes" id="stsMapNodesContainer">
+                        <svg class="sts-map-svg" id="stsMapSvg"></svg>
+                    </div>
+                </div>
+                <div class="map-legend" id="mapLegend"></div>
+            </div>
+
+            <!-- Scontro / Combattimento -->
+            <div id="screenCombat" class="hidden">
+                <h2 id="combatTitle">Combattimento</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <!-- ID immagine dinamica scontro -->
+                            <img id="combatImg" src="immagini/scontro_cinghiali.jpg" alt="Scontro">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="turn-bar" id="turnOrderBar"></div>
+                            <div class="narrative-desc-box" id="combatDescBox">
+                                <strong>Descrizione:</strong>
+                            </div>
+
+                            <div id="enemyInfo" class="enemy-box"></div>
+                            <div id="heroTurnSection">
+                                <p class="turn-label">Turno del Party</p>
+                                <div id="heroChoiceArea">
+                                    <select id="combatHeroSelect"></select>
+                                    <button onclick="confirmCombatHeroChoice()" class="btn-block">Conferma Eroe</button>
+                                </div>
+                                <div id="heroActionControlArea" class="hidden">
+                                    <p id="activeCombatantText" class="turn-label"></p>
+                                    <div id="combatActionButtons" class="command-card">
+                                        <button id="cmdAttack" class="cmd-btn" onclick="selectCombatAction('attack')" data-tip="Attacca [Q]||Tira Forza + d6 contro la CA del nemico. Se riesci infliggi i tuoi danni.">
+                                            <span class="cmd-key">Q</span>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 4.5L9 15M19.5 4.5V8M19.5 4.5H16M6.5 12.5l5 5M8.2 15.8L4.5 19.5"/></svg>
+                                            Attacca<span class="cmd-sub">Forza + d6</span>
+                                        </button>
+                                        <button id="cmdDefend" class="cmd-btn" onclick="selectCombatAction('defend')" data-tip="Difendi [W]||Tira Forza + d6 contro l'attacco nemico. Se riesci ottieni +1 Armatura.">
+                                            <span class="cmd-key">W</span>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 7v10M8.5 11h7"/></svg>
+                                            Difendi<span class="cmd-sub">+1 Armatura</span>
+                                        </button>
+                                        <button id="cmdHelp" class="cmd-btn" onclick="selectCombatAction('help')" data-tip="Aiuta [E]||Tira Forza + d6 contro l'attacco nemico. Se riesci il prossimo attacco ottiene +1.">
+                                            <span class="cmd-key">E</span>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4h12l-3 4 3 4H6"/></svg>
+                                            Aiuta<span class="cmd-sub">+1 al prossimo</span>
+                                        </button>
+                                        <button id="cmdItem" class="cmd-btn" onclick="selectCombatAction('use_item')" data-tip="Usa Oggetto [R]||Usa un consumabile dello zaino su un membro della Compagnia.">
+                                            <span class="cmd-key">R</span>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3h4M10.5 3v5L6 16a3 3 0 0 0 2.6 5h6.8A3 3 0 0 0 18 16l-4.5-8V3"/><path d="M8 14h8"/></svg>
+                                            Oggetto<span class="cmd-sub">Consumabile</span>
+                                        </button>
+                                        <button id="btnCombatAbility" class="cmd-btn" onclick="selectCombatAction('ability')" data-tip="Usa Abilità [T]||">
+                                            <span class="cmd-key">T</span>
+                                            <span class="cmd-ability-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l2.6 6 6.4.6-4.9 4.2 1.5 6.3L12 16.3 6.4 19.6l1.5-6.3L3 9.1l6.4-.6z"/></svg></span>
+                                            <span class="cmd-ability-label">Abilità</span><span class="cmd-sub">1 per scontro</span>
+                                        </button>
+                                    </div>
+                                    <!-- Sottomenu per Uso Oggetto in combattimento -->
+                                    <div id="combatItemSubmenu" class="hidden sub-panel">
+                                        <p>Seleziona l'oggetto consumabile:</p>
+                                        <select id="combatConsumableSelect"></select>
+                                        <p>Seleziona il bersaglio:</p>
+                                        <select id="combatTargetSelect"></select>
+                                        <button onclick="executeCombatUseItem()" class="btn-small">Conferma Utilizzo</button>
+                                        <button onclick="cancelCombatItemSubmenu()" class="btn-small">Indietro</button>
+                                    </div>
+
+                                    <div id="combatDiceArea" class="hidden" style="text-align:center;">
+                                        <div id="diceCombat" class="dice-box">6</div>
+                                        <button id="rollCombatBtn" onclick="executeCombatHeroRoll()">Tira (D6)</button>
+                                        <div id="diceCombatResult" class="dice-result"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="monsterTurnSection" class="hidden">
+                                <p id="monsterTurnText" class="turn-label enemy"></p>
+                                <div id="monsterTargetArea">
+                                    <select id="monsterTargetSelect"></select>
+                                    <button onclick="executeMonsterAttack()" class="btn-block btn-danger">Assegna Danno</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <button id="combatNextBtn" class="hidden btn-proceed" onclick="proceedCombatPhase()">Avanti al prossimo</button>
+                            <button id="combatLootBtn" class="hidden btn-proceed" onclick="triggerLoot()">Depreda il Nemico!</button>
+                            <div class="log-box" id="combatLog"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottino Scontro -->
+            <div id="screenLoot" class="hidden">
+                <h2>Bottino dello Scontro</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img src="immagini/bottino.jpg" alt="Bottino">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box">
+                                <strong>Descrizione:</strong> Nell'area dello scontro ritrovate alcuni oggetti
+                            </div>
+                            <div class="sub-panel loot-panel">
+                                <p class="loot-coins">Monete trovate: <strong id="lootCoinsText"></strong> <span class="coin"></span></p>
+                                <p style="color:#d8cba8;">Oggetto rinvenuto:</p>
+                                <h3 id="lootItemName"></h3>
+                                <p id="lootItemDesc" style="color:#d8cba8; font-size:0.82rem;"></p>
+                            </div>
+                        </div>
+                        <div id="lootAssignArea">
+                            <p class="panel-label">A chi vuoi assegnare questo oggetto?</p>
+                            <select id="lootHeroSelect"></select>
+                            <button onclick="confirmLootAssignment()" class="btn-proceed">Assegna e Prosegui</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenTreasure" class="hidden">
+                <h2>Tesoro</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <!-- ID immagine dinamica tesoro -->
+                            <img id="treasureImg" src="immagini/tesoro_cassa.jpg" alt="Cassa del Tesoro">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" id="treasureDescBox">
+                                <strong>Descrizione:</strong>
+                            </div>
+                        </div>
+                        <button onclick="openTreasure()" class="btn-proceed">Apri la Cassa</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenTreasureLoot" class="hidden">
+                <h2>Tesoro Aperto!</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img src="immagini/tesoro_aperto.jpg" alt="Tesoro Aperto">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box">
+                                <strong>Descrizione:</strong> Ritrovate finalmente parte del vostro equipaggiamento disperso.
+                            </div>
+                            <div class="sub-panel" style="margin-bottom:8px;">
+                                <p class="loot-coins">Monete trovate: <strong id="treasureCoinsText"></strong> <span class="coin"></span></p>
+                            </div>
+                            <p class="panel-label">Seleziona un oggetto da prelevare:</p>
+                            <div id="treasureItemsList" class="armory-grid"></div>
+
+                            <div id="treasureAssignArea" class="hidden sub-panel">
+                                <h3 id="selectedTreasureName" style="margin-top:0;"></h3>
+                                <p id="selectedTreasureDesc" style="color:#d8cba8;"></p>
+                                <select id="treasureHeroSelect"></select>
+                                <button onclick="confirmTreasureAssignment()" class="btn-proceed" style="margin-top:4px; padding:8px;">Assegna</button>
+                                <button onclick="cancelTreasureItemSelection()" class="btn-small btn-block">Indietro</button>
+                            </div>
+                        </div>
+                        <button onclick="confirmLeaveTreasure()" id="btnExitTreasure" class="btn-proceed btn-danger">Termina e Prosegui</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenDiscard" class="hidden">
+                <h2 style="color:#ff5a4a;">Inventario Pieno!</h2>
+                <p><strong id="discardHeroName" style="color:var(--wc-yellow); font-family:var(--font-title);"></strong> non può trasportare più di 3 oggetti.</p>
+                <p style="color:#d8cba8;">Seleziona quale oggetto scartare o distruggere per fare spazio:</p>
+                <div id="discardItemsList" class="armory-grid" style="max-width:640px; margin:12px auto;"></div>
+            </div>
+
+            <!-- Sfida -->
+            <div id="screenChallenge" class="hidden">
+                <h2 id="challengeTitle">Sfida</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <!-- ID immagine dinamica sfida -->
+                            <img id="challengeImg" src="immagini/sfida.jpg" alt="Sfida">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" id="challengeNarrativeBox">
+                                <strong>Descrizione:</strong>
+                            </div>
+
+                            <div id="challengeStage1" style="margin-top:10px;">
+                                <button onclick="challengeChoose(true)" class="btn-block">a) Uno di voi si avvicina</button>
+                                <button onclick="challengeChoose(false)" class="btn-block">b) Lascia Perdere</button>
+                            </div>
+
+                            <div id="challengeStage2" class="hidden" style="margin-top:10px;">
+                                <p class="panel-label">Scegli quale eroe affronta la sfida:</p>
+                                <select id="challengeHeroSelect"></select>
+                                <button onclick="confirmChallengeHero()" class="btn-proceed">Procedi al Tiro</button>
+                            </div>
+
+                            <div id="diceChallengeSection" class="hidden" style="text-align:center; margin-top: 8px;">
+                                <p id="challengeCdText" class="turn-label"></p>
+                                <div id="diceChallenge" class="dice-box">6</div>
+                                <button id="rollChallengeBtn" onclick="executeChallengeRoll()">Tira (D6)</button>
+                            </div>
+                        </div>
+                        <button id="closeChallengeBtn" class="hidden btn-proceed" onclick="advanceNode()">Prosegui</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenRest" class="hidden">
+                <h2>Area di Riposo</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <!-- ID immagine dinamica riposo -->
+                            <img id="restImg" src="immagini/riposo.jpg" alt="Riposo">
+                            <div class="campfire" aria-hidden="true">
+                                <div class="campfire-glow"></div>
+                                <div class="campfire-sparks"><span></span><span></span><span></span><span></span><span></span></div>
+                                <span class="flame f1"></span><span class="flame f2"></span><span class="flame f3"></span>
+                                <div class="campfire-logs"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" id="restDescBox">
+                                <strong>Descrizione:</strong>
+                            </div>
+                        </div>
+                        <button onclick="advanceNode()" class="btn-proceed">Continua il Viaggio</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenMerchant" class="hidden">
+                <h2>Mercante</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <!-- ID immagine dinamica mercante -->
+                            <img id="merchantImg" src="immagini/mercante.jpg" alt="Mercante">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" id="merchantDescBox">
+                                <strong>Descrizione:</strong>
+                            </div>
+                            <div id="merchantItemsList" class="armory-grid" style="grid-template-columns: 1fr;"></div>
+
+                            <div id="merchantAssignArea" class="hidden sub-panel">
+                                <p>Oggetto acquistato! A chi vuoi assegnarlo?</p>
+                                <select id="merchantHeroSelect"></select>
+                                <button onclick="confirmMerchantAssignment()" class="btn-proceed" style="margin-top:4px; padding:8px;">Assegna all'Eroe</button>
+                            </div>
+                        </div>
+                        <button onclick="confirmLeaveMerchant()" id="btnExitMerchant" class="btn-proceed btn-danger">Esci dal Negozio</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screenCaptain" class="hidden">
+                <h2>Meta Finale</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img src="immagini/accampamento.jpg" alt="Meta">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box">
+                                <strong>Descrizione:</strong> Arrivo alla meta finale.
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <select id="captainHeroSelect" style="margin-bottom:8px;"></select>
+                                <button onclick="captainAction('faith')" class="btn-block">a) Sfida Fede (CD 6)</button>
+                                <button onclick="captainAction('intel')" class="btn-block">b) Sfida Intelletto (CD 6)</button>
+                                <button onclick="captainAction('force')" class="btn-block">c) Prendersi ramanzina (-50% hp)</button>
+                            </div>
+                            <div id="diceCaptainSection" class="hidden" style="text-align:center; margin-top: 8px;">
+                                <div id="diceCaptain" class="dice-box">6</div>
+                                <button id="rollCaptainBtn" onclick="executeCaptainRoll()">Tira (D6)</button>
+                                <div id="resultCaptainLog" class="dice-result"></div>
+                            </div>
+                        </div>
+                        <button id="endGameBtn" class="hidden btn-proceed" onclick="location.reload()">Ricomincia il Gioco</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schermata di Sconfitta (Game Over) -->
+            <div id="screenDefeat" class="hidden">
+                <h2 style="color: #ff5a4a;">Sconfitta</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img src="immagini/sconfitta.jpg" alt="Sconfitta">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" style="border-color: #7a1a10;">
+                                <strong>Tragico Epilogo:</strong> Tutti i membri della spedizione sono caduti in battaglia o hanno esaurito le forze.
+                            </div>
+                        </div>
+                        <button onclick="location.reload()" class="btn-proceed btn-danger">Riprova</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schermata di Vittoria -->
+            <div id="screenVictory" class="hidden">
+                <h2>Trionfo della Spedizione</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img src="immagini/vittoria.jpg" alt="Vittoria">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box" style="border-color: #c9982f;">
+                                <strong>Gloria alla Compagnia:</strong> Avete superato ogni prova, affrontato le avversità e raggiunto la meta finale con onore!
+                            </div>
+                        </div>
+                        <button onclick="location.reload()" class="btn-proceed">Ricomincia</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Finestra modale stile WC3 (sostituisce alert/prompt) -->
+    <div id="wc3Modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="wc3ModalTitle">
+        <div class="modal-box">
+            <h3 id="wc3ModalTitle"></h3>
+            <div id="wc3ModalBody" class="modal-body"></div>
+            <div id="wc3ModalActions" class="modal-actions"></div>
+        </div>
+    </div>
+
+    <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>
