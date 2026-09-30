@@ -163,6 +163,7 @@
                     <div class="wc-chains short"><span></span><span></span></div>
                     <nav class="wc-panel">
                         <div class="wc-slot"><button class="wc-menu-btn" onclick="location.href='editor.html'">Editor Campagne</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openSimTester()">Test Tasso di Vittoria</button></div>
                     </nav>
                 </div>
 
@@ -192,6 +193,40 @@
                     <nav class="wc-panel">
                         <div class="wc-slot"><button class="wc-menu-btn" onclick="showScreen('screenStart')">Indietro</button></div>
                     </nav>
+                </div>
+            </div>
+
+            <div id="screenSimSetup" class="hidden">
+                <h2>Test Tasso di Vittoria</h2>
+                <div class="narrative-desc-box">
+                    <strong>Descrizione:</strong> Scegli una campagna, poi quali eroi includere nel test (con abilità e oggetto iniziale) e quali profili comportamentali provare. Per ogni profilo selezionato vengono giocate 10 run complete, fino a vittoria o sconfitta.
+                </div>
+
+                <p class="panel-label">Campagna:</p>
+                <select id="simCampaignSelect" onchange="simSelectCampaign(this.value)"></select>
+
+                <div id="simHeroesArea" class="hidden">
+                    <h3>Eroi da includere</h3>
+                    <div id="simHeroList" class="sim-hero-list"></div>
+
+                    <h3>Profili comportamentali da testare</h3>
+                    <div id="simProfileList" class="sim-profile-list"></div>
+
+                    <h3>Run per profilo</h3>
+                    <input type="number" id="simRunsInput" min="1" max="500" value="100" onchange="simSetRunsPerProfile(this.value)">
+                </div>
+
+                <p id="simStartHint" class="panel-label"></p>
+                <button id="simStartBtn" class="btn-proceed hidden" onclick="simStartTest()" disabled>Avvia Test</button>
+                <button class="wc-menu-btn" onclick="showScreen('screenStart')">Indietro</button>
+            </div>
+
+            <div id="screenSimReport" class="hidden">
+                <div id="simReportHeader"></div>
+                <div id="simReportBody" class="sim-report-grid"></div>
+                <div class="sim-report-actions">
+                    <button class="wc-menu-btn" onclick="showScreen('screenSimSetup')">Nuovo Test</button>
+                    <button class="wc-menu-btn" onclick="showScreen('screenStart')">Menu Principale</button>
                 </div>
             </div>
 
@@ -644,5 +679,6 @@
     <script src="data/campagne/tutorial.js"></script>
     <script src="data/campagne/astarte_ch1.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/simulator.js"></script>
 </body>
 </html>

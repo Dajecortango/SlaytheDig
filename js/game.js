@@ -1296,6 +1296,170 @@ function breakRelic(relicName) {
         let chosenAction = null;
         let currentActiveHero = null;
 
+        /* ==========================================================================
+           MOTORE PURO DI RISOLUZIONE (nessun accesso al DOM)
+           Estratto dalle funzioni di combattimento/sfida/mercante/tesoro/riposo perché
+           sia l'interfaccia (con animazioni) sia js/simulator.js (senza) usino la
+           STESSA matematica: le percentuali del simulatore restano sempre vere.
+           Leggono/scrivono le stesse variabili globali di stato (party, activeEnemy,
+           helpBonus, combatRound, unlockedRelics, activeCurses, ...): chi le chiama
+           in un contesto simulato deve prima impostare quelle variabili.
+           ========================================================================== */
+
+        // Tiro di attacco: muta enemy.hp, consuma helpBonus. Ritorna l'esito per log/DOM.
+        function resolveAttack(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            let relicAttBonus = 0;
+            let relicDmgBonus = 0;
+            const isElite = stsMapNodes.find(n => n.id === currentNodeId)?.type === 'elite';
+
+            if (combatRound === 1 && hasRelic("Stendardo da battaglia")) relicAttBonus += 1;
+            if (combatRound === 2 && hasRelic("Zanna del leone bianco")) relicDmgBonus += 2;
+            if (combatRound === 3 && hasRelic("Corno antico")) relicDmgBonus += 1;
+            if (isElite) {
+                if (hasRelic("Idolo del cacciatore")) relicDmgBonus += 1;
+                if (hasRelic("Catena di Norgrad")) relicAttBonus += 1;
+            }
+
+            const total = roll + hero.str + helpBonus + attackMod(hero) + relicAttBonus;
+            helpBonus = 0;
+
+            const hit = total >= enemy.ca;
+            let dmg = 0;
+            if (hit) {
+                dmg = hero.dmg + relicDmgBonus;
+                enemy.hp -= dmg;
+            }
+            return { roll, total, hit, dmg, relicAttBonus };
+        }
+
+        // Tiro di difesa: in caso di successo aggiunge 1 armatura corrente all'eroe.
+        function resolveDefend(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const total = roll + hero.str + (hero.def_bonus || 0);
+            const success = total >= enemy.att;
+            if (success) hero.current_armor += 1;
+            return { roll, total, success };
+        }
+
+        // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
+        function resolveHelp(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const total = roll + hero.str + (hero.help_bonus_val || 0);
+            const success = total >= enemy.att;
+            if (success) helpBonus = 1;
+            return { roll, total, success };
+        }
+
+        function resolveZenoAbility(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const total = roll + hero.str + helpBonus + attackMod(hero);
+            helpBonus = 0;
+            const hit = total >= enemy.ca;
+            const dmg = hero.dmg + (hero.fth || 0);
+            if (hit) enemy.hp -= dmg;
+            return { abId: 'zeno_colpo_benedetto', roll, total, hit, dmg };
+        }
+
+        function resolveDioforoAbility(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const intBonus = hero.int || 0;
+            const total = roll + hero.str + intBonus + helpBonus + attackMod(hero);
+            helpBonus = 0;
+            const hit = total >= enemy.ca;
+            if (hit) enemy.hp -= hero.dmg;
+            return { abId: 'dioforo_penna', roll, total, hit, dmg: hero.dmg, intBonus };
+        }
+
+        function resolveIcaroAbility(hero, enemy) {
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            const roll = Math.max(d1, d2);
+            const total = roll + hero.str + helpBonus + attackMod(hero);
+            helpBonus = 0;
+            const hit = total >= enemy.ca;
+            if (hit) enemy.hp -= hero.dmg;
+            return { abId: 'icaro_trucchi', d1, d2, roll, total, hit, dmg: hero.dmg };
+        }
+
+        function resolveAstarteAbility(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const total = roll + hero.str + helpBonus + attackMod(hero);
+            helpBonus = 0;
+            const hit = total >= enemy.ca;
+            const dmg = hero.dmg * 2;
+            if (hit) enemy.hp -= dmg;
+            return { abId: 'astarte_affondo', roll, total, hit, dmg };
+        }
+
+        function resolveAscadeoAbility(hero, enemy) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const total = roll + hero.str + helpBonus + attackMod(hero);
+            helpBonus = 0;
+            const hit = total >= enemy.ca;
+            if (hit) { enemy.hp -= hero.dmg; enemy.isStunned = true; }
+            return { abId: 'ascadeo_segnato', roll, total, hit, dmg: hero.dmg };
+        }
+
+        // Dispaccia l'abilità attiva in combattimento in base al suo id.
+        function resolveAbility(hero, enemy) {
+            hero.abilityUsedThisCombat = true;
+            const abId = hero.chosenAbility.id;
+            if (abId === 'zeno_colpo_benedetto') return resolveZenoAbility(hero, enemy);
+            if (abId === 'dioforo_penna') return resolveDioforoAbility(hero, enemy);
+            if (abId === 'icaro_trucchi') return resolveIcaroAbility(hero, enemy);
+            if (abId === 'astarte_affondo') return resolveAstarteAbility(hero, enemy);
+            if (abId === 'ascadeo_segnato') return resolveAscadeoAbility(hero, enemy);
+            return { abId, hit: false, dmg: 0 };
+        }
+
+        // Attacco del mostro su un bersaglio: applica maledizioni/reliquie, armatura, poi HP.
+        // "events" descrive in ordine cosa è successo, per il log di combattimento.
+        function resolveMonsterAttack(enemy, target) {
+            const events = [];
+            let dmg = enemy.dmg;
+
+            if (hasCurse("Presagio di Morte")) {
+                dmg += 1;
+                events.push({ type: 'curse_bonus', text: '💀 Presagio di Morte: il colpo infligge 1 danno in più.' });
+            }
+
+            if (hasRelic("Scudo dell'Atamano") && !party.atamanoUsed) {
+                party.atamanoUsed = true;
+                dmg = 0;
+                events.push({ type: 'atamano', text: "🛡️ Lo Scudo dell'Atamano assorbe completamente il primo colpo del combattimento!" });
+            }
+
+            if (target.current_armor > 0 && dmg > 0) {
+                if (target.current_armor >= dmg) {
+                    target.current_armor -= dmg;
+                    events.push({ type: 'armor_full', text: "L'armatura assorbe interamente il colpo!" });
+                    dmg = 0;
+                } else {
+                    dmg -= target.current_armor;
+                    target.current_armor = 0;
+                    events.push({ type: 'armor_partial', remaining: dmg, text: `L'armatura si infrange. I restanti ${dmg} colpiscono gli HP!` });
+                }
+            }
+
+            let hpDamage = 0;
+            let targetDied = false;
+            if (dmg > 0) {
+                if (target.hp - dmg <= 0 && hasRelic("Marchio di Jag Antar")) {
+                    target.hp = 1;
+                    breakRelic("Marchio di Jag Antar");
+                    events.push({ type: 'marchio', text: `✨ Il Marchio di Jag Antar si infrange, salvando ${target.name} da morte certa!` });
+                } else {
+                    hpDamage = dmg;
+                    target.hp = Math.max(0, target.hp - dmg);
+                    targetDied = target.hp <= 0;
+                    events.push({ type: 'hp_damage', amount: dmg, text: `${target.name} subisce ${dmg} danni agli HP!` });
+                }
+            }
+
+            return { events, hpDamage, targetDied };
+        }
+
         function startCombat(enemyKey) {
     showScreen('screenCombat');
     activeEnemy = JSON.parse(JSON.stringify(enemies[enemyKey]));
@@ -1567,118 +1731,74 @@ function breakRelic(relicName) {
                     const armorBefore = hero.current_armor;
 
                     if(chosenAction === 'attack') {
-                        const roll = Math.floor(Math.random() * 6) + 1;
-                        diceBox.textContent = roll;
-                        
-                        // Modificatori Reliquie Attacco/Danno
-                        let relicAttBonus = 0;
-                        let relicDmgBonus = 0;
-                        const isElite = stsMapNodes.find(n => n.id === currentNodeId)?.type === 'elite';
+                        const res = resolveAttack(hero, activeEnemy);
+                        diceBox.textContent = res.roll;
 
-                        if (combatRound === 1 && hasRelic("Stendardo da battaglia")) relicAttBonus += 1;
-                        if (combatRound === 2 && hasRelic("Zanna del leone bianco")) relicDmgBonus += 2;
-                        if (combatRound === 3 && hasRelic("Corno antico")) relicDmgBonus += 1;
-                        if (isElite) {
-                            if (hasRelic("Idolo del cacciatore")) relicDmgBonus += 1;
-                            if (hasRelic("Catena di Norgrad")) relicAttBonus += 1;
-                        }
+                        logCombat(`${hero.name} attacca: Tiro ${res.roll} + Forza ${hero.str}${attackMod(hero) ? ` ${attackMod(hero) > 0 ? '+' : '−'} ${Math.abs(attackMod(hero))} Mod.` : ''}${res.relicAttBonus > 0 ? ' + Reliquia' : ''} = ${res.total} (CA: ${activeEnemy.ca})`);
 
-                        let total = roll + hero.str + helpBonus + attackMod(hero) + relicAttBonus;
-                        helpBonus = 0;
-                        
-                        logCombat(`${hero.name} attacca: Tiro ${roll} + Forza ${hero.str}${attackMod(hero) ? ` ${attackMod(hero) > 0 ? '+' : '−'} ${Math.abs(attackMod(hero))} Mod.` : ''}${relicAttBonus > 0 ? ' + Reliquia' : ''} = ${total} (CA: ${activeEnemy.ca})`);
-
-                        if(total >= activeEnemy.ca) {
-                            let finalDmg = hero.dmg + relicDmgBonus;
-                            activeEnemy.hp -= finalDmg;
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${finalDmg} danni.`;
-                            logCombat(`Colpo riuscito! Infliggi ${finalDmg} danni.`);
+                        if(res.hit) {
+                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${res.dmg} danni.`;
+                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.`);
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
                         }
                     }
                     else if(chosenAction === 'ability') {
-    hero.abilityUsedThisCombat = true;
     const abId = hero.chosenAbility.id;
+    const res = resolveAbility(hero, activeEnemy);
 
     if (abId === 'zeno_colpo_benedetto') {
-        const roll = Math.floor(Math.random() * 6) + 1;
-        diceBox.textContent = roll;
-        let total = roll + hero.str + helpBonus + attackMod(hero);
-        helpBonus = 0;
-        let totalDmg = hero.dmg + (hero.fth || 0);
-        logCombat(`✨ ${hero.name} infonde il colpo di fede sacra! Tiro ${roll} + Forza ${hero.str} = ${total} (CA: ${activeEnemy.ca})`);
+        diceBox.textContent = res.roll;
+        logCombat(`✨ ${hero.name} infonde il colpo di fede sacra! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
 
-        if (total >= activeEnemy.ca) {
-            activeEnemy.hp -= totalDmg;
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO BENEDETTO!</span> Infliggi ${totalDmg} danni (${hero.dmg} base + ${hero.fth} Fede)!`;
-            logCombat(`La luce divina guida la lama: infliggi ${totalDmg} danni!`);
+        if (res.hit) {
+            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO BENEDETTO!</span> Infliggi ${res.dmg} danni (${hero.dmg} base + ${hero.fth} Fede)!`;
+            logCombat(`La luce divina guida la lama: infliggi ${res.dmg} danni!`);
         } else {
             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
         }
     }
     else if (abId === 'dioforo_penna') {
-        const roll = Math.floor(Math.random() * 6) + 1;
-        diceBox.textContent = roll;
-        let intBonus = hero.int || 0;
-        let total = roll + hero.str + intBonus + helpBonus + attackMod(hero);
-        helpBonus = 0;
-        logCombat(`📜 ${hero.name} sfrutta l'intelletto! Tiro ${roll} + Forza ${hero.str} + Int ${intBonus} = ${total} (CA: ${activeEnemy.ca})`);
+        diceBox.textContent = res.roll;
+        logCombat(`📜 ${hero.name} sfrutta l'intelletto! Tiro ${res.roll} + Forza ${hero.str} + Int ${res.intBonus} = ${res.total} (CA: ${activeEnemy.ca})`);
 
-        if (total >= activeEnemy.ca) {
-            activeEnemy.hp -= hero.dmg;
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO A SEGNO!</span> ${hero.dmg} danni.`;
-            logCombat(`Un calcolo perfetto individua il punto debole: infliggi ${hero.dmg} danni!`);
+        if (res.hit) {
+            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO A SEGNO!</span> ${res.dmg} danni.`;
+            logCombat(`Un calcolo perfetto individua il punto debole: infliggi ${res.dmg} danni!`);
         } else {
             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
         }
     }
     else if (abId === 'icaro_trucchi') {
-                            const d1 = Math.floor(Math.random() * 6) + 1;
-                            const d2 = Math.floor(Math.random() * 6) + 1;
-                            const roll = Math.max(d1, d2);
-                            diceBox.textContent = d1;
-                            diceBox2.textContent = d2;
-                            (d2 > d1 ? diceBox : diceBox2).classList.add('discarded');
-                            let total = roll + hero.str + helpBonus + attackMod(hero);
-                            helpBonus = 0;
-                            logCombat(`✨ ${hero.name} usa Trucchi del Mestiere! Tira [${d1}, ${d2}] -> Tiene ${roll}. Totale: ${total} (CA: ${activeEnemy.ca})`);
+                            diceBox.textContent = res.d1;
+                            diceBox2.textContent = res.d2;
+                            (res.d2 > res.d1 ? diceBox : diceBox2).classList.add('discarded');
+                            logCombat(`✨ ${hero.name} usa Trucchi del Mestiere! Tira [${res.d1}, ${res.d2}] -> Tiene ${res.roll}. Totale: ${res.total} (CA: ${activeEnemy.ca})`);
 
-                            if (total >= activeEnemy.ca) {
-                                activeEnemy.hp -= hero.dmg;
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO A SEGNO!</span> ${hero.dmg} danni.`;
+                            if (res.hit) {
+                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO A SEGNO!</span> ${res.dmg} danni.`;
                             } else {
                                 document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
                             }
                         }
                         else if (abId === 'astarte_affondo') {
-                            const roll = Math.floor(Math.random() * 6) + 1;
-                            diceBox.textContent = roll;
-                            let total = roll + hero.str + helpBonus + attackMod(hero);
-                            helpBonus = 0;
-                            let extraDmg = hero.dmg * 2;
-                            logCombat(`🗡️ ${hero.name} scatena Affondo Mortale! Tiro ${roll} + Forza ${hero.str} = ${total} (CA: ${activeEnemy.ca})`);
+                            diceBox.textContent = res.roll;
+                            logCombat(`🗡️ ${hero.name} scatena Affondo Mortale! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
 
-                            if (total >= activeEnemy.ca) {
-                                activeEnemy.hp -= extraDmg;
+                            if (res.hit) {
                                 fxNextEnemyHitCritical = true;
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO CRITICO!</span> Infliggi ${extraDmg} danni raddoppiati!`;
-                                logCombat(`L'affondo trafigge il nemico infliggendo ${extraDmg} danni!`);
+                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO CRITICO!</span> Infliggi ${res.dmg} danni raddoppiati!`;
+                                logCombat(`L'affondo trafigge il nemico infliggendo ${res.dmg} danni!`);
                             } else {
                                 document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
                             }
                         }
                         else if (abId === 'ascadeo_segnato') {
-                            const roll = Math.floor(Math.random() * 6) + 1;
-                            diceBox.textContent = roll;
-                            let total = roll + hero.str + helpBonus + attackMod(hero);
-                            helpBonus = 0;
-                            logCombat(`❄️ ${hero.name} colpisce nel nome di Hvid! Tiro ${roll} + Forza ${hero.str} = ${total} (CA: ${activeEnemy.ca})`);
+                            diceBox.textContent = res.roll;
+                            logCombat(`❄️ ${hero.name} colpisce nel nome di Hvid! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
 
-                            if (total >= activeEnemy.ca) {
-                                activeEnemy.hp -= hero.dmg;
-                                activeEnemy.isStunned = true;
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:#3498db;">STORDITO!</span> ${hero.dmg} danni e nemico congelato per un turno.`;
+                            if (res.hit) {
+                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:#3498db;">STORDITO!</span> ${res.dmg} danni e nemico congelato per un turno.`;
                                 logCombat(`Il nemico barcolla congelato dal gelo di Hvid: salterà il prossimo attacco!`);
                             } else {
                                 document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
@@ -1686,12 +1806,10 @@ function breakRelic(relicName) {
                         }
                     }
                     else if(chosenAction === 'defend') {
-                        const roll = Math.floor(Math.random() * 6) + 1;
-                        diceBox.textContent = roll;
-                        let total = roll + hero.str + (hero.def_bonus || 0);
-                        logCombat(`${hero.name} si difende: Tiro ${roll} + Forza ${hero.str} = ${total}`);
-                        if(total >= activeEnemy.att) {
-                            hero.current_armor += 1;
+                        const res = resolveDefend(hero, activeEnemy);
+                        diceBox.textContent = res.roll;
+                        logCombat(`${hero.name} si difende: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
+                        if(res.success) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">DIFESA RIUSCITA!</span> +1 Armatura.`;
                             logCombat(`${hero.name} alza la guardia (+1 Armatura).`);
                         } else {
@@ -1699,12 +1817,10 @@ function breakRelic(relicName) {
                         }
                     }
                     else if(chosenAction === 'help') {
-                        const roll = Math.floor(Math.random() * 6) + 1;
-                        diceBox.textContent = roll;
-                        let total = roll + hero.str + (hero.help_bonus_val || 0);
-                        logCombat(`${hero.name} aiuta: Tiro ${roll} + Forza ${hero.str} = ${total}`);
-                        if(total >= activeEnemy.att) {
-                            helpBonus = 1;
+                        const res = resolveHelp(hero, activeEnemy);
+                        diceBox.textContent = res.roll;
+                        logCombat(`${hero.name} aiuta: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
+                        if(res.success) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">AIUTO RIUSCITO!</span> +1 al prossimo.`;
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">FALLITO.</span>`;
@@ -1786,44 +1902,8 @@ function breakRelic(relicName) {
             const target = party.find(p => p.name === document.getElementById('monsterTargetSelect').value);
             logCombat(`--- ${activeEnemy.name} attacca ${target.name}! ---`);
 
-            let incomingDamage = activeEnemy.dmg;
-
-            // Maledizione: Presagio di Morte (+1 a ogni danno subito)
-            if (hasCurse("Presagio di Morte")) {
-                incomingDamage += 1;
-                logCombat(`💀 Presagio di Morte: il colpo infligge 1 danno in più.`);
-            }
-
-            // Reliquia: Scudo dell'Atamano (annulla il primo attacco)
-            if (hasRelic("Scudo dell'Atamano") && !party.atamanoUsed) {
-                party.atamanoUsed = true;
-                incomingDamage = 0;
-                logCombat(`🛡️ Lo Scudo dell'Atamano assorbe completamente il primo colpo del combattimento!`);
-            }
-
-            if (target.current_armor > 0 && incomingDamage > 0) {
-                if (target.current_armor >= incomingDamage) {
-                    target.current_armor -= incomingDamage;
-                    logCombat(`L'armatura assorbe interamente il colpo!`);
-                    incomingDamage = 0;
-                } else {
-                    incomingDamage -= target.current_armor;
-                    logCombat(`L'armatura si infrange. I restanti ${incomingDamage} colpiscono gli HP!`);
-                    target.current_armor = 0;
-                }
-            }
-
-            if (incomingDamage > 0) {
-                // Reliquia: Marchio di Jag Antar (salvavita)
-                if (target.hp - incomingDamage <= 0 && hasRelic("Marchio di Jag Antar")) {
-                    target.hp = 1;
-                    breakRelic("Marchio di Jag Antar");
-                    logCombat(`✨ Il Marchio di Jag Antar si infrange, salvando ${target.name} da morte certa!`);
-                } else {
-                    target.hp = Math.max(0, target.hp - incomingDamage);
-                    logCombat(`${target.name} subisce ${incomingDamage} danni agli HP!`);
-                }
-            }
+            const result = resolveMonsterAttack(activeEnemy, target);
+            result.events.forEach(ev => logCombat(ev.text));
 
             updatePartyStatusBars();
 
@@ -1940,21 +2020,25 @@ function breakRelic(relicName) {
             document.getElementById('treasureDescBox').innerHTML = `<strong>Descrizione:</strong> ${descText}`;
         }
 
-        function openTreasure() {
-            showScreen('screenTreasureLoot');
+        // Genera l'offerta di un tesoro: monete (con eventuale sconto da maledizione) + 3 oggetti a caso.
+        function generateTreasureOffer() {
             let coins = scaledCoins([5, 8, 10, 15], false);
-
             if (activeCurses.includes("Maledizione: -15% monete")) {
                 coins = Math.floor(coins * 0.85);
             }
-
-            partyCoins += coins;
-
-            currentTreasureItems = [];
-            for(let i = 0; i < 3; i++) {
-                let randomItm = gameItems[Math.floor(Math.random() * gameItems.length)];
-                currentTreasureItems.push(randomItm);
+            const items = [];
+            for (let i = 0; i < 3; i++) {
+                items.push(gameItems[Math.floor(Math.random() * gameItems.length)]);
             }
+            return { coins, items };
+        }
+
+        function openTreasure() {
+            showScreen('screenTreasureLoot');
+            const offer = generateTreasureOffer();
+            const coins = offer.coins;
+            partyCoins += coins;
+            currentTreasureItems = offer.items;
 
             document.getElementById('treasureCoinsText').textContent = coins;
             document.getElementById('treasureAssignArea').classList.add('hidden');
@@ -2028,6 +2112,38 @@ function breakRelic(relicName) {
         let merchantItemsWithPrices = [];
         let currentMerchantItem = null;
 
+        // Genera il banco del mercante: 1 comune, 1 raro, 1 raro o epico, con prezzi e sconti/maledizioni applicati.
+        function generateMerchantStock() {
+            const commons = gameItems.filter(i => itemRarity(i) === 'comune');
+            const rares = gameItems.filter(i => itemRarity(i) === 'raro');
+            const epics = gameItems.filter(i => itemRarity(i) === 'epico');
+            // Se manca una fascia di rarità si pesca dall'intero bottino
+            const pick = pool => {
+                const source = pool.length > 0 ? pool : gameItems;
+                return source[Math.floor(Math.random() * source.length)];
+            };
+
+            const shopPool = [
+                pick(commons),
+                pick(rares),
+                (Math.random() > 0.7 && epics.length > 0) ? pick(epics) : pick(rares)
+            ];
+
+            return shopPool.filter(Boolean).map(item => {
+                const rarity = itemRarity(item);
+                const spread = ITEM_PRICE_SPREAD[rarity];
+                let basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
+
+                // Applica gli sconti delle reliquie
+                if (hasRelic("Moneta di fredlos")) basePrice = Math.floor(basePrice * 0.5);
+                if (hasRelic("Lasciapassare mercantile")) basePrice = Math.max(1, basePrice - 3);
+                // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
+                if (hasCurse("Rancore del Mercante")) basePrice += 2;
+
+                return { item, price: basePrice };
+            });
+        }
+
        function startMerchant(merchantId) {
     showScreen('screenMerchant');
     const descText = merchantsData[merchantId] || merchantsData.default || "Un mercante di passaggio offre i suoi beni.";
@@ -2037,40 +2153,8 @@ function breakRelic(relicName) {
     document.getElementById('merchantItemsList').classList.remove('hidden');
     document.getElementById('btnExitMerchant').classList.remove('hidden');
 
-    merchantItemsWithPrices = [];
     showMerchantTab('buy');
-    
-    // Divisione per rarità
-    const commons = gameItems.filter(i => itemRarity(i) === 'comune');
-    const rares = gameItems.filter(i => itemRarity(i) === 'raro');
-    const epics = gameItems.filter(i => itemRarity(i) === 'epico');
-    // Se manca una fascia di rarità si pesca dall'intero bottino
-    const pick = pool => {
-        const source = pool.length > 0 ? pool : gameItems;
-        return source[Math.floor(Math.random() * source.length)];
-    };
-
-    // Il mercante offre sempre: 1 comune, 1 raro, 1 raro o epico
-    let shopPool = [
-        pick(commons),
-        pick(rares),
-        (Math.random() > 0.7 && epics.length > 0) ? pick(epics) : pick(rares)
-    ];
-
-    shopPool.forEach(item => {
-        if (!item) return;
-        const rarity = itemRarity(item);
-        const spread = ITEM_PRICE_SPREAD[rarity];
-        let basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
-
-        // Applica gli sconti delle reliquie
-        if (hasRelic("Moneta di fredlos")) basePrice = Math.floor(basePrice * 0.5);
-        if (hasRelic("Lasciapassare mercantile")) basePrice = Math.max(1, basePrice - 3);
-        // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
-        if (hasCurse("Rancore del Mercante")) basePrice += 2;
-
-        merchantItemsWithPrices.push({ item, price: basePrice });
-    });
+    merchantItemsWithPrices = generateMerchantStock();
 
     renderMerchantShop();
 }
@@ -2250,6 +2334,81 @@ function breakRelic(relicName) {
             log.scrollTop = log.scrollHeight;
         }
 
+        // Risolve una prova: tiro (con vantaggio/svantaggio), reliquie, ricompensa/punizione.
+        // Muta unlockedRelics/activeCurses/expeditionStats. "events" sono le righe di log in ordine.
+        function resolveChallenge(hero, challenge) {
+            const events = [];
+            const rollMode = challengeRollMode(hero);
+            const twoDice = rollMode.mode !== 'single';
+            const roll = Math.floor(Math.random() * 6) + 1;
+            let roll2 = null, kept = roll;
+
+            if (twoDice) {
+                roll2 = Math.floor(Math.random() * 6) + 1;
+                const best = rollMode.mode === 'best';
+                kept = best ? Math.max(roll, roll2) : Math.min(roll, roll2);
+                events.push({ type: 'roll2', text: `🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})` });
+            } else {
+                events.push({ type: 'roll', text: `🎲 Dado: <b>${roll}</b>` });
+            }
+
+            const mods = challengeModifiers(hero);
+            const statLabel = STAT_LABELS[challenge.stat] || 'Statistica';
+            events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
+
+            let relicBonus = 0;
+            if (hasRelic("Anello del giuramento")) {
+                relicBonus += 3;
+                breakRelic("Anello del giuramento");
+                events.push({ type: 'relic', text: '+3 Anello del giuramento (la reliquia si rompe)' });
+            }
+            if (hasRelic("Sigillo runico")) {
+                relicBonus += 2;
+                party.sigilloCharges = (party.sigilloCharges || 0) + 1;
+                const broken = party.sigilloCharges >= 2;
+                if (broken) breakRelic("Sigillo runico");
+                events.push({ type: 'relic', text: `+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})` });
+            }
+
+            let total = kept + mods.statValue + relicBonus;
+            events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
+
+            if (total < challenge.cd && hasRelic("Frammento di matrice")) {
+                total = challenge.cd;
+                breakRelic("Frammento di matrice");
+                events.push({ type: 'relic', text: 'Frammento di matrice: il fallimento diventa un successo (la reliquia si rompe)' });
+            }
+
+            const success = total >= challenge.cd;
+            events.push({ type: 'outcome', text: success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>' });
+
+            let rewardGranted = null, punishmentApplied = null;
+            if (success) {
+                if (challenge.reward) {
+                    unlockedRelics.push(challenge.reward);
+                    applyEffects(challenge.reward.effects);
+                    if (challenge.reward.type === 'relic') discover('relics', challenge.reward.name);
+                    rewardGranted = challenge.reward;
+                }
+                expeditionStats.challengesPassed++;
+            } else {
+                if (challenge.punishment) {
+                    const cursesBefore = activeCurses.length;
+                    applyEffects(challenge.punishment.effects);
+                    if (challenge.punishment.type === 'curse') discover('curses', challenge.punishment.name);
+                    if (activeCurses.length === cursesBefore) {
+                        activeCurses.push(`${challenge.punishment.name} (${challenge.punishment.desc})`);
+                    }
+                    punishmentApplied = challenge.punishment;
+                }
+                expeditionStats.challengesFailed++;
+            }
+
+            const isFinal = challenge.stat === 'scelta_finale' || challenge.title === "Accampamento";
+
+            return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rewardGranted, punishmentApplied, isFinal, events };
+        }
+
         function executeChallengeRoll() {
             const rollBtn = document.getElementById('rollChallengeBtn');
             const diceBox = document.getElementById('diceChallenge');
@@ -2267,93 +2426,43 @@ function breakRelic(relicName) {
                 counter += 50;
                 if(counter >= 500) {
                     clearInterval(interval);
-                    let roll = Math.floor(Math.random() * 6) + 1;
-                    diceBox.textContent = roll;
+
+                    const res = resolveChallenge(selectedChallengeHero, challengeState);
+                    diceBox.textContent = res.roll;
                     diceBox.classList.remove('rolling');
 
-                    const mods = challengeModifiers(selectedChallengeHero);
-                    const statLabel = STAT_LABELS[challengeState.stat] || 'Statistica';
-
-                    // Vantaggio (tiene il più alto) o svantaggio (tiene il più basso)
-                    if (twoDice) {
-                        const roll2 = Math.floor(Math.random() * 6) + 1;
-                        diceBox2.textContent = roll2;
+                    if (res.twoDice) {
+                        diceBox2.textContent = res.roll2;
                         diceBox2.classList.remove('rolling');
-                        const best = rollMode.mode === 'best';
-                        const kept = best ? Math.max(roll, roll2) : Math.min(roll, roll2);
-                        const secondKept = best ? roll2 > roll : roll2 < roll;
+                        const secondKept = res.rollMode.mode === 'best' ? res.roll2 > res.roll : res.roll2 < res.roll;
                         (secondKept ? diceBox : diceBox2).classList.add('discarded');
                         document.getElementById('diceChallengeNote').textContent =
-                            `${rollMode.source}: dadi [${roll}, ${roll2}], tiene ${kept}`;
-                        addChallengeLog(`🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})`);
-                        roll = kept;
-                    } else {
-                        addChallengeLog(`🎲 Dado: <b>${roll}</b>`);
+                            `${res.rollMode.source}: dadi [${res.roll}, ${res.roll2}], tiene ${res.kept}`;
                     }
 
-                    diceOutcomeSfx(roll);
-                    const statValue = mods.statValue;
-                    addChallengeLog(`+${statValue} ${statLabel} (${selectedChallengeHero ? selectedChallengeHero.name : '—'})`);
+                    diceOutcomeSfx(res.kept);
+                    res.events.forEach(ev => addChallengeLog(ev.text));
 
-                    // Modificatori Reliquie Sfide
-                    let relicBonus = 0;
-                    if (hasRelic("Anello del giuramento")) {
-                        relicBonus += 3;
-                        breakRelic("Anello del giuramento");
-                        addChallengeLog('+3 Anello del giuramento (la reliquia si rompe)');
-                    }
-                    if (hasRelic("Sigillo runico")) {
-                        relicBonus += 2;
-                        party.sigilloCharges = (party.sigilloCharges || 0) + 1;
-                        const broken = party.sigilloCharges >= 2;
-                        if (broken) breakRelic("Sigillo runico");
-                        addChallengeLog(`+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})`);
-                    }
-
-                    let total = roll + statValue + relicBonus;
-                    addChallengeLog(`= <b>${total}</b> contro CD ${challengeState.cd}`);
-
-                    // Reliquia: Frammento di matrice (converte il fallimento in successo)
-                    if (total < challengeState.cd && hasRelic("Frammento di matrice")) {
-                        total = challengeState.cd;
-                        breakRelic("Frammento di matrice");
-                        addChallengeLog('Frammento di matrice: il fallimento diventa un successo (la reliquia si rompe)');
-                    }
-                    addChallengeLog(total >= challengeState.cd ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>');
-
-                    if(total >= challengeState.cd) {
+                    if(res.success) {
                         let rewardMsg = "";
-                        if (challengeState.reward) {
-                            unlockedRelics.push(challengeState.reward);
-                            applyEffects(challengeState.reward.effects);
-                            if (challengeState.reward.type === 'relic') discover('relics', challengeState.reward.name);
-                            rewardMsg = `<br><strong style="color:var(--relic-color);">Reliquia ottenuta: ${challengeState.reward.name} (${challengeState.reward.desc})</strong>`;
-                            showOutcomeOverlay('relic', challengeState.reward);
+                        if (res.rewardGranted) {
+                            rewardMsg = `<br><strong style="color:var(--relic-color);">Reliquia ottenuta: ${res.rewardGranted.name} (${res.rewardGranted.desc})</strong>`;
+                            showOutcomeOverlay('relic', res.rewardGranted);
                         }
-                        expeditionStats.challengesPassed++;
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${total} vs CD ${challengeState.cd})</strong><br>${challengeState.successText || 'Prova superata!'}${rewardMsg}`;
+                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${challengeState.cd})</strong><br>${challengeState.successText || 'Prova superata!'}${rewardMsg}`;
 
-                        if (challengeState.stat === 'scelta_finale' || challengeState.title === "Accampamento") {
+                        if (res.isFinal) {
                             document.getElementById('closeChallengeBtn').onclick = () => showScreen('screenVictory');
                         } else {
                             document.getElementById('closeChallengeBtn').onclick = advanceNode;
                         }
                     } else {
                         let punishmentMsg = "";
-                        if (challengeState.punishment) {
-                            const cursesBefore = activeCurses.length;
-                            applyEffects(challengeState.punishment.effects);
-                            if (challengeState.punishment.type === 'curse') discover('curses', challengeState.punishment.name);
-                            // Molte maledizioni modificano solo gli eroi: le registriamo comunque
-                            // perché compaiano nel contatore in alto e nel Diario
-                            if (activeCurses.length === cursesBefore) {
-                                activeCurses.push(`${challengeState.punishment.name} (${challengeState.punishment.desc})`);
-                            }
-                            punishmentMsg = `<br><strong style="color:var(--curse-color);">Maledizione subita: ${challengeState.punishment.name} (${challengeState.punishment.desc})</strong>`;
-                            showOutcomeOverlay('curse', challengeState.punishment);
+                        if (res.punishmentApplied) {
+                            punishmentMsg = `<br><strong style="color:var(--curse-color);">Maledizione subita: ${res.punishmentApplied.name} (${res.punishmentApplied.desc})</strong>`;
+                            showOutcomeOverlay('curse', res.punishmentApplied);
                         }
-                        expeditionStats.challengesFailed++;
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${total} vs CD ${challengeState.cd})</strong><br>${challengeState.failText || 'Prova fallita!'}${punishmentMsg}`;
+                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${challengeState.cd})</strong><br>${challengeState.failText || 'Prova fallita!'}${punishmentMsg}`;
                         document.getElementById('closeChallengeBtn').onclick = advanceNode;
                     }
 
@@ -2363,35 +2472,45 @@ function breakRelic(relicName) {
             }, 50);
         }
 
+        // Risolve un riposo: cura party, rimuove Gelo nelle ossa e (a caso) 1 maledizione con Pietra del focolare.
+        function resolveRest() {
+            const healAmount = 1 + (hasRelic("Unguento dell'erborista") ? 1 : 0);
+            const healed = [];
+            party.forEach(h => {
+                if (h.hp <= 0) return;
+                const before = h.hp;
+                h.hp = Math.min(h.maxHp, h.hp + healAmount);
+                healed.push({ name: h.name, gained: h.hp - before, hp: h.hp, maxHp: h.maxHp });
+            });
+
+            let geloRemoved = false;
+            const geloIdx = activeCurses.findIndex(c => c.startsWith("Gelo nelle ossa"));
+            if (geloIdx > -1) {
+                activeCurses.splice(geloIdx, 1);
+                party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
+                geloRemoved = true;
+            }
+
+            if (hasRelic("Pietra del focolare") && activeCurses.length > 0) {
+                const rIdx = Math.floor(Math.random() * activeCurses.length);
+                activeCurses.splice(rIdx, 1);
+            }
+
+            return { healAmount, healed, geloRemoved };
+        }
+
         function startRest(restId) {
             showScreen('screenRest');
             const restDesc = restsData[restId] || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
             document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${restDesc}`;
 
-            // Il riposo cura 1 HP a ogni eroe vivo (più l'eventuale bonus della reliquia), senza superare gli HP massimi
-            const healAmount = 1 + (hasRelic("Unguento dell'erborista") ? 1 : 0);
-            const healLines = [];
-            party.forEach(h => {
-                if (h.hp <= 0) return;
-                const before = h.hp;
-                h.hp = Math.min(h.maxHp, h.hp + healAmount);
-                healLines.push(h.hp > before
-                    ? `${esc(h.name)}: +${h.hp - before} HP (${h.hp}/${h.maxHp})`
-                    : `${esc(h.name)}: già in piena salute`);
-            });
+            const res = resolveRest();
+            const healLines = res.healed.map(h => h.gained > 0
+                ? `${esc(h.name)}: +${h.gained} HP (${h.hp}/${h.maxHp})`
+                : `${esc(h.name)}: già in piena salute`);
             document.getElementById('restDescBox').innerHTML += `<br><br><strong>Il riposo vi ristora:</strong><br>${healLines.join('<br>')}`;
-            // Maledizione: Gelo nelle ossa (-1 ai tiri per colpire) dura solo fino al prossimo riposo
-            const geloIdx = activeCurses.findIndex(c => c.startsWith("Gelo nelle ossa"));
-            if (geloIdx > -1) {
-                activeCurses.splice(geloIdx, 1);
-                party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
+            if (res.geloRemoved) {
                 document.getElementById('restDescBox').innerHTML += `<br>Il calore del fuoco scioglie il <strong>Gelo nelle ossa</strong>: la penalità ai tiri per colpire svanisce.`;
-            }
-
-            // Reliquia: Pietra del focolare (rimuove 1 maledizione a caso)
-            if (hasRelic("Pietra del focolare") && activeCurses.length > 0) {
-                const rIdx = Math.floor(Math.random() * activeCurses.length);
-                activeCurses.splice(rIdx, 1);
             }
             updatePartyStatusBars();
         }
@@ -2409,6 +2528,18 @@ function breakRelic(relicName) {
             document.getElementById('diceCaptainSection').classList.remove('hidden');
         }
 
+        // Risolve l'azione del finale "capitano": 'force' dimezza gli HP, 'faith'/'int' tirano contro CD 6.
+        function resolveCaptainAction(hero, type) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            if (type === 'force') {
+                hero.hp = Math.max(1, Math.floor(hero.hp / 2));
+                return { type, roll, success: null };
+            }
+            const statVal = type === 'faith' ? hero.fth : hero.int;
+            const success = (roll + statVal) >= 6;
+            return { type, roll, statVal, success };
+        }
+
         function executeCaptainRoll() {
             const rollBtn = document.getElementById('rollCaptainBtn');
             const diceBox = document.getElementById('diceCaptain');
@@ -2421,21 +2552,16 @@ function breakRelic(relicName) {
                 counter += 50;
                 if(counter >= 500) {
                     clearInterval(interval);
-                    const roll = Math.floor(Math.random() * 6) + 1;
-                    diceBox.textContent = roll; diceBox.classList.remove('rolling');
-                    diceOutcomeSfx(roll);
+                    const res = resolveCaptainAction(selectedCaptainHero, captainActionType);
+                    diceBox.textContent = res.roll; diceBox.classList.remove('rolling');
+                    diceOutcomeSfx(res.roll);
 
-                    if (captainActionType === 'force') {
+                    if (res.type === 'force') {
                         document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">RAMANZINA!</span> Perdi il 50% degli HP.`;
-                        selectedCaptainHero.hp = Math.max(1, Math.floor(selectedCaptainHero.hp / 2));
+                    } else if (res.success) {
+                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:var(--gold);">VITTORIA!</span> Meta raggiunta!`;
                     } else {
-                        let statVal = captainActionType === 'faith' ? selectedCaptainHero.fth : selectedCaptainHero.int;
-                        let cd = 6;
-                        if(roll + statVal >= cd) {
-                            document.getElementById('resultCaptainLog').innerHTML = `<span style="color:var(--gold);">VITTORIA!</span> Meta raggiunta!`;
-                        } else {
-                            document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">FALLITO!</span>`;
-                        }
+                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">FALLITO!</span>`;
                     }
                     updatePartyStatusBars();
 
