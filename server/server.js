@@ -190,6 +190,10 @@ let sharedState = { campaignTitle: '', coins: 0, heroes: [], updatedAt: 0 };
 // può "aggiustare" il proprio tiro da telefono.
 let pendingRoll = null; // { requestId, heroName, diceCount, label, createdAt }
 
+// Scelta dell'azione di combattimento (attacca/difendi/aiuta/abilità/oggetto) in attesa
+// da un telefono: precede l'eventuale pendingRoll, che parte solo dopo che l'azione è nota.
+let pendingAction = null; // { requestId, heroName, canUseAbility, abilityLabel, consumables, livingAllies, createdAt }
+
 const sseClients = new Set();
 
 function broadcast(event, data) {
@@ -246,7 +250,7 @@ const server = http.createServer((req, res) => {
     }
 
     if (pathname === '/api/state' && req.method === 'GET') {
-        sendJson(res, 200, Object.assign({}, sharedState, { pendingRoll }));
+        sendJson(res, 200, Object.assign({}, sharedState, { pendingRoll, pendingAction }));
         return;
     }
 
@@ -256,6 +260,50 @@ const server = http.createServer((req, res) => {
             sharedState = Object.assign({ campaignTitle: '', coins: 0, heroes: [] }, data, { updatedAt: Date.now() });
             broadcastState();
             sendJson(res, 200, { ok: true });
+        });
+        return;
+    }
+
+    // Il tab di gioco annuncia che un eroe deve scegliere l'azione di combattimento
+    // (attacca/difendi/aiuta/abilità/oggetto), prima ancora di sapere se serve un tiro.
+    if (pathname === '/api/action-request' && req.method === 'POST') {
+        readJsonBody(req, (err, data) => {
+            if (err || !data.heroName) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            pendingAction = {
+                requestId: crypto.randomUUID(),
+                heroName: data.heroName,
+                canUseAbility: !!data.canUseAbility,
+                abilityLabel: data.abilityLabel || null,
+                consumables: Array.isArray(data.consumables) ? data.consumables : [],
+                livingAllies: Array.isArray(data.livingAllies) ? data.livingAllies : [],
+                createdAt: Date.now()
+            };
+            broadcast('pending-action', pendingAction);
+            sendJson(res, 200, { ok: true, requestId: pendingAction.requestId });
+        });
+        return;
+    }
+
+    // Un telefono sceglie l'azione per l'eroe in attesa (e, per "use_item", anche oggetto e bersaglio).
+    if (pathname === '/api/action' && req.method === 'POST') {
+        readJsonBody(req, (err, data) => {
+            if (err || !data.requestId || !data.action) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            if (!pendingAction || pendingAction.requestId !== data.requestId) {
+                sendJson(res, 409, { error: 'Nessuna scelta in attesa con questo id (forse già decisa altrove).' });
+                return;
+            }
+            const resolved = pendingAction;
+            const result = {
+                requestId: resolved.requestId,
+                heroName: resolved.heroName,
+                action: data.action,
+                itemIndex: typeof data.itemIndex === 'number' ? data.itemIndex : null,
+                targetName: data.targetName || null
+            };
+            pendingAction = null;
+            broadcast('pending-action', null);
+            broadcast('action-chosen', result);
+            sendJson(res, 200, result);
         });
         return;
     }
@@ -348,6 +396,7 @@ const server = http.createServer((req, res) => {
         });
         res.write(`event: state\ndata: ${JSON.stringify(sharedState)}\n\n`);
         res.write(`event: pending-roll\ndata: ${JSON.stringify(pendingRoll)}\n\n`);
+        res.write(`event: pending-action\ndata: ${JSON.stringify(pendingAction)}\n\n`);
         sseClients.add(res);
         req.on('close', () => sseClients.delete(res));
         return;

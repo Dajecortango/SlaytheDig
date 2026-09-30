@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72">
+    <defs>
+        <linearGradient id="gradGold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff0b0"/>
+            <stop offset=".5" stop-color="#c9982f"/>
+            <stop offset="1" stop-color="#6b4a12"/>
+        </linearGradient>
+        <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#a8241a"/>
+            <stop offset="1" stop-color="#3a0604"/>
+        </linearGradient>
+    </defs>
+    <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
+    <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
+    <text x="32" y="46" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
+</svg>
