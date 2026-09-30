@@ -37,6 +37,10 @@
                 <span class="res-val" id="topBarCoins">0</span>
             </div>
             <div class="topbar-actions">
+                <button onclick="openCampaignEditor()" data-tip="Editor Campagne||Crea o modifica una campagna: eroi, nemici, sfide, mappa e immagini.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l3.5-1 10-10-2.5-2.5-10 10zM14.5 4.5L17 2l2.5 2.5-2.5 2.5"/><path d="M3 21h18" opacity=".4"/></svg>
+                    <span>Editor</span>
+                </button>
                 <button onclick="saveGame()" data-tip="Salva||Salva lo stato attuale della partita.">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>
                     <span>Salva</span>
@@ -121,6 +125,12 @@
                     <button class="menu-btn" onclick="goToCampaigns()">Nuova Partita</button>
                     <button id="btnContinueSavedGame" class="menu-btn btn-proceed hidden" onclick="loadGame()">Carica Partita</button>
                 </div>
+            </div>
+
+            <!-- Editor Campagne: contenuto renderizzato da js/campaign-editor.js -->
+            <div id="screenCampaignEditor" class="hidden">
+                <h2>Editor Campagne</h2>
+                <div id="editorRoot"></div>
             </div>
 
             <div id="screenCampaigns" class="hidden">
@@ -562,6 +572,11 @@
 
     <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
 
+    <!-- Ogni campagna vive nella propria cartella (dati + cartella assets); qui viene solo
+         caricata in window.CAMPAIGNS prima che il motore (js/game.js) parta. -->
+    <script src="campagne/tutorial/campaign.js"></script>
+    <script src="campagne/astarte_ch1/campaign.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/campaign-editor.js"></script>
 </body>
 </html>
