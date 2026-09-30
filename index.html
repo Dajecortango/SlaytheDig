@@ -314,9 +314,15 @@
                             </div>
                             <div class="sub-panel loot-panel">
                                 <p class="loot-coins">Monete trovate: <strong id="lootCoinsText"></strong> <span class="coin"></span></p>
+                                <p id="lootCoinsBonus" class="loot-coins-bonus"></p>
                                 <p style="color:#d8cba8;">Oggetto rinvenuto:</p>
-                                <h3 id="lootItemName"></h3>
-                                <p id="lootItemDesc" style="color:#d8cba8; font-size:0.82rem;"></p>
+                                <div class="loot-item-row">
+                                    <span id="lootItemIcon"></span>
+                                    <div>
+                                        <h3 id="lootItemName"></h3>
+                                        <p id="lootItemDesc" style="color:#d8cba8; font-size:0.82rem;"></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div id="lootAssignArea">
@@ -416,8 +422,14 @@
 
                             <div id="diceChallengeSection" class="hidden" style="text-align:center; margin-top: 8px;">
                                 <p id="challengeCdText" class="turn-label"></p>
-                                <div id="diceChallenge" class="dice-box">6</div>
+                                <p id="challengeChance" class="challenge-chance"></p>
+                                <div class="dice-pair">
+                                    <div id="diceChallenge" class="dice-box">6</div>
+                                    <div id="diceChallenge2" class="dice-box hidden">6</div>
+                                </div>
+                                <p id="diceChallengeNote" class="dice-result hidden"></p>
                                 <button id="rollChallengeBtn" onclick="executeChallengeRoll()">Tira (D6)</button>
+                                <div id="challengeLog" class="log-box challenge-log hidden"></div>
                             </div>
                         </div>
                         <button id="closeChallengeBtn" class="hidden btn-proceed" onclick="advanceNode()">Prosegui</button>
@@ -465,7 +477,12 @@
                             <div class="narrative-desc-box" id="merchantDescBox">
                                 <strong>Descrizione:</strong>
                             </div>
+                            <div id="merchantTabs" class="merchant-tabs">
+                                <button id="merchantTabBuy" class="merchant-tab active" onclick="showMerchantTab('buy')">Compra</button>
+                                <button id="merchantTabSell" class="merchant-tab" onclick="showMerchantTab('sell')">Vendi</button>
+                            </div>
                             <div id="merchantItemsList" class="armory-grid" style="grid-template-columns: 1fr;"></div>
+                            <div id="merchantSellList" class="armory-grid hidden" style="grid-template-columns: 1fr;"></div>
 
                             <div id="merchantAssignArea" class="hidden sub-panel">
                                 <p>Oggetto acquistato! A chi vuoi assegnarlo?</p>
@@ -562,6 +579,9 @@
 
     <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
 
+    <!-- Dati delle campagne: l'ordine qui è l'ordine nel menu -->
+    <script src="data/campagne/tutorial.js"></script>
+    <script src="data/campagne/astarte_ch1.js"></script>
     <script src="js/game.js"></script>
 </body>
 </html>
