@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Campagne</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Marcellus&display=swap" rel="stylesheet">
+    <!-- Tema del gioco (colori, cornici, pulsanti in metallo) + adattamenti per l'editor -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/editor.css">
+</head>
+<body class="ed-body">
+    <header class="ed-top">
+        <div class="ed-top-group">
+            <select id="edCampaignSelect" title="Campagne presenti in data/campagne"></select>
+            <button class="btn-small" onclick="loadSelectedCampaign()">Apri</button>
+            <button class="btn-small" onclick="newCampaign()">Nuova</button>
+            <label class="ed-file-btn">Apri file…<input type="file" id="edFileInput" accept=".js,.json" hidden></label>
+        </div>
+
+        <div class="ed-plate">
+            <span class="ed-plate-title">Editor Campagne</span>
+        </div>
+
+        <div class="ed-top-group ed-top-right">
+            <button class="btn-small ed-save" onclick="downloadCampaign('js')">Scarica .js</button>
+            <button class="btn-small" onclick="downloadCampaign('json')">Scarica .json</button>
+            <a class="ed-link" href="index.html">Torna al gioco</a>
+        </div>
+    </header>
+
+    <nav class="ed-tabs" id="edTabs">
+        <button data-tab="general" class="active">Generale</button>
+        <button data-tab="map">Mappa</button>
+        <button data-tab="enemies">Nemici</button>
+        <button data-tab="challenges">Sfide</button>
+        <button data-tab="other">Eroi, oggetti e testi</button>
+    </nav>
+
+    <main class="ed-main">
+        <section class="ed-frame ed-content" id="edContent"></section>
+        <aside class="ed-frame ed-side">
+            <h2 class="ed-heading">Controlli <span id="edIssueCount"></span></h2>
+            <div id="edIssues"></div>
+            <p class="ed-hint">
+                Il browser non può salvare direttamente nel progetto: usa <b>Scarica .js</b> e metti il file in
+                <code>data/campagne/</code>. Per una campagna nuova aggiungi anche il suo tag
+                <code>&lt;script&gt;</code> in <code>index.html</code> e in <code>editor.html</code>.
+            </p>
+        </aside>
+    </main>
+
+    <!-- Stesse campagne caricate dal gioco -->
+    <script src="data/campagne/tutorial.js"></script>
+    <script src="data/campagne/astarte_ch1.js"></script>
+    <script src="js/editor.js"></script>
+</body>
+</html>
