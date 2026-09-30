@@ -851,7 +851,11 @@
         }
         .sub-panel p { font-size: 0.8rem; margin: 0 0 4px; color: var(--wc-yellow); }
         .loot-panel h3 { margin: 4px 0 2px; }
+        .loot-item-row { display: flex; align-items: center; gap: 10px; }
+        .loot-item-row .icon-frame { flex-basis: 48px; width: 48px; height: 48px; }
         .loot-coins { font-size: 1rem; margin: 0 0 6px; }
+        .loot-coins-bonus { font-size: 0.75rem; color: var(--text-dim); margin: -4px 0 6px; }
+        .loot-coins-bonus:empty { display: none; }
         .loot-coins strong { color: var(--wc-yellow); font-family: var(--font-title); font-size: 1.15rem; }
         .panel-label { font-size: 0.85rem; margin: 6px 0 4px; color: #d8cba8; }
         .turn-label {
@@ -936,6 +940,12 @@
             box-shadow: inset 0 0 0 1px #4a3a22;
         }
         .price.too-much { color: #ff5a4a; }
+        .price.sell { color: #8dff78; }
+
+        /* Schede Compra / Vendi del mercante */
+        .merchant-tabs { display: flex; gap: 6px; margin: 8px 0 4px; }
+        .merchant-tab { flex: 1; margin: 0; padding: 6px 10px; font-size: 0.8rem; opacity: 0.6; }
+        .merchant-tab.active { opacity: 1; }
 
         /* Icone in cornice (stile icona di abilità WC3) */
         .icon-frame {
@@ -1189,6 +1199,16 @@
                 0 8px 16px rgba(0, 0, 0, 0.7);
             text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 190, 50, 0.55);
         }
+        .dice-pair { display: flex; justify-content: center; gap: 14px; }
+        .dice-pair .dice-box { margin: 10px 0; }
+        .dice-box.discarded { opacity: 0.35; filter: grayscale(1); }
+        .challenge-chance { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+        .challenge-chance[data-chance="high"] { color: #8dff78; }
+        .challenge-chance[data-chance="mid"] { color: #ffe08a; }
+        .challenge-chance[data-chance="low"] { color: #ff8a70; }
+        .log-box.challenge-log { height: auto; max-height: 120px; text-align: left; }
+        .challenge-log .log-success { color: #8dff78; }
+        .challenge-log .log-fail { color: #ff8a70; }
         @keyframes shake {
             0%, 60%, 100% { transform: translate(0, 0) rotate(0deg); }
             20% { transform: translate(-3px, 0) rotate(-10deg); }
@@ -2100,17 +2120,17 @@
         body.no-anim .flame, body.no-anim .campfire-glow, body.no-anim .campfire-sparks span { animation: none !important; }
         body.no-anim .fx-hit::before { display: none; }
 
-        /* ---------- Cinematica d'attacco dell'eroe ---------- */
+        /* ---------- Cinematica d'attacco dell'eroe (solo colpi a segno) ---------- */
         .strike-cine {
+            --cine-t: 1.15s;
             position: fixed;
             inset: 0;
             z-index: 9000;
             overflow: hidden;
             cursor: pointer;
             background: rgba(0, 0, 0, 0.35);
-            animation: strikeFade 1.15s ease-out forwards;
+            animation: strikeFade var(--cine-t) ease-out forwards;
         }
-        .strike-cine.miss { animation-duration: 1.05s; }
         .strike-band {
             position: absolute;
             left: -10%; right: -10%;
@@ -2123,7 +2143,7 @@
             border-top: 3px solid #c9982f;
             border-bottom: 3px solid #c9982f;
             box-shadow: 0 0 0 2px #000, 0 0 40px rgba(0, 0, 0, 0.9);
-            animation: strikeBand 1.15s cubic-bezier(.2, .9, .3, 1) forwards;
+            animation: strikeBand var(--cine-t) cubic-bezier(.2, .9, .3, 1) forwards;
         }
         .strike-lines {
             position: absolute;
@@ -2141,7 +2161,7 @@
             -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
             mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
             transform: rotate(6deg) translateX(-70vw);
-            animation: strikeHero 1.15s cubic-bezier(.3, .8, .3, 1) forwards;
+            animation: strikeHero var(--cine-t) cubic-bezier(.3, .8, .3, 1) forwards;
         }
         .strike-hero img { width: 100%; height: 130%; margin-top: -15%; object-fit: cover; display: block; }
         .strike-name {
@@ -2156,7 +2176,7 @@
             color: var(--wc-yellow, #f0cf73);
             text-shadow: 0 2px 0 #000, 0 0 14px rgba(0, 0, 0, 0.9);
             opacity: 0;
-            animation: strikeName 1.15s ease-out forwards;
+            animation: strikeName var(--cine-t) ease-out forwards;
         }
         .strike-slash {
             position: absolute;
@@ -2167,24 +2187,99 @@
             box-shadow: 0 0 18px #f0cf73, 0 0 40px rgba(240, 207, 115, 0.7);
             transform: rotate(-32deg) scaleX(0);
             opacity: 0;
-            animation: strikeSlash 1.15s ease-out forwards;
-        }
-        .strike-cine.miss .strike-slash {
-            background: linear-gradient(90deg, transparent, rgba(200, 200, 200, 0.55), transparent);
-            box-shadow: none;
-            height: 3px;
+            animation: strikeSlash var(--cine-t) ease-out forwards;
         }
         .strike-flash {
             position: absolute;
             inset: 0;
             background: #fff;
             opacity: 0;
-            animation: strikeFlash 1.15s ease-out forwards;
+            animation: strikeFlash var(--cine-t) ease-out forwards;
         }
-        .strike-cine.miss .strike-flash { display: none; }
-        .strike-cine.miss .strike-hero { animation-name: strikeHeroMiss; animation-duration: 1.05s; }
 
-        @keyframes strikeFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+        /* Abilità: cinematica più lunga, bordo luminoso, raggi, taglio a X, scintille e scossa */
+        .strike-cine.ability {
+            --cine-t: 1.7s;
+            background: radial-gradient(circle at 50% 50%, rgba(80, 30, 120, 0.35), rgba(0, 0, 0, 0.6));
+            animation: strikeFade var(--cine-t) ease-out forwards, strikeShake var(--cine-t) linear forwards;
+        }
+        .strike-cine.ability .strike-band {
+            height: min(46vh, 360px);
+            margin-top: calc(min(46vh, 360px) / -2);
+            background: linear-gradient(90deg, #0b0612 0%, #2a1638 45%, #0b0612 100%);
+            border-top: 4px solid #ffd76a;
+            border-bottom: 4px solid #ffd76a;
+            box-shadow: 0 0 0 2px #000, 0 0 30px rgba(255, 200, 90, 0.75), 0 0 80px rgba(170, 90, 255, 0.55);
+        }
+        .strike-cine.ability .strike-lines {
+            opacity: 0.6;
+            background: repeating-linear-gradient(90deg, transparent 0 26px, rgba(255, 225, 140, 0.8) 26px 29px, transparent 29px 60px);
+            animation-duration: 0.22s;
+        }
+        .strike-cine.ability .strike-hero img { filter: drop-shadow(0 0 14px rgba(255, 215, 106, 0.9)) saturate(1.2) contrast(1.08); }
+        .strike-cine.ability .strike-hero { width: min(52vw, 600px); margin-left: calc(min(52vw, 600px) / -2); }
+        .strike-ability {
+            position: absolute;
+            right: 12%; top: 12px;
+            transform: rotate(6deg);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: clamp(1rem, 2.6vw, 1.8rem);
+            letter-spacing: 0.06em;
+            color: #fff3c4;
+            text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 200, 90, 0.9), 0 0 26px rgba(170, 90, 255, 0.8);
+            opacity: 0;
+            animation: strikeAbility var(--cine-t) ease-out forwards;
+        }
+        .strike-ability span {
+            font-size: 0.55em;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: #d9b4ff;
+        }
+        .strike-rays {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 180vmax; height: 180vmax;
+            margin: -90vmax 0 0 -90vmax;
+            background: repeating-conic-gradient(from 0deg, rgba(255, 215, 106, 0.22) 0deg 6deg, transparent 6deg 18deg);
+            -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+            mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+            opacity: 0;
+            animation: strikeRays var(--cine-t) ease-out forwards;
+        }
+        .strike-cine.ability .strike-slash {
+            height: 12px;
+            margin-top: -6px;
+            background: linear-gradient(90deg, transparent, #ffffff 25%, #ffd76a 45%, #c68bff 55%, #ffffff 75%, transparent);
+            box-shadow: 0 0 24px #ffd76a, 0 0 60px rgba(198, 139, 255, 0.9);
+        }
+        .strike-cine.ability .strike-slash.second { animation-name: strikeSlash2; }
+        .strike-sparks {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 0; height: 0;
+        }
+        .strike-sparks span {
+            position: absolute;
+            left: -5px; top: -5px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #ffd76a 45%, rgba(198, 139, 255, 0) 75%);
+            box-shadow: 0 0 12px #ffd76a;
+            opacity: 0;
+            transform: rotate(var(--a)) translateX(0) scale(1);
+            animation: strikeSpark var(--cine-t) ease-out forwards;
+        }
+        .strike-cine.ability .strike-flash {
+            background: radial-gradient(circle, #fff 0%, #ffe9a8 40%, rgba(198, 139, 255, 0.8) 100%);
+            animation-name: strikeFlashBig;
+        }
+
+        @keyframes strikeFade { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
         @keyframes strikeBand {
             0% { transform: rotate(-6deg) scaleY(0); }
             14%, 82% { transform: rotate(-6deg) scaleY(1); }
@@ -2198,13 +2293,6 @@
             66% { transform: rotate(6deg) translateX(14vw); filter: blur(3px); }
             100% { transform: rotate(6deg) translateX(18vw); filter: blur(0); }
         }
-        @keyframes strikeHeroMiss {
-            0% { transform: rotate(6deg) translateX(-70vw); filter: blur(6px); opacity: 1; }
-            28% { transform: rotate(6deg) translateX(-4vw); filter: blur(0); }
-            58% { transform: rotate(6deg) translateX(-8vw); }
-            72% { transform: rotate(6deg) translateX(40vw); filter: blur(4px); opacity: 0.6; }
-            100% { transform: rotate(6deg) translateX(75vw); opacity: 0; }
-        }
         @keyframes strikeName {
             0%, 20% { opacity: 0; transform: rotate(6deg) translateX(-30px); }
             32%, 80% { opacity: 1; transform: rotate(6deg) translateX(0); }
@@ -2216,8 +2304,47 @@
             72% { transform: rotate(-32deg) scaleX(1); opacity: 1; }
             90%, 100% { transform: rotate(-32deg) scaleX(1); opacity: 0; }
         }
+        @keyframes strikeSlash2 {
+            0%, 66% { transform: rotate(32deg) scaleX(0); opacity: 0; }
+            70% { transform: rotate(32deg) scaleX(0.4); opacity: 1; }
+            77% { transform: rotate(32deg) scaleX(1); opacity: 1; }
+            92%, 100% { transform: rotate(32deg) scaleX(1); opacity: 0; }
+        }
         @keyframes strikeFlash {
             0%, 64% { opacity: 0; }
             68% { opacity: 0.75; }
             82%, 100% { opacity: 0; }
+        }
+        @keyframes strikeFlashBig {
+            0%, 64% { opacity: 0; }
+            67% { opacity: 0.9; }
+            72% { opacity: 0.25; }
+            76% { opacity: 0.55; }
+            90%, 100% { opacity: 0; }
+        }
+        @keyframes strikeAbility {
+            0%, 22% { opacity: 0; transform: rotate(6deg) translateX(40px) scale(1.4); }
+            32% { opacity: 1; transform: rotate(6deg) translateX(0) scale(1); }
+            82% { opacity: 1; transform: rotate(6deg) translateX(0) scale(1); }
+            100% { opacity: 0; }
+        }
+        @keyframes strikeRays {
+            0%, 10% { opacity: 0; transform: rotate(0deg) scale(0.6); }
+            30% { opacity: 1; }
+            70% { opacity: 1; transform: rotate(40deg) scale(1.05); }
+            100% { opacity: 0; transform: rotate(60deg) scale(1.1); }
+        }
+        @keyframes strikeSpark {
+            0%, 66% { opacity: 0; transform: rotate(var(--a)) translateX(0) scale(1.4); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(0.3); }
+        }
+        @keyframes strikeShake {
+            0%, 66% { transform: translate(0, 0); }
+            68% { transform: translate(-8px, 4px); }
+            70% { transform: translate(7px, -5px); }
+            72% { transform: translate(-6px, -3px); }
+            74% { transform: translate(5px, 4px); }
+            77% { transform: translate(-3px, 2px); }
+            80%, 100% { transform: translate(0, 0); }
         }
