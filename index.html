@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="no-party">
+<body class="no-party menu-mode">
 
     <!-- Gradienti condivisi per le icone SVG inline -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -27,6 +27,32 @@
     </svg>
 
     <div class="embers" id="embers" aria-hidden="true"></div>
+
+    <!-- Scena dei menu in stile Warcraft III: notte, pioggia, lampi, stendardo della Famiglia -->
+    <div class="menu-scene" aria-hidden="true">
+        <div class="menu-scene-img"></div>
+        <svg class="menu-scene-land" viewBox="0 0 1600 500" preserveAspectRatio="xMidYMax slice">
+            <path d="M0 330 C180 280 330 300 480 260 C640 220 760 300 930 270 C1100 240 1250 290 1600 250 V500 H0 Z" fill="#120f0d"/>
+            <path d="M0 400 C220 360 420 390 640 370 C860 350 1060 410 1300 380 C1420 366 1520 372 1600 360 V500 H0 Z" fill="#0a0807"/>
+            <!-- Stendardo spezzato piantato nel terreno -->
+            <g transform="translate(250 150) rotate(-6)">
+                <rect x="-5" y="-10" width="10" height="260" fill="#2a1d10" stroke="#000" stroke-width="2"/>
+                <rect x="-70" y="10" width="140" height="10" fill="#2a1d10" stroke="#000" stroke-width="2"/>
+                <path d="M-62 20 H62 V150 L40 132 L24 158 L4 136 L-16 160 L-34 134 L-48 156 L-62 140 Z" fill="url(#gradRed)" stroke="#000" stroke-width="2"/>
+                <path d="M-62 20 H62 V34 H-62 Z" fill="url(#gradGold)" stroke="#000"/>
+                <path d="M0 50 L26 58 V78 C26 96 14 106 0 111 C-14 106 -26 96 -26 78 V58 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
+                <text x="0" y="93" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="30" fill="#5a0c06">D</text>
+            </g>
+            <!-- Scudo abbandonato nell'erba -->
+            <ellipse cx="760" cy="430" rx="95" ry="34" fill="#3a2410" stroke="#000" stroke-width="3"/>
+            <ellipse cx="760" cy="426" rx="78" ry="26" fill="none" stroke="#8a6418" stroke-width="4"/>
+            <line x1="700" y1="360" x2="800" y2="470" stroke="#2a1d10" stroke-width="6"/>
+        </svg>
+        <div class="menu-fog"></div>
+        <div class="menu-rain" id="menuRain"></div>
+        <div class="menu-lightning"></div>
+        <div class="menu-vignette"></div>
+    </div>
 
     <!-- Barra superiore: risorse della Compagnia -->
     <div class="party-topbar" id="partyTopBar">
@@ -106,35 +132,63 @@
 
     <div class="game-layout">
         <div class="container" id="gameContainer">
-            <div id="screenStart" class="screen-start">
-                <svg class="start-crest" viewBox="0 0 64 72" aria-hidden="true">
-                    <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
-                    <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
-                    <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
-                </svg>
-                <h1 class="game-title"><small>Campagne della</small>Famiglia Dignitas</h1>
-                <div class="start-image-box">
-                    <img src="immagini/copertina.jfif" alt="Copertina Campagna">
+            <div id="screenStart" class="screen-start wc-menu-screen">
+                <div class="menu-logo">
+                    <svg class="start-crest" viewBox="0 0 64 72" aria-hidden="true">
+                        <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
+                        <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
+                        <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
+                    </svg>
+                    <h1 class="game-title"><small>Campagne della</small>Famiglia Dignitas</h1>
+                    <p class="tagline">Le gesta, le battaglie e le sventure della Famiglia Dignitas.</p>
                 </div>
-                <p class="tagline">Le gesta, le battaglie e le sventure della Famiglia Dignitas.</p>
-                <div class="main-menu">
-                    <button class="menu-btn" onclick="goToCampaigns()">Nuova Partita</button>
-                    <button id="btnContinueSavedGame" class="menu-btn btn-proceed hidden" onclick="loadGame()">Carica Partita</button>
+
+                <!-- Pannello principale appeso alle catene -->
+                <div class="wc-hang wc-hang-main">
+                    <div class="wc-chains"><span></span><span></span></div>
+                    <nav class="wc-panel main-menu">
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="goToCampaigns()">Nuova Partita</button></div>
+                        <div class="wc-slot"><button id="btnContinueSavedGame" class="wc-menu-btn hidden" onclick="loadGame()">Carica Partita</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openHowToPlay()">Come si gioca</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openOptions()">Opzioni</button></div>
+                    </nav>
                 </div>
+
+                <!-- Pannello separato in basso, come "Esci" nel menu di Warcraft III -->
+                <div class="wc-hang wc-hang-bottom">
+                    <div class="wc-chains short"><span></span><span></span></div>
+                    <nav class="wc-panel">
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="location.href='editor.html'">Editor Campagne</button></div>
+                    </nav>
+                </div>
+
+                <div class="menu-version">Slay the Dig</div>
             </div>
 
-            <div id="screenCampaigns" class="hidden">
-                <h2>Campagne Disponibili</h2>
-                <div class="campaign-carousel">
-                    <button class="carousel-arrow prev" id="campaignPrev" onclick="scrollCampaigns(-1)" aria-label="Campagna precedente">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-                    </button>
-                    <div class="campaigns-track" id="campaignsGridList" tabindex="0" aria-label="Campagne disponibili"></div>
-                    <button class="carousel-arrow next" id="campaignNext" onclick="scrollCampaigns(1)" aria-label="Campagna successiva">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-                    </button>
+            <div id="screenCampaigns" class="hidden wc-menu-screen">
+                <div class="wc-hang wc-hang-center">
+                    <div class="wc-chains"><span></span><span></span></div>
+                    <div class="wc-panel wc-panel-wide">
+                        <h2>Campagne Disponibili</h2>
+                        <div class="campaign-carousel">
+                            <button class="carousel-arrow prev" id="campaignPrev" onclick="scrollCampaigns(-1)" aria-label="Campagna precedente">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+                            </button>
+                            <div class="campaigns-track" id="campaignsGridList" tabindex="0" aria-label="Campagne disponibili"></div>
+                            <button class="carousel-arrow next" id="campaignNext" onclick="scrollCampaigns(1)" aria-label="Campagna successiva">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                        <div class="carousel-dots" id="campaignDots"></div>
+                    </div>
                 </div>
-                <div class="carousel-dots" id="campaignDots"></div>
+
+                <div class="wc-hang wc-hang-bottom">
+                    <div class="wc-chains short"><span></span><span></span></div>
+                    <nav class="wc-panel">
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="showScreen('screenStart')">Indietro</button></div>
+                    </nav>
+                </div>
             </div>
 
             <div id="screenParty" class="hidden">
@@ -275,7 +329,10 @@
                                     </div>
 
                                     <div id="combatDiceArea" class="hidden" style="text-align:center;">
-                                        <div id="diceCombat" class="dice-box">6</div>
+                                        <div class="dice-pair">
+                                            <div id="diceCombat" class="dice-box">6</div>
+                                            <div id="diceCombat2" class="dice-box hidden">6</div>
+                                        </div>
                                         <button id="rollCombatBtn" onclick="executeCombatHeroRoll()">Tira (D6)</button>
                                         <div id="diceCombatResult" class="dice-result"></div>
                                     </div>

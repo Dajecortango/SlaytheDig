@@ -353,10 +353,14 @@ function breakRelic(relicName) {
             document.getElementById('partyStepText').textContent = `Scegli quanti membri comporranno la spedizione (${minSize} - ${maxSize}):`;
         }
 
+        const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
+
         function showScreen(screenId) {
             currentScreenId = screenId;
             if (screenId !== 'screenCombat') combatPhase = 'none';
             document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+            // Menu iniziale e scelta campagna: scena a tutto schermo senza barre, come i menu di Warcraft III
+            document.body.classList.toggle('menu-mode', MENU_SCENE_SCREENS.includes(screenId));
             const screen = document.getElementById(screenId);
             screen.classList.remove('hidden');
             screen.classList.remove('screen-enter');
@@ -1261,7 +1265,21 @@ function breakRelic(relicName) {
                 document.getElementById('combatDiceArea').classList.remove('hidden');
                 document.getElementById('diceCombatResult').textContent = "Tira il dado...";
                 document.getElementById('rollCombatBtn').disabled = false;
+
+                // "Trucchi del mestiere" di Icaro: due dadi visibili, si tiene il più alto
+                const twoDice = combatRollUsesTwoDice(currentActiveHero, action);
+                const dice1 = document.getElementById('diceCombat');
+                const dice2 = document.getElementById('diceCombat2');
+                dice1.classList.remove('discarded');
+                dice2.classList.remove('discarded');
+                dice2.textContent = "6";
+                dice2.classList.toggle('hidden', !twoDice);
+                document.getElementById('rollCombatBtn').textContent = twoDice ? "Tira (2D6, tieni il migliore)" : "Tira (D6)";
             }
+        }
+
+        function combatRollUsesTwoDice(hero, action) {
+            return action === 'ability' && !!hero && !!hero.chosenAbility && hero.chosenAbility.id === 'icaro_trucchi';
         }
 
         function cancelCombatItemSubmenu() {
@@ -1293,16 +1311,21 @@ function breakRelic(relicName) {
             if (rollBtn.disabled) return;
 
             const diceBox = document.getElementById('diceCombat');
+            const diceBox2 = document.getElementById('diceCombat2');
+            const twoDice = combatRollUsesTwoDice(currentActiveHero, chosenAction);
             rollBtn.disabled = true;
             diceBox.classList.add('rolling');
+            if (twoDice) diceBox2.classList.add('rolling');
 
             let counter = 0;
             const interval = setInterval(() => {
                 diceBox.textContent = Math.floor(Math.random() * 6) + 1;
+                if (twoDice) diceBox2.textContent = Math.floor(Math.random() * 6) + 1;
                 counter += 50;
                 if(counter >= 500) {
                     clearInterval(interval);
                     diceBox.classList.remove('rolling');
+                    diceBox2.classList.remove('rolling');
 
                     const hero = currentActiveHero;
                     const enemyHpBefore = activeEnemy.hp;
@@ -1379,7 +1402,9 @@ function breakRelic(relicName) {
                             const d1 = Math.floor(Math.random() * 6) + 1;
                             const d2 = Math.floor(Math.random() * 6) + 1;
                             const roll = Math.max(d1, d2);
-                            diceBox.textContent = roll;
+                            diceBox.textContent = d1;
+                            diceBox2.textContent = d2;
+                            (d2 > d1 ? diceBox : diceBox2).classList.add('discarded');
                             let total = roll + hero.str + helpBonus + attackMod(hero);
                             helpBonus = 0;
                             logCombat(`✨ ${hero.name} usa Trucchi del Mestiere! Tira [${d1}, ${d2}] -> Tiene ${roll}. Totale: ${total} (CA: ${activeEnemy.ca})`);
@@ -2812,6 +2837,17 @@ function breakRelic(relicName) {
             }
         }
 
+        function openHowToPlay() {
+            openModal('Come si gioca', `
+                <div class="howto">
+                    <p>Scegli una campagna, componi la compagnia e assegna a ogni eroe un'abilità e un oggetto iniziale.</p>
+                    <p>Sulla mappa avanza di livello in livello: <b>scontri</b>, <b>sfide</b>, <b>tesori</b>, <b>mercanti</b> e <b>riposi</b>. Il boss attende in cima.</p>
+                    <p>In combattimento ogni eroe tira un d6 e aggiunge la Forza: <b>Attacca</b> contro la CA del nemico, <b>Difendi</b> e <b>Aiuta</b> contro il suo Attacco.</p>
+                    <p>Nelle sfide si tira un d6 più Intelligenza o Fede contro la Classe di Difficoltà. Superarle dà reliquie, fallirle maledizioni.</p>
+                    <p>Tasti rapidi in combattimento: <span class="keycap">Q</span><span class="keycap">W</span><span class="keycap">E</span><span class="keycap">R</span><span class="keycap">T</span> azioni, <span class="keycap">Spazio</span> tira il dado.</p>
+                </div>`, [{ label: 'Chiudi', className: 'btn-proceed' }], { wide: true });
+        }
+
         function openOptions() {
             const speeds = [[1, 'Lenta'], [2, 'Normale'], [4, 'Veloce'], [0, 'Istantanea']];
             const sizes = [[1, 'Normale'], [1.15, 'Grande'], [1.3, 'Molto grande']];
@@ -3263,6 +3299,20 @@ function breakRelic(relicName) {
                 ember.style.animationDelay = `${-Math.random() * 18}s`;
                 ember.style.setProperty('--drift', `${Math.random() * 140 - 70}px`);
                 box.appendChild(ember);
+            }
+        })();
+
+        /* ---------- Pioggia della scena dei menu ---------- */
+        (function spawnRain() {
+            const box = document.getElementById('menuRain');
+            for (let i = 0; i < 90; i++) {
+                const drop = document.createElement('span');
+                drop.style.left = `${Math.random() * 110 - 5}%`;
+                drop.style.height = `${40 + Math.random() * 50}px`;
+                drop.style.opacity = (0.15 + Math.random() * 0.35).toFixed(2);
+                drop.style.animationDuration = `${0.55 + Math.random() * 0.5}s`;
+                drop.style.animationDelay = `${-Math.random() * 2}s`;
+                box.appendChild(drop);
             }
         })();
 
