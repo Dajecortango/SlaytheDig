@@ -221,7 +221,13 @@ function serveStaticFile(res, filePath) {
             return;
         }
         const ext = path.extname(filePath).toLowerCase();
-        res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+        res.writeHead(200, {
+            'Content-Type': MIME[ext] || 'application/octet-stream',
+            // Niente cache: dopo un aggiornamento (git pull) il browser deve sempre
+            // ricaricare i file veri, non una copia vecchia salvata in precedenza.
+            'Cache-Control': 'no-store, must-revalidate',
+            'Pragma': 'no-cache'
+        });
         res.end(data);
     });
 }
