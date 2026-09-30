@@ -17,3 +17,6 @@ warcraft3_icons/
 
 # ngrok scaricato automaticamente da "Configura Tunnel ngrok" (Opzioni)
 tools/ngrok/
+
+# Profilo browser dedicato alla finestra di gioco (avvia-server.bat)
+tools/browser-profile/

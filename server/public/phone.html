@@ -13,6 +13,7 @@
     }
     h1 { color: var(--gold); text-align: center; font-size: 1.4rem; margin: 8px 0 4px; letter-spacing: 0.04em; }
     .status { text-align: center; font-size: 0.8rem; color: var(--dim); margin-bottom: 16px; }
+    .hidden { display: none; }
     .panel {
         background: linear-gradient(rgba(30,24,16,0.95), rgba(10,8,6,0.95));
         border: 1px solid #5a4520; box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0,0,0,0.6);
@@ -83,12 +84,26 @@
         100% { transform: scale(1); }
     }
     .roll-result-text { font-size: 0.9rem; color: var(--gold); margin-top: 4px; min-height: 1.2em; }
+
+    .action-title { font-size: 0.85rem; color: var(--gold); margin-bottom: 10px; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .action-btn, .item-btn, .back-btn {
+        padding: 14px 10px; font-size: 0.95rem; font-weight: bold;
+        background: linear-gradient(#5a4520, #2a1d0c); color: var(--gold);
+        border: 1px solid #b8923e; text-align: center;
+    }
+    .action-btn:disabled, .item-btn:disabled { opacity: 0.35; }
+    .action-btn:not(:disabled):active, .item-btn:not(:disabled):active { background: linear-gradient(#8a6d1a, #4a3a0c); }
+    .item-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .item-btn { text-align: left; font-weight: normal; font-size: 0.85rem; }
+    .back-btn { width: 100%; font-weight: normal; font-size: 0.8rem; color: var(--dim); background: transparent; border-color: #5a4520; }
 </style>
 </head>
 <body>
     <h1 id="heroName">Connessione...</h1>
     <div class="status" id="statusText">In attesa di dati dal gioco...</div>
     <div id="content"></div>
+    <div class="panel roll-area hidden" id="actionPanel"></div>
 
     <script>
         function slugify(name) {
@@ -108,8 +123,17 @@
         function barClass(pct) { return pct > 60 ? '' : (pct > 30 ? 'hp-mid' : 'hp-low'); }
         function clampPct(value, max) { return max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0; }
 
+        // ngrok (piano gratuito) mostra una pagina di avviso al primo accesso da un browser nuovo:
+        // questo header dice a ngrok di saltarla anche per le chiamate fetch/EventSource successive
+        // (senza, quelle richieste ricevono la pagina HTML dell'avviso invece dei dati JSON veri).
+        const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
+
         let currentHero = null;
         let lastPendingRoll = null;
+        let lastPendingAction = null;
+        let lastResultDisplay = null; // { rolls } — ultimo tiro completato, mostrato finché non arriva un nuovo turno
+        let itemPickState = null;     // { stage: 'item' } oppure { stage: 'target', itemIndex, itemName }
+        let rollInProgress = false;   // true durante l'animazione del dado: nessun aggiornamento la deve interrompere
 
         function renderHero(state) {
             const hero = (state.heroes || []).find(h => slugify(h.name) === slug);
@@ -120,6 +144,7 @@
                 document.getElementById('heroName').textContent = 'Eroe non trovato';
                 document.getElementById('statusText').textContent = 'Nessun eroe con questo nome nella partita in corso.';
                 content.innerHTML = '<div class="panel empty">Controlla il link oppure aspetta che la partita venga avviata sul PC.</div>';
+                document.getElementById('actionPanel').classList.add('hidden');
                 return;
             }
             document.getElementById('heroName').textContent = hero.name;
@@ -155,53 +180,164 @@
                     </div>
                     ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>` : ''}
                 </div>
-                <div class="panel items">${itemsHtml}</div>
-                <div class="panel roll-area">
-                    <div class="dice-row">
-                        <div class="dice-box" id="phoneDice1">—</div>
-                        <div class="dice-box hidden" id="phoneDice2">—</div>
-                    </div>
-                    <button class="roll-btn" id="rollBtn" disabled>In attesa del tuo turno...</button>
-                    <div class="roll-result-text" id="rollResultText"></div>
-                </div>`;
+                <div class="panel items">${itemsHtml}</div>`;
 
-            applyPendingRoll(lastPendingRoll);
+            document.getElementById('actionPanel').classList.remove('hidden');
+            renderActionArea();
         }
 
-        // Attiva/disattiva il pulsante del dado a seconda di chi deve tirare in questo momento.
-        // Ignora gli aggiornamenti mentre un tiro è già in corso (rollInProgress), altrimenti un
-        // evento di stato arrivato nel mentre interromperebbe l'animazione.
-        let rollInProgress = false;
+        /* ---------- Pannello azione: sceglie cosa mostrare a seconda dello stato attuale ---------- */
+        function renderActionArea() {
+            const panel = document.getElementById('actionPanel');
+            if (!panel || !currentHero || rollInProgress) return;
 
-        function applyPendingRoll(pendingRoll) {
-            lastPendingRoll = pendingRoll || null;
-            const btn = document.getElementById('rollBtn');
-            if (!btn || !currentHero || rollInProgress) return;
+            if (lastPendingRoll && slugify(lastPendingRoll.heroName) === slug) {
+                renderRollPanel(panel, lastPendingRoll);
+                return;
+            }
+            if (itemPickState) {
+                renderItemPickPanel(panel, itemPickState);
+                return;
+            }
+            if (lastPendingAction && slugify(lastPendingAction.heroName) === slug) {
+                renderActionChoicePanel(panel, lastPendingAction);
+                return;
+            }
+            if (lastResultDisplay) {
+                renderResultPanel(panel, lastResultDisplay);
+                return;
+            }
+            panel.innerHTML = `<button class="roll-btn" disabled>In attesa del tuo turno...</button>`;
+        }
 
-            const dice1 = document.getElementById('phoneDice1');
-            const dice2 = document.getElementById('phoneDice2');
-            const resultText = document.getElementById('rollResultText');
+        function renderActionChoicePanel(panel, pendingAction) {
+            const hasItems = pendingAction.consumables && pendingAction.consumables.length > 0;
+            panel.innerHTML = `
+                <div class="action-title">Scegli l'azione di ${currentHero.name}</div>
+                <div class="action-grid">
+                    <button class="action-btn" data-action="attack">⚔️ Attacca</button>
+                    <button class="action-btn" data-action="defend">🛡️ Difendi</button>
+                    <button class="action-btn" data-action="help">🤝 Aiuta</button>
+                    <button class="action-btn" data-action="ability" ${pendingAction.canUseAbility ? '' : 'disabled'}>★ ${pendingAction.abilityLabel || 'Abilità'}</button>
+                </div>
+                <div class="action-grid" style="margin-top:8px;">
+                    <button class="action-btn" data-action="use_item" style="grid-column:1 / -1;" ${hasItems ? '' : 'disabled'}>🧪 Usa un oggetto</button>
+                </div>`;
+            panel.querySelectorAll('.action-btn[data-action]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const action = btn.dataset.action;
+                    if (action === 'use_item') {
+                        itemPickState = { stage: 'item' };
+                        renderActionArea();
+                    } else {
+                        submitAction(pendingAction.requestId, action);
+                    }
+                });
+            });
+        }
 
-            if (pendingRoll && slugify(pendingRoll.heroName) === slug) {
-                btn.disabled = false;
-                btn.classList.add('active');
-                btn.textContent = `TIRA — ${pendingRoll.label}${pendingRoll.diceCount === 2 ? ' (2 dadi)' : ''}`;
-                btn.onclick = () => submitRoll(pendingRoll.requestId, pendingRoll.diceCount);
-                if (dice1) dice1.textContent = '—';
-                if (dice2) { dice2.textContent = '—'; dice2.classList.toggle('hidden', pendingRoll.diceCount !== 2); }
-                if (resultText) resultText.textContent = '';
+        function renderItemPickPanel(panel, state) {
+            if (state.stage === 'item') {
+                const items = (lastPendingAction && lastPendingAction.consumables) || [];
+                panel.innerHTML = `
+                    <div class="action-title">Scegli l'oggetto</div>
+                    <div class="item-list">${items.map(it =>
+                        `<button class="item-btn" data-idx="${it.index}">${it.name}${it.desc ? ` — ${it.desc}` : ''}</button>`
+                    ).join('')}</div>
+                    <button class="back-btn" id="backBtn">← Indietro</button>`;
+                panel.querySelectorAll('.item-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        itemPickState = { stage: 'target', itemIndex: parseInt(btn.dataset.idx, 10) };
+                        renderActionArea();
+                    });
+                });
+                const back = document.getElementById('backBtn');
+                if (back) back.addEventListener('click', () => { itemPickState = null; renderActionArea(); });
             } else {
-                btn.disabled = true;
-                btn.classList.remove('active');
-                btn.textContent = 'In attesa del tuo turno...';
-                btn.onclick = null;
+                const allies = (lastPendingAction && lastPendingAction.livingAllies) || [];
+                panel.innerHTML = `
+                    <div class="action-title">Su chi usarlo?</div>
+                    <div class="item-list">${allies.map(name => `<button class="item-btn" data-name="${name}">${name}</button>`).join('')}</div>
+                    <button class="back-btn" id="backBtn">← Indietro</button>`;
+                panel.querySelectorAll('.item-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const requestId = lastPendingAction ? lastPendingAction.requestId : null;
+                        const itemIndex = state.itemIndex;
+                        itemPickState = null;
+                        if (requestId) submitAction(requestId, 'use_item', itemIndex, btn.dataset.name);
+                    });
+                });
+                const back = document.getElementById('backBtn');
+                if (back) back.addEventListener('click', () => { itemPickState = { stage: 'item' }; renderActionArea(); });
             }
         }
 
-        // ngrok (piano gratuito) mostra una pagina di avviso al primo accesso da un browser nuovo:
-        // questo header dice a ngrok di saltarla anche per le chiamate fetch/EventSource successive
-        // (senza, quelle richieste ricevono la pagina HTML dell'avviso invece dei dati JSON veri).
-        const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
+        function renderRollPanel(panel, pendingRoll) {
+            panel.innerHTML = `
+                <div class="dice-row">
+                    <div class="dice-box" id="phoneDice1">—</div>
+                    <div class="dice-box ${pendingRoll.diceCount === 2 ? '' : 'hidden'}" id="phoneDice2">—</div>
+                </div>
+                <button class="roll-btn active" id="rollBtn">TIRA — ${pendingRoll.label}${pendingRoll.diceCount === 2 ? ' (2 dadi)' : ''}</button>
+                <div class="roll-result-text" id="rollResultText"></div>`;
+            const btn = document.getElementById('rollBtn');
+            if (btn) btn.onclick = () => submitRoll(pendingRoll.requestId, pendingRoll.diceCount);
+        }
+
+        function renderResultPanel(panel, result) {
+            panel.innerHTML = `
+                <div class="dice-row">
+                    <div class="dice-box">${result.rolls[0]}</div>
+                    ${result.rolls.length > 1 ? `<div class="dice-box">${result.rolls[1]}</div>` : ''}
+                </div>
+                <button class="roll-btn" disabled>In attesa del tuo turno...</button>
+                <div class="roll-result-text">Hai tirato: ${result.rolls.join(' , ')}</div>`;
+        }
+
+        /* ---------- Invio della scelta d'azione (e, per "usa oggetto", di oggetto+bersaglio) ---------- */
+        function submitAction(requestId, action, itemIndex, targetName) {
+            const panel = document.getElementById('actionPanel');
+            if (panel) panel.innerHTML = `<button class="roll-btn" disabled>Invio in corso...</button>`;
+
+            const body = { requestId, action };
+            if (typeof itemIndex === 'number') body.itemIndex = itemIndex;
+            if (targetName) body.targetName = targetName;
+
+            fetch('/api/action', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
+                body: JSON.stringify(body)
+            }).then(r => r.json()).then(result => {
+                lastPendingAction = null;
+                if (result && result.action === 'use_item') {
+                    lastResultDisplay = null;
+                    renderActionArea(); // torna a "in attesa": l'oggetto non richiede un tiro
+                }
+                // Per le altre azioni non serve fare nulla qui: a breve arriva il pending-roll
+                // (via SSE o al prossimo polling) e renderActionArea() mostrerà i dadi da tirare.
+            }).catch(() => {
+                fetchState(); // esito incerto: richiedi lo stato vero invece di indovinarlo
+            });
+        }
+
+        // Attiva/disattiva la scelta dell'azione a seconda di chi deve agire in questo momento.
+        function applyPendingAction(pendingAction) {
+            // Confronta il requestId: lo stesso turno può arrivare più volte (poll ogni 5s, SSE) mentre
+            // il giocatore sta ancora scegliendo l'oggetto/bersaglio — non bisogna interrompere quella scelta.
+            const isNewTurn = pendingAction && (!lastPendingAction || lastPendingAction.requestId !== pendingAction.requestId);
+            lastPendingAction = pendingAction || null;
+            if (isNewTurn) { itemPickState = null; lastResultDisplay = null; }
+            if (!pendingAction) itemPickState = null; // turno risolto altrove: azzera anche una scelta oggetto a metà
+            renderActionArea();
+        }
+
+        // Attiva/disattiva il pulsante del dado a seconda di chi deve tirare in questo momento.
+        function applyPendingRoll(pendingRoll) {
+            lastPendingRoll = pendingRoll || null;
+            if (rollInProgress) return;
+            if (lastPendingRoll) lastResultDisplay = null;
+            renderActionArea();
+        }
 
         // Durata minima dell'animazione: se la risposta del server arriva prima, si aspetta comunque
         // questo tanto per dare il tempo di "vedere" il dado girare; se arriva dopo, si aspetta lei.
@@ -211,11 +347,9 @@
             const btn = document.getElementById('rollBtn');
             const dice1 = document.getElementById('phoneDice1');
             const dice2 = document.getElementById('phoneDice2');
-            const resultText = document.getElementById('rollResultText');
             rollInProgress = true;
 
             if (btn) { btn.disabled = true; btn.classList.remove('active'); btn.textContent = 'Tiro in corso...'; }
-            if (resultText) resultText.textContent = '';
             dice1.classList.remove('landed'); dice1.classList.add('rolling');
             if (diceCount === 2) { dice2.classList.remove('hidden', 'landed'); dice2.classList.add('rolling'); }
 
@@ -229,25 +363,25 @@
                 const wait = Math.max(0, MIN_ROLL_ANIM_MS - (Date.now() - startedAt));
                 setTimeout(() => {
                     clearInterval(flickerTimer);
-                    dice1.classList.remove('rolling');
-                    dice2.classList.remove('rolling');
                     rollInProgress = false;
 
                     if (rolls) {
-                        dice1.textContent = rolls[0];
-                        dice1.classList.add('landed');
+                        dice1.classList.remove('rolling'); dice1.textContent = rolls[0]; dice1.classList.add('landed');
                         if (rolls.length > 1) {
-                            dice2.textContent = rolls[1];
-                            dice2.classList.remove('hidden');
-                            dice2.classList.add('landed');
+                            dice2.classList.remove('rolling', 'hidden');
+                            dice2.textContent = rolls[1]; dice2.classList.add('landed');
                         }
+                        const resultText = document.getElementById('rollResultText');
                         if (resultText) resultText.textContent = `Hai tirato: ${rolls.join(' , ')}`;
-                        // Il tiro appena inviato è già risolto lato server: si torna in attesa del prossimo turno
-                        // senza aspettare l'evento pending-roll (che nel frattempo arriverà comunque, ridondante).
-                        // I dadi e il testo del risultato restano visibili: applyPendingRoll tocca solo il pulsante.
-                        applyPendingRoll(null);
+                        // Il tiro è già risolto lato server: si ricorda il risultato e si torna in
+                        // attesa del prossimo turno, senza aspettare l'evento pending-roll (ridondante).
+                        lastPendingRoll = null;
+                        lastResultDisplay = { rolls };
                     } else {
+                        dice1.classList.remove('rolling');
+                        dice2.classList.remove('rolling');
                         if (btn) { btn.disabled = false; btn.classList.add('active'); btn.textContent = 'Riprova'; }
+                        const resultText = document.getElementById('rollResultText');
                         if (resultText) resultText.textContent = errorText || 'Errore, riprova.';
                         // Esito incerto (rete/409): si richiede lo stato vero al server invece di indovinarlo
                         fetchState();
@@ -268,6 +402,7 @@
         function fetchState() {
             fetch('/api/state', { headers: NGROK_SKIP_HEADER }).then(r => r.json()).then(state => {
                 renderHero(state);
+                applyPendingAction(state.pendingAction);
                 applyPendingRoll(state.pendingRoll);
             }).catch(() => {
                 document.getElementById('statusText').textContent = 'Connessione al server persa, nuovo tentativo...';
@@ -282,6 +417,7 @@
             // parametro nell'URL, che ngrok accetta come alternativa all'header.
             const es = new EventSource('/api/events?ngrok-skip-browser-warning=true');
             es.addEventListener('state', e => { try { renderHero(JSON.parse(e.data)); } catch (err) {} });
+            es.addEventListener('pending-action', e => { try { applyPendingAction(JSON.parse(e.data)); } catch (err) {} });
             es.addEventListener('pending-roll', e => { try { applyPendingRoll(JSON.parse(e.data)); } catch (err) {} });
         }
     </script>

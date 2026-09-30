@@ -116,6 +116,74 @@
         };
     }
 
+    /* ---------- Scelta dell'azione di combattimento dal telefono ----------
+       Appena un eroe deve agire in combattimento, il telefono collegato può
+       scegliere lui l'azione (attacca/difendi/aiuta/abilità/oggetto), non solo
+       il tiro. Per attacca/difendi/aiuta/abilità la scelta fa scattare, tramite
+       selectCombatAction già agganciata sotto, la normale richiesta di tiro.
+       Per "usa oggetto" (che non richiede un tiro) l'azione viene applicata
+       subito con lo stesso effetto del menu locale. */
+    let currentActionRequestId = null;
+
+    function requestRemoteAction(hero) {
+        const canUseAbility = !!(hero.chosenAbility && hero.chosenAbility.isCombatActive && !hero.abilityUsedThisCombat);
+        const consumables = (hero.items || [])
+            .map((it, idx) => (it.type && it.type.startsWith('consumable')) ? { index: idx, name: it.name, desc: it.desc } : null)
+            .filter(Boolean);
+        const livingAllies = (typeof party !== 'undefined' ? party : []).filter(p => p.hp > 0).map(p => p.name);
+
+        fetch(`${REMOTE_BASE}/api/action-request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                heroName: hero.name,
+                canUseAbility,
+                abilityLabel: hero.chosenAbility ? hero.chosenAbility.name : null,
+                consumables,
+                livingAllies
+            })
+        }).then(r => r.json()).then(data => {
+            if (data && data.requestId) currentActionRequestId = data.requestId;
+        }).catch(() => {}); // nessun server/telefono: restano solo i pulsanti locali
+    }
+
+    // Applica "usa oggetto" scelto dal telefono, come farebbe executeCombatUseItem() in locale.
+    function applyRemoteItemUse(itemIdx, targetName) {
+        if (!currentActiveHero || typeof useConsumable !== 'function') return;
+        if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
+        currentActiveHero.hasActed = true;
+
+        const itemSubmenu = document.getElementById('combatItemSubmenu');
+        const controlArea = document.getElementById('heroActionControlArea');
+        if (itemSubmenu) itemSubmenu.classList.add('hidden');
+        if (controlArea) controlArea.classList.add('hidden');
+
+        const available = (typeof party !== 'undefined' ? party : []).filter(p => p.hp > 0 && !p.hasActed);
+        if (available.length === 0 && typeof startMonsterTurn === 'function') startMonsterTurn();
+        else if (typeof showHeroSelectionPhase === 'function') showHeroSelectionPhase();
+    }
+
+    function handleRemoteActionChosen(data) {
+        if (!data || !currentActionRequestId || data.requestId !== currentActionRequestId) return;
+        currentActionRequestId = null;
+        if (!currentActiveHero || currentActiveHero.name !== data.heroName) return; // turno già cambiato
+
+        if (data.action === 'use_item') {
+            applyRemoteItemUse(data.itemIndex, data.targetName);
+        } else if (typeof selectCombatAction === 'function') {
+            selectCombatAction(data.action); // fa scattare anche la richiesta di tiro, vedi sotto
+        }
+    }
+
+    if (typeof confirmCombatHeroChoice === 'function') {
+        const originalConfirmCombatHeroChoice = confirmCombatHeroChoice;
+        confirmCombatHeroChoice = function (...args) {
+            const result = originalConfirmCombatHeroChoice.apply(this, args);
+            if (currentActiveHero) requestRemoteAction(currentActiveHero);
+            return result;
+        };
+    }
+
     /* ---------- Tiro di dado remoto (combattimento + sfide) ----------
        Quando un eroe con il telefono collegato deve tirare, il server genera
        lui il tiro (fa da arbitro) e lo rimanda sia al telefono sia a questo
@@ -154,6 +222,9 @@
             const rollEvents = new EventSource(`${REMOTE_BASE}/api/events`);
             rollEvents.addEventListener('roll-result', e => {
                 try { handleRemoteRollResult(JSON.parse(e.data)); } catch (err) {}
+            });
+            rollEvents.addEventListener('action-chosen', e => {
+                try { handleRemoteActionChosen(JSON.parse(e.data)); } catch (err) {}
             });
             // nessun onerror gestito apposta: senza server l'EventSource ritenta da solo e non blocca nulla
         } catch (e) {}
