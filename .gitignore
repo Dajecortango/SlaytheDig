@@ -11,3 +11,6 @@ desktop.ini
 # File temporanei
 *.tmp
 _t*.html
+
+# Archivio completo delle icone di Warcraft III (in immagini/icone/ vanno solo quelle usate)
+warcraft3_icons/
