@@ -70,7 +70,7 @@ function breakRelic(relicName) {
 	
 
 
-        let gameItems = [
+        const DEFAULT_GAME_ITEMS = [
             { id: "spada_affilata", name: "Spada affilata", rarity: "raro", str: 1, dmg: 1, desc: "+1 Forza, +1 Danno" },
             { id: "ascia_pesante", name: "Ascia pesante", rarity: "raro", dmg: 2, desc: "+2 Danni" },
             { id: "armatura_leggera_loot", name: "Armatura leggera", rarity: "comune", armor: 1, desc: "+1 Armatura" },
@@ -80,16 +80,64 @@ function breakRelic(relicName) {
             { id: "anello", name: "Anello della concentrazione", rarity: "comune", int: 1, desc: "+1 Intelligenza" },
             { id: "scudo_pesante", name: "Scudo pesante", rarity: "raro", armor: 1, def_bonus: 1, desc: "+1 Armatura, +1 Tiro Difesa" }
         ];
+        let gameItems = DEFAULT_GAME_ITEMS;
 
         /* ==========================================================================
            SISTEMA DI SALVATAGGIO / CARICAMENTO (LOCALSTORAGE)
            ========================================================================== */
+        // Tre slot di salvataggio in localStorage. Il vecchio salvataggio unico finisce nello slot 1.
+        const SAVE_SLOTS = 3;
+        const saveKey = slot => `dignitas_save_${slot}`;
+        let currentSaveSlot = null;  // slot della partita in corso (per sovrascriverlo e cancellarlo alla sconfitta)
+
+        function readSave(slot) {
+            try { return JSON.parse(localStorage.getItem(saveKey(slot)) || 'null'); } catch (e) { return null; }
+        }
+
+        function migrateOldSave() {
+            try {
+                const old = localStorage.getItem("dignitas_savegame");
+                if (old && !localStorage.getItem(saveKey(1))) localStorage.setItem(saveKey(1), old);
+                localStorage.removeItem("dignitas_savegame");
+            } catch (e) {}
+        }
+
+        function hasAnySave() {
+            for (let slot = 1; slot <= SAVE_SLOTS; slot++) if (readSave(slot)) return true;
+            return false;
+        }
+
         function checkSavedGame() {
-            const saved = localStorage.getItem("dignitas_savegame");
+            migrateOldSave();
             const btn = document.getElementById("btnContinueSavedGame");
-            if (saved && btn) {
-                btn.classList.remove("hidden");
+            if (btn) btn.classList.toggle("hidden", !hasAnySave());
+        }
+
+        function deleteCurrentSave() {
+            if (currentSaveSlot == null) return;
+            try { localStorage.removeItem(saveKey(currentSaveSlot)); } catch (e) {}
+            checkSavedGame();
+        }
+
+        // Riga descrittiva di uno slot: campagna, livello raggiunto, compagnia e data
+        function saveSlotHtml(slot, data, actions) {
+            if (!data) {
+                return `<div class="save-slot empty"><div class="save-slot-info"><b>Slot ${slot}</b><span>Vuoto</span></div><div class="save-slot-actions">${actions}</div></div>`;
             }
+            const camp = campaignsDatabase[data.campaignId];
+            const node = (data.stsMapNodes || []).find(n => n.id === data.currentNodeId);
+            const maxLevel = Math.max(0, ...(data.stsMapNodes || []).map(n => n.level));
+            const levelText = node ? `Livello ${node.level + 1} di ${maxLevel + 1}` : 'Inizio della mappa';
+            const heroes = (data.party || []).map(h => esc(h.name)).join(', ');
+            return `<div class="save-slot">
+                <div class="save-slot-info">
+                    <b>Slot ${slot} · ${esc(camp ? camp.title : data.campaignId)}</b>
+                    <span>${levelText} · ${data.partyCoins || 0} monete</span>
+                    <span>${heroes}</span>
+                    <small>Salvata il ${esc(data.timestamp || '')}</small>
+                </div>
+                <div class="save-slot-actions">${actions}</div>
+            </div>`;
         }
 
         function saveGame() {
@@ -101,40 +149,81 @@ function breakRelic(relicName) {
                 alert("La compagnia è caduta: non si può salvare una partita persa.");
                 return;
             }
+            const rows = [];
+            for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
+                const current = slot === currentSaveSlot ? ' <em class="save-current">partita attuale</em>' : '';
+                rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small" onclick="saveToSlot(${slot})">Salva qui</button>${current}`));
+            }
+            openModal('Salva partita', `<div class="save-slots">${rows.join('')}</div>`, [{ label: 'Annulla', className: 'btn-danger' }], { wide: true });
+        }
 
-            const saveData = {
-                campaignId: currentCampaign.id,
-                party: party,
-                partyCoins: partyCoins,
-                unlockedRelics: unlockedRelics.map(r => ({ name: r.name, desc: r.desc })),
-                activeCurses: activeCurses,
-                stsMapNodes: stsMapNodes,
-                currentNodeId: currentNodeId,
-                expeditionStats: expeditionStats,
-                timestamp: new Date().toLocaleString("it-IT")
+        function saveToSlot(slot) {
+            const existing = readSave(slot);
+            const write = () => {
+                const saveData = {
+                    campaignId: currentCampaign.id,
+                    party: party,
+                    partyCoins: partyCoins,
+                    unlockedRelics: unlockedRelics.map(r => ({ name: r.name, desc: r.desc })),
+                    activeCurses: activeCurses,
+                    stsMapNodes: stsMapNodes,
+                    currentNodeId: currentNodeId,
+                    expeditionStats: expeditionStats,
+                    timestamp: new Date().toLocaleString("it-IT")
+                };
+                try {
+                    localStorage.setItem(saveKey(slot), JSON.stringify(saveData));
+                    currentSaveSlot = slot;
+                    checkSavedGame();
+                    openModal('Partita salvata', `<p>Salvata nello slot ${slot} (${saveData.timestamp}).</p>`);
+                } catch (e) {
+                    openModal('Errore', '<p>Salvataggio non riuscito: memoria piena o non disponibile.</p>');
+                }
             };
-
-            try {
-                localStorage.setItem("dignitas_savegame", JSON.stringify(saveData));
-                alert(`Partita salvata con successo! (${saveData.timestamp})`);
-                checkSavedGame();
-            } catch (e) {
-                alert("Errore durante il salvataggio: memoria piena o non disponibile.");
+            closeModal();
+            if (existing && slot !== currentSaveSlot) {
+                openModal('Sovrascrivere lo slot?', saveSlotHtml(slot, existing, ''),
+                    [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Sovrascrivi', className: 'btn-danger', onClick: () => setTimeout(write, 0) }]);
+            } else {
+                write();
             }
         }
 
         function loadGame() {
-            const rawSave = localStorage.getItem("dignitas_savegame");
-            if (!rawSave) {
-                alert("Nessun salvataggio trovato!");
-                return;
+            migrateOldSave();
+            const rows = [];
+            for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
+                const data = readSave(slot);
+                const actions = data
+                    ? `<button class="btn-small btn-proceed" onclick="loadFromSlot(${slot})">Carica</button><button class="btn-small btn-danger" onclick="deleteSlot(${slot})">Elimina</button>`
+                    : '';
+                rows.push(saveSlotHtml(slot, data, actions));
             }
+            openModal('Carica partita', `<div class="save-slots">${rows.join('')}</div>`, [{ label: 'Chiudi', className: 'btn-danger' }], { wide: true });
+        }
+
+        function deleteSlot(slot) {
+            const data = readSave(slot);
+            closeModal();
+            openModal('Eliminare il salvataggio?', saveSlotHtml(slot, data, ''),
+                [{ label: 'Annulla', className: 'btn-proceed', onClick: () => setTimeout(loadGame, 0) },
+                 { label: 'Elimina', className: 'btn-danger', onClick: () => {
+                    try { localStorage.removeItem(saveKey(slot)); } catch (e) {}
+                    if (currentSaveSlot === slot) currentSaveSlot = null;
+                    checkSavedGame();
+                    setTimeout(loadGame, 0);
+                 } }]);
+        }
+
+        function loadFromSlot(slot) {
+            const data = readSave(slot);
+            closeModal();
+            if (!data) { openModal('Slot vuoto', '<p>Nessun salvataggio in questo slot.</p>'); return; }
 
             try {
-                const data = JSON.parse(rawSave);
                 const rawCamp = campaignsDatabase[data.campaignId];
                 if (!rawCamp) {
-                    alert("Campagna del salvataggio non trovata nel database!");
+                    openModal('Errore', '<p>Campagna del salvataggio non trovata.</p>');
                     return;
                 }
 
@@ -145,8 +234,10 @@ function breakRelic(relicName) {
                 restsData = currentCampaign.rests;
                 merchantsData = currentCampaign.merchants;
                 treasuresData = currentCampaign.treasures;
+                gameItems = currentCampaign.lootItems && currentCampaign.lootItems.length > 0 ? currentCampaign.lootItems : DEFAULT_GAME_ITEMS;
 
                 campaignHeroes = currentCampaign.heroes || [];
+                registerCampaignHeroPortraits(campaignHeroes);
                 campaignAbilities = rawCamp.abilities || {};
                 campaignArmory = currentCampaign.initialArmory || [];
 
@@ -156,6 +247,7 @@ function breakRelic(relicName) {
                 expeditionStats = Object.assign(newExpeditionStats(), data.expeditionStats || {});
                 displayedCoins = data.partyCoins;
                 currentNodeId = data.currentNodeId;
+                currentSaveSlot = slot;
 
                 // Ricolleghiamo abilità e reliquie ai dati della campagna
                 party.forEach(hero => {
@@ -178,9 +270,8 @@ function breakRelic(relicName) {
                 document.getElementById('mapCampaignHeader').textContent = `Mappa: ${currentCampaign.title}`;
                 updatePartyStatusBars();
                 startMap();
-                alert(`Partita caricata con successo! Salvata il: ${data.timestamp}`);
             } catch (err) {
-                alert("Errore durante il caricamento del file di salvataggio.");
+                openModal('Errore', '<p>Errore durante il caricamento del salvataggio.</p>');
                 console.error(err);
             }
         }
@@ -236,6 +327,39 @@ function breakRelic(relicName) {
             activeCampaignSlide = idx;
             updateCampaignCarouselState();
         }
+
+        /* "Prova nel gioco" dall'editor: index.html?prova=<id> carica la campagna in modifica
+           (salvata dall'editor in IndexedDB, chiave "playtest") solo per questa scheda del browser. */
+        (function loadPlaytestCampaign() {
+            const id = new URLSearchParams(location.search).get('prova');
+            if (!id || !window.indexedDB) return;
+            const req = indexedDB.open('dignitas_editor', 1);
+            req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('kv')) req.result.createObjectStore('kv'); };
+            req.onsuccess = () => {
+                const get = req.result.transaction('kv', 'readonly').objectStore('kv').get('playtest');
+                get.onsuccess = () => {
+                    const data = get.result;
+                    if (!data || !data.campaign || data.campaign.id !== id) return;
+                    // Le immagini caricate nell'editor e non ancora salvate arrivano come file: le si mostra da memoria
+                    const urls = new Map((data.assets || []).map(([path, blob]) => [path, URL.createObjectURL(blob)]));
+                    const fix = path => urls.get(path) || path;
+                    const camp = data.campaign;
+                    camp.coverImage = fix(camp.coverImage);
+                    (camp.mapNodes || []).forEach(n => { n.image = fix(n.image); });
+                    (camp.heroes || []).forEach(h => {
+                        if (h.portrait) h.portrait = fix(h.portrait);
+                        if (h.portraitWounded) h.portraitWounded = fix(h.portraitWounded);
+                    });
+                    camp.title = `[Prova] ${camp.title}`;
+                    camp.badge = "Prova dall'editor";
+                    campaignsDatabase[camp.id] = camp;
+                    // Apre subito la scelta campagna con la campagna di prova al centro
+                    goToCampaigns();
+                    const idx = Object.keys(campaignsDatabase).indexOf(camp.id);
+                    setTimeout(() => goToCampaignSlide(idx), 50);
+                };
+            };
+        })();
 
         function scrollCampaigns(dir) {
             goToCampaignSlide(activeCampaignSlide + dir);
@@ -320,12 +444,12 @@ function breakRelic(relicName) {
             treasuresData = currentCampaign.treasures;
 
             campaignHeroes = currentCampaign.heroes || [];
+            registerCampaignHeroPortraits(campaignHeroes);
             campaignAbilities = rawCamp.abilities || {};
             campaignArmory = currentCampaign.initialArmory || [];
 
-            if (currentCampaign.lootItems && currentCampaign.lootItems.length > 0) {
-                gameItems = currentCampaign.lootItems;
-            }
+            gameItems = currentCampaign.lootItems && currentCampaign.lootItems.length > 0 ? currentCampaign.lootItems : DEFAULT_GAME_ITEMS;
+            currentSaveSlot = null;  // nuova partita: nessuno slot finché non la si salva
 
             document.getElementById('campaignIntroTitle').textContent = currentCampaign.title;
             document.getElementById('campaignIntroImg').src = currentCampaign.coverImage;
@@ -355,12 +479,33 @@ function breakRelic(relicName) {
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
 
+        // Video di sfondo della schermata principale: muto, in riproduzione solo quando la schermata è visibile
+        // (e con gli effetti animati attivi). Se non si carica resta la scena disegnata.
+        function updateMenuVideo() {
+            const video = document.getElementById('menuVideo');
+            if (!video) return;
+            video.muted = true;
+            const shouldPlay = document.body.classList.contains('menu-start') && !document.body.classList.contains('no-anim');
+            if (shouldPlay) video.play().catch(() => {});
+            else video.pause();
+        }
+
+        (function initMenuVideo() {
+            const video = document.getElementById('menuVideo');
+            if (!video) return;
+            video.muted = true;
+            video.addEventListener('playing', () => document.body.classList.add('menu-video-ok'));
+            video.addEventListener('error', () => document.body.classList.remove('menu-video-ok'));
+        })();
+
         function showScreen(screenId) {
             currentScreenId = screenId;
             if (screenId !== 'screenCombat') combatPhase = 'none';
             document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
             // Menu iniziale e scelta campagna: scena a tutto schermo senza barre, come i menu di Warcraft III
             document.body.classList.toggle('menu-mode', MENU_SCENE_SCREENS.includes(screenId));
+            document.body.classList.toggle('menu-start', screenId === 'screenStart');
+            updateMenuVideo();
             const screen = document.getElementById(screenId);
             screen.classList.remove('hidden');
             screen.classList.remove('screen-enter');
@@ -432,6 +577,73 @@ function breakRelic(relicName) {
             out.gain.value = 0.5 * gameOptions.sfxVolume;
             out.connect(ctx.destination);
 
+            // Tono breve con inviluppo che si spegne: base per i suoni leggeri (passaggio del mouse, dadi)
+            const tone = (type, from, to, start, dur, peak, target = out) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(from, t + start);
+                osc.frequency.exponentialRampToValueAtTime(to, t + start + dur);
+                gain.gain.setValueAtTime(0.0001, t + start);
+                gain.gain.exponentialRampToValueAtTime(peak, t + start + 0.008);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + start + dur);
+                osc.connect(gain).connect(target);
+                osc.start(t + start);
+                osc.stop(t + start + dur + 0.02);
+            };
+            // Colpetto di rumore filtrato (legno/osso che batte)
+            const tick = (start, freq, peak) => {
+                const len = Math.floor(ctx.sampleRate * 0.03);
+                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                const band = ctx.createBiquadFilter();
+                band.type = 'bandpass';
+                band.frequency.value = freq;
+                band.Q.value = 2.5;
+                const g = ctx.createGain();
+                g.gain.value = peak;
+                src.connect(band).connect(g).connect(out);
+                src.start(t + start);
+            };
+
+            if (kind === 'hover') {
+                // Leggero "tic" metallico al passaggio del mouse sui pulsanti
+                tone('sine', 1900, 1500, 0, 0.05, 0.05);
+                return;
+            }
+            if (kind === 'dice') {
+                // Dadi che rotolano: colpetti irregolari per circa mezzo secondo
+                let at = 0;
+                for (let i = 0; i < 8; i++) {
+                    tick(at, 1800 + Math.random() * 1600, 0.35 + Math.random() * 0.3);
+                    at += 0.04 + Math.random() * 0.04;
+                }
+                return;
+            }
+            if (kind === 'dice-land') {
+                tick(0, 1200, 0.6);
+                return;
+            }
+            if (kind === 'six') {
+                // 6 naturale: accordo luminoso ascendente
+                tick(0, 1200, 0.6);
+                [660, 880, 1320].forEach((f, i) => tone('triangle', f, f, 0.03 + i * 0.07, 0.45, 0.16));
+                return;
+            }
+            if (kind === 'one') {
+                // 1 naturale: nota grave che scende
+                tick(0, 900, 0.6);
+                const low = ctx.createBiquadFilter();
+                low.type = 'lowpass';
+                low.frequency.value = 900;
+                low.connect(out);
+                tone('sawtooth', 220, 95, 0.03, 0.45, 0.2, low);
+                return;
+            }
+
             if (kind === 'armor') {
                 // Toni acuti non armonici che si spengono in fretta, come metallo colpito
                 [880, 1370, 2120].forEach((freq, i) => {
@@ -475,21 +687,39 @@ function breakRelic(relicName) {
             thud.stop(t + 0.3);
         }
 
-        // Suono di clic su pulsanti e schede nei menu (schermata iniziale, campagne, eroi ed equipaggiamento)
+        function diceOutcomeSfx(value) {
+            synthSfx(value === 6 ? 'six' : value === 1 ? 'one' : 'dice-land');
+        }
+
+        // Suono leggero al passaggio del mouse su pulsanti e schede (una volta per elemento, non sui disattivati)
+        let lastHoverTarget = null;
+        let lastHoverTime = 0;
+        document.addEventListener('mouseover', e => {
+            const target = e.target.closest(CLICKABLE_SELECTOR);
+            if (target === lastHoverTarget) return;
+            lastHoverTarget = target;
+            if (!target || target.disabled) return;
+            const now = performance.now();
+            if (now - lastHoverTime < 45) return;
+            lastHoverTime = now;
+            synthSfx('hover');
+        });
+
+        // Suono di clic su ogni pulsante e scheda cliccabile, in tutte le schermate
         const CLICK_SFX = 'audio/click.ogg';
-        const CLICKABLE_SELECTOR = 'button, .campaign-card, .armory-btn';
+        const CLICKABLE_SELECTOR = 'button, [role="button"], .campaign-card, .armory-btn';
         const clickSfxPreload = new Audio(CLICK_SFX);
         clickSfxPreload.preload = 'auto';
 
         document.addEventListener('click', e => {
-            if (!MENU_MUSIC_SCREENS.includes(currentAudioScreen)) return;
             const target = e.target.closest(CLICKABLE_SELECTOR);
             if (!target || target.disabled) return;
             playSfx(CLICK_SFX, 0.8);
         }, true);
 
         function applySoundState() {
-            document.querySelectorAll('audio, video').forEach(media => { media.muted = soundMuted; });
+            // Il video dei menu resta sempre muto
+            document.querySelectorAll('audio, video:not(#menuVideo)').forEach(media => { media.muted = soundMuted; });
         }
 
         // Il silenziamento si imposta dalla finestra Opzioni
@@ -687,11 +917,13 @@ function breakRelic(relicName) {
                     let newItem = JSON.parse(JSON.stringify(item));
                     activeHeroForCreation.items.push(newItem);
                     applyItemEffects(newItem, activeHeroForCreation);
+                    discover('items', newItem.id);
                 }
             } else {
                 let newItem = JSON.parse(JSON.stringify(item));
                 activeHeroForCreation.items.push(newItem);
                 applyItemEffects(newItem, activeHeroForCreation);
+                discover('items', newItem.id);
             }
             loadArmoryOptions();
         }
@@ -1018,6 +1250,7 @@ function breakRelic(relicName) {
         let heroNeedingDiscard = null;
 
         function assignItemToHero(item, hero, callback) {
+            discover('items', item.id);
             let newItem = JSON.parse(JSON.stringify(item));
             hero.items.push(newItem);
             applyItemEffects(newItem, hero);
@@ -1066,6 +1299,7 @@ function breakRelic(relicName) {
         function startCombat(enemyKey) {
     showScreen('screenCombat');
     activeEnemy = JSON.parse(JSON.stringify(enemies[enemyKey]));
+    discover('enemies', `${currentCampaign.id}:${enemyKey}`);
     activeEnemy.isStunned = false;
     
     // Reliquia: Occhio del corvo
@@ -1316,6 +1550,7 @@ function breakRelic(relicName) {
             rollBtn.disabled = true;
             diceBox.classList.add('rolling');
             if (twoDice) diceBox2.classList.add('rolling');
+            synthSfx('dice');
 
             let counter = 0;
             const interval = setInterval(() => {
@@ -1476,6 +1711,8 @@ function breakRelic(relicName) {
                         }
                     }
 
+                    diceOutcomeSfx(twoDice ? Math.max(+diceBox.textContent, +diceBox2.textContent) : +diceBox.textContent);
+
                     const finishRoll = () => {
                     hero.hasActed = true;
                     updateEnemyInfoUI();
@@ -1592,7 +1829,7 @@ function breakRelic(relicName) {
 
             if(party.every(p => p.hp <= 0)) {
                 // La sconfitta è definitiva: il salvataggio non deve permettere di annullarla
-                localStorage.removeItem("dignitas_savegame");
+                deleteCurrentSave();
                 showScreen('screenDefeat');
                 return;
             }
@@ -2021,6 +2258,7 @@ function breakRelic(relicName) {
             const twoDice = rollMode.mode !== 'single';
             rollBtn.disabled = true; diceBox.classList.add('rolling');
             if (twoDice) diceBox2.classList.add('rolling');
+            synthSfx('dice');
 
             let counter = 0;
             const interval = setInterval(() => {
@@ -2053,6 +2291,7 @@ function breakRelic(relicName) {
                         addChallengeLog(`🎲 Dado: <b>${roll}</b>`);
                     }
 
+                    diceOutcomeSfx(roll);
                     const statValue = mods.statValue;
                     addChallengeLog(`+${statValue} ${statLabel} (${selectedChallengeHero ? selectedChallengeHero.name : '—'})`);
 
@@ -2087,6 +2326,7 @@ function breakRelic(relicName) {
                         if (challengeState.reward) {
                             unlockedRelics.push(challengeState.reward);
                             applyEffects(challengeState.reward.effects);
+                            if (challengeState.reward.type === 'relic') discover('relics', challengeState.reward.name);
                             rewardMsg = `<br><strong style="color:var(--relic-color);">Reliquia ottenuta: ${challengeState.reward.name} (${challengeState.reward.desc})</strong>`;
                             showOutcomeOverlay('relic', challengeState.reward);
                         }
@@ -2103,6 +2343,7 @@ function breakRelic(relicName) {
                         if (challengeState.punishment) {
                             const cursesBefore = activeCurses.length;
                             applyEffects(challengeState.punishment.effects);
+                            if (challengeState.punishment.type === 'curse') discover('curses', challengeState.punishment.name);
                             // Molte maledizioni modificano solo gli eroi: le registriamo comunque
                             // perché compaiano nel contatore in alto e nel Diario
                             if (activeCurses.length === cursesBefore) {
@@ -2172,6 +2413,7 @@ function breakRelic(relicName) {
             const rollBtn = document.getElementById('rollCaptainBtn');
             const diceBox = document.getElementById('diceCaptain');
             rollBtn.disabled = true; diceBox.classList.add('rolling');
+            synthSfx('dice');
 
             let counter = 0;
             const interval = setInterval(() => {
@@ -2181,6 +2423,7 @@ function breakRelic(relicName) {
                     clearInterval(interval);
                     const roll = Math.floor(Math.random() * 6) + 1;
                     diceBox.textContent = roll; diceBox.classList.remove('rolling');
+                    diceOutcomeSfx(roll);
 
                     if (captainActionType === 'force') {
                         document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">RAMANZINA!</span> Perdi il 50% degli HP.`;
@@ -2415,6 +2658,22 @@ function breakRelic(relicName) {
 
         // Precarica i ritratti "feriti" per evitare lo sfarfallio al cambio
         Object.values(HERO_PORTRAITS).forEach(p => { if (p.woundedSrc) new Image().src = p.woundedSrc; });
+
+        // Ritratti indicati nei dati della campagna (campi "portrait" e "portraitWounded" dell'eroe,
+        // ad es. caricati con l'editor): valgono per gli eroi che non hanno già un ritratto qui sopra.
+        // Idea ripresa dal branch campaign-editor di Valerio.
+        function registerCampaignHeroPortraits(heroes) {
+            (heroes || []).forEach(h => {
+                if (!h.portrait || HERO_PORTRAITS[h.name]) return;
+                const pos = h.portraitPos || '50% 38%';
+                const zoom = h.portraitZoom || 1.7;
+                HERO_PORTRAITS[h.name] = { src: h.portrait, pos, zoom };
+                if (h.portraitWounded) {
+                    Object.assign(HERO_PORTRAITS[h.name], { woundedSrc: h.portraitWounded, woundedPos: pos, woundedZoom: zoom });
+                    new Image().src = h.portraitWounded;
+                }
+            });
+        }
 
         // Un eroe è ferito quando ha metà degli HP massimi o meno (2 su 4), ma è ancora in piedi
         function isHeroWounded(hp, maxHp) {
@@ -2829,12 +3088,94 @@ function breakRelic(relicName) {
 
         function applyOptions() {
             document.body.classList.toggle('no-anim', !gameOptions.animations);
+            updateMenuVideo();
             document.body.style.setProperty('--text-scale', gameOptions.textSize);
             const music = document.getElementById('menuMusic');
             if (!music.paused) {
                 clearInterval(musicFadeTimer);
                 music.volume = gameOptions.musicVolume;
             }
+        }
+
+        /* ---------- Compendio: nemici, reliquie, maledizioni e oggetti scoperti in tutte le partite ---------- */
+        const COMPENDIUM_KEY = 'dignitas_compendium';
+        const COMPENDIUM_KINDS = ['enemies', 'relics', 'curses', 'items'];
+        const compendium = (() => {
+            let saved = {};
+            try { saved = JSON.parse(localStorage.getItem(COMPENDIUM_KEY) || '{}'); } catch (e) {}
+            return Object.fromEntries(COMPENDIUM_KINDS.map(k => [k, new Set(saved[k] || [])]));
+        })();
+
+        function discover(kind, key) {
+            if (!key || compendium[kind].has(key)) return;
+            compendium[kind].add(key);
+            try {
+                localStorage.setItem(COMPENDIUM_KEY, JSON.stringify(Object.fromEntries(COMPENDIUM_KINDS.map(k => [k, [...compendium[k]]]))));
+            } catch (e) {}
+        }
+
+        // Tutte le voci possibili, lette dai dati delle campagne (senza doppioni)
+        function compendiumCatalog() {
+            const catalog = { enemies: [], relics: [], curses: [], items: [] };
+            const seen = { relics: new Set(), curses: new Set(), items: new Set() };
+            const addItem = item => {
+                if (!item || seen.items.has(item.id)) return;
+                seen.items.add(item.id);
+                catalog.items.push({ key: item.id, item });
+            };
+            Object.values(campaignsDatabase).forEach(camp => {
+                Object.entries(camp.enemies || {}).forEach(([k, e]) => catalog.enemies.push({ key: `${camp.id}:${k}`, enemy: e, campaign: camp.title }));
+                Object.values(camp.challenges || {}).forEach(ch => {
+                    if (ch.reward && ch.reward.type === 'relic' && !seen.relics.has(ch.reward.name)) {
+                        seen.relics.add(ch.reward.name);
+                        catalog.relics.push({ key: ch.reward.name, entry: ch.reward, campaign: camp.title });
+                    }
+                    if (ch.punishment && ch.punishment.type === 'curse' && !seen.curses.has(ch.punishment.name)) {
+                        seen.curses.add(ch.punishment.name);
+                        catalog.curses.push({ key: ch.punishment.name, entry: ch.punishment, campaign: camp.title });
+                    }
+                });
+                (camp.initialArmory || []).forEach(addItem);
+                (camp.lootItems || []).forEach(addItem);
+            });
+            DEFAULT_GAME_ITEMS.forEach(addItem);
+            return catalog;
+        }
+
+        const COMPENDIUM_TABS = [
+            { kind: 'enemies', label: 'Nemici' },
+            { kind: 'relics', label: 'Reliquie' },
+            { kind: 'curses', label: 'Maledizioni' },
+            { kind: 'items', label: 'Oggetti' }
+        ];
+
+        function compendiumCardHtml(kind, v) {
+            const known = compendium[kind].has(v.key);
+            if (!known) {
+                return `<div class="codex-card unknown"><span class="icon-frame">${svgIcon('question')}</span><span class="tile-text"><strong>???</strong><span class="tile-sub">Non ancora scoperto</span></span></div>`;
+            }
+            if (kind === 'items') {
+                return `<div class="codex-card">${itemIconHtml(v.item)}<span class="tile-text"><strong>${esc(v.item.name)}</strong><span class="tile-sub">${esc(v.item.desc)}</span><span class="tile-tag">${esc(RARITY_LABELS[itemRarity(v.item)] || '')}</span></span></div>`;
+            }
+            if (kind === 'enemies') {
+                const e = v.enemy;
+                return `<div class="codex-card"><span class="icon-frame ic-arcane">${svgIcon('skull')}</span><span class="tile-text"><strong>${esc(e.name)}</strong>
+                    <span class="tile-sub">HP ${e.maxHp} · CA ${e.ca} · Attacco ${e.att} · Danno ${e.dmg}</span><span class="tile-tag">${esc(v.campaign)}</span></span></div>`;
+            }
+            const img = kind === 'relics' ? 'immagini/icone/BTNEnchantedGemstone.png' : 'immagini/icone/BTNOrbOfCorruption.png';
+            return `<div class="codex-card"><span class="icon-frame has-img"><img class="item-img" src="${img}" alt=""></span><span class="tile-text"><strong>${esc(v.entry.name)}</strong>
+                <span class="tile-sub">${esc(v.entry.desc)}</span><span class="tile-tag">${esc(v.campaign)}</span></span></div>`;
+        }
+
+        function openCompendium(kind = 'enemies') {
+            const catalog = compendiumCatalog();
+            const tabs = COMPENDIUM_TABS.map(t => {
+                const found = catalog[t.kind].filter(v => compendium[t.kind].has(v.key)).length;
+                return `<button class="btn-small codex-tab ${t.kind === kind ? 'active' : ''}" onclick="openCompendium('${t.kind}')">${t.label} <span>${found}/${catalog[t.kind].length}</span></button>`;
+            }).join('');
+            const cards = catalog[kind].map(v => compendiumCardHtml(kind, v)).join('') || '<p class="panel-label">Nessuna voce.</p>';
+            openModal('Compendio', `<div class="codex-tabs">${tabs}</div><div class="codex-grid">${cards}</div>`,
+                [{ label: 'Chiudi', className: 'btn-proceed' }], { wide: true });
         }
 
         function openHowToPlay() {

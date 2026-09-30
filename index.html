@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="no-party menu-mode">
+<body class="no-party menu-mode menu-start">
 
     <!-- Gradienti condivisi per le icone SVG inline -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -31,6 +31,9 @@
     <!-- Scena dei menu in stile Warcraft III: notte, pioggia, lampi, stendardo della Famiglia -->
     <div class="menu-scene" aria-hidden="true">
         <div class="menu-scene-img"></div>
+        <!-- Video di sfondo della schermata principale: sempre senza audio -->
+        <video class="menu-scene-video" id="menuVideo" src="video/menu_sfondo.mp4" autoplay muted loop playsinline preload="auto"></video>
+        <div class="menu-video-shade"></div>
         <svg class="menu-scene-land" viewBox="0 0 1600 500" preserveAspectRatio="xMidYMax slice">
             <path d="M0 330 C180 280 330 300 480 260 C640 220 760 300 930 270 C1100 240 1250 290 1600 250 V500 H0 Z" fill="#120f0d"/>
             <path d="M0 400 C220 360 420 390 640 370 C860 350 1060 410 1300 380 C1420 366 1520 372 1600 360 V500 H0 Z" fill="#0a0807"/>
@@ -149,6 +152,7 @@
                     <nav class="wc-panel main-menu">
                         <div class="wc-slot"><button class="wc-menu-btn" onclick="goToCampaigns()">Nuova Partita</button></div>
                         <div class="wc-slot"><button id="btnContinueSavedGame" class="wc-menu-btn hidden" onclick="loadGame()">Carica Partita</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openCompendium()">Compendio</button></div>
                         <div class="wc-slot"><button class="wc-menu-btn" onclick="openHowToPlay()">Come si gioca</button></div>
                         <div class="wc-slot"><button class="wc-menu-btn" onclick="openOptions()">Opzioni</button></div>
                     </nav>

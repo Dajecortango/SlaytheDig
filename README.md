@@ -9,7 +9,8 @@ Apri `index.html` in un browser moderno. Non serve installare nulla né avviare 
 - Scegli una campagna, componi la compagnia e assegna abilità ed equipaggiamento iniziale.
 - Avanza sulla mappa affrontando scontri, sfide, tesori, mercanti e aree di riposo.
 - In combattimento usa i tasti rapidi **Q W E R T** per le azioni e **Spazio** per tirare il dado.
-- La partita si può salvare e caricare dalla barra in alto (salvataggio nel `localStorage` del browser).
+- La partita si può salvare e caricare dalla barra in alto, in 3 slot (salvataggi nel `localStorage` del browser). La sconfitta cancella lo slot della partita persa.
+- Il **Compendio** (menu principale) raccoglie nemici, reliquie, maledizioni e oggetti scoperti in tutte le partite.
 
 ## Struttura
 
@@ -34,19 +35,13 @@ Per aggiungere una campagna, crea un nuovo file e aggiungi il suo tag `<script>`
 
 ### Editor delle campagne
 
-Apri `editor.html` con doppio click. Permette di modificare dati generali, mappa (con anteprima dei collegamenti), nemici, sfide e le altre sezioni in JSON. Il pannello **Controlli** segnala collegamenti rotti, nemici o sfide inesistenti, nodi irraggiungibili, effetti sconosciuti e immagini mancanti. Il browser non può scrivere nel progetto: usa **Scarica .js** e sostituisci il file in `data/campagne/`.
+Apri `editor.html` con doppio click, oppure "Editor Campagne" dal menu del gioco. Schede: dati generali, mappa (con anteprima dei collegamenti), eroi (con ritratti e abilità), oggetti (armeria iniziale e bottino), nemici, sfide e testi. Il pannello **Controlli** segnala collegamenti rotti, nemici o sfide inesistenti, nodi irraggiungibili, effetti sconosciuti e immagini mancanti.
 
-Ricompense, punizioni e abilità passive descrivono gli effetti in un campo `effects`, interpretato da `applyEffects()` in `js/game.js`:
+- **Salva nel progetto** (Edge/Chrome) scrive `data/campagne/<id>.js` e le immagini caricate direttamente nella cartella del gioco, scelta la prima volta; una campagna nuova viene aggiunta da sola a `index.html` ed `editor.html`. Negli altri browser usa **Scarica .zip** ed estrailo nella cartella del gioco.
+- **Prova nel gioco** apre il gioco con la campagna così com'è, anche senza averla salvata.
+- Le modifiche non salvate restano in una bozza nel browser e vengono proposte alla riapertura.
 
-- `hero_stat` — aggiunge `val` alla statistica `stat` dell'eroe
-- `hero_set` — imposta la statistica `stat` dell'eroe a `val`
-- `party_stat` — aggiunge `val` alla statistica `stat` di tutta la compagnia (minimo 0)
-- `party_max_hp` — aggiunge `val` agli HP massimi e attuali di tutta la compagnia
-- `party_damage` — toglie `val` HP a tutta la compagnia (minimo 1)
-- `coins` — aggiunge `val` monete (negativo per toglierle, minimo 0)
-- `add_curse` — aggiunge il testo `text` alle maledizioni attive
-
-Esempio: `"effects": [{ "effect": "party_stat", "stat": "fth", "val": 1 }]`.
+Salvataggio diretto, caricamento immagini, bozze e prova nel gioco riprendono le idee del branch `campaign-editor` di Valerio.
 
 ## Icone personalizzate
 
