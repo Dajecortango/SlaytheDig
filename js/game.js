@@ -659,14 +659,14 @@ function breakRelic(relicName) {
 
 
         let gameItems = [
-            { id: "spada_affilata", name: "Spada affilata", str: 1, dmg: 1, desc: "+1 Forza, +1 Danno" },
-            { id: "ascia_pesante", name: "Ascia pesante", dmg: 2, desc: "+2 Danni" },
-            { id: "armatura_leggera_loot", name: "Armatura leggera", armor: 1, desc: "+1 Armatura" },
-            { id: "armatura_pesante_loot", name: "Armatura pesante", armor: 2, att_penalty: 1, desc: "+2 Armatura, -1 Tiro Attacco" },
-            { id: "pozione", name: "Pozione di guarigione", type: "consumable_full", desc: "Consumabile: Recupera 100% HP" },
-            { id: "amuleto", name: "Amuleto sacro", fth: 1, desc: "+1 Fede" },
-            { id: "anello", name: "Anello della concentrazione", int: 1, desc: "+1 Intelligenza" },
-            { id: "scudo_pesante", name: "Scudo pesante", armor: 1, def_bonus: 1, desc: "+1 Armatura, +1 Tiro Difesa" }
+            { id: "spada_affilata", name: "Spada affilata", rarity: "raro", str: 1, dmg: 1, desc: "+1 Forza, +1 Danno" },
+            { id: "ascia_pesante", name: "Ascia pesante", rarity: "raro", dmg: 2, desc: "+2 Danni" },
+            { id: "armatura_leggera_loot", name: "Armatura leggera", rarity: "comune", armor: 1, desc: "+1 Armatura" },
+            { id: "armatura_pesante_loot", name: "Armatura pesante", rarity: "raro", armor: 2, att_penalty: 1, desc: "+2 Armatura, -1 Tiro Attacco" },
+            { id: "pozione", name: "Pozione di guarigione", rarity: "raro", type: "consumable_full", desc: "Consumabile: Recupera 100% HP" },
+            { id: "amuleto", name: "Amuleto sacro", rarity: "comune", fth: 1, desc: "+1 Fede" },
+            { id: "anello", name: "Anello della concentrazione", rarity: "comune", int: 1, desc: "+1 Intelligenza" },
+            { id: "scudo_pesante", name: "Scudo pesante", rarity: "raro", armor: 1, def_bonus: 1, desc: "+1 Armatura, +1 Tiro Difesa" }
         ];
 
         /* ==========================================================================
@@ -683,6 +683,10 @@ function breakRelic(relicName) {
         function saveGame() {
             if (!currentCampaign || party.length === 0) {
                 alert("Non c'è nessuna partita in corso da salvare!");
+                return;
+            }
+            if (party.every(p => p.hp <= 0)) {
+                alert("La compagnia è caduta: non si può salvare una partita persa.");
                 return;
             }
 
@@ -1450,7 +1454,10 @@ function breakRelic(relicName) {
         function applyItemEffects(item, hero) {
             if(item.str) hero.str += item.str;
             if(item.dmg) hero.dmg += item.dmg;
-            if(item.armor) hero.base_armor += item.armor;
+            if(item.armor) {
+                hero.base_armor += item.armor;
+                if (hero.hp > 0) hero.current_armor += item.armor;
+            }
             if(item.att_penalty) hero.att_penalty += item.att_penalty;
             if(item.def_bonus) hero.def_bonus += item.def_bonus;
             if(item.help_bonus_val) hero.help_bonus_val += item.help_bonus_val;
@@ -1461,7 +1468,10 @@ function breakRelic(relicName) {
         function revertItemEffects(item, hero) {
             if(item.str) hero.str -= item.str;
             if(item.dmg) hero.dmg -= item.dmg;
-            if(item.armor) hero.base_armor -= item.armor;
+            if(item.armor) {
+                hero.base_armor -= item.armor;
+                hero.current_armor = Math.max(0, hero.current_armor - item.armor);
+            }
             if(item.att_penalty) hero.att_penalty -= item.att_penalty;
             if(item.def_bonus) hero.def_bonus += item.def_bonus;
             if(item.help_bonus_val) hero.help_bonus_val += item.help_bonus_val;
@@ -1471,14 +1481,14 @@ function breakRelic(relicName) {
 
         window.useConsumable = function(heroName, itemIdx, targetName = null) {
             let hero = party.find(p => p.name === heroName);
-            if(!hero) return;
+            if(!hero) return false;
             let item = hero.items[itemIdx];
-            if(!item || !item.type || !item.type.startsWith('consumable')) return;
+            if(!item || !item.type || !item.type.startsWith('consumable')) return false;
 
             let target = targetName ? party.find(p => p.name === targetName) : hero;
             if(!target || target.hp <= 0) {
                 alert("Bersaglio non valido o non disponibile!");
-                return;
+                return false;
             }
 
             if(item.type === 'consumable_heal') {
@@ -1492,6 +1502,7 @@ function breakRelic(relicName) {
                 updatePartyStatusBars();
                 triggerConsumableFeedback(hero, target, item);
             }
+            return true;
         };
 
         function triggerConsumableFeedback(hero, target, item) {
@@ -1741,6 +1752,7 @@ function breakRelic(relicName) {
                     .join('');
 
                 document.getElementById('combatTargetSelect').innerHTML = party
+                    .filter(p => p.hp > 0)
                     .map(p => `<option value="${p.name}">${p.name} (HP: ${p.hp}/${p.maxHp})</option>`)
                     .join('');
             } else {
@@ -1760,7 +1772,8 @@ function breakRelic(relicName) {
             let itemIdx = parseInt(document.getElementById('combatConsumableSelect').value);
             let targetName = document.getElementById('combatTargetSelect').value;
 
-            useConsumable(currentActiveHero.name, itemIdx, targetName);
+            // Se l'oggetto non viene usato il turno resta all'eroe
+            if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
 
             currentActiveHero.hasActed = true;
             document.getElementById('combatItemSubmenu').classList.add('hidden');
@@ -1943,6 +1956,7 @@ function breakRelic(relicName) {
                         }
                     }
 
+                    const finishRoll = () => {
                     hero.hasActed = true;
                     updateEnemyInfoUI();
                     updatePartyStatusBars();
@@ -1964,6 +1978,14 @@ function breakRelic(relicName) {
                         return;
                     }
                     document.getElementById('combatNextBtn').classList.remove('hidden');
+                    };
+
+                    // Attacchi e abilità: prima la cinematica col ritratto, poi danni ed effetti
+                    if (chosenAction === 'attack' || chosenAction === 'ability') {
+                        playHeroStrike(hero, activeEnemy.hp < enemyHpBefore, finishRoll);
+                    } else {
+                        finishRoll();
+                    }
                 }
             }, 50);
         }
@@ -2042,6 +2064,8 @@ function breakRelic(relicName) {
             updatePartyStatusBars();
 
             if(party.every(p => p.hp <= 0)) {
+                // La sconfitta è definitiva: il salvataggio non deve permettere di annullarla
+                localStorage.removeItem("dignitas_savegame");
                 showScreen('screenDefeat');
                 return;
             }
@@ -2218,21 +2242,27 @@ function breakRelic(relicName) {
     merchantItemsWithPrices = [];
     
     // Divisione per rarità
-    const commons = gameItems.filter(i => i.rarity === 'comune');
-    const rares = gameItems.filter(i => i.rarity === 'raro');
-    const epics = gameItems.filter(i => i.rarity === 'epico');
+    const commons = gameItems.filter(i => itemRarity(i) === 'comune');
+    const rares = gameItems.filter(i => itemRarity(i) === 'raro');
+    const epics = gameItems.filter(i => itemRarity(i) === 'epico');
+    // Se manca una fascia di rarità si pesca dall'intero bottino
+    const pick = pool => {
+        const source = pool.length > 0 ? pool : gameItems;
+        return source[Math.floor(Math.random() * source.length)];
+    };
 
     // Il mercante offre sempre: 1 comune, 1 raro, 1 raro o epico
     let shopPool = [
-        commons[Math.floor(Math.random() * commons.length)],
-        rares[Math.floor(Math.random() * rares.length)],
-        (Math.random() > 0.7 && epics.length > 0) ? epics[Math.floor(Math.random() * epics.length)] : rares[Math.floor(Math.random() * rares.length)]
+        pick(commons),
+        pick(rares),
+        (Math.random() > 0.7 && epics.length > 0) ? pick(epics) : pick(rares)
     ];
 
     shopPool.forEach(item => {
         if (!item) return;
-        let basePrice = item.rarity === 'comune' ? (Math.floor(Math.random() * 3) + 4) : 
-                       (item.rarity === 'raro' ? (Math.floor(Math.random() * 6) + 9) : 
+        const rarity = itemRarity(item);
+        let basePrice = rarity === 'comune' ? (Math.floor(Math.random() * 3) + 4) : 
+                       (rarity === 'raro' ? (Math.floor(Math.random() * 6) + 9) : 
                        (Math.floor(Math.random() * 8) + 18)); // Epico
 
         // Applica gli sconti delle reliquie
@@ -2555,6 +2585,12 @@ function breakRelic(relicName) {
             return 'bag';
         }
 
+        // Rarità dell'oggetto; gli oggetti senza rarità contano come comuni
+        const RARITY_LABELS = { comune: 'Comune', raro: 'Raro', epico: 'Epico' };
+        function itemRarity(item) {
+            return RARITY_LABELS[item && item.rarity] ? item.rarity : 'comune';
+        }
+
         function itemCategory(item) {
             const icon = itemIconName(item);
             if (icon === 'potion') return 'consumable';
@@ -2570,13 +2606,59 @@ function breakRelic(relicName) {
 
         // Icone raster per singolo oggetto (id); hanno la precedenza su quelle per tipo
         const ITEM_IMAGES_BY_ID = {
-            pugnale_rapido: 'immagini/icone/BTNArcaniteMelee.png',
+            // Armi
+            spada: 'immagini/icone/BTNSteelMelee.png',
+            spada_affilata: 'immagini/icone/BTNThoriumMelee.png',
+            spada_norgrad: 'immagini/icone/BTNArcaniteMelee.png',
+            lama_acciaio_lunare: 'immagini/icone/BTNFrostMourne.png',
+            pugnale_rapido: 'immagini/icone/BTNDaggerOfEscape.png',
+            ascia: 'immagini/icone/BTNOrcMeleeUpOne.png',
+            ascia_taglialegna: 'immagini/icone/BTNSturdyWarAxe.png',
+            ascia_pesante: 'immagini/icone/BTNOrcMeleeUpThree.png',
+            mannaia_pesante: 'immagini/icone/BTNOrcMeleeUpTwo.png',
+            martello_breccia: 'immagini/icone/BTNHammer.png',
+            alabarda: 'immagini/icone/BTNEnvenomedSpear.png',
+            alabarda_guardia: 'immagini/icone/BTNImpalingBolt.png',
+            bastone_rinforzato: 'immagini/icone/BTNAncestralStaff.png',
+
+            // Scudi e armature (gli oggetti con lo stesso nome condividono l'icona)
+            scudo: 'immagini/icone/BTNHumanArmorUpOne.png',
+            scudo_legno: 'immagini/icone/BTNSteelArmor.png',
+            scudo_ferro: 'immagini/icone/BTNHumanArmorUpTwo.png',
+            scudo_pesante: 'immagini/icone/BTNShieldOfHonor.png',
+            armatura_leggera: 'immagini/icone/BTNReinforcedHides.png',
+            armatura_leggera_loot: 'immagini/icone/BTNReinforcedHides.png',
+            corazza_cuoio: 'immagini/icone/BTNLeatherUpgradeOne.png',
+            armatura_pesante: 'immagini/icone/BTNMoonArmor.png',
+            armatura_pesante_loot: 'immagini/icone/BTNMoonArmor.png',
+            corazza_scaglie: 'immagini/icone/BTNNagaArmorUp1.png',
+            gorgiera_veterano: 'immagini/icone/BTNImprovedMoonArmor.png',
+            corazza_piastre_leone: 'immagini/icone/BTNBladeBaneArmor.png',
+
+            // Libri, amuleti e oggetti arcani
+            libro_fede: 'immagini/icone/BTNSpellBookBLS.png',
+            tomo_conoscenza: 'immagini/icone/BTNTomeOfIntelligence.png',
+            tomo_proibito: 'immagini/icone/BTNBookOfTheDead.png',
+            taccuino_cartografo: 'immagini/icone/BTNGerardsLostLedger.png',
+            amuleto_legno_santo: 'immagini/icone/BTNPeriapt1.png',
+            amuleto: 'immagini/icone/BTNAmulet.png',
+            simbolo_jag_antar: 'immagini/icone/BTNPeriapt.png',
+            reliquiario_tascabile: 'immagini/icone/BTNSacredRelic.png',
+            cappa_sussurri: 'immagini/icone/BTNCloak.png',
+            anello: 'immagini/icone/BTNRingPurple.png',
+
+            // Consumabili
+            unguento: 'immagini/icone/BTNHealingSalve.png',
+            balsamo_curativo: 'immagini/icone/BTNSnazzyPotion.png',
+            unguento_fortificante: 'immagini/icone/BTNPotionGreen.png',
+            pozione: 'immagini/icone/BTNPotionRed.png',
+            pozione_rigenerazione: 'immagini/icone/BTNPotionOfRestoration.png',
+            elisir_sangue_vivo: 'immagini/icone/BTNPotionOfVampirism.png',
+
+            // Oggetti non più presenti nelle campagne, tenuti per i vecchi salvataggi
             amuleto_viandante: 'immagini/icone/BTNNecklace.png',
             tomo_alchemico: 'immagini/icone/BTNSorceressMaster.png',
-            corazza_nordica: 'immagini/icone/BTNLeatherUpgradeOne.png',
-            balsamo_curativo: 'immagini/icone/BTNSnazzyPotion-Reforged.png',
-            spada_affilata: 'immagini/icone/BTNSteelMelee.png',
-            scudo_pesante: 'immagini/icone/BTNShieldOfHonor.png'
+            corazza_nordica: 'immagini/icone/BTNLeatherUpgradeOne.png'
         };
 
         function itemImageSrc(item) {
@@ -2590,7 +2672,7 @@ function breakRelic(relicName) {
 
         function itemIconHtml(item) {
             const hasImage = !!itemImageSrc(item);
-            return `<span class="icon-frame ic-${itemCategory(item)} ${hasImage ? 'has-img' : ''}">${itemIconInner(item)}</span>`;
+            return `<span class="icon-frame ic-${itemCategory(item)} rar-${itemRarity(item)} ${hasImage ? 'has-img' : ''}">${itemIconInner(item)}</span>`;
         }
 
         // Icone raster WC3 per abilità, indicizzate per id abilità; le altre usano l'icona SVG
@@ -2625,22 +2707,75 @@ function breakRelic(relicName) {
         const HERO_PORTRAITS = {
             'Icaro': {
                 src: 'immagini/ritratti/icaro.jpg',
-                woundedSrc: 'immagini/ritratti/icaro_ferito.jpg',
-                woundedHp: 2,
-                pos: '58% 42%',
-                zoom: 1.6
+                pos: '40% 33%',
+                zoom: 1.9
+            },
+            'Astarte': {
+                src: 'immagini/ritratti/astarte.jpg',
+                pos: '51% 42%',
+                zoom: 1.9
+            },
+            'Ascadeo': {
+                src: 'immagini/ritratti/ascadeo.jpg',
+                pos: '50% 38%',
+                zoom: 2.2
+            },
+            'Zeno': {
+                src: 'immagini/ritratti/zeno.jpg',
+                pos: '54% 34%',
+                zoom: 1.4
             }
         };
 
         // Precarica i ritratti "feriti" per evitare lo sfarfallio al cambio
         Object.values(HERO_PORTRAITS).forEach(p => { if (p.woundedSrc) new Image().src = p.woundedSrc; });
 
-        function heroPortraitInner(name, hp) {
+        // Un eroe è ferito quando ha metà degli HP massimi o meno (2 su 4), ma è ancora in piedi
+        function isHeroWounded(hp, maxHp) {
+            return typeof hp === 'number' && typeof maxHp === 'number' && hp > 0 && hp <= maxHp / 2;
+        }
+
+        // Ritratto ferito: usa woundedSrc se presente, altrimenti applica l'effetto grafico "ferito"
+        function heroPortraitInner(name, hp, maxHp) {
             const p = HERO_PORTRAITS[name];
-            if (!p) return `<span>${name.charAt(0)}</span>`;
-            const wounded = p.woundedSrc && typeof hp === 'number' && hp <= p.woundedHp;
-            const src = wounded ? p.woundedSrc : p.src;
-            return `<img class="portrait-img" src="${src}" alt="${name}" style="object-position:${p.pos}; transform:scale(${p.zoom}); transform-origin:${p.pos};">`;
+            const wounded = isHeroWounded(hp, maxHp);
+            const woundFx = wounded ? '<span class="wound-fx" aria-hidden="true"></span>' : '';
+            if (!p) return `<span>${name.charAt(0)}</span>${woundFx}`;
+            const src = wounded && p.woundedSrc ? p.woundedSrc : p.src;
+            const imgClass = wounded && !p.woundedSrc ? 'portrait-img is-wounded' : 'portrait-img';
+            return `<img class="${imgClass}" src="${src}" alt="${name}" style="object-position:${p.pos}; transform:scale(${p.zoom}); transform-origin:${p.pos};">${woundFx}`;
+        }
+
+        // Cinematica d'attacco: il ritratto dell'eroe attraversa una banda diagonale e colpisce.
+        // Senza ritratto o con animazioni disattivate si passa subito al risultato.
+        // Un click sulla cinematica la salta.
+        function playHeroStrike(hero, hit, onDone) {
+            const p = HERO_PORTRAITS[hero.name];
+            if (!p || !animationsEnabled()) { onDone(); return; }
+
+            const overlay = document.createElement('div');
+            overlay.className = `strike-cine ${hit ? 'hit' : 'miss'}`;
+            overlay.setAttribute('aria-hidden', 'true');
+            overlay.innerHTML = `
+                <div class="strike-band">
+                    <div class="strike-lines"></div>
+                    <div class="strike-hero"><img src="${p.src}" alt="" style="object-position:${p.pos};"></div>
+                    <div class="strike-name">${esc(hero.name)}</div>
+                </div>
+                <div class="strike-slash"></div>
+                <div class="strike-flash"></div>`;
+            document.body.appendChild(overlay);
+
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timer);
+                overlay.remove();
+                onDone();
+            };
+            const timer = setTimeout(finish, hit ? 1150 : 1050);
+            overlay.addEventListener('click', finish);
         }
 
         function heroPortraitClass(name) {
@@ -2676,12 +2811,12 @@ function breakRelic(relicName) {
                 const usable = it.type && it.type.startsWith('consumable');
                 const tip = `${it.name}||${it.desc}${usable ? '<br><span class="tip-hint">Clicca per usare</span>' : ''}`;
                 const hasImage = !!itemImageSrc(it);
-                slots += `<div class="inv-slot ic-${itemCategory(it)} ${usable ? 'usable' : ''} ${hasImage ? 'has-img' : ''}" data-tip="${esc(tip)}" ${usable ? `onclick="useConsumableFromTopbar('${h.name}', ${i})"` : ''}>${itemIconInner(it)}</div>`;
+                slots += `<div class="inv-slot ic-${itemCategory(it)} rar-${itemRarity(it)} ${usable ? 'usable' : ''} ${hasImage ? 'has-img' : ''}" data-tip="${esc(tip)}" ${usable ? `onclick="useConsumableFromTopbar('${h.name}', ${i})"` : ''}>${itemIconInner(it)}</div>`;
             }
 
             return `
                 <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)}" data-hero="${esc(h.name)}">
-                    <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp)}</div>
+                    <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</div>
                     <div class="hero-bars">
                         <div class="hero-card-name" title="${esc(h.name)}">${h.name}</div>
                         <div class="hp-bar-container" data-tip="Punti Vita||${h.hp} su ${h.maxHp}">
@@ -3107,7 +3242,7 @@ function breakRelic(relicName) {
             const heroChips = party.filter(h => h.hp > 0).map(h => {
                 const state = combatPhase === 'won' || h.hasActed ? 'done' : (h === currentActiveHero ? 'current' : '');
                 const note = state === 'done' ? 'Ha già agito in questo round' : (state === 'current' ? 'Sta agendo' : 'Deve ancora agire');
-                const inner = HERO_PORTRAITS[h.name] ? heroPortraitInner(h.name, h.hp) : h.name.charAt(0);
+                const inner = HERO_PORTRAITS[h.name] ? heroPortraitInner(h.name, h.hp, h.maxHp) : h.name.charAt(0);
                 return `<span class="turn-chip ${state}" style="--hue:${heroHue(h.name)}" data-tip="${esc(h.name)}||${note}">${inner}</span>`;
             }).join('');
             const enemyState = combatPhase === 'monster' ? 'current' : (combatPhase === 'won' ? 'done' : '');
@@ -3324,7 +3459,7 @@ function breakRelic(relicName) {
                     : '<span class="journal-empty">Zaino vuoto</span>';
                 return `
                     <div class="journal-hero ${h.hp <= 0 ? 'dead' : ''}">
-                        <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp)}</div>
+                        <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</div>
                         <div>
                             <div class="journal-hero-name">${h.name}</div>
                             <div class="journal-hero-hp">HP ${h.hp}/${h.maxHp} · Armatura ${h.current_armor}/${h.base_armor}${h.hp <= 0 ? ' · Caduto' : ''}</div>
