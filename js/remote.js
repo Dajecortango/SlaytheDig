@@ -1,0 +1,315 @@
+/* ==========================================================================
+   Ponte verso il server locale (facoltativo, server/server.js).
+   Se il server è in esecuzione, invia lo stato del party così i telefoni
+   collegati via QR possono vederlo e (in una fase successiva) tirare i
+   dadi. Se il server non c'è, ogni chiamata fallisce in silenzio: il gioco
+   funziona esattamente come prima, questo file non è mai un requisito.
+   ========================================================================== */
+(function () {
+    const REMOTE_PORT = 8787;
+    const REMOTE_BASE = `http://localhost:${REMOTE_PORT}`;
+    let pushTimer = null;
+
+    function buildStatePayload() {
+        return {
+            campaignTitle: (typeof currentCampaign !== 'undefined' && currentCampaign) ? currentCampaign.title : '',
+            coins: (typeof partyCoins !== 'undefined') ? partyCoins : 0,
+            heroes: (typeof party !== 'undefined' ? party : []).map(h => ({
+                name: h.name,
+                hp: h.hp, maxHp: h.maxHp,
+                str: h.str, int: h.int, fth: h.fth, dmg: h.dmg,
+                base_armor: h.base_armor, current_armor: h.current_armor,
+                items: (h.items || []).map(it => ({ name: it.name, desc: it.desc })),
+                chosenAbility: h.chosenAbility ? h.chosenAbility.name : null
+            }))
+        };
+    }
+
+    function pushStateNow() {
+        fetch(`${REMOTE_BASE}/api/state`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildStatePayload())
+        }).catch(() => {}); // server locale non attivo: si continua a giocare normalmente
+    }
+
+    // Raggruppa le chiamate ravvicinate: updatePartyStatusBars viene richiamata molto spesso
+    function schedulePush() {
+        if (pushTimer) return;
+        pushTimer = setTimeout(() => { pushTimer = null; pushStateNow(); }, 300);
+    }
+
+    if (typeof updatePartyStatusBars === 'function') {
+        const original = updatePartyStatusBars;
+        updatePartyStatusBars = function (...args) {
+            const result = original.apply(this, args);
+            schedulePush();
+            return result;
+        };
+    }
+
+    /* ---------- QR code nella card eroe (Compagnia) ----------
+       Il pulsante QR compare sulla card SOLO quando il tunnel ngrok è
+       davvero attivo (window.__remoteTunnelUrl impostato dal pannello
+       Opzioni): niente QR su indirizzi locali/LAN, come richiesto — se il
+       tunnel non è attivo il pulsante non c'è proprio. Il pulsante è piccolo
+       ed apre una modale con il QR grande del personaggio, invece di
+       occupare spazio fisso nella card. */
+    const qrCache = new Map();
+    const QR_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>';
+
+    function slugifyName(name) {
+        const diacritics = new RegExp('[\\u0300-\\u036f]', 'g');
+        return name.toLowerCase().normalize('NFD').replace(diacritics, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    function remoteBaseUrl() {
+        return window.__remoteTunnelUrl || null;
+    }
+
+    function remoteHeroUrl(heroName) {
+        const base = remoteBaseUrl();
+        return base ? `${base}/g/${slugifyName(heroName)}` : null;
+    }
+
+    function remoteQrSvgFor(heroName, cellSize) {
+        const url = remoteHeroUrl(heroName);
+        if (!url || typeof qrcode !== 'function') return null;
+        const cacheKey = url + ':' + cellSize;
+        if (qrCache.has(cacheKey)) return qrCache.get(cacheKey);
+        try {
+            const qr = qrcode(0, 'M');
+            qr.addData(url);
+            qr.make();
+            const svg = qr.createSvgTag(cellSize, 4);
+            qrCache.set(cacheKey, svg);
+            return svg;
+        } catch (e) { return null; }
+    }
+
+    window.remoteShowHeroQr = function (heroName) {
+        const url = remoteHeroUrl(heroName);
+        const svg = remoteQrSvgFor(heroName, 6);
+        if (!url || !svg || typeof openModal !== 'function') return;
+        const safeName = heroName.replace(/</g, '&lt;');
+        openModal(`QR — ${safeName}`, `
+            <div style="text-align:center;">
+                <div style="background:#fff; display:inline-block; padding:10px; border:1px solid #000;">${svg}</div>
+                <p style="margin-top:10px; font-size:0.8rem; color:var(--text-dim); word-break:break-all;">${url}</p>
+            </div>`,
+            [{ label: 'Chiudi', className: 'btn-proceed' }]);
+    };
+
+    if (typeof heroCardHtml === 'function') {
+        const originalHeroCardHtml = heroCardHtml;
+        heroCardHtml = function (h) {
+            const html = originalHeroCardHtml(h);
+            if (!remoteBaseUrl()) return html;
+
+            const lastCloseIdx = html.lastIndexOf('</div>');
+            if (lastCloseIdx === -1) return html;
+
+            const safeName = h.name.replace(/'/g, "\\'");
+            const btn = `<button type="button" class="hero-qr-btn" onclick="event.stopPropagation(); remoteShowHeroQr('${safeName}')" data-tip="Scheda sul telefono||Apri il codice QR di ${h.name} per farlo scansionare">${QR_ICON}</button>`;
+            return html.slice(0, lastCloseIdx) + btn + html.slice(lastCloseIdx);
+        };
+    }
+
+    /* ---------- Tiro di dado remoto (combattimento + sfide) ----------
+       Quando un eroe con il telefono collegato deve tirare, il server genera
+       lui il tiro (fa da arbitro) e lo rimanda sia al telefono sia a questo
+       tab, che risolve il turno esattamente come un click su "Tira" in
+       locale. Il pulsante locale resta sempre utilizzabile come ripiego: se
+       il giocatore clicca prima che il telefono risponda, il risultato
+       remoto che arriva dopo viene ignorato (executeCombatHeroRoll e
+       executeChallengeRoll si bloccano da soli se il tiro è già avvenuto). */
+    let currentRollContext = null; // 'combat' | 'challenge' | null
+    let currentRollRequestId = null;
+
+    function requestRemoteRoll(heroName, diceCount, label, context) {
+        currentRollContext = context;
+        fetch(`${REMOTE_BASE}/api/roll-request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ heroName, diceCount, label })
+        }).then(r => r.json()).then(data => {
+            if (data && data.requestId) currentRollRequestId = data.requestId;
+        }).catch(() => {}); // nessun server/telefono: resta solo il pulsante locale
+    }
+
+    function handleRemoteRollResult(result) {
+        if (!result || !currentRollRequestId || result.requestId !== currentRollRequestId) return;
+        currentRollRequestId = null;
+        if (currentRollContext === 'combat' && typeof executeCombatHeroRoll === 'function') {
+            executeCombatHeroRoll(result.rolls);
+        } else if (currentRollContext === 'challenge' && typeof executeChallengeRoll === 'function') {
+            executeChallengeRoll(result.rolls);
+        }
+        currentRollContext = null;
+    }
+
+    if (window.EventSource) {
+        try {
+            const rollEvents = new EventSource(`${REMOTE_BASE}/api/events`);
+            rollEvents.addEventListener('roll-result', e => {
+                try { handleRemoteRollResult(JSON.parse(e.data)); } catch (err) {}
+            });
+            // nessun onerror gestito apposta: senza server l'EventSource ritenta da solo e non blocca nulla
+        } catch (e) {}
+    }
+
+    if (typeof selectCombatAction === 'function') {
+        const originalSelectCombatAction = selectCombatAction;
+        selectCombatAction = function (action) {
+            const result = originalSelectCombatAction.apply(this, arguments);
+            if (currentActiveHero && (action === 'attack' || action === 'defend' || action === 'help' || action === 'ability')) {
+                const diceCount = (typeof combatRollUsesTwoDice === 'function' && combatRollUsesTwoDice(currentActiveHero, action)) ? 2 : 1;
+                const labels = { attack: 'Attacca', defend: 'Difendi', help: 'Aiuta', ability: 'Abilità' };
+                requestRemoteRoll(currentActiveHero.name, diceCount, labels[action] || 'Tira', 'combat');
+            }
+            return result;
+        };
+    }
+
+    if (typeof confirmChallengeHero === 'function') {
+        const originalConfirmChallengeHero = confirmChallengeHero;
+        confirmChallengeHero = function (...args) {
+            const result = originalConfirmChallengeHero.apply(this, args);
+            if (typeof selectedChallengeHero !== 'undefined' && selectedChallengeHero) {
+                const mode = (typeof challengeRollMode === 'function') ? challengeRollMode(selectedChallengeHero).mode : 'single';
+                requestRemoteRoll(selectedChallengeHero.name, mode === 'single' ? 1 : 2, 'Sfida', 'challenge');
+            }
+            return result;
+        };
+    }
+
+    /* ---------- Pannello "Compagnia connessa via QR" nelle Opzioni ----------
+       Aggiunto in coda al modale di openOptions(): permette di scaricare/
+       installare ngrok, salvare l'authtoken e avviare/fermare il tunnel.
+       Tutto facoltativo: se il server locale non risponde, il pannello mostra
+       solo un avviso e il resto del gioco non ne risente. */
+    let ngrokPollTimer = null;
+
+    window.remoteNgrokInstall = function () {
+        fetch(`${REMOTE_BASE}/api/ngrok/install`, { method: 'POST' }).then(refreshNgrokStatus).catch(() => {});
+    };
+
+    window.remoteNgrokSaveToken = function () {
+        const input = document.getElementById('remoteNgrokTokenInput');
+        const token = input ? input.value.trim() : '';
+        if (!token) return;
+        fetch(`${REMOTE_BASE}/api/ngrok/authtoken`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+        }).then(refreshNgrokStatus).catch(() => {});
+    };
+
+    window.remoteNgrokToggle = function () {
+        fetch(`${REMOTE_BASE}/api/ngrok/status`).then(r => r.json()).then(status => {
+            const action = status.running ? 'stop' : 'start';
+            const btn = document.getElementById('remoteNgrokToggleBtn');
+            const statusEl = document.getElementById('remoteNgrokStatus');
+            if (btn) { btn.disabled = true; btn.textContent = action === 'start' ? 'Attivazione in corso...' : 'Disattivazione...'; }
+            if (action === 'start' && statusEl) statusEl.textContent = 'Avvio del tunnel in corso, può richiedere qualche secondo...';
+            fetch(`${REMOTE_BASE}/api/ngrok/${action}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(result => {
+                    if (result && result.error) {
+                        // Errore persistente: ferma il polling automatico così non sparisce da solo.
+                        // Riparte al prossimo tentativo (install/toggle) o alla riapertura del pannello.
+                        clearInterval(ngrokPollTimer);
+                        if (statusEl) statusEl.textContent = `Errore: ${result.error}`;
+                        if (btn) { btn.disabled = false; btn.textContent = action === 'start' ? 'Attiva Tunnel' : 'Disattiva Tunnel'; }
+                    } else {
+                        refreshNgrokStatus();
+                        pollNgrokStatusWhileOpen();
+                    }
+                })
+                .catch(refreshNgrokStatus);
+        }).catch(() => {});
+    };
+
+    function applyNgrokStatus(status) {
+        const el = document.getElementById('remoteNgrokStatus');
+        const installBtn = document.getElementById('remoteNgrokInstallBtn');
+        const toggleBtn = document.getElementById('remoteNgrokToggleBtn');
+        const tokenArea = document.getElementById('remoteNgrokTokenArea');
+        if (!el || !installBtn || !toggleBtn) return;
+
+        const wasTunnelUrl = window.__remoteTunnelUrl;
+
+        if (status.install.state === 'downloading') el.textContent = 'Scaricamento di ngrok in corso...';
+        else if (status.install.state === 'extracting') el.textContent = 'Installazione di ngrok in corso...';
+        else if (status.install.state === 'error') el.textContent = `Errore: ${status.install.message}`;
+        else if (!status.installed) el.textContent = 'ngrok non ancora installato su questo PC.';
+        else if (status.running && status.publicUrl) {
+            el.innerHTML = `Tunnel attivo: <b>${status.publicUrl}</b>`;
+            window.__remoteTunnelUrl = status.publicUrl;
+        } else if (status.needsAuthtoken) {
+            el.textContent = 'ngrok installato: incolla il tuo authtoken (gratuito su ngrok.com) per continuare.';
+            window.__remoteTunnelUrl = null;
+        } else {
+            el.textContent = 'ngrok pronto: puoi attivare il tunnel.';
+            window.__remoteTunnelUrl = null;
+        }
+
+        // Il tunnel si è appena attivato/disattivato: ridisegna le card per mostrare/nascondere il pulsante QR
+        if (wasTunnelUrl !== window.__remoteTunnelUrl && typeof updatePartyStatusBars === 'function') {
+            updatePartyStatusBars();
+        }
+
+        const busy = status.install.state === 'downloading' || status.install.state === 'extracting';
+        installBtn.disabled = busy;
+        installBtn.textContent = status.installed ? 'Reinstalla ngrok' : 'Configura Tunnel ngrok';
+        toggleBtn.disabled = !status.installed || status.needsAuthtoken;
+        toggleBtn.textContent = status.running ? 'Disattiva Tunnel' : 'Attiva Tunnel';
+        if (tokenArea) tokenArea.classList.toggle('hidden', !(status.installed && status.needsAuthtoken));
+    }
+
+    function refreshNgrokStatus() {
+        fetch(`${REMOTE_BASE}/api/ngrok/status`).then(r => r.json()).then(applyNgrokStatus).catch(() => {
+            const el = document.getElementById('remoteNgrokStatus');
+            if (el) el.textContent = 'Server locale non raggiungibile: avvia avvia-server.bat per usare questa funzione.';
+        });
+    }
+
+    function pollNgrokStatusWhileOpen() {
+        clearInterval(ngrokPollTimer);
+        const tick = () => {
+            const modal = document.getElementById('wc3Modal');
+            if (!modal || modal.classList.contains('hidden')) { clearInterval(ngrokPollTimer); return; }
+            refreshNgrokStatus();
+        };
+        tick();
+        ngrokPollTimer = setInterval(tick, 2500);
+    }
+
+    if (typeof openOptions === 'function') {
+        const originalOpenOptions = openOptions;
+        openOptions = function (...args) {
+            const result = originalOpenOptions.apply(this, args);
+            const body = document.getElementById('wc3ModalBody');
+            if (body) {
+                body.insertAdjacentHTML('beforeend', `
+                    <div class="options-grid remote-ngrok-panel">
+                        <div class="option-row option-row-column">
+                            <span class="option-label">Compagnia connessa via QR<small>Server locale + tunnel ngrok, per far tirare i dadi dal telefono ai giocatori</small></span>
+                            <div id="remoteNgrokStatus" class="remote-ngrok-status">Verifica in corso...</div>
+                            <div class="remote-ngrok-buttons">
+                                <button id="remoteNgrokInstallBtn" class="btn-small" onclick="remoteNgrokInstall()">Configura Tunnel ngrok</button>
+                                <button id="remoteNgrokToggleBtn" class="btn-small" onclick="remoteNgrokToggle()" disabled>Attiva Tunnel</button>
+                            </div>
+                            <div id="remoteNgrokTokenArea" class="remote-ngrok-token hidden">
+                                <input type="text" id="remoteNgrokTokenInput" placeholder="Incolla qui il tuo authtoken ngrok">
+                                <button class="btn-small" onclick="remoteNgrokSaveToken()">Salva token</button>
+                            </div>
+                        </div>
+                    </div>`);
+                pollNgrokStatusWhileOpen();
+            }
+            return result;
+        };
+    }
+})();

@@ -14,3 +14,6 @@ _t*.html
 
 # Archivio completo delle icone di Warcraft III (in immagini/icone/ vanno solo quelle usate)
 warcraft3_icons/
+
+# ngrok scaricato automaticamente da "Configura Tunnel ngrok" (Opzioni)
+tools/ngrok/

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Scheda Eroe — Slay the Dig</title>
+<style>
+    :root { --gold:#d4af37; --bg:#120f0c; --text:#e6dcc4; --dim:#9a8f74; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; min-height: 100vh; background: radial-gradient(circle at top, #221a10, var(--bg));
+        color: var(--text); font-family: Georgia, 'Times New Roman', serif; padding: 16px;
+    }
+    h1 { color: var(--gold); text-align: center; font-size: 1.4rem; margin: 8px 0 4px; letter-spacing: 0.04em; }
+    .status { text-align: center; font-size: 0.8rem; color: var(--dim); margin-bottom: 16px; }
+    .panel {
+        background: linear-gradient(rgba(30,24,16,0.95), rgba(10,8,6,0.95));
+        border: 1px solid #5a4520; box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0,0,0,0.6);
+        padding: 16px; margin-bottom: 14px;
+    }
+    /* Stile ripreso dalla card della Compagnia nel gioco principale (.hero-mini-card in css/style.css) */
+    .hero-card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .hero-portrait-mini {
+        width: 58px; height: 58px; flex: 0 0 58px;
+        display: grid; place-items: center;
+        background: radial-gradient(circle at 40% 28%, hsl(var(--hue, 30) 55% 44%), hsl(var(--hue, 30) 60% 12%) 78%);
+        border: 1px solid #000;
+        box-shadow: 0 0 0 2px #b8923e, 0 0 0 3px #000, inset 0 0 14px rgba(0,0,0,0.85);
+        font-family: Georgia, 'Times New Roman', serif; font-weight: 900; font-size: 1.7rem; color: #ffe9a8;
+        text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,0.9);
+    }
+    .hero-card-info { flex: 1; min-width: 0; }
+    .hero-card-title { font-weight: 700; color: var(--gold); text-shadow: 0 1px 0 #000; margin-bottom: 4px; }
+    .mini-bar-container {
+        position: relative; height: 13px; margin-bottom: 4px;
+        background: #0a0605; border: 1px solid #000; box-shadow: 0 0 0 1px #4a3a22, inset 0 2px 4px rgba(0,0,0,0.9);
+        overflow: hidden;
+    }
+    .mini-bar-container.armor { height: 8px; }
+    .mini-bar-fill { height: 100%; background: linear-gradient(#8dff78, #22b01c 50%, #0c6a0a); box-shadow: inset 0 1px 0 rgba(255,255,255,0.45); transition: width 0.35s; }
+    .mini-bar-fill.hp-mid { background: linear-gradient(#fff28a, #d8b40a 50%, #7a6205); }
+    .mini-bar-fill.hp-low { background: linear-gradient(#ff9a8a, #d0180f 50%, #6a0805); }
+    .mini-bar-fill.armor-fill { background: linear-gradient(#b8dcff, #2f6fd6 50%, #123a80); }
+    .mini-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; text-shadow: 0 1px 1px #000; }
+
+    .hero-stats-row {
+        display: flex; justify-content: space-between; padding: 4px 6px; margin-bottom: 8px;
+        font-size: 0.78rem; color: #f3e2b0; background: rgba(0,0,0,0.4);
+        border-top: 1px solid rgba(226,185,81,0.18); border-bottom: 1px solid rgba(226,185,81,0.18);
+    }
+    .hero-stats-row i { font-style: normal; font-weight: 700; font-size: 0.6rem; color: var(--dim); margin-right: 3px; }
+    .hero-ability-line { font-size: 0.72rem; color: #e0bcff; }
+    .items { font-size: 0.85rem; line-height: 1.6; }
+    .roll-area { text-align: center; }
+    .roll-btn {
+        width: 100%; padding: 18px; font-size: 1.1rem; font-weight: bold;
+        background: linear-gradient(#5a4520, #2a1d0c); color: var(--gold);
+        border: 1px solid #000; opacity: 0.45;
+    }
+    .roll-btn.active { opacity: 1; background: linear-gradient(#8a6d1a, #4a3a0c); animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6);} 50% { box-shadow: 0 0 0 10px rgba(212,175,55,0);} }
+    .empty { text-align: center; color: var(--dim); padding: 30px 10px; }
+
+    .dice-row { display: flex; justify-content: center; gap: 12px; margin-bottom: 14px; min-height: 60px; align-items: center; }
+    .dice-box {
+        width: 56px; height: 56px;
+        display: grid; place-items: center;
+        font-family: Georgia, 'Times New Roman', serif; font-size: 1.8rem; font-weight: bold; color: var(--gold);
+        background: linear-gradient(#2a1d0c, #120f0c);
+        border: 2px solid #b8923e;
+        box-shadow: 0 0 0 1px #000, inset 0 0 10px rgba(0,0,0,0.6);
+    }
+    .dice-box.hidden { display: none; }
+    .dice-box.rolling { animation: diceShake 0.15s infinite; color: #fff; }
+    .dice-box.landed { animation: diceLand 0.3s ease; }
+    @keyframes diceShake {
+        0% { transform: rotate(-8deg) scale(1); }
+        50% { transform: rotate(8deg) scale(1.08); }
+        100% { transform: rotate(-8deg) scale(1); }
+    }
+    @keyframes diceLand {
+        0% { transform: scale(1.4); }
+        100% { transform: scale(1); }
+    }
+    .roll-result-text { font-size: 0.9rem; color: var(--gold); margin-top: 4px; min-height: 1.2em; }
+</style>
+</head>
+<body>
+    <h1 id="heroName">Connessione...</h1>
+    <div class="status" id="statusText">In attesa di dati dal gioco...</div>
+    <div id="content"></div>
+
+    <script>
+        function slugify(name) {
+            var diacritics = new RegExp('[\\u0300-\\u036f]', 'g');
+            return name.toLowerCase().normalize('NFD').replace(diacritics, '')
+                .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
+        const slug = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+
+        // Stessa formula di heroHue() in js/game.js: colore del ritratto coerente col gioco principale.
+        function heroHue(name) {
+            let hash = 0;
+            for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) % 360;
+            return hash;
+        }
+
+        function barClass(pct) { return pct > 60 ? '' : (pct > 30 ? 'hp-mid' : 'hp-low'); }
+        function clampPct(value, max) { return max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0; }
+
+        let currentHero = null;
+        let lastPendingRoll = null;
+
+        function renderHero(state) {
+            const hero = (state.heroes || []).find(h => slugify(h.name) === slug);
+            currentHero = hero || null;
+            const content = document.getElementById('content');
+
+            if (!hero) {
+                document.getElementById('heroName').textContent = 'Eroe non trovato';
+                document.getElementById('statusText').textContent = 'Nessun eroe con questo nome nella partita in corso.';
+                content.innerHTML = '<div class="panel empty">Controlla il link oppure aspetta che la partita venga avviata sul PC.</div>';
+                return;
+            }
+            document.getElementById('heroName').textContent = hero.name;
+            document.getElementById('statusText').textContent = state.campaignTitle ? `In viaggio: ${state.campaignTitle}` : 'Connesso';
+
+            const hpPct = clampPct(hero.hp, hero.maxHp);
+            const armorMax = Math.max(hero.base_armor, hero.current_armor);
+            const armorPct = clampPct(hero.current_armor, armorMax);
+            const itemsHtml = (hero.items || []).length
+                ? hero.items.map(it => `<div>• <b>${it.name}</b>${it.desc ? ` — ${it.desc}` : ''}</div>`).join('')
+                : '<div>Zaino vuoto</div>';
+
+            content.innerHTML = `
+                <div class="panel">
+                    <div class="hero-card-top">
+                        <div class="hero-portrait-mini" style="--hue:${heroHue(hero.name)}">${hero.name.charAt(0)}</div>
+                        <div class="hero-card-info">
+                            <div class="hero-card-title">${hero.name}</div>
+                            <div class="mini-bar-container">
+                                <div class="mini-bar-fill ${barClass(hpPct)}" style="width:${hpPct}%"></div>
+                                <div class="mini-bar-text">${hero.hp} / ${hero.maxHp}</div>
+                            </div>
+                            <div class="mini-bar-container armor">
+                                <div class="mini-bar-fill armor-fill" style="width:${armorPct}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-stats-row">
+                        <span><i>FOR</i>${hero.str}</span>
+                        <span><i>INT</i>${hero.int}</span>
+                        <span><i>FED</i>${hero.fth}</span>
+                        <span><i>DAN</i>${hero.dmg}</span>
+                    </div>
+                    ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>` : ''}
+                </div>
+                <div class="panel items">${itemsHtml}</div>
+                <div class="panel roll-area">
+                    <div class="dice-row">
+                        <div class="dice-box" id="phoneDice1">—</div>
+                        <div class="dice-box hidden" id="phoneDice2">—</div>
+                    </div>
+                    <button class="roll-btn" id="rollBtn" disabled>In attesa del tuo turno...</button>
+                    <div class="roll-result-text" id="rollResultText"></div>
+                </div>`;
+
+            applyPendingRoll(lastPendingRoll);
+        }
+
+        // Attiva/disattiva il pulsante del dado a seconda di chi deve tirare in questo momento.
+        // Ignora gli aggiornamenti mentre un tiro è già in corso (rollInProgress), altrimenti un
+        // evento di stato arrivato nel mentre interromperebbe l'animazione.
+        let rollInProgress = false;
+
+        function applyPendingRoll(pendingRoll) {
+            lastPendingRoll = pendingRoll || null;
+            const btn = document.getElementById('rollBtn');
+            if (!btn || !currentHero || rollInProgress) return;
+
+            const dice1 = document.getElementById('phoneDice1');
+            const dice2 = document.getElementById('phoneDice2');
+            const resultText = document.getElementById('rollResultText');
+
+            if (pendingRoll && slugify(pendingRoll.heroName) === slug) {
+                btn.disabled = false;
+                btn.classList.add('active');
+                btn.textContent = `TIRA — ${pendingRoll.label}${pendingRoll.diceCount === 2 ? ' (2 dadi)' : ''}`;
+                btn.onclick = () => submitRoll(pendingRoll.requestId, pendingRoll.diceCount);
+                if (dice1) dice1.textContent = '—';
+                if (dice2) { dice2.textContent = '—'; dice2.classList.toggle('hidden', pendingRoll.diceCount !== 2); }
+                if (resultText) resultText.textContent = '';
+            } else {
+                btn.disabled = true;
+                btn.classList.remove('active');
+                btn.textContent = 'In attesa del tuo turno...';
+                btn.onclick = null;
+            }
+        }
+
+        // ngrok (piano gratuito) mostra una pagina di avviso al primo accesso da un browser nuovo:
+        // questo header dice a ngrok di saltarla anche per le chiamate fetch/EventSource successive
+        // (senza, quelle richieste ricevono la pagina HTML dell'avviso invece dei dati JSON veri).
+        const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
+
+        // Durata minima dell'animazione: se la risposta del server arriva prima, si aspetta comunque
+        // questo tanto per dare il tempo di "vedere" il dado girare; se arriva dopo, si aspetta lei.
+        const MIN_ROLL_ANIM_MS = 650;
+
+        function submitRoll(requestId, diceCount) {
+            const btn = document.getElementById('rollBtn');
+            const dice1 = document.getElementById('phoneDice1');
+            const dice2 = document.getElementById('phoneDice2');
+            const resultText = document.getElementById('rollResultText');
+            rollInProgress = true;
+
+            if (btn) { btn.disabled = true; btn.classList.remove('active'); btn.textContent = 'Tiro in corso...'; }
+            if (resultText) resultText.textContent = '';
+            dice1.classList.remove('landed'); dice1.classList.add('rolling');
+            if (diceCount === 2) { dice2.classList.remove('hidden', 'landed'); dice2.classList.add('rolling'); }
+
+            const flickerTimer = setInterval(() => {
+                dice1.textContent = 1 + Math.floor(Math.random() * 6);
+                if (diceCount === 2) dice2.textContent = 1 + Math.floor(Math.random() * 6);
+            }, 80);
+
+            const startedAt = Date.now();
+            const settle = (rolls, errorText) => {
+                const wait = Math.max(0, MIN_ROLL_ANIM_MS - (Date.now() - startedAt));
+                setTimeout(() => {
+                    clearInterval(flickerTimer);
+                    dice1.classList.remove('rolling');
+                    dice2.classList.remove('rolling');
+                    rollInProgress = false;
+
+                    if (rolls) {
+                        dice1.textContent = rolls[0];
+                        dice1.classList.add('landed');
+                        if (rolls.length > 1) {
+                            dice2.textContent = rolls[1];
+                            dice2.classList.remove('hidden');
+                            dice2.classList.add('landed');
+                        }
+                        if (resultText) resultText.textContent = `Hai tirato: ${rolls.join(' , ')}`;
+                        // Il tiro appena inviato è già risolto lato server: si torna in attesa del prossimo turno
+                        // senza aspettare l'evento pending-roll (che nel frattempo arriverà comunque, ridondante).
+                        // I dadi e il testo del risultato restano visibili: applyPendingRoll tocca solo il pulsante.
+                        applyPendingRoll(null);
+                    } else {
+                        if (btn) { btn.disabled = false; btn.classList.add('active'); btn.textContent = 'Riprova'; }
+                        if (resultText) resultText.textContent = errorText || 'Errore, riprova.';
+                        // Esito incerto (rete/409): si richiede lo stato vero al server invece di indovinarlo
+                        fetchState();
+                    }
+                }, wait);
+            };
+
+            fetch('/api/roll', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
+                body: JSON.stringify({ requestId })
+            }).then(r => r.json()).then(result => {
+                if (result && result.rolls) settle(result.rolls, null);
+                else settle(null, result && result.error);
+            }).catch(() => settle(null, 'Errore di connessione, riprova dal PC.'));
+        }
+
+        function fetchState() {
+            fetch('/api/state', { headers: NGROK_SKIP_HEADER }).then(r => r.json()).then(state => {
+                renderHero(state);
+                applyPendingRoll(state.pendingRoll);
+            }).catch(() => {
+                document.getElementById('statusText').textContent = 'Connessione al server persa, nuovo tentativo...';
+            });
+        }
+
+        fetchState();
+        setInterval(fetchState, 5000); // rete di sicurezza se lo stream live si interrompe
+
+        if (window.EventSource) {
+            // EventSource non supporta header personalizzati: si passa lo stesso avviso come
+            // parametro nell'URL, che ngrok accetta come alternativa all'header.
+            const es = new EventSource('/api/events?ngrok-skip-browser-warning=true');
+            es.addEventListener('state', e => { try { renderHero(JSON.parse(e.data)); } catch (err) {} });
+            es.addEventListener('pending-roll', e => { try { applyPendingRoll(JSON.parse(e.data)); } catch (err) {} });
+        }
+    </script>
+</body>
+</html>

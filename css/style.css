@@ -376,6 +376,20 @@
             margin-right: 3px;
         }
 
+        /* Pulsante QR: presente solo quando il tunnel ngrok è attivo. Apre una modale col QR grande
+           invece di occupare spazio fisso nella card (.hero-mini-card è già position:relative). */
+        .hero-qr-btn {
+            position: absolute; top: 4px; right: 4px;
+            width: 20px; height: 20px; padding: 3px;
+            display: grid; place-items: center;
+            background: linear-gradient(#3a2a12, #1c1410);
+            border: 1px solid #b8923e;
+            color: var(--wc-yellow);
+            cursor: pointer;
+        }
+        .hero-qr-btn:hover { border-color: #ffdc82; color: #ffdc82; }
+        .hero-qr-btn svg { width: 100%; height: 100%; }
+
         .hero-inventory { grid-column: 1 / -1; display: flex; gap: 5px; align-items: center; }
         .inv-slot {
             width: 32px; height: 32px;
@@ -2099,6 +2113,16 @@
         .option-row small { display: block; font-family: var(--font-body); color: var(--text-dim); letter-spacing: 0; font-size: 0.72rem; }
         .option-row select { margin: 0; }
         .option-range { display: flex; align-items: center; gap: 10px; }
+
+        .remote-ngrok-panel { margin-top: 14px; padding-top: 14px; border-top: 1px solid #3a2a12; }
+        .option-row-column { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+        .remote-ngrok-status { font-size: 0.8rem; color: var(--text-dim); }
+        .remote-ngrok-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .remote-ngrok-token { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; }
+        .remote-ngrok-token input {
+            flex: 1 1 220px; min-width: 0; padding: 6px 10px;
+            background: linear-gradient(#1d1814, #120f0c); border: 1px solid #5a4520; color: var(--text);
+        }
         .option-range output { min-width: 38px; text-align: right; font-family: var(--font-title); color: #f3e2b0; font-size: 0.85rem; }
         input[type="range"] {
             -webkit-appearance: none;
