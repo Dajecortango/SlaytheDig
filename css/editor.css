@@ -284,3 +284,15 @@ code { color: var(--gold); font-size: 0.85em; }
     .ed-split { grid-template-columns: 1fr; }
     .ed-list { max-height: 220px; }
 }
+
+/* ---------- Immagini caricabili, eroi, oggetti ---------- */
+.ed-image-row { display: flex; align-items: center; gap: 8px; }
+.ed-image-row input { flex: 1; min-width: 0; }
+.ed-image-row button { margin: 0 0 4px; flex-shrink: 0; }
+.ed-thumb { width: 56px; height: 56px; object-fit: cover; flex-shrink: 0; border: 1px solid #8a6418; box-shadow: 0 0 0 1px #000; }
+.ed-hero-item { display: flex; align-items: center; gap: 8px; }
+.ed-list-portrait { width: 34px; height: 34px; object-fit: cover; object-position: 50% 30%; border: 1px solid #8a6418; flex-shrink: 0; }
+.ed-subtab { opacity: 0.6; }
+.ed-subtab.active { opacity: 1; }
+.ed-check { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 0.85rem; color: #e6dcc4; }
+.ed-hint a { color: var(--gold); }

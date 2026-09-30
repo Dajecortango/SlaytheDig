@@ -525,30 +525,49 @@
             border: 2px solid;
             border-color: #f3d27a #8a6418 #4a3208 #b8923e;
             border-radius: 3px;
+            --btn-depth: 5px;
             box-shadow:
                 0 0 0 1px #000,
-                inset 0 1px 0 rgba(255, 220, 150, 0.35),
-                inset 0 0 0 1px rgba(0, 0, 0, 0.6),
-                inset 0 -8px 14px rgba(0, 0, 0, 0.45),
-                0 4px 10px rgba(0, 0, 0, 0.6);
-            text-shadow: 0 1px 0 #000, 0 0 3px #000;
-            transition: color 0.15s, filter 0.15s, box-shadow 0.15s, transform 0.08s;
+                inset 0 2px 0 rgba(255, 235, 180, 0.45),
+                inset 2px 0 0 rgba(255, 220, 150, 0.14),
+                inset -2px 0 0 rgba(0, 0, 0, 0.45),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.55),
+                inset 0 -12px 16px rgba(0, 0, 0, 0.4),
+                inset 0 10px 14px rgba(255, 200, 140, 0.08),
+                0 var(--btn-depth) 0 #1a1006,
+                0 calc(var(--btn-depth) + 1px) 0 #000,
+                0 calc(var(--btn-depth) + 5px) 12px rgba(0, 0, 0, 0.75);
+            text-shadow: 0 2px 0 #000, 0 0 4px #000;
+            transition: color 0.15s, filter 0.15s, box-shadow 0.12s, transform 0.12s;
         }
         button:hover:not(:disabled) {
             color: #fff3b0;
             filter: brightness(1.2);
-            text-shadow: 0 0 8px rgba(255, 210, 90, 0.9), 0 1px 0 #000;
+            text-shadow: 0 0 8px rgba(255, 210, 90, 0.9), 0 2px 0 #000;
+            transform: translateY(-1px);
+            --btn-depth: 6px;
             box-shadow:
                 0 0 0 1px #000,
-                inset 0 1px 0 rgba(255, 220, 150, 0.45),
-                inset 0 0 0 1px rgba(0, 0, 0, 0.6),
-                inset 0 -8px 14px rgba(0, 0, 0, 0.35),
-                0 0 16px rgba(255, 190, 60, 0.35),
-                0 4px 10px rgba(0, 0, 0, 0.6);
+                inset 0 2px 0 rgba(255, 235, 180, 0.55),
+                inset 2px 0 0 rgba(255, 220, 150, 0.18),
+                inset -2px 0 0 rgba(0, 0, 0, 0.45),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.55),
+                inset 0 -12px 16px rgba(0, 0, 0, 0.3),
+                inset 0 10px 14px rgba(255, 200, 140, 0.12),
+                0 0 16px rgba(255, 190, 60, 0.3),
+                0 var(--btn-depth) 0 #1a1006,
+                0 calc(var(--btn-depth) + 1px) 0 #000,
+                0 calc(var(--btn-depth) + 7px) 14px rgba(0, 0, 0, 0.75);
         }
         button:active:not(:disabled) {
-            transform: translateY(1px);
-            box-shadow: 0 0 0 1px #000, inset 0 3px 8px rgba(0, 0, 0, 0.75);
+            transform: translateY(4px);
+            box-shadow:
+                0 0 0 1px #000,
+                inset 0 3px 8px rgba(0, 0, 0, 0.75),
+                inset 0 -1px 0 rgba(255, 220, 150, 0.12),
+                0 1px 0 #1a1006,
+                0 2px 0 #000,
+                0 3px 6px rgba(0, 0, 0, 0.7);
         }
         button:disabled {
             color: #8a8478;
@@ -631,6 +650,17 @@
                 radial-gradient(ellipse 90% 55% at 62% 0%, rgba(70, 80, 130, 0.38), transparent 72%),
                 linear-gradient(#131520, #0b0a0e 58%, #07060a);
         }
+        .menu-scene-video, .menu-video-shade { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s; }
+        .menu-scene-video { width: 100%; height: 100%; object-fit: cover; }
+        /* Velo scuro a sinistra (logo) e a destra (pannelli) per leggere bene i testi sopra il video */
+        .menu-video-shade { background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.1) 60%, rgba(0, 0, 0, 0.6)); }
+        body.menu-start.menu-video-ok .menu-scene-video,
+        body.menu-start.menu-video-ok .menu-video-shade { opacity: 1; }
+        /* Sopra il video non servono paesaggio disegnato, nebbia, pioggia e lampi */
+        body.menu-start.menu-video-ok .menu-scene-land,
+        body.menu-start.menu-video-ok .menu-fog,
+        body.menu-start.menu-video-ok .menu-rain,
+        body.menu-start.menu-video-ok .menu-lightning { opacity: 0; transition: opacity 0.8s; }
         .menu-scene-land { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58vh; }
         .menu-fog {
             position: absolute;
@@ -750,7 +780,8 @@
             filter: drop-shadow(0 1px 1px #000);
         }
         .wc-slot:has(> .hidden) { display: none; }
-        .wc-menu-btn { flex: 1; margin: 0; padding: 11px 16px; font-size: 0.95rem; letter-spacing: 0.12em; }
+        .wc-menu-btn { flex: 1; margin: 0 0 6px; padding: 11px 16px; font-size: 0.95rem; letter-spacing: 0.12em; }
+        .wc-slot { padding-bottom: 3px; }
 
         .menu-version {
             position: absolute;
@@ -2491,3 +2522,50 @@
         .howto { text-align: left; font-size: 0.92rem; line-height: 1.6; color: #e6dcc4; }
         .howto p { margin: 0 0 10px; }
         .howto b { color: var(--wc-yellow); font-weight: normal; font-family: var(--font-title); }
+
+        /* ---------- Cursore a guanto d'arme (stile Warcraft III) ----------
+           Oro ovunque, rosso sopra il nemico, grigio sui pulsanti disattivati.
+           "!important" perché molti elementi impostano cursor: pointer. */
+        html, body, body * { cursor: url('../immagini/cursori/guanto.png') 1 1, auto !important; }
+        #enemyInfo, #enemyInfo * { cursor: url('../immagini/cursori/guanto_rosso.png') 1 1, crosshair !important; }
+        button:disabled, button:disabled * { cursor: url('../immagini/cursori/guanto_grigio.png') 1 1, not-allowed !important; }
+
+        /* ---------- Salvataggi (3 slot) ---------- */
+        .save-slots { display: grid; gap: 8px; text-align: left; }
+        .save-slot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            border: 1px solid #5a4520;
+            box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+        .save-slot.empty { opacity: 0.7; }
+        .save-slot-info { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; color: #e6dcc4; }
+        .save-slot-info b { font-family: var(--font-title); color: var(--wc-yellow); font-weight: 700; letter-spacing: 0.04em; }
+        .save-slot-info small { color: var(--text-dim); font-size: 0.75rem; }
+        .save-slot-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+        .save-slot-actions button { margin: 2px 0 6px; min-width: 110px; }
+        .save-current { font-size: 0.72rem; color: var(--accent-green); font-style: normal; }
+
+        /* ---------- Compendio ---------- */
+        .codex-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 10px; }
+        .codex-tab { margin: 0 0 6px; opacity: 0.65; background: var(--noise-fine), linear-gradient(#3b352f, #1f1b18 55%, #121010); }
+        .codex-tab.active { opacity: 1; background: var(--noise-fine), linear-gradient(#72190f, #3c0b07 55%, #220604); }
+        .codex-tab span { font-family: var(--font-body); color: var(--text-dim); margin-left: 4px; text-transform: none; }
+        .codex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; max-height: 58vh; overflow-y: auto; padding: 2px 4px 2px 2px; text-align: left; }
+        .codex-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000;
+        }
+        .codex-card.unknown { opacity: 0.45; filter: grayscale(1); }
+        .codex-card .tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .codex-card .tile-sub { font-size: 0.75rem; color: #d8cba8; }
+        .codex-card .tile-tag { align-self: flex-start; background: none; border: none; box-shadow: none; padding: 0; color: var(--text-dim); font-size: 0.68rem; letter-spacing: 0.04em; }

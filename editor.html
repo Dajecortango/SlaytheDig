@@ -25,8 +25,9 @@
         </div>
 
         <div class="ed-top-group ed-top-right">
-            <button class="btn-small ed-save" onclick="downloadCampaign('js')">Scarica .js</button>
-            <button class="btn-small" onclick="downloadCampaign('json')">Scarica .json</button>
+            <button class="btn-small" onclick="playtest()" title="Apre il gioco in una nuova scheda con la campagna così com'è ora">Prova nel gioco</button>
+            <button class="btn-small ed-save" onclick="saveToProject()" title="Scrive data/campagne/&lt;id&gt;.js e le immagini caricate nella cartella del gioco">Salva nel progetto</button>
+            <button class="btn-small" onclick="downloadZip()" title="Archivio con il file della campagna e le immagini, da estrarre nella cartella del gioco">Scarica .zip</button>
             <a class="ed-link" href="index.html">Torna al gioco</a>
         </div>
     </header>
@@ -34,9 +35,11 @@
     <nav class="ed-tabs" id="edTabs">
         <button data-tab="general" class="active">Generale</button>
         <button data-tab="map">Mappa</button>
+        <button data-tab="heroes">Eroi</button>
+        <button data-tab="items">Oggetti</button>
         <button data-tab="enemies">Nemici</button>
         <button data-tab="challenges">Sfide</button>
-        <button data-tab="other">Eroi, oggetti e testi</button>
+        <button data-tab="other">Testi</button>
     </nav>
 
     <main class="ed-main">
@@ -45,10 +48,13 @@
             <h2 class="ed-heading">Controlli <span id="edIssueCount"></span></h2>
             <div id="edIssues"></div>
             <p class="ed-hint">
-                Il browser non può salvare direttamente nel progetto: usa <b>Scarica .js</b> e metti il file in
-                <code>data/campagne/</code>. Per una campagna nuova aggiungi anche il suo tag
-                <code>&lt;script&gt;</code> in <code>index.html</code> e in <code>editor.html</code>.
+                <b>Salva nel progetto</b> scrive <code>data/campagne/&lt;id&gt;.js</code> e le immagini caricate direttamente nella
+                cartella del gioco (Edge o Chrome: la cartella si sceglie la prima volta). Una campagna nuova viene aggiunta
+                da sola a <code>index.html</code> ed <code>editor.html</code>.
+                Negli altri browser usa <b>Scarica .zip</b> ed estrailo nella cartella del gioco.
             </p>
+            <p class="ed-hint">Le modifiche non salvate restano in una bozza nel browser. <b>Prova nel gioco</b> apre la campagna così com'è, senza salvarla.</p>
+            <p class="ed-hint"><a href="#" onclick="forgetProjectDir(); return false;">Cambia la cartella del progetto</a></p>
         </aside>
     </main>
 
