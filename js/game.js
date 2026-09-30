@@ -1306,9 +1306,17 @@ function breakRelic(relicName) {
            in un contesto simulato deve prima impostare quelle variabili.
            ========================================================================== */
 
+        // Tiro di un d6: se "rolls[i]" è un numero 1-6 lo usa (tiro deciso da un telefono collegato via QR),
+        // altrimenti tira normalmente. Tutti i resolver sotto accettano "rolls" come ultimo parametro opzionale.
+        function rollD6(rolls, i) {
+            const external = rolls && rolls[i];
+            if (typeof external === 'number' && external >= 1 && external <= 6) return external;
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
         // Tiro di attacco: muta enemy.hp, consuma helpBonus. Ritorna l'esito per log/DOM.
-        function resolveAttack(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveAttack(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             let relicAttBonus = 0;
             let relicDmgBonus = 0;
             const isElite = stsMapNodes.find(n => n.id === currentNodeId)?.type === 'elite';
@@ -1334,8 +1342,8 @@ function breakRelic(relicName) {
         }
 
         // Tiro di difesa: in caso di successo aggiunge 1 armatura corrente all'eroe.
-        function resolveDefend(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveDefend(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             const total = roll + hero.str + (hero.def_bonus || 0);
             const success = total >= enemy.att;
             if (success) hero.current_armor += 1;
@@ -1343,16 +1351,16 @@ function breakRelic(relicName) {
         }
 
         // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
-        function resolveHelp(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveHelp(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             const total = roll + hero.str + (hero.help_bonus_val || 0);
             const success = total >= enemy.att;
             if (success) helpBonus = 1;
             return { roll, total, success };
         }
 
-        function resolveZenoAbility(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveZenoAbility(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             const total = roll + hero.str + helpBonus + attackMod(hero);
             helpBonus = 0;
             const hit = total >= enemy.ca;
@@ -1361,8 +1369,8 @@ function breakRelic(relicName) {
             return { abId: 'zeno_colpo_benedetto', roll, total, hit, dmg };
         }
 
-        function resolveDioforoAbility(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveDioforoAbility(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             const intBonus = hero.int || 0;
             const total = roll + hero.str + intBonus + helpBonus + attackMod(hero);
             helpBonus = 0;
@@ -1371,9 +1379,9 @@ function breakRelic(relicName) {
             return { abId: 'dioforo_penna', roll, total, hit, dmg: hero.dmg, intBonus };
         }
 
-        function resolveIcaroAbility(hero, enemy) {
-            const d1 = Math.floor(Math.random() * 6) + 1;
-            const d2 = Math.floor(Math.random() * 6) + 1;
+        function resolveIcaroAbility(hero, enemy, rolls) {
+            const d1 = rollD6(rolls, 0);
+            const d2 = rollD6(rolls, 1);
             const roll = Math.max(d1, d2);
             const total = roll + hero.str + helpBonus + attackMod(hero);
             helpBonus = 0;
@@ -1382,8 +1390,8 @@ function breakRelic(relicName) {
             return { abId: 'icaro_trucchi', d1, d2, roll, total, hit, dmg: hero.dmg };
         }
 
-        function resolveAstarteAbility(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveAstarteAbility(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             const total = roll + hero.str + helpBonus + attackMod(hero);
             helpBonus = 0;
             const hit = total >= enemy.ca;
@@ -1392,8 +1400,8 @@ function breakRelic(relicName) {
             return { abId: 'astarte_affondo', roll, total, hit, dmg };
         }
 
-        function resolveAscadeoAbility(hero, enemy) {
-            const roll = Math.floor(Math.random() * 6) + 1;
+        function resolveAscadeoAbility(hero, enemy, rolls) {
+            const roll = rollD6(rolls, 0);
             const total = roll + hero.str + helpBonus + attackMod(hero);
             helpBonus = 0;
             const hit = total >= enemy.ca;
@@ -1402,14 +1410,14 @@ function breakRelic(relicName) {
         }
 
         // Dispaccia l'abilità attiva in combattimento in base al suo id.
-        function resolveAbility(hero, enemy) {
+        function resolveAbility(hero, enemy, rolls) {
             hero.abilityUsedThisCombat = true;
             const abId = hero.chosenAbility.id;
-            if (abId === 'zeno_colpo_benedetto') return resolveZenoAbility(hero, enemy);
-            if (abId === 'dioforo_penna') return resolveDioforoAbility(hero, enemy);
-            if (abId === 'icaro_trucchi') return resolveIcaroAbility(hero, enemy);
-            if (abId === 'astarte_affondo') return resolveAstarteAbility(hero, enemy);
-            if (abId === 'ascadeo_segnato') return resolveAscadeoAbility(hero, enemy);
+            if (abId === 'zeno_colpo_benedetto') return resolveZenoAbility(hero, enemy, rolls);
+            if (abId === 'dioforo_penna') return resolveDioforoAbility(hero, enemy, rolls);
+            if (abId === 'icaro_trucchi') return resolveIcaroAbility(hero, enemy, rolls);
+            if (abId === 'astarte_affondo') return resolveAstarteAbility(hero, enemy, rolls);
+            if (abId === 'ascadeo_segnato') return resolveAscadeoAbility(hero, enemy, rolls);
             return { abId, hit: false, dmg: 0 };
         }
 
@@ -1704,7 +1712,9 @@ function breakRelic(relicName) {
             }
         }
 
-        function executeCombatHeroRoll() {
+        // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
+        // Se assente, si tira normalmente: il comportamento locale non cambia.
+        function executeCombatHeroRoll(externalRolls) {
             const rollBtn = document.getElementById('rollCombatBtn');
             if (rollBtn.disabled) return;
 
@@ -1731,7 +1741,7 @@ function breakRelic(relicName) {
                     const armorBefore = hero.current_armor;
 
                     if(chosenAction === 'attack') {
-                        const res = resolveAttack(hero, activeEnemy);
+                        const res = resolveAttack(hero, activeEnemy, externalRolls);
                         diceBox.textContent = res.roll;
 
                         logCombat(`${hero.name} attacca: Tiro ${res.roll} + Forza ${hero.str}${attackMod(hero) ? ` ${attackMod(hero) > 0 ? '+' : '−'} ${Math.abs(attackMod(hero))} Mod.` : ''}${res.relicAttBonus > 0 ? ' + Reliquia' : ''} = ${res.total} (CA: ${activeEnemy.ca})`);
@@ -1745,7 +1755,7 @@ function breakRelic(relicName) {
                     }
                     else if(chosenAction === 'ability') {
     const abId = hero.chosenAbility.id;
-    const res = resolveAbility(hero, activeEnemy);
+    const res = resolveAbility(hero, activeEnemy, externalRolls);
 
     if (abId === 'zeno_colpo_benedetto') {
         diceBox.textContent = res.roll;
@@ -1806,7 +1816,7 @@ function breakRelic(relicName) {
                         }
                     }
                     else if(chosenAction === 'defend') {
-                        const res = resolveDefend(hero, activeEnemy);
+                        const res = resolveDefend(hero, activeEnemy, externalRolls);
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} si difende: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
                         if(res.success) {
@@ -1817,7 +1827,7 @@ function breakRelic(relicName) {
                         }
                     }
                     else if(chosenAction === 'help') {
-                        const res = resolveHelp(hero, activeEnemy);
+                        const res = resolveHelp(hero, activeEnemy, externalRolls);
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} aiuta: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
                         if(res.success) {
@@ -2336,15 +2346,15 @@ function breakRelic(relicName) {
 
         // Risolve una prova: tiro (con vantaggio/svantaggio), reliquie, ricompensa/punizione.
         // Muta unlockedRelics/activeCurses/expeditionStats. "events" sono le righe di log in ordine.
-        function resolveChallenge(hero, challenge) {
+        function resolveChallenge(hero, challenge, rolls) {
             const events = [];
             const rollMode = challengeRollMode(hero);
             const twoDice = rollMode.mode !== 'single';
-            const roll = Math.floor(Math.random() * 6) + 1;
+            const roll = rollD6(rolls, 0);
             let roll2 = null, kept = roll;
 
             if (twoDice) {
-                roll2 = Math.floor(Math.random() * 6) + 1;
+                roll2 = rollD6(rolls, 1);
                 const best = rollMode.mode === 'best';
                 kept = best ? Math.max(roll, roll2) : Math.min(roll, roll2);
                 events.push({ type: 'roll2', text: `🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})` });
@@ -2409,8 +2419,11 @@ function breakRelic(relicName) {
             return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rewardGranted, punishmentApplied, isFinal, events };
         }
 
-        function executeChallengeRoll() {
+        // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
+        function executeChallengeRoll(externalRolls) {
             const rollBtn = document.getElementById('rollChallengeBtn');
+            if (rollBtn.disabled) return;
+
             const diceBox = document.getElementById('diceChallenge');
             const diceBox2 = document.getElementById('diceChallenge2');
             const rollMode = challengeRollMode(selectedChallengeHero);
@@ -2427,7 +2440,7 @@ function breakRelic(relicName) {
                 if(counter >= 500) {
                     clearInterval(interval);
 
-                    const res = resolveChallenge(selectedChallengeHero, challengeState);
+                    const res = resolveChallenge(selectedChallengeHero, challengeState, externalRolls);
                     diceBox.textContent = res.roll;
                     diceBox.classList.remove('rolling');
 
