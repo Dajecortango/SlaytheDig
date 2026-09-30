@@ -2568,4 +2568,60 @@
         .codex-card.unknown { opacity: 0.45; filter: grayscale(1); }
         .codex-card .tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .codex-card .tile-sub { font-size: 0.75rem; color: #d8cba8; }
+
+        /* ---------- Test Tasso di Vittoria: wizard e report ---------- */
+        .sim-hero-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .sim-hero-row {
+            padding: 8px 12px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000;
+        }
+        .sim-hero-row.included { border-color: #6a4a1a; }
+        .sim-hero-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; font-family: var(--font-title); color: var(--wc-yellow); }
+        .sim-hero-toggle input { width: 16px; height: 16px; }
+        .sim-hero-config { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 2px 26px; }
+        .sim-hero-config label { display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+        .sim-profile-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .sim-profile-row {
+            padding: 8px 12px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000;
+        }
+        .sim-profile-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--wc-yellow); font-family: var(--font-title); cursor: pointer; }
+        .sim-profile-desc { margin: 4px 0 0 24px; font-size: 0.78rem; color: #d8cba8; line-height: 1.4; }
+        #simRunsInput {
+            width: 90px;
+            padding: 6px 10px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #5a4520;
+            color: var(--wc-yellow);
+            font-family: var(--font-body);
+        }
+
+        .sim-report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin: 14px 0; }
+        .sim-report-card {
+            padding: 14px 16px;
+            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            border: 1px solid #5a4520;
+            box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+        .sim-report-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+        .sim-report-card h3 { margin: 0 0 8px; font-family: var(--font-title); color: var(--wc-yellow); }
+        .sim-detail-toggle {
+            flex: 0 0 auto;
+            background: none; border: 1px solid #5a4520; color: var(--wc-yellow);
+            width: 26px; height: 26px; line-height: 1; cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .sim-detail-toggle.open { transform: rotate(180deg); }
+        .sim-run-detail { margin-top: 12px; border-top: 1px solid #3a2a12; padding-top: 10px; overflow-x: auto; }
+        .sim-run-detail h4 { margin: 0 0 6px; }
+        .sim-run-table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 0.72rem; color: #e6dcc4; }
+        .sim-run-table th, .sim-run-table td { padding: 3px 5px; text-align: left; border-bottom: 1px solid #2a2018; white-space: nowrap; }
+        .sim-run-table th { color: var(--text-dim); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em; }
+        .sim-run-table .log-success { color: #8dff78; }
+        .sim-run-table .log-fail { color: #ff8a70; }
+        .sim-report-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
         .codex-card .tile-tag { align-self: flex-start; background: none; border: none; box-shadow: none; padding: 0; color: var(--text-dim); font-size: 0.68rem; letter-spacing: 0.04em; }
