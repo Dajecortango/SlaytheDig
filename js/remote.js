@@ -14,13 +14,23 @@
         return {
             campaignTitle: (typeof currentCampaign !== 'undefined' && currentCampaign) ? currentCampaign.title : '',
             coins: (typeof partyCoins !== 'undefined') ? partyCoins : 0,
+            // In combattimento le pozioni si usano nel proprio turno; fuori (mappa, riposo, mercante...) dal telefono
+            inCombat: typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat',
             heroes: (typeof party !== 'undefined' ? party : []).map(h => ({
                 name: h.name,
                 hp: h.hp, maxHp: h.maxHp,
                 str: h.str, int: h.int, fth: h.fth, dmg: h.dmg,
                 base_armor: h.base_armor, current_armor: h.current_armor,
-                items: (h.items || []).map(it => ({ name: it.name, desc: it.desc })),
-                chosenAbility: h.chosenAbility ? h.chosenAbility.name : null
+                portrait: (typeof HERO_PORTRAITS !== 'undefined' && HERO_PORTRAITS[h.name]) ? HERO_PORTRAITS[h.name].src : null,
+                items: (h.items || []).map(it => ({
+                    name: it.name,
+                    desc: it.desc,
+                    rarity: typeof itemRarity === 'function' ? itemRarity(it) : null,
+                    icon: typeof itemImageSrc === 'function' ? (itemImageSrc(it) || null) : null,
+                    consumable: !!(it.type && it.type.startsWith('consumable'))
+                })),
+                chosenAbility: h.chosenAbility ? h.chosenAbility.name : null,
+                abilityDesc: h.chosenAbility ? (h.chosenAbility.desc || '') : ''
             }))
         };
     }
@@ -225,6 +235,14 @@
             });
             rollEvents.addEventListener('action-chosen', e => {
                 try { handleRemoteActionChosen(JSON.parse(e.data)); } catch (err) {}
+            });
+            // Pozione usata dallo zaino del telefono fuori dal combattimento
+            rollEvents.addEventListener('item-use', e => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat') return;
+                    if (typeof useConsumable === 'function') useConsumable(data.heroName, data.itemIndex, data.targetName);
+                } catch (err) {}
             });
             // nessun onerror gestito apposta: senza server l'EventSource ritenta da solo e non blocca nulla
         } catch (e) {}

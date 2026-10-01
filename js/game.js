@@ -560,6 +560,15 @@ function breakRelic(relicName) {
             sfx.play().catch(() => {});
         }
 
+        // Suoni propri del nemico in combattimento (campi sfxAttack, sfxHit, sfxDeath del bestiario).
+        // Restituisce false se lo slot è vuoto, così chi chiama può usare il suono generato.
+        function playEnemySfx(slot) {
+            const src = activeEnemy && activeEnemy[slot];
+            if (!src) return false;
+            playSfx(src, 0.9);
+            return true;
+        }
+
         // Suoni dei colpi generati con Web Audio (nessun file audio necessario):
         // 'armor' = clangore metallico, 'hit' = colpo sordo sugli HP di un eroe, 'enemy' = colpo sul nemico
         let sfxCtx = null;
@@ -1002,7 +1011,7 @@ function breakRelic(relicName) {
                         else if (node.done) pathClass = "path-closed";
                         else if (targetNode.level < currentLevel) pathClass = "path-closed";
 
-                        svgLinesHtml += `<line class="${pathClass}" x1="${node.x}" y1="${y1}" x2="${targetNode.x}" y2="${y2}" />`;
+                        svgLinesHtml += `<line class="${pathClass}" data-from="${node.id}" data-to="${targetNode.id}" x1="${node.x}" y1="${y1}" x2="${targetNode.x}" y2="${y2}" />`;
                     }
                 });
             });
@@ -1021,6 +1030,7 @@ function breakRelic(relicName) {
 
                 const nodeEl = document.createElement('div');
                 nodeEl.className = `sts-node node-${node.type} ${statusClass}`;
+                nodeEl.dataset.nodeId = node.id;
                 nodeEl.style.left = `${node.x}px`;
                 nodeEl.style.top = `${containerHeight - (node.level * stepY + 70)}px`;
                 const isBoss = node.level === maxLevel || node.type === 'captain';
@@ -1055,16 +1065,7 @@ function breakRelic(relicName) {
             const last = doneNodes.reduce((a, b) => (b.level > a.level ? b : a));
             const pos = { x: last.x, y: containerHeight - (last.level * stepY + 70) };
 
-            const token = document.createElement('div');
-            token.id = 'partyToken';
-            token.className = 'party-token';
-            token.innerHTML = `<svg viewBox="0 0 64 72" aria-hidden="true">
-                <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
-                <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
-                <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
-            </svg>`;
-            token.dataset.tip = 'La Compagnia||Posizione attuale della spedizione.';
-
+            const token = createPartyToken();
             const from = lastPartyTokenPos && lastPartyTokenPos.nodes === stsMapNodes ? lastPartyTokenPos : null;
             const moves = from && (from.x !== pos.x || from.y !== pos.y) && animationsEnabled();
             const start = moves ? from : pos;
@@ -1080,6 +1081,57 @@ function breakRelic(relicName) {
                 setTimeout(() => token.classList.remove('moving'), 950);
             }
             lastPartyTokenPos = { x: pos.x, y: pos.y, nodes: stsMapNodes };
+        }
+
+        function createPartyToken() {
+            const token = document.createElement('div');
+            token.id = 'partyToken';
+            token.className = 'party-token';
+            token.innerHTML = `<svg viewBox="0 0 64 72" aria-hidden="true">
+                <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
+                <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
+                <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
+            </svg>`;
+            token.dataset.tip = 'La Compagnia||Posizione attuale della spedizione.';
+            return token;
+        }
+
+        // Percorso animato: dopo il clic su un nodo il segnalino percorre il collegamento fino a lì
+        // (la strada si illumina d'oro), poi parte il titolo dell'evento. Restituisce la durata in ms.
+        const PARTY_TRAVEL_MS = 900;
+        function travelPartyTokenTo(node) {
+            const container = document.getElementById('stsMapNodesContainer');
+            const nodeEl = container && container.querySelector(`.sts-node[data-node-id="${node.id}"]`);
+            if (!nodeEl || !animationsEnabled()) return 0;
+            const target = { x: node.x, y: parseFloat(nodeEl.style.top) };
+
+            let token = document.getElementById('partyToken');
+            if (!token) {
+                // Primo nodo: il segnalino entra dal fondo della mappa
+                const start = lastPartyTokenPos || { x: target.x, y: target.y + 200 };
+                token = createPartyToken();
+                token.style.left = `${start.x}px`;
+                token.style.top = `${start.y}px`;
+                container.appendChild(token);
+            }
+
+            const fromNode = stsMapNodes.filter(n => n.done).reduce((a, b) => (!a || b.level > a.level ? b : a), null);
+            const line = fromNode && document.querySelector(`#stsMapSvg line[data-from="${fromNode.id}"][data-to="${node.id}"]`);
+            if (line) line.classList.add('path-walking');
+            nodeEl.classList.add('node-arriving');
+
+            const wrapper = document.getElementById('stsMapWrapper');
+            if (wrapper && wrapper.scrollTo) wrapper.scrollTo({ top: target.y - wrapper.clientHeight * 0.6, behavior: 'smooth' });
+
+            token.classList.add('moving');
+            void token.offsetWidth;
+            token.style.left = `${target.x}px`;
+            token.style.top = `${target.y}px`;
+            setTimeout(() => token.classList.remove('moving'), PARTY_TRAVEL_MS + 50);
+            // Al ritorno sulla mappa il segnalino è già sul nodo: niente seconda animazione
+            lastPartyTokenPos = { x: target.x, y: target.y, nodes: stsMapNodes };
+            synthSfx('flip');
+            return PARTY_TRAVEL_MS;
         }
 
         /* ---------- Titolo dell'evento prima di entrare nel nodo ---------- */
@@ -1103,6 +1155,11 @@ function breakRelic(relicName) {
             if (!animationsEnabled()) { enterStsNode(id); return; }
 
             nodeBannerBusy = true;
+            const travel = travelPartyTokenTo(node);
+            setTimeout(() => showNodeBanner(node, id), travel);
+        }
+
+        function showNodeBanner(node, id) {
             const info = nodeBannerInfo(node);
             const banner = document.createElement('div');
             banner.className = `event-banner ${info.isBoss ? 'boss' : ''}`;
@@ -1926,6 +1983,7 @@ function breakRelic(relicName) {
         function executeMonsterAttack() {
             const target = party.find(p => p.name === document.getElementById('monsterTargetSelect').value);
             logCombat(`--- ${activeEnemy.name} attacca ${target.name}! ---`);
+            playEnemySfx('sfxAttack');
 
             const result = resolveMonsterAttack(activeEnemy, target);
             result.events.forEach(ev => logCombat(ev.text));
@@ -1946,362 +2004,6 @@ function breakRelic(relicName) {
                 document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
                 startHeroesTurnCycle();
             };
-        }
-
-        let currentLootItem = null;
-
-        // Avanzamento nella mappa del nodo corrente: 0 al primo livello, 1 all'ultimo
-        function mapProgress() {
-            const node = stsMapNodes.find(n => n.id === currentNodeId);
-            const maxLevel = Math.max(...stsMapNodes.map(n => n.level), 1);
-            return node ? Math.min(1, node.level / maxLevel) : 0;
-        }
-
-        // Probabilità (in %) di comune/raro/epico: salgono raro ed epico andando avanti e negli scontri elite
-        function lootRarityWeights(isElite, progress) {
-            const lerp = (a, b) => a + (b - a) * progress;
-            return isElite
-                ? { comune: lerp(30, 10), raro: lerp(50, 50), epico: lerp(20, 40) }
-                : { comune: lerp(70, 40), raro: lerp(25, 45), epico: lerp(5, 15) };
-        }
-
-        // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
-        function pickLootItem(isElite, progress) {
-            return pickByRarity(gameItems, lootRarityWeights(isElite, progress));
-        }
-
-        // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti), poi un oggetto a caso di quella rarità
-        function pickByRarity(pool, weights) {
-            if (pool.length === 0) return null;
-            const available = Object.keys(weights).filter(r => pool.some(i => itemRarity(i) === r));
-            if (available.length === 0) return pool[Math.floor(Math.random() * pool.length)];
-            const total = available.reduce((sum, r) => sum + weights[r], 0);
-            let pick = Math.random() * total;
-            let rarity = available[available.length - 1];
-            for (const r of available) {
-                pick -= weights[r];
-                if (pick < 0) { rarity = r; break; }
-            }
-            const sameRarity = pool.filter(i => itemRarity(i) === rarity);
-            return sameRarity[Math.floor(Math.random() * sameRarity.length)];
-        }
-
-        // Oro base moltiplicato per l'avanzamento (fino a x2 all'ultimo livello) e +50% negli scontri elite
-        function scaledCoins(amounts, isElite) {
-            const base = amounts[Math.floor(Math.random() * amounts.length)];
-            return Math.round(base * (1 + mapProgress()) * (isElite ? 1.5 : 1));
-        }
-
-        function triggerLoot() {
-            showScreen('screenLoot');
-
-            // Reliquia: Dente del grande lupo
-            if (hasRelic("Dente del grande lupo")) {
-                let lowestHero = party.filter(h => h.hp > 0).reduce((prev, curr) => prev.hp < curr.hp ? prev : curr);
-                if (lowestHero && lowestHero.hp < lowestHero.maxHp) {
-                    lowestHero.hp += 1;
-                }
-            }
-
-            const currentNode = stsMapNodes.find(n => n.id === currentNodeId);
-            const isEliteCombat = currentNode && (currentNode.type === 'elite' || currentNode.type === 'captain');
-            let coins = scaledCoins([3, 5, 7, 9, 12], isEliteCombat);
-
-            if (activeCurses.includes("Maledizione: -15% monete")) {
-                coins = Math.floor(coins * 0.85);
-            }
-
-            // Abilità di Icaro "Fammi dare un'occhiata": monete extra garantite dopo ogni scontro, se è vivo.
-            // L'id dell'abilità copre i salvataggi creati prima di questa versione.
-            const lootBonusHeroes = party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
-            const lootBonus = lootBonusHeroes.reduce((sum, h) => sum + (h.bonusLootCoins || 3), 0);
-            coins += lootBonus;
-            document.getElementById('lootCoinsBonus').textContent = lootBonus
-                ? `(di cui +${lootBonus} da ${lootBonusHeroes.map(h => h.name).join(', ')}: Fammi dare un'occhiata)` : '';
-
-            partyCoins += coins;
-
-            currentLootItem = pickLootItem(isEliteCombat, mapProgress());
-            expeditionStats.itemsFound++;
-
-            document.getElementById('lootCoinsText').textContent = coins;
-            document.getElementById('lootItemIcon').innerHTML = itemIconHtml(currentLootItem);
-            document.getElementById('lootItemName').textContent = currentLootItem.name;
-            document.getElementById('lootItemDesc').textContent = currentLootItem.desc;
-            revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
-            document.getElementById('lootHeroSelect').innerHTML = heroOptionsForItem(currentLootItem);
-            document.getElementById('lootCardBack').classList.remove('hidden', 'card-flip-out');
-            document.getElementById('lootItemRow').classList.add('hidden');
-            document.getElementById('lootItemRow').classList.remove('card-flip-in', 'reveal-comune', 'reveal-raro', 'reveal-epico');
-            document.getElementById('lootAssignArea').classList.add('hidden');
-
-            updatePartyStatusBars();
-        }
-
-        function revealLootItem() {
-            const back = document.getElementById('lootCardBack');
-            if (back.classList.contains('hidden')) return;
-            flipCard(back, currentLootItem, () => {
-                back.classList.add('hidden');
-                const row = document.getElementById('lootItemRow');
-                row.classList.remove('hidden');
-                row.classList.add('card-flip-in', `reveal-${itemRarity(currentLootItem)}`);
-                document.getElementById('lootAssignArea').classList.remove('hidden');
-            });
-        }
-
-        function confirmLootAssignment() {
-            const hero = party.find(p => p.name === document.getElementById('lootHeroSelect').value);
-            assignItemToHero(currentLootItem, hero, () => {
-                advanceNode();
-            });
-        }
-
-        let currentTreasureItems = [];
-        let selectedTreasureItem = null;
-
-        function startTreasure(treasureId) {
-            showScreen('screenTreasure');
-            const descText = treasuresData[treasureId] || "Un antico forziere cattura la vostra attenzione.";
-            document.getElementById('treasureDescBox').innerHTML = `<strong>Descrizione:</strong> ${descText}`;
-        }
-
-        // Genera l'offerta di un tesoro: monete (con eventuale sconto da maledizione) + 3 oggetti a caso.
-        function generateTreasureOffer() {
-            let coins = scaledCoins([5, 8, 10, 15], false);
-            if (activeCurses.includes("Maledizione: -15% monete")) {
-                coins = Math.floor(coins * 0.85);
-            }
-            const items = [];
-            for (let i = 0; i < 3; i++) {
-                items.push(gameItems[Math.floor(Math.random() * gameItems.length)]);
-            }
-            return { coins, items };
-        }
-
-        function openTreasure() {
-            showScreen('screenTreasureLoot');
-            const offer = generateTreasureOffer();
-            const coins = offer.coins;
-            partyCoins += coins;
-            currentTreasureItems = offer.items;
-
-            document.getElementById('treasureCoinsText').textContent = coins;
-            document.getElementById('treasureAssignArea').classList.add('hidden');
-            document.getElementById('btnExitTreasure').classList.remove('hidden');
-
-            // Lo scrigno si apre, poi monete e oggetti compaiono come carte
-            const chestDelay = playChestAnimation();
-            coinFlightDelay = chestDelay;
-            renderTreasureItemsGrid();
-            document.querySelectorAll('#treasureItemsList .armory-btn').forEach((card, i) => revealAsCard(card, chestDelay + i * 160));
-            updatePartyStatusBars();
-            coinFlightDelay = 0;
-        }
-
-        function renderTreasureItemsGrid() {
-            document.getElementById('treasureItemsList').innerHTML = currentTreasureItems.map((it, idx) => {
-                if(!it) {
-                    return `<div class="armory-btn taken"><span class="tile-text"><strong>Prelevato</strong></span></div>`;
-                }
-                return `
-                    <button class="armory-btn" onclick="selectTreasureItem(${idx})">
-                        ${itemIconHtml(it)}
-                        <span class="tile-text">
-                            <strong>${it.name}</strong>
-                            <span class="tile-sub">${it.desc}</span>
-                            <span class="tile-tag">Prendi</span>
-                        </span>
-                    </button>
-                `;
-            }).join('');
-        }
-
-        let selectedTreasureIndex = null;
-        function selectTreasureItem(idx) {
-            selectedTreasureIndex = idx;
-            selectedTreasureItem = currentTreasureItems[idx];
-
-            document.getElementById('treasureItemsList').classList.add('hidden');
-            document.getElementById('btnExitTreasure').classList.add('hidden');
-            document.getElementById('treasureAssignArea').classList.remove('hidden');
-
-            document.getElementById('selectedTreasureName').textContent = selectedTreasureItem.name;
-            document.getElementById('selectedTreasureDesc').textContent = selectedTreasureItem.desc;
-            document.getElementById('treasureHeroSelect').innerHTML = heroOptionsForItem(selectedTreasureItem);
-        }
-
-        function cancelTreasureItemSelection() {
-            document.getElementById('treasureAssignArea').classList.add('hidden');
-            document.getElementById('treasureItemsList').classList.remove('hidden');
-            document.getElementById('btnExitTreasure').classList.remove('hidden');
-        }
-
-        function confirmTreasureAssignment() {
-            const hero = party.find(p => p.name === document.getElementById('treasureHeroSelect').value);
-            expeditionStats.itemsFound++;
-            assignItemToHero(selectedTreasureItem, hero, () => {
-                currentTreasureItems[selectedTreasureIndex] = null;
-                cancelTreasureItemSelection();
-                renderTreasureItemsGrid();
-            });
-        }
-
-        // Prezzo base per rarità: il mercante vende con una piccola oscillazione e compra a metà
-        const ITEM_BASE_PRICE = { comune: 5, raro: 11, epico: 21 };
-        const ITEM_PRICE_SPREAD = { comune: 1, raro: 2, epico: 3 };
-
-        function itemSellPrice(item) {
-            return Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
-        }
-
-        let merchantItemsWithPrices = [];
-        let currentMerchantItem = null;
-
-        // Genera il banco del mercante: 1 comune, 1 raro, 1 raro o epico, con prezzi e sconti/maledizioni applicati.
-        // Merce del mercante: 5 oggetti da equipaggiare (senza doppioni finché il bottino lo permette)
-        // più 1 consumabile, tutti dal bottino della campagna. Le rarità alte diventano più probabili
-        // andando avanti nella mappa: comune/raro/epico 60/35/5 % al primo livello, 20/50/30 % all'ultimo.
-        const MERCHANT_EQUIPMENT_SLOTS = 5;
-        const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
-
-        function merchantRarityWeights(progress) {
-            const lerp = (a, b) => a + (b - a) * progress;
-            return { comune: lerp(60, 20), raro: lerp(35, 50), epico: lerp(5, 30) };
-        }
-
-        function generateMerchantStock() {
-            const weights = merchantRarityWeights(mapProgress());
-            const equipment = gameItems.filter(i => !isConsumableItem(i));
-            // Se il bottino della campagna non ha consumabili, si prendono quelli dell'armeria condivisa
-            let consumables = gameItems.filter(isConsumableItem);
-            if (consumables.length === 0) consumables = Object.values(LIBRERIA.armeria).filter(isConsumableItem);
-
-            const shopPool = [];
-            for (let i = 0; i < MERCHANT_EQUIPMENT_SLOTS && equipment.length > 0; i++) {
-                const notYetOffered = equipment.filter(item => !shopPool.includes(item));
-                shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : equipment, weights));
-            }
-            shopPool.push(pickByRarity(consumables, weights));
-
-            return shopPool.filter(Boolean).map(item => {
-                const rarity = itemRarity(item);
-                const spread = ITEM_PRICE_SPREAD[rarity];
-                let basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
-
-                // Applica gli sconti delle reliquie
-                if (hasRelic("Moneta di fredlos")) basePrice = Math.floor(basePrice * 0.5);
-                if (hasRelic("Lasciapassare mercantile")) basePrice = Math.max(1, basePrice - 3);
-                // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
-                if (hasCurse("Rancore del Mercante")) basePrice += 2;
-
-                return { item, price: basePrice, revealed: false };
-            });
-        }
-
-       function startMerchant(merchantId) {
-    showScreen('screenMerchant');
-    const descText = merchantsData[merchantId] || merchantsData.default || "Un mercante di passaggio offre i suoi beni.";
-    document.getElementById('merchantDescBox').innerHTML = `<strong>Descrizione:</strong> ${descText}`;
-
-    document.getElementById('merchantAssignArea').classList.add('hidden');
-    document.getElementById('merchantItemsList').classList.remove('hidden');
-    document.getElementById('btnExitMerchant').classList.remove('hidden');
-
-    showMerchantTab('buy');
-    merchantItemsWithPrices = generateMerchantStock();
-
-    renderMerchantShop();
-}
-
-        /* ---------- Carte coperte: merce del mercante e bottino degli scontri si scoprono con un clic ---------- */
-        let justRevealedMerchantIdx = null;
-
-        function cardBackHtml(onclick, title, sub, extraClass = '') {
-            return `
-                <button class="armory-btn card-back ${extraClass}" onclick="${onclick}">
-                    <span class="card-back-emblem" aria-hidden="true">?</span>
-                    <span class="tile-text">
-                        <strong>${title}</strong>
-                        <span class="tile-sub">${sub}</span>
-                    </span>
-                </button>`;
-        }
-
-        // Gira la carta: prima si chiude di taglio, poi si riapre mostrando l'oggetto (vedi card-flip-in)
-        function flipCard(el, item, onRevealed) {
-            synthSfx('flip');
-            if (itemRarity(item) === 'epico') setTimeout(() => synthSfx('six'), 200);
-            if (!el || !animationsEnabled()) { onRevealed(); return; }
-            el.classList.add('card-flip-out');
-            setTimeout(onRevealed, 170);
-        }
-
-        function revealMerchantItem(idx) {
-            const entry = merchantItemsWithPrices[idx];
-            if (!entry || entry.revealed) return;
-            flipCard(document.querySelector(`#merchantItemsList [data-idx="${idx}"]`), entry.item, () => {
-                entry.revealed = true;
-                justRevealedMerchantIdx = idx;
-                renderMerchantShop();
-                justRevealedMerchantIdx = null;
-            });
-        }
-
-        function renderMerchantShop() {
-            document.getElementById('merchantItemsList').innerHTML = merchantItemsWithPrices.map((entry, idx) => {
-                if(!entry) {
-                    return `<div class="armory-btn taken"><span class="tile-text"><strong>Venduto</strong></span></div>`;
-                }
-                if (!entry.revealed) {
-                    return cardBackHtml(`revealMerchantItem(${idx})`, 'Merce coperta', 'Clicca per scoprire cosa offre il mercante')
-                        .replace('<button ', `<button data-idx="${idx}" `);
-                }
-                const canAfford = partyCoins >= entry.price;
-                const flip = idx === justRevealedMerchantIdx ? `card-flip-in reveal-${itemRarity(entry.item)}` : '';
-                return `
-                    <button data-idx="${idx}" class="armory-btn ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})">
-                        ${itemIconHtml(entry.item)}
-                        <span class="tile-text">
-                            <strong>${entry.item.name}</strong>
-                            <span class="tile-sub">${entry.item.desc}</span>
-                        </span>
-                        <span class="price ${canAfford ? '' : 'too-much'}"><span class="coin"></span>${entry.price}</span>
-                    </button>
-                `;
-            }).join('');
-        }
-
-        function tryBuyMerchantItem(idx) {
-            let entry = merchantItemsWithPrices[idx];
-            if (!entry || !entry.revealed) return;
-            if(partyCoins < entry.price) {
-                alert("Non hai abbastanza monete per questo oggetto!");
-                return;
-            }
-
-            partyCoins -= entry.price;
-            currentMerchantItem = entry.item;
-            merchantItemsWithPrices[idx] = null;
-
-            document.getElementById('merchantItemsList').classList.add('hidden');
-            document.getElementById('merchantTabs').classList.add('hidden');
-            document.getElementById('btnExitMerchant').classList.add('hidden');
-            document.getElementById('merchantAssignArea').classList.remove('hidden');
-            document.getElementById('merchantHeroSelect').innerHTML = heroOptionsForItem(currentMerchantItem);
-
-            updatePartyStatusBars();
-        }
-
-        function confirmMerchantAssignment() {
-            const hero = party.find(p => p.name === document.getElementById('merchantHeroSelect').value);
-            document.getElementById('merchantAssignArea').classList.add('hidden');
-            assignItemToHero(currentMerchantItem, hero, () => {
-                document.getElementById('merchantItemsList').classList.remove('hidden');
-                document.getElementById('merchantTabs').classList.remove('hidden');
-                document.getElementById('btnExitMerchant').classList.remove('hidden');
-                renderMerchantShop();
-            });
         }
 
         /* ==========================================================================
@@ -2823,7 +2525,7 @@ function breakRelic(relicName) {
             astarte_veleni: 'immagini/icone/BTNCorrosiveBreath.png',
             astarte_affondo: 'immagini/icone/BTNSacrifice.png',
             icaro_oro: 'immagini/icone/BTNMagicalSentry.png',
-            icaro_trucchi: 'immagini/icone/BTNSilence-Reforged.png',
+            icaro_trucchi: 'immagini/icone/BTNSilence.png',
             ascadeo_ghiaccio: 'immagini/icone/BTNFreezingBreath.png',
             ascadeo_segnato: 'immagini/icone/BTNFrostWolf.png',
             zeno_colpo_benedetto: 'immagini/icone/BTNInnerFire.png',
@@ -3226,7 +2928,9 @@ function breakRelic(relicName) {
             const dHp = activeEnemy.hp - prev.hp;
             if (dHp < 0) {
                 fxHit(box);
-                synthSfx('enemy');
+                // Alla morte "sfxDeath" (o, se manca, "sfxHit"); altrimenti "sfxHit"; senza file il suono generato
+                const dead = activeEnemy.hp <= 0;
+                if (!(dead && playEnemySfx('sfxDeath')) && !playEnemySfx('sfxHit')) synthSfx('enemy');
                 fxFloatOn(box, `${dHp}`, fxNextEnemyHitCritical ? 'crit' : 'dmg');
             }
             if (activeEnemy.isStunned && !prev.stunned) fxFloatOn(box, 'Stordito', 'stun', 200);
@@ -3388,7 +3092,8 @@ function breakRelic(relicName) {
             }
             if (kind === 'enemies') {
                 const e = v.enemy;
-                return `<div class="codex-card"><span class="icon-frame ic-arcane">${svgIcon('skull')}</span><span class="tile-text"><strong>${esc(e.name)}</strong>
+                const face = e.image ? `<span class="icon-frame has-img"><img class="item-img codex-enemy-img" src="${e.image}" alt="" onerror="this.parentNode.innerHTML=svgIcon('skull')"></span>` : `<span class="icon-frame ic-arcane">${svgIcon('skull')}</span>`;
+                return `<div class="codex-card">${face}<span class="tile-text"><strong>${esc(e.name)}</strong>
                     <span class="tile-sub">HP ${e.maxHp} · CA ${e.ca} · Attacco ${e.att} · Danno ${e.dmg}</span><span class="tile-tag">${esc(v.campaign)}</span></span></div>`;
             }
             const img = kind === 'relics' ? 'immagini/icone/BTNEnchantedGemstone.png' : 'immagini/icone/BTNOrbOfCorruption.png';
@@ -3696,6 +3401,29 @@ function breakRelic(relicName) {
         }
 
         /* ---------- 14. Reliquia ottenuta / maledizione subita ---------- */
+        // Copia volante di un'icona verso un contatore della barra in alto; restituisce la durata in ms
+        function flyIconToCounter(img, counter) {
+            if (!img || !counter || !animationsEnabled() || counter.offsetParent === null || !img.animate) return 0;
+            const from = img.getBoundingClientRect();
+            const target = (counter.querySelector('img') || counter).getBoundingClientRect();
+            const ghost = img.cloneNode();
+            ghost.className = 'fly-icon';
+            Object.assign(ghost.style, { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` });
+            document.body.appendChild(ghost);
+            const dx = target.left + target.width / 2 - (from.left + from.width / 2);
+            const dy = target.top + target.height / 2 - (from.top + from.height / 2);
+            const scale = Math.max(0.2, target.width / from.width);
+            const duration = 750;
+            // Traiettoria ad arco: sale un po' prima di puntare al contatore
+            ghost.animate([
+                { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 60}px) scale(${(1 + scale) / 2}) rotate(-12deg)`, opacity: 1, offset: 0.5 },
+                { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0.4 }
+            ], { duration, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'forwards' });
+            setTimeout(() => ghost.remove(), duration + 50);
+            return duration;
+        }
+
         function showOutcomeOverlay(kind, data) {
             const isRelic = kind === 'relic';
             const overlay = document.createElement('div');
@@ -3703,7 +3431,7 @@ function breakRelic(relicName) {
             overlay.innerHTML = `
                 <div class="outcome-card">
                     <div class="${isRelic ? 'outcome-sparkles' : 'outcome-smoke'}"></div>
-                    <div class="outcome-icon"><img src="${isRelic ? 'immagini/icone/BTNEnchantedGemstone-Reforged.png' : 'immagini/icone/BTNOrbOfCorruption-Reforged.png'}" alt=""></div>
+                    <div class="outcome-icon"><img src="${isRelic ? 'immagini/icone/BTNEnchantedGemstone.png' : 'immagini/icone/BTNOrbOfCorruption.png'}" alt=""></div>
                     <div class="outcome-kind">${isRelic ? 'Reliquia ottenuta' : 'Maledizione subita'}</div>
                     <div class="outcome-name">${data.name}</div>
                     <div class="outcome-desc">${data.desc || ''}</div>
@@ -3714,13 +3442,18 @@ function breakRelic(relicName) {
             const close = () => {
                 if (closed) return;
                 closed = true;
+                const counter = document.getElementById(isRelic ? 'topBarRelicsWrap' : 'topBarCursesWrap');
+                const flash = () => {
+                    counter.classList.remove('relic-flash');
+                    void counter.offsetWidth;
+                    counter.classList.add('relic-flash');
+                    setTimeout(() => counter.classList.remove('relic-flash'), 1900);
+                };
+                // L'icona vola dalla finestra al contatore in alto; il contatore lampeggia all'arrivo
+                const flight = flyIconToCounter(overlay.querySelector('.outcome-icon img'), counter);
                 overlay.classList.add('closing');
                 setTimeout(() => overlay.remove(), 300);
-                const counter = document.getElementById(isRelic ? 'topBarRelicsWrap' : 'topBarCursesWrap');
-                counter.classList.remove('relic-flash');
-                void counter.offsetWidth;
-                counter.classList.add('relic-flash');
-                setTimeout(() => counter.classList.remove('relic-flash'), 1900);
+                setTimeout(flash, flight);
             };
             overlay.addEventListener('click', close);
             document.body.appendChild(overlay);
@@ -3793,64 +3526,6 @@ function breakRelic(relicName) {
         }
 
         /* ---------- 17. Conferma prima di lasciare mercante e tesoro ---------- */
-        function showMerchantTab(tab) {
-            const selling = tab === 'sell';
-            document.getElementById('merchantTabBuy').classList.toggle('active', !selling);
-            document.getElementById('merchantTabSell').classList.toggle('active', selling);
-            document.getElementById('merchantItemsList').classList.toggle('hidden', selling);
-            document.getElementById('merchantSellList').classList.toggle('hidden', !selling);
-            if (selling) renderMerchantSellList(); else renderMerchantShop();
-        }
-
-        function renderMerchantSellList() {
-            const entries = [];
-            party.forEach(hero => hero.items.forEach((item, idx) => entries.push({ hero, item, idx })));
-            const list = document.getElementById('merchantSellList');
-            if (entries.length === 0) {
-                list.innerHTML = `<p class="panel-label">La compagnia non ha oggetti da vendere.</p>`;
-                return;
-            }
-            list.innerHTML = entries.map(({ hero, item, idx }) => `
-                <button class="armory-btn" onclick="trySellItem('${esc(hero.name)}', ${idx})">
-                    ${itemIconHtml(item)}
-                    <span class="tile-text">
-                        <strong>${item.name}</strong>
-                        <span class="tile-sub">${item.desc}</span>
-                        <span class="tile-tag">${esc(hero.name)}</span>
-                    </span>
-                    <span class="price sell"><span class="coin"></span>+${itemSellPrice(item)}</span>
-                </button>
-            `).join('');
-        }
-
-        function trySellItem(heroName, idx) {
-            const hero = party.find(h => h.name === heroName);
-            const item = hero && hero.items[idx];
-            if (!item) return;
-            const price = itemSellPrice(item);
-            openModal('Vendere l\'oggetto?',
-                `<p>Vendi <b>${item.name}</b> di ${esc(hero.name)} per <b style="color:var(--wc-yellow)">${price}</b> monete?</p>`,
-                [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Vendi', className: 'btn-danger', onClick: () => {
-                    revertItemEffects(item, hero);
-                    hero.items.splice(idx, 1);
-                    partyCoins += price;
-                    updatePartyStatusBars();
-                    renderMerchantSellList();
-                } }]);
-        }
-
-        function confirmLeaveMerchant() {
-            const hidden = merchantItemsWithPrices.filter(entry => entry && !entry.revealed).length;
-            const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed && partyCoins >= entry.price);
-            if (!affordable && !hidden) { advanceNode(); return; }
-            const reasons = [];
-            if (hidden) reasons.push(hidden === 1 ? 'c\'è ancora <b>1</b> carta da scoprire' : `ci sono ancora <b>${hidden}</b> carte da scoprire`);
-            if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${partyCoins}</b> monete e ci sono oggetti che puoi permetterti`);
-            openModal('Lasciare il mercante?',
-                `<p>${reasons.join(' e ').replace(/^./, c => c.toUpperCase())}.</p>`,
-                [{ label: 'Resta nel negozio', className: 'btn-proceed' }, { label: 'Esci comunque', className: 'btn-danger', onClick: advanceNode }]);
-        }
-
         function confirmLeaveTreasure() {
             const left = currentTreasureItems.filter(Boolean).length;
             if (left === 0) { advanceNode(); return; }

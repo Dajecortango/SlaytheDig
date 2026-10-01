@@ -18,15 +18,15 @@ App web statica in JavaScript puro: niente build, niente npm, niente bundler, ni
 
 - `index.html`: tutte le schermate (`div#screen*`) sono nel DOM; `showScreen(id)` mostra quella attiva togliendo la classe `.hidden`. I pulsanti chiamano funzioni globali con `onclick="..."`.
 - `css/style.css`: tema WC3 (cornici dorate, pulsanti in metallo in rilievo, catene, cursore a guanto), animazioni, menu.
-- `js/game.js`: solo motore di gioco, nessun dato di campagna. Legge `const campaignsDatabase = window.CAMPAIGNS || {}`.
-- `data/libreria/`: libreria condivisa da tutte le campagne. `armeria.js` (oggetti, più `lootPredefinito`), `bestiario.js` (nemici), `reliquie.js`, `maledizioni.js`; popolano `window.LIBRERIA`, JSON puro.
+- `js/game.js`: motore di gioco, nessun dato di campagna. `js/loot.js` (bottino, tesori, carte coperte) e `js/shop.js` (mercante: merce, rinnovo, contrattazione, vendita) sono caricati subito dopo e condividono lo stesso ambito globale. Legge `const campaignsDatabase = window.CAMPAIGNS || {}`.
+- `data/libreria/`: libreria condivisa da tutte le campagne. `armeria.js` (oggetti, più `lootPredefinito`), `bestiario.js` (nemici, con l'immagine dello scontro), `reliquie.js`, `maledizioni.js`, `eroi.js` (statistiche, abilità e ritratti); popolano `window.LIBRERIA`, JSON puro.
 - `data/campagne/<id>.js`: una campagna per file, JSON puro senza funzioni, che richiama gli elementi della libreria **per id**. L'ordine dei `<script>` in `index.html` è l'ordine nel menu. Vanno inclusi anche in `editor.html`.
 - `js/libreria.js`: caricato dopo librerie e campagne e prima di `js/game.js`. `resolveCampaign()` sostituisce i riferimenti con gli elementi completi: `window.CAMPAIGNS` contiene le campagne risolte (stessa forma di sempre, usata da motore, simulatore e tiro da remoto), `window.CAMPAIGNS_RAW` quelle con i riferimenti (usate dall'editor).
 - `editor.html` + `js/editor.js` + `css/editor.css` (che si appoggia a `css/style.css`).
 
 ### Dati di una campagna
 
-`heroes`, `abilities` (per nome dell'eroe), `initialArmory` e `lootItems` (id dell'armeria; `lootItems: null` = `LIBRERIA.lootPredefinito`), `challenges` (`reward` = id di una reliquia, `punishment` = id di una maledizione, oppure un oggetto scritto nella sfida per premi e punizioni immediati come monete o ferite), `merchants` / `rests` / `treasures` (testi per chiave, `"default"` vale per tutti), `mapNodes` (`id`, `level`, `x`, `type`, `enemy` = id del bestiario, `challengeId` / `restId` / `merchantId` / `treasureId`, `next`, `active`, `image`).
+`heroes` (id della libreria Eroi; le abilità arrivano da lì), `initialArmory` e `lootItems` (id dell'armeria; `lootItems: null` = `LIBRERIA.lootPredefinito`), `challenges` (`reward` = id di una reliquia, `punishment` = id di una maledizione, oppure un oggetto scritto nella sfida per premi e punizioni immediati come monete o ferite), `merchants` / `rests` / `treasures` (testi per chiave, `"default"` vale per tutti), `mapNodes` (`id`, `level`, `x`, `type`, `enemy` = id del bestiario (senza `image` il nodo usa quella del nemico), `challengeId` / `restId` / `merchantId` / `treasureId`, `next`, `active`, `image`).
 
 I salvataggi tengono dei nodi solo lo stato (`done`, `active`): il contenuto viene dalla campagna attuale, così un id cambiato nel bestiario non rompe le partite salvate.
 
@@ -57,3 +57,7 @@ Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database
 ### Icone
 
 Solo icone classiche di Warcraft III (non Reforged) in `immagini/icone/`, associate in `game.js` da `ITEM_IMAGES_BY_ID`, `ITEM_IMAGES` e `ABILITY_IMAGES`. L'archivio completo è in `warcraft3_icons/` (ignorato da git): i file senza `-Reforged` sono quelli classici.
+
+### Telefono (server di Valerio)
+
+`server/server.js` + `server/public/phone.html` + `js/remote.js`: il gioco invia lo stato del party (`/api/state`, con icone, rarità, ritratti e `inCombat`); i telefoni scelgono azioni e tiri nel proprio turno e, fuori dal combattimento, usano le pozioni dello zaino (`/api/item-use` → evento `item-use` → `useConsumable`).

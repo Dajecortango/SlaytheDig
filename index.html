@@ -101,14 +101,14 @@
         <div class="topbar-side">
             <div class="res" id="topBarRelicsWrap" data-tip="Reliquie||Nessuna reliquia ottenuta.">
                 <span class="res-ico res-ico-img">
-                    <img src="immagini/icone/BTNEnchantedGemstone-Reforged.png" alt="">
+                    <img src="immagini/icone/BTNEnchantedGemstone.png" alt="">
                 </span>
                 <span class="res-label">Reliquie</span>
                 <span class="res-val relic" id="topBarRelics">0</span>
             </div>
             <div class="res" id="topBarCursesWrap" data-tip="Maledizioni||Nessuna maledizione attiva.">
                 <span class="res-ico res-ico-img">
-                    <img src="immagini/icone/BTNOrbOfCorruption-Reforged.png" alt="">
+                    <img src="immagini/icone/BTNOrbOfCorruption.png" alt="">
                 </span>
                 <span class="res-label">Maledizioni</span>
                 <span class="res-val curse" id="topBarCurses">0</span>
@@ -586,6 +586,11 @@
                                 <button id="merchantTabSell" class="merchant-tab" onclick="showMerchantTab('sell')">Vendi</button>
                             </div>
                             <div id="merchantItemsList" class="armory-grid" style="grid-template-columns: 1fr;"></div>
+                            <div id="merchantTools" class="merchant-tools">
+                                <button id="btnMerchantReroll" class="btn-small" onclick="rerollMerchantStock()">Rinnova la merce · 5 <span class="coin"></span></button>
+                                <button id="btnMerchantHaggle" class="btn-small" onclick="openHaggle()">Contratta</button>
+                            </div>
+                            <p id="merchantHaggleNote" class="merchant-haggle-note hidden"></p>
                             <div id="merchantSellList" class="armory-grid hidden" style="grid-template-columns: 1fr;"></div>
 
                             <div id="merchantAssignArea" class="hidden sub-panel">
@@ -689,11 +694,14 @@
     <script src="data/libreria/bestiario.js"></script>
     <script src="data/libreria/reliquie.js"></script>
     <script src="data/libreria/maledizioni.js"></script>
+    <script src="data/libreria/eroi.js"></script>
     <script src="data/campagne/tutorial.js"></script>
     <script src="data/campagne/astarte_ch1.js"></script>
     <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
     <script src="js/libreria.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/loot.js"></script>
+    <script src="js/shop.js"></script>
     <script src="js/simulator.js"></script>
     <script src="js/vendor/qrcode.js"></script>
     <script src="js/remote.js"></script>

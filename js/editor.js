@@ -46,7 +46,7 @@ const GENERAL_FIELDS = [
 ];
 
 const HERO_FIELDS = [
-    { k: 'name', label: 'Nome', wide: true, help: 'Le abilità sono legate al nome: rinominando l\'eroe vengono spostate anche loro' },
+    { k: 'name', label: 'Nome', wide: true, help: 'Il nome decide anche il ritratto se l\'eroe ne ha uno in HERO_PORTRAITS (js/game.js)' },
     { k: 'str', label: 'Forza', type: 'number' },
     { k: 'int', label: 'Intelligenza', type: 'number' },
     { k: 'fth', label: 'Fede', type: 'number' },
@@ -58,6 +58,13 @@ const HERO_FIELDS = [
     { k: 'portraitWounded', label: 'Ritratto da ferito', type: 'image', folder: 'immagini/ritratti', wide: true,
       help: 'Facoltativo: mostrato con metà HP o meno' }
 ];
+
+// Eroe della libreria: statistiche + abilità tra cui scegliere
+const HERO_LIB_FIELDS = [...HERO_FIELDS, {
+    k: 'abilities', label: 'Abilità tra cui scegliere (JSON)', type: 'json', wide: true,
+    help: 'Passive: { "id", "name", "desc", "isCombatActive": false, "effects": [...] } oppure { "name", "type": "passive_stat", "stat", "val" }. ' +
+          'Attive: { "id", "name", "desc", "isCombatActive": true, "actionName" } — il comportamento è in js/game.js per id.'
+}];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 const ITEM_FIELDS = [
@@ -79,12 +86,18 @@ const ITEM_FIELDS = [
 
 const ENEMY_FIELDS = [
     { k: 'name', label: 'Nome', wide: true },
+    { k: 'image', label: 'Immagine dello scontro', type: 'image', folder: 'immagini', wide: true,
+      help: 'Usata da tutti i nodi con questo nemico, salvo quelli che indicano un\'immagine propria' },
     { k: 'hp', label: 'HP', type: 'number' },
     { k: 'maxHp', label: 'HP massimi', type: 'number' },
     { k: 'att', label: 'Attacco', type: 'number', help: 'Da superare per difendersi e aiutare' },
     { k: 'ca', label: 'Classe armatura', type: 'number', help: 'Da superare per colpire' },
     { k: 'dmg', label: 'Danno', type: 'number' },
-    { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true }
+    { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true },
+    { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true },
+    { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true },
+    { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true,
+      help: 'Vuoti = suoni generati del gioco. Se manca quello della morte, alla morte suona quello del colpo.' }
 ];
 
 const RELIC_FIELDS = [
@@ -133,7 +146,8 @@ const NODE_FIELDS = [
     { k: 'restId', label: 'Testo del riposo', type: 'select', options: refOptions('rests'), showIf: n => n.type === 'rest' },
     { k: 'title', label: 'Titolo', wide: true },
     { k: 'icon', label: 'Icona' },
-    { k: 'image', label: 'Immagine', type: 'image', folder: 'immagini', wide: true },
+    { k: 'image', label: 'Immagine', type: 'image', folder: 'immagini', wide: true,
+      help: 'Negli scontri, vuoto = immagine del nemico nel bestiario' },
     { k: 'next', label: 'Collegamenti (id separati da virgola)', type: 'idlist' },
     { k: 'active', label: 'Nodo di partenza', type: 'checkbox' }
 ];
@@ -151,8 +165,8 @@ let camp = null;                                         // campagna in modifica
 let lib = JSON.parse(JSON.stringify(window.LIBRERIA));   // copia modificabile della libreria condivisa
 const libDirty = new Set();                              // file della libreria modificati (armeria, bestiario, ...)
 let currentTab = 'general';
-const selection = { challenges: null, map: null, heroes: 0, itemList: 'initialArmory',
-                    bestiario: null, armeria: null, reliquie: null, maledizioni: null };
+const selection = { challenges: null, map: null, itemList: 'initialArmory',
+                    bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null };
 let dirty = false;
 
 const deepCopy = obj => JSON.parse(JSON.stringify(obj));
@@ -219,10 +233,10 @@ function addPendingAsset(path, blob) {
     imageStatus.set(path, 'ok');
 }
 
-function pickImage(folder, onPicked) {
+function pickFile(folder, accept, onPicked) {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = accept;
     input.onchange = () => {
         const file = input.files[0];
         if (!file) return;
@@ -286,13 +300,11 @@ function confirmDiscard() {
 
 function setCampaign(data) {
     camp = data;
-    ['challenges', 'merchants', 'rests', 'treasures', 'abilities'].forEach(k => { if (!camp[k] || typeof camp[k] !== 'object') camp[k] = {}; });
+    ['challenges', 'merchants', 'rests', 'treasures'].forEach(k => { if (!camp[k] || typeof camp[k] !== 'object') camp[k] = {}; });
     ['heroes', 'initialArmory', 'mapNodes'].forEach(k => { if (!Array.isArray(camp[k])) camp[k] = []; });
     if (camp.lootItems !== null && !Array.isArray(camp.lootItems)) camp.lootItems = null;
     selection.challenges = keysOf(camp.challenges)[0] || null;
     selection.map = camp.mapNodes[0] ? camp.mapNodes[0].id : null;
-    selection.heroes = 0;
-    heroNameBeforeEdit = camp.heroes[0] ? camp.heroes[0].name : null;
     dirty = false;
     render();
 }
@@ -313,7 +325,7 @@ function newCampaign() {
     if (!confirmDiscard()) return;
     switchCampaign({
         id: 'nuova_campagna', title: 'Nuova campagna', badge: 'Nuova Campagna', description: '', coverImage: '', introText: '',
-        heroes: [], abilities: {}, initialArmory: [], challenges: {},
+        heroes: [], initialArmory: [], challenges: {},
         merchants: { default: '' }, rests: { default: '' }, treasures: {}, lootItems: null,
         mapNodes: [{ id: 0, level: 0, x: 400, type: 'combat', enemy: '', title: 'Livello 1 - Scontro', icon: '🗡️', done: false, active: true, next: [], image: '' }]
     });
@@ -351,6 +363,7 @@ function libraryUsage(kind, key) {
         if (kind === 'bestiario') return (raw.mapNodes || []).filter(n => n.enemy === key).length;
         if (kind === 'reliquie') return Object.values(raw.challenges || {}).filter(c => c.reward === key).length;
         if (kind === 'maledizioni') return Object.values(raw.challenges || {}).filter(c => c.punishment === key).length;
+        if (kind === 'eroi') return (raw.heroes || []).filter(h => h === key).length;
         if (kind === 'armeria') {
             const loot = raw.lootItems === null || raw.lootItems === undefined ? [] : raw.lootItems;
             return [...(raw.initialArmory || []), ...loot].filter(r => r === key).length;
@@ -400,13 +413,14 @@ window.CAMPAIGNS[${JSON.stringify(camp.id)}] = ${formatJson(camp)};
 `;
 }
 
-const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni'];
-const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni' };
+const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi'];
+const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi' };
 const LIB_HEADERS = {
     armeria: 'Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.\n// Le campagne li richiamano per id in "initialArmory" e "lootItems".',
     bestiario: 'Bestiario: tutti i nemici, condivisi dalle campagne.\n// I nodi della mappa li richiamano per id nel campo "enemy".',
     reliquie: 'Reliquie: ricompense delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "reward". Molte reliquie hanno un effetto\n// gestito per nome in js/game.js (hasRelic): rinominarle ne cambia il comportamento.',
-    maledizioni: 'Maledizioni: punizioni delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "punishment".'
+    maledizioni: 'Maledizioni: punizioni delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "punishment".',
+    eroi: 'Eroi: statistiche iniziali e abilità tra cui scegliere, condivisi dalle campagne.\n// Le campagne li richiamano per id nel campo "heroes". Le abilità attive (isCombatActive)\n// sono gestite per id in js/game.js; il ritratto, se manca in HERO_PORTRAITS, viene da "portrait".'
 };
 
 function libraryFileText(kind) {
@@ -425,7 +439,9 @@ const libraryFilePath = kind => `data/libreria/${kind}.js`;
 
 // Immagini caricate che la campagna usa ancora (le altre non vengono scritte)
 function usedPendingAssets() {
-    const used = new Set([camp.coverImage, ...camp.mapNodes.map(n => n.image), ...camp.heroes.flatMap(h => [h.portrait, h.portraitWounded])]);
+    const used = new Set([camp.coverImage, ...camp.mapNodes.map(n => n.image),
+        ...Object.values(lib.bestiario).flatMap(e => [e.image, e.sfxAttack, e.sfxHit, e.sfxDeath]),
+        ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded])]);
     return [...pendingAssets].filter(([path]) => used.has(path));
 }
 
@@ -715,7 +731,24 @@ function renderForm(container, obj, fields, onChange) {
         input.addEventListener(f.type === 'select' || f.type === 'checkbox' ? 'change' : 'input', commit);
         wrap.appendChild(input);
 
-        // Campo immagine: percorso + pulsante di caricamento + anteprima
+        // Campo immagine o suono: percorso + pulsante di caricamento + anteprima (miniatura o ascolto)
+        if (f.type === 'audio') {
+            const row = document.createElement('div');
+            row.className = 'ed-image-row';
+            wrap.replaceChild(row, input);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-small';
+            btn.textContent = 'Carica…';
+            btn.addEventListener('click', () => pickFile(f.folder || 'audio', 'audio/*', path => { input.value = path; commit(); }));
+            const play = document.createElement('button');
+            play.type = 'button';
+            play.className = 'btn-small ed-play';
+            play.textContent = '▶';
+            play.title = 'Ascolta';
+            play.addEventListener('click', () => { if (input.value) new Audio(assetUrl(input.value)).play().catch(() => alert('Suono non trovato: ' + input.value)); });
+            row.append(input, btn, play);
+        }
         if (f.type === 'image') {
             const row = document.createElement('div');
             row.className = 'ed-image-row';
@@ -729,7 +762,7 @@ function renderForm(container, obj, fields, onChange) {
             thumb.alt = '';
             thumb.onerror = () => { thumb.hidden = true; };
             const updateThumb = () => { thumb.hidden = !input.value; if (input.value) thumb.src = assetUrl(input.value); };
-            btn.addEventListener('click', () => pickImage(f.folder || 'immagini', path => { input.value = path; commit(); updateThumb(); }));
+            btn.addEventListener('click', () => pickFile(f.folder || 'immagini', 'image/*', path => { input.value = path; commit(); updateThumb(); }));
             input.addEventListener('input', updateThumb);
             row.append(input, btn, thumb);
             updateThumb();
@@ -775,6 +808,16 @@ const COLLECTIONS = {
         sub: r => r.desc,
         renameRefs: (oldKey, key) => Object.values(camp.challenges).forEach(c => { if (c.reward === oldKey) c.reward = key; })
     },
+    eroi: {
+        library: true, fields: HERO_LIB_FIELDS, label: h => h.name, keyHint: 'nuovo_eroe',
+        create: () => ({ ...newHeroTemplate('Nuovo eroe'), abilities: [] }),
+        sub: h => `FOR ${h.str} · INT ${h.int} · FEDE ${h.fth} · HP ${h.maxHp} · ${(h.abilities || []).length} abilità`,
+        afterChange: (h, key) => {
+            if (key === 'maxHp') h.hp = h.maxHp;
+            if (key === 'base_armor') h.current_armor = h.base_armor;
+        },
+        renameRefs: (oldKey, key) => camp.heroes.forEach((h, i) => { if (h === oldKey) camp.heroes[i] = key; })
+    },
     maledizioni: {
         library: true, fields: CURSE_FIELDS, label: c => c.name, keyHint: 'nuova_maledizione',
         create: () => ({ type: 'curse', name: 'Nuova maledizione', desc: '', effects: [{ effect: 'add_curse', text: 'Nuova maledizione' }] }),
@@ -819,6 +862,7 @@ function renderCollection(name) {
         const uses = col.usage(sel);
         const detail = document.getElementById('edDetail');
         renderForm(detail, items[sel], col.fields, key => {
+            if (col.afterChange) col.afterChange(items[sel], key);
             col.dirty();
             const active = document.querySelector('.ed-list-item.active');
             if (active && (key === 'name' || key === 'title')) active.firstChild.textContent = col.label(items[sel]) || sel;
@@ -905,100 +949,54 @@ function deleteKeyed(name) {
     render();
 }
 
-/* ---------- Eroi ---------- */
+/* ---------- Eroi della campagna: scelti dalla libreria ---------- */
+function heroRefLabel(ref) {
+    if (typeof ref !== 'string') return `${ref.name} (scritto nella campagna)`;
+    const h = lib.eroi[ref];
+    return h ? h.name : `${ref} (non trovato fra gli eroi)`;
+}
+
 function renderHeroesTab() {
     const content = document.getElementById('edContent');
-    const heroes = camp.heroes;
-    if (selection.heroes >= heroes.length) selection.heroes = heroes.length - 1;
-    const hero = heroes[selection.heroes];
-
+    const available = Object.entries(lib.eroi).filter(([id]) => !camp.heroes.includes(id));
     content.innerHTML = `
-        <div class="ed-list-actions">
-            <button onclick="addHero()">Aggiungi eroe</button>
-            <button onclick="duplicateHero()" ${hero ? '' : 'disabled'}>Duplica</button>
-            <button class="ed-danger" onclick="deleteHero()" ${hero ? '' : 'disabled'}>Elimina</button>
-        </div>
-        <div class="ed-split">
-            <div class="ed-list">${heroes.map((h, i) => `
-                <div class="ed-list-item ed-hero-item ${i === selection.heroes ? 'active' : ''}" onclick="selectHero(${i})">
-                    ${h.portrait ? `<img class="ed-list-portrait" src="${esc(assetUrl(h.portrait))}" alt="" onerror="this.hidden=true">` : ''}
-                    <span>${esc(h.name)}<small>FOR ${h.str} · INT ${h.int} · FEDE ${h.fth} · HP ${h.maxHp} · ${(camp.abilities[h.name] || []).length} abilità</small></span>
-                </div>`).join('') || '<div class="ed-list-item">Nessun eroe</div>'}
+        <p class="ed-lib-note">Gli eroi stanno nella libreria <a href="#" onclick="switchTab('eroi'); return false;">Eroi</a>, condivisa da tutte le campagne:
+            qui si sceglie quali può reclutare questa campagna. Statistiche, ritratti e abilità si modificano lì.</p>
+        <div class="ed-detail">
+            <div class="ed-picklist">${camp.heroes.map((ref, i) => {
+                const h = typeof ref === 'string' ? lib.eroi[ref] : ref;
+                return `
+                <div class="ed-pick">
+                    ${h && h.portrait ? `<img class="ed-list-portrait" src="${esc(assetUrl(h.portrait))}" alt="" onerror="this.hidden=true">` : ''}
+                    <span>${esc(heroRefLabel(ref))}<small>${h ? `FOR ${h.str} · INT ${h.int} · FEDE ${h.fth} · HP ${h.maxHp} · ${(h.abilities || []).length} abilità` : ''}</small></span>
+                    ${typeof ref === 'string' && lib.eroi[ref] ? `<button class="btn-small" onclick="gotoLibrary('eroi', '${esc(ref)}')">Modifica</button>` : ''}
+                    <button class="btn-small ed-danger" onclick="removeCampaignHero(${i})">Togli</button>
+                </div>`;
+            }).join('') || '<p class="ed-help">Nessun eroe: aggiungine almeno uno.</p>'}
             </div>
-            <div class="ed-detail">
-                <div id="edHeroForm"></div>
-                <h3>Abilità (JSON)</h3>
-                <div id="edHeroAbilities"></div>
+            <div class="ed-add-row">
+                <select id="edAddHero">${available.map(([id, h]) => `<option value="${esc(id)}">${esc(h.name)} — FOR ${h.str} · INT ${h.int} · FEDE ${h.fth} · HP ${h.maxHp}</option>`).join('')}</select>
+                <button class="btn-small" onclick="addCampaignHero()" ${available.length ? '' : 'disabled'}>Aggiungi dalla libreria</button>
             </div>
         </div>`;
-    if (!hero) return;
-
-    renderForm(document.getElementById('edHeroForm'), hero, HERO_FIELDS, key => {
-        if (key === 'name') renameHeroAbilities(hero);
-        if (key === 'maxHp') hero.hp = hero.maxHp;
-        if (key === 'base_armor') hero.current_armor = hero.base_armor;
-        markDirty();
-    });
-    const holder = { abilities: camp.abilities[hero.name] || [] };
-    renderForm(document.getElementById('edHeroAbilities'), holder, [{
-        k: 'abilities', label: 'Elenco delle abilità tra cui scegliere', type: 'json', wide: true,
-        help: 'Passive: { "id", "name", "desc", "isCombatActive": false, "effects": [...] } oppure { "name", "type": "passive_stat", "stat", "val" }. ' +
-              'Attive: { "id", "name", "desc", "isCombatActive": true, "actionName" } — il comportamento è in js/game.js per id.'
-    }], () => {
-        camp.abilities[hero.name] = holder.abilities;
-        markDirty();
-    });
-}
-
-// Le abilità sono indicizzate per nome dell'eroe: seguono il rinomina mantenendo l'ordine
-let heroNameBeforeEdit = null;
-function renameHeroAbilities(hero) {
-    const oldName = heroNameBeforeEdit;
-    heroNameBeforeEdit = hero.name;
-    if (oldName == null || oldName === hero.name || !(oldName in camp.abilities)) return;
-    camp.abilities = Object.fromEntries(Object.entries(camp.abilities).map(([k, v]) => [k === oldName ? hero.name : k, v]));
-}
-
-function selectHero(i) {
-    selection.heroes = i;
-    heroNameBeforeEdit = camp.heroes[i] ? camp.heroes[i].name : null;
-    render();
 }
 
 function newHeroTemplate(name) {
     return { name, str: 3, int: 2, fth: 2, maxHp: 4, hp: 4, dmg: 1, base_armor: 0, current_armor: 0, att_penalty: 0, def_bonus: 0, help_bonus_val: 0, items: [] };
 }
 
-function uniqueHeroName(base) {
-    let name = base, n = 2;
-    while (camp.heroes.some(h => h.name === name)) name = `${base} ${n++}`;
-    return name;
+function addCampaignHero() {
+    const id = document.getElementById('edAddHero').value;
+    if (!id) return;
+    camp.heroes.push(id);
+    markDirty();
+    render();
 }
 
-function addHero() {
-    const hero = newHeroTemplate(uniqueHeroName('Nuovo eroe'));
-    camp.heroes.push(hero);
-    camp.abilities[hero.name] = [];
-    selectHero(camp.heroes.length - 1);
+function removeCampaignHero(i) {
+    camp.heroes.splice(i, 1);
     markDirty();
-}
-
-function duplicateHero() {
-    const src = camp.heroes[selection.heroes];
-    const hero = { ...deepCopy(src), name: uniqueHeroName(`${src.name} (copia)`) };
-    camp.heroes.push(hero);
-    camp.abilities[hero.name] = deepCopy(camp.abilities[src.name] || []);
-    selectHero(camp.heroes.length - 1);
-    markDirty();
-}
-
-function deleteHero() {
-    const hero = camp.heroes[selection.heroes];
-    if (!confirm(`Eliminare ${hero.name} e le sue abilità?`)) return;
-    camp.heroes.splice(selection.heroes, 1);
-    delete camp.abilities[hero.name];
-    selectHero(Math.max(0, selection.heroes - 1));
-    markDirty();
+    render();
 }
 
 /* ---------- Oggetti della campagna: scelti dall'armeria ---------- */
@@ -1229,6 +1227,20 @@ function checkImage(path) {
     return imageStatus.get(path);
 }
 
+// Come checkImage, per i file audio
+function checkAudio(path) {
+    if (!path || pendingAssets.has(path)) return 'ok';
+    if (!imageStatus.has(path)) {
+        imageStatus.set(path, 'pending');
+        const audio = new Audio();
+        audio.addEventListener('loadedmetadata', () => { imageStatus.set(path, 'ok'); renderIssues(); });
+        audio.addEventListener('error', () => { imageStatus.set(path, 'missing'); renderIssues(); });
+        audio.preload = 'metadata';
+        audio.src = path;
+    }
+    return imageStatus.get(path);
+}
+
 function checkEffects(effects, where, issues, tab, sel) {
     if (effects == null) return;
     if (!Array.isArray(effects)) { issues.push({ level: 'error', msg: `${where}: "effects" deve essere un elenco`, tab, sel }); return; }
@@ -1247,21 +1259,9 @@ function validateCampaign() {
     if (checkImage(camp.coverImage) === 'missing') add('warn', `Copertina non trovata: ${camp.coverImage}`, 'general');
 
     if (!camp.heroes.length) add('error', 'Nessun eroe nella campagna', 'heroes');
-    const heroNames = new Map();
-    camp.heroes.forEach((h, i) => {
-        heroNames.set(h.name, (heroNames.get(h.name) || 0) + 1);
-        const name = `Eroe <b>${esc(h.name)}</b>`;
-        ['str', 'int', 'fth', 'maxHp', 'dmg'].forEach(f => { if (typeof h[f] !== 'number') add('error', `${name}: "${f}" non è un numero`, 'heroes', i); });
-        if (!(camp.abilities[h.name] || []).length) add('warn', `${name}: nessuna abilità tra cui scegliere`, 'heroes', i);
-        if (checkImage(h.portrait) === 'missing') add('warn', `${name}: ritratto non trovato ${h.portrait}`, 'heroes', i);
-        if (checkImage(h.portraitWounded) === 'missing') add('warn', `${name}: ritratto da ferito non trovato ${h.portraitWounded}`, 'heroes', i);
+    camp.heroes.forEach(ref => {
+        if (typeof ref === 'string' && !lib.eroi[ref]) add('error', `Eroe <b>${esc(ref)}</b> non trovato nella libreria Eroi`, 'heroes');
     });
-    heroNames.forEach((count, n) => { if (count > 1) add('error', `Più eroi si chiamano <b>${esc(n)}</b>`, 'heroes'); });
-    Object.keys(camp.abilities).forEach(n => { if (!heroNames.has(n)) add('warn', `Abilità per <b>${esc(n)}</b>, che non è tra gli eroi`, 'heroes'); });
-    Object.entries(camp.abilities).forEach(([hero, list]) => (list || []).forEach(a => {
-        const i = camp.heroes.findIndex(h => h.name === hero);
-        if (a.effects) checkEffects(a.effects, `Abilità <b>${esc(a.name)}</b> di ${esc(hero)}`, issues, 'heroes', i >= 0 ? i : undefined);
-    }));
 
     // Oggetti della campagna: devono esistere nell'armeria
     Object.entries(ITEM_LISTS).forEach(([listKey, label]) => {
@@ -1313,6 +1313,8 @@ function validateCampaign() {
     // Libreria condivisa
     Object.entries(lib.bestiario).forEach(([k, e]) => {
         ['hp', 'maxHp', 'att', 'dmg', 'ca'].forEach(f => { if (typeof e[f] !== 'number') add('error', `Bestiario <b>${k}</b>: "${f}" non è un numero`, 'bestiario', k); });
+        if (checkImage(e.image) === 'missing') add('warn', `Bestiario <b>${k}</b>: immagine non trovata ${esc(e.image)}`, 'bestiario', k);
+        ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(f => { if (checkAudio(e[f]) === 'missing') add('warn', `Bestiario <b>${k}</b>: suono non trovato ${esc(e[f])}`, 'bestiario', k); });
         if (e.hp !== e.maxHp) add('warn', `Bestiario <b>${k}</b>: HP (${e.hp}) diversi da HP massimi (${e.maxHp})`, 'bestiario', k);
         if (!e.name) add('warn', `Bestiario <b>${k}</b>: nome mancante`, 'bestiario', k);
     });
@@ -1325,6 +1327,17 @@ function validateCampaign() {
         if (!r.name) add('warn', `Reliquia <b>${k}</b>: nome mancante`, 'reliquie', k);
         checkEffects(r.effects, `Reliquia <b>${k}</b>`, issues, 'reliquie', k);
     });
+    const heroNames = new Map();
+    Object.entries(lib.eroi).forEach(([k, h]) => {
+        heroNames.set(h.name, (heroNames.get(h.name) || 0) + 1);
+        const name = `Eroe <b>${esc(h.name)}</b>`;
+        ['str', 'int', 'fth', 'maxHp', 'dmg'].forEach(f => { if (typeof h[f] !== 'number') add('error', `${name}: "${f}" non è un numero`, 'eroi', k); });
+        if (!(h.abilities || []).length) add('warn', `${name}: nessuna abilità tra cui scegliere`, 'eroi', k);
+        (h.abilities || []).forEach(a => { if (a.effects) checkEffects(a.effects, `Abilità <b>${esc(a.name)}</b> di ${esc(h.name)}`, issues, 'eroi', k); });
+        if (checkImage(h.portrait) === 'missing') add('warn', `${name}: ritratto non trovato ${esc(h.portrait)}`, 'eroi', k);
+        if (checkImage(h.portraitWounded) === 'missing') add('warn', `${name}: ritratto da ferito non trovato ${esc(h.portraitWounded)}`, 'eroi', k);
+    });
+    heroNames.forEach((count, n) => { if (count > 1) add('error', `Più eroi della libreria si chiamano <b>${esc(n)}</b>`, 'eroi'); });
     Object.entries(lib.maledizioni).forEach(([k, c]) => {
         if (!c.name) add('warn', `Maledizione <b>${k}</b>: nome mancante`, 'maledizioni', k);
         checkEffects(c.effects, `Maledizione <b>${k}</b>`, issues, 'maledizioni', k);
@@ -1344,8 +1357,7 @@ function renderIssues() {
     document.querySelectorAll('#edIssues .ed-issue').forEach(el => el.addEventListener('click', () => {
         const issue = issues[el.dataset.idx];
         if (issue.sel != null) {
-            if (issue.tab === 'heroes') { selection.heroes = issue.sel; heroNameBeforeEdit = (camp.heroes[issue.sel] || {}).name; }
-            else selection[issue.tab] = issue.sel;
+            selection[issue.tab] = issue.sel;
         }
         switchTab(issue.tab);
     }));
@@ -1357,7 +1369,6 @@ const TABS = ['general', 'map', 'heroes', 'items', 'challenges', 'other', ...LIB
 function switchTab(tab) {
     currentTab = tab;
     document.querySelectorAll('#edTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    if (tab === 'heroes') heroNameBeforeEdit = (camp.heroes[selection.heroes] || {}).name ?? null;
     render();
 }
 

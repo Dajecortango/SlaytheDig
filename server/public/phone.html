@@ -52,6 +52,23 @@
     .hero-stats-row i { font-style: normal; font-weight: 700; font-size: 0.6rem; color: var(--dim); margin-right: 3px; }
     .hero-ability-line { font-size: 0.72rem; color: #e0bcff; }
     .items { font-size: 0.85rem; line-height: 1.6; }
+    /* Zaino: icone come nel gioco, bordo del colore della rarità, pozioni utilizzabili fuori dal combattimento */
+    .bag-title { font-size: 0.8rem; color: var(--gold); margin-bottom: 8px; letter-spacing: 0.04em; }
+    .bag-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(226,185,81,0.12); }
+    .bag-item:last-child { border-bottom: none; }
+    .bag-icon { width: 40px; height: 40px; flex: 0 0 40px; border: 2px solid #8d8a84; box-shadow: 0 0 0 1px #000; background: #0a0605; object-fit: cover; }
+    .bag-icon.rar-raro { border-color: #4a8cff; }
+    .bag-icon.rar-epico { border-color: #b06cff; }
+    .bag-text { flex: 1; min-width: 0; line-height: 1.3; }
+    .bag-text b { color: #f3e2b0; }
+    .bag-text small { display: block; color: var(--dim); font-size: 0.72rem; }
+    .use-btn { padding: 8px 12px; font-weight: bold; background: linear-gradient(#236628, #103816); color: #eaffd0; border: 1px solid #8dff78; }
+    .use-btn:disabled { opacity: 0.35; }
+    .use-target { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .use-target button { flex: 1; padding: 10px 8px; font-size: 0.8rem; background: linear-gradient(#5a4520, #2a1d0c); color: var(--gold); border: 1px solid #b8923e; }
+    .bag-note { font-size: 0.72rem; color: var(--dim); margin-top: 6px; }
+    .hero-portrait-mini img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+    .hero-ability-desc { font-size: 0.7rem; color: var(--dim); margin-top: 2px; }
     .roll-area { text-align: center; }
     .roll-btn {
         width: 100%; padding: 18px; font-size: 1.1rem; font-weight: bold;
@@ -134,8 +151,51 @@
         let lastResultDisplay = null; // { rolls } — ultimo tiro completato, mostrato finché non arriva un nuovo turno
         let itemPickState = null;     // { stage: 'item' } oppure { stage: 'target', itemIndex, itemName }
         let rollInProgress = false;   // true durante l'animazione del dado: nessun aggiornamento la deve interrompere
+        let bagUseIndex = null;       // pozione dello zaino di cui si sta scegliendo il bersaglio
+        let bagMessage = '';
+        let lastState = null;
+
+        function renderBag(hero, state) {
+            const items = hero.items || [];
+            if (!items.length) return '<div class="bag-title">Zaino</div><div>Zaino vuoto</div>';
+            const alive = (state.heroes || []).filter(h => h.hp > 0);
+            const rows = items.map((it, idx) => {
+                const rar = it.rarity || 'comune';
+                const icon = it.icon ? `<img class="bag-icon rar-${rar}" src="/${it.icon}" alt="">` : `<span class="bag-icon rar-${rar}"></span>`;
+                const useBtn = it.consumable
+                    ? `<button class="use-btn" onclick="startBagUse(${idx})" ${state.inCombat || hero.hp <= 0 ? 'disabled' : ''}>Usa</button>` : '';
+                const target = bagUseIndex === idx
+                    ? `<div class="use-target">${alive.map((a, ai) => `<button onclick="useBagItem(${idx}, ${ai})">${a.name} (${a.hp}/${a.maxHp})</button>`).join('')}<button onclick="cancelBagUse()">Annulla</button></div>`
+                    : '';
+                return `<div class="bag-item">${icon}<div class="bag-text"><b>${it.name}</b><small>${it.desc || ''}</small>${target}</div>${useBtn}</div>`;
+            }).join('');
+            const note = state.inCombat ? 'In combattimento le pozioni si usano nel tuo turno ("Usa oggetto").' : bagMessage;
+            return `<div class="bag-title">Zaino</div>${rows}${note ? `<div class="bag-note">${note}</div>` : ''}`;
+        }
+
+        function startBagUse(idx) { bagUseIndex = idx; bagMessage = ''; if (lastState) renderHero(lastState); }
+        function cancelBagUse() { bagUseIndex = null; if (lastState) renderHero(lastState); }
+
+        // aliveIdx: posizione del bersaglio fra gli eroi in piedi (evita di mettere nomi negli attributi onclick)
+        function useBagItem(idx, aliveIdx) {
+            if (!currentHero || !lastState) return;
+            const target = (lastState.heroes || []).filter(h => h.hp > 0)[aliveIdx];
+            if (!target) return;
+            bagUseIndex = null;
+            bagMessage = 'Pozione in uso...';
+            renderHero(lastState);
+            fetch('/api/item-use', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
+                body: JSON.stringify({ heroName: currentHero.name, itemIndex: idx, targetName: target.name })
+            }).then(r => r.json()).then(data => {
+                bagMessage = data && data.ok ? `Usata su ${target.name}.` : ((data && data.error) || 'Non è stato possibile usarla.');
+                if (lastState) renderHero(lastState);
+            }).catch(() => { bagMessage = 'Connessione persa.'; if (lastState) renderHero(lastState); });
+        }
 
         function renderHero(state) {
+            lastState = state;
             const hero = (state.heroes || []).find(h => slugify(h.name) === slug);
             currentHero = hero || null;
             const content = document.getElementById('content');
@@ -153,14 +213,11 @@
             const hpPct = clampPct(hero.hp, hero.maxHp);
             const armorMax = Math.max(hero.base_armor, hero.current_armor);
             const armorPct = clampPct(hero.current_armor, armorMax);
-            const itemsHtml = (hero.items || []).length
-                ? hero.items.map(it => `<div>• <b>${it.name}</b>${it.desc ? ` — ${it.desc}` : ''}</div>`).join('')
-                : '<div>Zaino vuoto</div>';
 
             content.innerHTML = `
                 <div class="panel">
                     <div class="hero-card-top">
-                        <div class="hero-portrait-mini" style="--hue:${heroHue(hero.name)}">${hero.name.charAt(0)}</div>
+                        <div class="hero-portrait-mini" style="--hue:${heroHue(hero.name)}">${hero.portrait ? `<img src="/${hero.portrait}" alt="">` : hero.name.charAt(0)}</div>
                         <div class="hero-card-info">
                             <div class="hero-card-title">${hero.name}</div>
                             <div class="mini-bar-container">
@@ -178,9 +235,9 @@
                         <span><i>FED</i>${hero.fth}</span>
                         <span><i>DAN</i>${hero.dmg}</span>
                     </div>
-                    ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>` : ''}
+                    ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>${hero.abilityDesc ? `<div class="hero-ability-desc">${hero.abilityDesc}</div>` : ''}` : ''}
                 </div>
-                <div class="panel items">${itemsHtml}</div>`;
+                <div class="panel items">${renderBag(hero, state)}</div>`;
 
             document.getElementById('actionPanel').classList.remove('hidden');
             renderActionArea();
