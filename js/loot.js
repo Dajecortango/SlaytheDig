@@ -22,7 +22,7 @@
         // Gira la carta: prima si chiude di taglio, poi si riapre mostrando l'oggetto (vedi card-flip-in)
         function flipCard(el, item, onRevealed) {
             synthSfx('flip');
-            if (itemRarity(item) === 'epico') setTimeout(() => synthSfx('six'), 200);
+            if (['epico', 'leggendario'].includes(itemRarity(item))) setTimeout(() => synthSfx('six'), 200);
             if (!el || !animationsEnabled()) { onRevealed(); return; }
             el.classList.add('card-flip-out');
             setTimeout(onRevealed, 170);
@@ -48,12 +48,12 @@
             return node ? Math.min(1, node.level / maxLevel) : 0;
         }
 
-        // Probabilità (in %) di comune/raro/epico: salgono raro ed epico andando avanti e negli scontri elite
+        // Probabilità (in %) per rarità: le alte salgono andando avanti e negli scontri elite
         function lootRarityWeights(isElite, progress) {
             const lerp = (a, b) => a + (b - a) * progress;
             return isElite
-                ? { comune: lerp(30, 10), raro: lerp(50, 50), epico: lerp(20, 40) }
-                : { comune: lerp(70, 40), raro: lerp(25, 45), epico: lerp(5, 15) };
+                ? { scarso: 0, comune: lerp(18, 4), non_comune: lerp(30, 14), raro: lerp(34, 35), epico: lerp(15, 32), leggendario: lerp(3, 15) }
+                : { scarso: lerp(18, 4), comune: lerp(45, 20), non_comune: lerp(24, 26), raro: lerp(10, 30), epico: lerp(3, 15), leggendario: lerp(0, 5) };
         }
 
         // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
@@ -120,17 +120,17 @@
             document.getElementById('lootItemName').textContent = currentLootItem.name;
             document.getElementById('lootItemDesc').innerHTML = kw(currentLootItem.desc);
             const lootRow = document.getElementById('lootItemRow');
-            lootRow.classList.remove('rar-card-comune', 'rar-card-raro', 'rar-card-epico');
+            lootRow.classList.remove(...Object.keys(RARITY_LABELS).map(r => `rar-card-${r}`));
             lootRow.classList.add(`rar-card-${itemRarity(currentLootItem)}`);
             lootRow.dataset.tip = itemTip(currentLootItem);
             revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
             document.getElementById('lootHeroSelect').innerHTML = heroOptionsForItem(currentLootItem);
-            // Il dorso lascia intuire la rarità (grigio, blu, viola)
+            // Il dorso lascia intuire la rarità (colori di WoW: grigio, bianco, verde, blu, viola, arancio)
             const lootBack = document.getElementById('lootCardBack');
-            lootBack.classList.remove('hidden', 'card-flip-out', 'rar-back-comune', 'rar-back-raro', 'rar-back-epico');
+            lootBack.classList.remove('hidden', 'card-flip-out', ...Object.keys(RARITY_LABELS).map(r => `rar-back-${r}`));
             lootBack.classList.add(`rar-back-${itemRarity(currentLootItem)}`);
             document.getElementById('lootItemRow').classList.add('hidden');
-            document.getElementById('lootItemRow').classList.remove('card-flip-in', 'reveal-comune', 'reveal-raro', 'reveal-epico');
+            document.getElementById('lootItemRow').classList.remove('card-flip-in', ...Object.keys(RARITY_LABELS).map(r => `reveal-${r}`));
             document.getElementById('lootAssignArea').classList.add('hidden');
 
             updatePartyStatusBars();

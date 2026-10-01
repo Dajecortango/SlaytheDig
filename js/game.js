@@ -137,11 +137,11 @@ function breakRelic(relicName) {
 
         function saveGame() {
             if (!currentCampaign || party.length === 0) {
-                alert("Non c'è nessuna partita in corso da salvare!");
+                uiError("Non c'è nessuna partita in corso da salvare");
                 return;
             }
             if (party.every(p => p.hp <= 0)) {
-                alert("La compagnia è caduta: non si può salvare una partita persa.");
+                uiError("La compagnia è caduta: non si può salvare una partita persa");
                 return;
             }
             const rows = [];
@@ -476,18 +476,18 @@ function breakRelic(relicName) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '0.7';
+        const GAME_VERSION = '0.8';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
 
-        // Video di sfondo della schermata principale: muto, in riproduzione solo quando la schermata è visibile
+        // Video di sfondo dei menu (iniziale e scelta campagna): muto, in riproduzione solo quando sono visibili
         // (e con gli effetti animati attivi). Se non si carica resta la scena disegnata.
         function updateMenuVideo() {
             const video = document.getElementById('menuVideo');
             if (!video) return;
             video.muted = true;
-            const shouldPlay = document.body.classList.contains('menu-start') && !document.body.classList.contains('no-anim');
+            const shouldPlay = document.body.classList.contains('menu-mode') && !document.body.classList.contains('no-anim');
             if (shouldPlay) video.play().catch(() => {});
             else video.pause();
         }
@@ -522,7 +522,6 @@ function breakRelic(relicName) {
             document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
             // Menu iniziale e scelta campagna: scena a tutto schermo senza barre, come i menu di Warcraft III
             document.body.classList.toggle('menu-mode', MENU_SCENE_SCREENS.includes(screenId));
-            document.body.classList.toggle('menu-start', screenId === 'screenStart');
             updateMenuVideo();
             const screen = document.getElementById(screenId);
             screen.classList.remove('hidden');
@@ -820,9 +819,6 @@ function breakRelic(relicName) {
                 : 'Maledizioni||Nessuna maledizione attiva.';
 
             document.body.classList.toggle('no-party', party.length === 0);
-            document.getElementById('consoleCount').textContent = party.length > 0
-                ? `${party.filter(p => p.hp > 0).length}/${party.length}`
-                : '—';
 
             if (party.length === 0) {
                 container.innerHTML = `<div class="console-empty">Nessun eroe reclutato</div>`;
@@ -1011,10 +1007,53 @@ function breakRelic(relicName) {
                 const wrapper = document.getElementById('stsMapWrapper');
                 const token = document.getElementById('partyToken');
                 // Centra la vista sul segnalino della compagnia (o sul fondo della mappa all'inizio)
-                wrapper.scrollTop = token
+                const maxScroll = wrapper.scrollHeight - wrapper.clientHeight;
+                const target = Math.max(0, Math.min(maxScroll, token
                     ? parseFloat(token.style.top) - wrapper.clientHeight * 0.6
-                    : wrapper.scrollHeight;
+                    : maxScroll));
+                if (!animationsEnabled()) { wrapper.scrollTop = target; return; }
+                // Alla prima apertura la vista parte dalla meta in cima e scende fino alla compagnia;
+                // poi scivola dal basso fino al segnalino. Alla fine i nodi raggiungibili si illuminano.
+                const start = token ? Math.min(maxScroll, target + 220) : 0;
+                panMapView(wrapper, start, target, token ? 700 : 1800, wakeAvailableNodes);
             }, 50);
+        }
+
+        let mapPanFrame = null;
+
+        function panMapView(wrapper, from, to, duration, onDone) {
+            cancelAnimationFrame(mapPanFrame);
+            wrapper.scrollTop = from;
+            const t0 = performance.now();
+            // Se il giocatore scorre o clicca, lo scorrimento automatico si ferma
+            const stop = () => {
+                cancelAnimationFrame(mapPanFrame);
+                ['wheel', 'pointerdown', 'touchstart'].forEach(ev => wrapper.removeEventListener(ev, stop));
+                if (onDone) onDone();
+                onDone = null;
+            };
+            ['wheel', 'pointerdown', 'touchstart'].forEach(ev => wrapper.addEventListener(ev, stop, { passive: true }));
+            const step = now => {
+                const t = Math.min(1, (now - t0) / duration);
+                const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                wrapper.scrollTop = from + (to - from) * ease;
+                if (t < 1) mapPanFrame = requestAnimationFrame(step);
+                else stop();
+            };
+            mapPanFrame = requestAnimationFrame(step);
+        }
+
+        // I nodi raggiungibili si accendono uno dopo l'altro, da sinistra a destra
+        function wakeAvailableNodes() {
+            const nodes = Array.from(document.querySelectorAll('#stsMapNodesContainer .sts-node.available'))
+                .sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
+            nodes.forEach((el, i) => {
+                el.style.setProperty('--wake-delay', `${i * 160}ms`);
+                el.classList.add('node-wake');
+                el.addEventListener('animationend', e => {
+                    if (e.animationName === 'node-wake') el.classList.remove('node-wake');
+                });
+            });
         }
 
         function renderStsMap() {
@@ -1183,7 +1222,10 @@ function breakRelic(relicName) {
             if ((node.type === 'combat' || node.type === 'elite') && enemies[node.enemy]) title = enemies[node.enemy].name;
             else if (node.type === 'challenge' && challengesData[node.challengeId]) title = challengesData[node.challengeId].title;
             if (isBoss) kind = node.type === 'challenge' ? 'Prova Finale' : 'Scontro Finale';
-            return { kind, title, sub: node.title, icon: isBoss ? 'crown' : (NODE_ICON[node.type] || 'question'), isBoss };
+            // Sottotitolo come gli annunci di zona di WoW; il livello solo se il titolo del nodo non lo dice già
+            const levelText = `Livello ${node.level + 1} di ${maxLevel + 1}`;
+            const sub = node.title ? (/livello/i.test(node.title) ? node.title : `${node.title} — ${levelText}`) : levelText;
+            return { kind, title, sub, icon: isBoss ? 'crown' : (NODE_ICON[node.type] || 'question'), isBoss };
         }
 
         function selectStsNode(id) {
@@ -1348,7 +1390,7 @@ function breakRelic(relicName) {
 
             let target = targetName ? party.find(p => p.name === targetName) : hero;
             if(!target || target.hp <= 0) {
-                alert("Bersaglio non valido o non disponibile!");
+                uiError("Bersaglio non valido o non disponibile");
                 return false;
             }
 
@@ -1386,12 +1428,33 @@ function breakRelic(relicName) {
             return lucky;
         }
 
+        /* ---------- Messaggi a schermo in stile WoW ----------
+           uiError: rosso (azione non possibile), uiMessage: giallo (avviso). Al massimo 3 righe. */
+        function uiMessage(text, kind = 'info') {
+            let box = document.getElementById('uiMessages');
+            if (!box) {
+                box = document.createElement('div');
+                box.id = 'uiMessages';
+                box.className = 'ui-messages';
+                box.setAttribute('role', 'status');
+                document.body.appendChild(box);
+            }
+            const line = document.createElement('div');
+            line.className = `ui-message ${kind}`;
+            line.textContent = text;
+            box.appendChild(line);
+            while (box.children.length > 3) box.firstChild.remove();
+            setTimeout(() => line.remove(), 2900);
+            if (kind === 'error' && typeof synthSfx === 'function') synthSfx('one');
+        }
+        const uiError = text => uiMessage(text, 'error');
+
         function triggerConsumableFeedback(hero, target, item) {
             const log = document.getElementById('combatLog');
             if(log && !document.getElementById('screenCombat').classList.contains('hidden')) {
                 logCombat(`🧪 ${hero.name} usa ${item.name} su ${target.name}!`);
             } else {
-                alert(`${hero.name} ha usato ${item.name} su ${target.name}!`);
+                uiMessage(`${hero.name} ha usato ${item.name} su ${target.name}`);
             }
         }
 
@@ -1934,7 +1997,7 @@ function breakRelic(relicName) {
             if (action === 'use_item') {
                 let consumables = currentActiveHero.items.filter(it => it.type && it.type.startsWith('consumable'));
                 if (consumables.length === 0) {
-                    alert("Questo eroe non ha oggetti consumabili nello zaino!");
+                    uiError("Questo eroe non ha oggetti consumabili nello zaino");
                     return;
                 }
                 document.getElementById('combatActionButtons').classList.add('hidden');
@@ -2659,7 +2722,8 @@ function breakRelic(relicName) {
         }
 
         // Rarità dell'oggetto; gli oggetti senza rarità contano come comuni
-        const RARITY_LABELS = { comune: 'Comune', raro: 'Raro', epico: 'Epico' };
+        // Rarità in stile World of Warcraft, dalla più bassa alla più alta (colori in css/wc3-base.css)
+        const RARITY_LABELS = { scarso: 'Scarso', comune: 'Comune', non_comune: 'Non comune', raro: 'Raro', epico: 'Epico', leggendario: 'Leggendario' };
         function itemRarity(item) {
             return RARITY_LABELS[item && item.rarity] ? item.rarity : 'comune';
         }
@@ -3756,7 +3820,7 @@ function breakRelic(relicName) {
         /* ---------- 16. Diario della compagnia ---------- */
         function openJournal() {
             if (party.length === 0) {
-                alert('Nessuna spedizione in corso: recluta prima la compagnia.');
+                uiError('Nessuna spedizione in corso: recluta prima la compagnia');
                 return;
             }
 
