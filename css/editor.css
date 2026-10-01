@@ -331,3 +331,11 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-add-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
 .ed-add-row select { flex: 1; margin: 0; }
 .ed-add-row button { margin: 0 0 4px; flex-shrink: 0; }
+
+/* ---------- Mappa: trascinamento dei nodi ---------- */
+.ed-map svg { touch-action: none; user-select: none; }
+.ed-map .level-row { stroke: rgba(226, 185, 81, 0.12); stroke-width: 1; stroke-dasharray: 2 6; }
+.ed-map .node.dragging circle { stroke: #fff3b0; stroke-width: 4; filter: drop-shadow(0 0 8px rgba(255, 210, 90, 0.9)); }
+.ed-map .link-preview { stroke: #ffe08a; stroke-width: 3; stroke-dasharray: 8 6; pointer-events: none; }
+.ed-map .link-preview.hidden { display: none; }
+.ed-map-help { margin: 4px 10px 6px; font-size: 0.75rem; color: var(--text-dim); text-align: left; }
