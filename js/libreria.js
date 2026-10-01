@@ -17,7 +17,7 @@
    ========================================================================== */
 
 window.LIBRERIA = window.LIBRERIA || {};
-['armeria', 'bestiario', 'reliquie', 'maledizioni'].forEach(k => { window.LIBRERIA[k] = window.LIBRERIA[k] || {}; });
+['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi'].forEach(k => { window.LIBRERIA[k] = window.LIBRERIA[k] || {}; });
 window.LIBRERIA.lootPredefinito = window.LIBRERIA.lootPredefinito || [];
 
 // Restituisce una copia della campagna con i riferimenti sostituiti dagli elementi della libreria.
@@ -27,6 +27,18 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
     const copy = obj => obj && JSON.parse(JSON.stringify(obj));
     const missing = (what, id) => console.warn(`Campagna "${raw.id}": ${what} "${id}" non trovato nella libreria`);
 
+    // Eroi: dalla libreria arrivano statistiche e abilità; "abilities" della campagna, se c'è, ha la precedenza
+    const abilities = {};
+    camp.heroes = (camp.heroes || []).map(ref => {
+        if (typeof ref !== 'string') return ref;
+        const entry = lib.eroi && lib.eroi[ref];
+        if (!entry) { missing('eroe', ref); return null; }
+        const { abilities: list, ...hero } = copy(entry);
+        abilities[hero.name] = list || [];
+        return hero;
+    }).filter(Boolean);
+    camp.abilities = Object.assign(abilities, camp.abilities || {});
+
     const item = ref => {
         if (typeof ref !== 'string') return ref;
         if (!lib.armeria[ref]) { missing('oggetto', ref); return null; }
@@ -34,6 +46,11 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
     };
     camp.initialArmory = (camp.initialArmory || []).map(item).filter(Boolean);
     if (Array.isArray(camp.lootItems)) camp.lootItems = camp.lootItems.map(item).filter(Boolean);
+
+    // Immagine di uno scontro: quella del nodo se c'è, altrimenti quella del nemico nel bestiario
+    (camp.mapNodes || []).forEach(n => {
+        if (n.enemy && !n.image && lib.bestiario[n.enemy] && lib.bestiario[n.enemy].image) n.image = lib.bestiario[n.enemy].image;
+    });
 
     // Nemici: quelli richiamati dai nodi, più eventuali nemici scritti per intero nella campagna
     const enemies = {};

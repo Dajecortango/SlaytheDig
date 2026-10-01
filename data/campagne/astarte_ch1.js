@@ -11,82 +11,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
     "description": "Inizia il pellegrinaggio di Astarte attraverso terre sconosciute e rovine dimenticate.",
     "coverImage": "immagini/astarte_capitolo_uno.jpg",
     "introText": "Astarte si stringe nel mantello mentre il vento freddo delle alture spazza la pietraia. Davanti a voi si snoda una pista dimenticata, segnata dal sangue di vecchi conflitti e dal respiro pesante di creature che reclamano queste lande. La spedizione comincia.",
-    "heroes": [
-        { "name": "Icaro", "str": 3, "int": 3, "fth": 1, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Astarte", "str": 2, "int": 3, "fth": 2, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Ascadeo", "str": 3, "int": 1, "fth": 3, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Zeno", "str": 3, "int": 2, "fth": 2, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Dioforo", "str": 2, "int": 4, "fth": 1, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] }
-    ],
-    "abilities": {
-        "Icaro": [
-            {
-                "id": "icaro_oro",
-                "name": "Fammi dare un’occhiata",
-                "desc": "Passiva: dopo ogni scontro la compagnia ottiene 3 monete in più garantite",
-                "isCombatActive": false,
-                "effects": [
-                    { "effect": "hero_set", "stat": "bonusLootCoins", "val": 3 }
-                ]
-            },
-            { "id": "icaro_trucchi", "name": "Trucchi del mestiere", "desc": "Attiva (1 volta per scontro): tira due dadi per attaccare e tiene il più alto", "isCombatActive": true, "actionName": "Trucchi del mestiere (2 dadi attacco)" }
-        ],
-        "Astarte": [
-            {
-                "id": "astarte_veleni",
-                "name": "Veleni ed altri composti",
-                "desc": "Passiva: cosparge le lame con composti alchemici (+1 al Danno permanente)",
-                "isCombatActive": false,
-                "effects": [
-                    { "effect": "hero_stat", "stat": "dmg", "val": 1 }
-                ]
-            },
-            { "id": "astarte_affondo", "name": "Affondo mortale", "desc": "Attiva (1 volta per scontro): attacco speciale che infligge danno raddoppiato", "isCombatActive": true, "actionName": "Affondo mortale (Doppio Danno)" }
-        ],
-        "Ascadeo": [
-            {
-                "id": "ascadeo_ghiaccio",
-                "name": "Abitante del GhiaccioEterno",
-                "desc": "Passiva: ottiene 1 punto di armatura naturale permanente",
-                "isCombatActive": false,
-                "effects": [
-                    { "effect": "hero_stat", "stat": "base_armor", "val": 1 },
-                    { "effect": "hero_stat", "stat": "current_armor", "val": 1 }
-                ]
-            },
-            { "id": "ascadeo_segnato", "name": "Segnato da Hvid", "desc": "Attiva (1 volta per scontro): colpo speciale che stordisce l'avversario per il suo turno", "isCombatActive": true, "actionName": "Segnato da Hvid (Stordisce Nemico)" }
-        ],
-        "Zeno": [
-            { "id": "zeno_colpo_benedetto", "name": "Colpo benedetto", "desc": "Attiva (1 volta per scontro): aggiunge il valore di Fede al Danno inflitto", "isCombatActive": true, "actionName": "Colpo benedetto (+Fede al Danno)" },
-            {
-                "id": "zeno_addestramento",
-                "name": "Addestramento marziale",
-                "desc": "Passiva: ottiene permanentemente +1 a Forza",
-                "isCombatActive": false,
-                "effects": [
-                    { "effect": "hero_stat", "stat": "str", "val": 1 }
-                ]
-            }
-        ],
-        "Dioforo": [
-            {
-                "id": "dioforo_era_solo_una_prova",
-                "name": "Era solo una prova!",
-                "desc": "Passiva: quando affronta una prova di Intelligenza o Fede tira 2 dadi e tiene il migliore",
-                "isCombatActive": false,
-                "effects": [
-                    { "effect": "hero_set", "stat": "hasAdvantageOnIntFth", "val": true }
-                ]
-            },
-            {
-                "id": "dioforo_penna",
-                "name": "La penna ferisce più della spada",
-                "desc": "Attiva (1 volta per scontro): aggiunge il valore di Intelligenza al tiro per colpire",
-                "isCombatActive": true,
-                "actionName": "La penna ferisce più della spada (+Intelligenza ad Attacco)"
-            }
-        ]
-    },
+    "heroes": ["icaro", "astarte", "ascadeo", "zeno", "dioforo"],
     "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {
         "carro_rovesciato": {
@@ -295,51 +220,51 @@ window.CAMPAIGNS["astarte_ch1"] = {
     "treasures": {},
     "lootItems": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo", "spada_norgrad", "alabarda_guardia", "mannaia_pesante", "scudo_ferro", "corazza_scaglie", "tomo_proibito", "reliquiario_tascabile", "pozione_rigenerazione", "unguento_fortificante", "lama_acciaio_lunare", "martello_breccia", "gorgiera_veterano", "corazza_piastre_leone", "cappa_sussurri", "simbolo_jag_antar", "elisir_sangue_vivo"],
     "mapNodes": [
-        { "id": 0, "level": 0, "x": 300, "type": "combat", "enemy": "banditi_strada", "title": "Livello 1 - Scontro Ovest", "icon": "🗡️", "done": false, "active": true, "next": [2, 3], "image": "immagini/banditi_strada.jpg" },
-        { "id": 1, "level": 0, "x": 500, "type": "combat", "enemy": "cani_caccia", "title": "Livello 1 - Scontro Est", "icon": "🗡️", "done": false, "active": true, "next": [3, 4], "image": "immagini/cani_caccia.jfif" },
+        { "id": 0, "level": 0, "x": 300, "type": "combat", "enemy": "banditi_strada", "title": "Livello 1 - Scontro Ovest", "icon": "🗡️", "done": false, "active": true, "next": [2, 3] },
+        { "id": 1, "level": 0, "x": 500, "type": "combat", "enemy": "cani_caccia", "title": "Livello 1 - Scontro Est", "icon": "🗡️", "done": false, "active": true, "next": [3, 4] },
         { "id": 2, "level": 1, "x": 250, "type": "challenge", "challengeId": "carro_rovesciato", "title": "Livello 2 - Sfida", "icon": "❓", "done": false, "active": false, "next": [5], "image": "immagini/sfida.jpg" },
-        { "id": 3, "level": 1, "x": 400, "type": "combat", "enemy": "sciacalli_cadaveri", "title": "Livello 2 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [6, 7], "image": "immagini/sciacalli_cadaveri.jpg" },
+        { "id": 3, "level": 1, "x": 400, "type": "combat", "enemy": "sciacalli_cadaveri", "title": "Livello 2 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [6, 7] },
         { "id": 4, "level": 1, "x": 550, "type": "merchant", "merchantId": "default", "title": "Livello 2 - Mercante", "icon": "🪙", "done": false, "active": false, "next": [7, 8], "image": "immagini/mercante_viaggiatore.jpg" },
-        { "id": 5, "level": 2, "x": 200, "type": "combat", "enemy": "briganti_pedaggio", "title": "Livello 3 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [9], "image": "immagini/briganti_pedaggio.jpg" },
+        { "id": 5, "level": 2, "x": 200, "type": "combat", "enemy": "briganti_pedaggio", "title": "Livello 3 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [9] },
         { "id": 6, "level": 2, "x": 330, "type": "rest", "restId": "default", "title": "Livello 3 - Riposo", "icon": "⛺", "done": false, "active": false, "next": [10], "image": "immagini/riposo.jpg" },
         { "id": 7, "level": 2, "x": 470, "type": "challenge", "challengeId": "guerriero_morto_neve", "title": "Livello 3 - Sfida", "icon": "❓", "done": false, "active": false, "next": [10], "image": "immagini/guerriero_morto_neve.jpg" },
-        { "id": 8, "level": 2, "x": 600, "type": "combat", "enemy": "cinghiali_pietraie", "title": "Livello 3 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [11], "image": "immagini/scontro_cinghiali.jpg" },
+        { "id": 8, "level": 2, "x": 600, "type": "combat", "enemy": "cinghiali_pietraie", "title": "Livello 3 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [11] },
         { "id": 9, "level": 3, "x": 260, "type": "merchant", "merchantId": "default", "title": "Livello 4 - Mercante", "icon": "🪙", "done": false, "active": false, "next": [12, 13], "image": "immagini/mercante_viaggiatore.jpg" },
-        { "id": 10, "level": 3, "x": 400, "type": "elite", "enemy": "capitano_predoni", "title": "Livello 4 - Capitano dei Predoni", "icon": "👹", "done": false, "active": false, "next": [13, 14], "image": "immagini/capitano_predoni.jpg" },
+        { "id": 10, "level": 3, "x": 400, "type": "elite", "enemy": "capitano_predoni", "title": "Livello 4 - Capitano dei Predoni", "icon": "👹", "done": false, "active": false, "next": [13, 14] },
         { "id": 11, "level": 3, "x": 540, "type": "rest", "restId": "default", "title": "Livello 4 - Riposo", "icon": "⛺", "done": false, "active": false, "next": [13, 14], "image": "immagini/riposo.jpg" },
         { "id": 12, "level": 4, "x": 260, "type": "challenge", "challengeId": "pietra_miliare", "title": "Livello 5 - Sfida", "icon": "❓", "done": false, "active": false, "next": [15, 16], "image": "immagini/pietra_miliare.jpg" },
-        { "id": 13, "level": 4, "x": 400, "type": "combat", "enemy": "branco_lupi", "title": "Livello 5 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [16, 17], "image": "immagini/branco_lupi.jpg" },
+        { "id": 13, "level": 4, "x": 400, "type": "combat", "enemy": "branco_lupi", "title": "Livello 5 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [16, 17] },
         { "id": 14, "level": 4, "x": 540, "type": "challenge", "challengeId": "pellegrino", "title": "Livello 5 - Sfida", "icon": "❓", "done": false, "active": false, "next": [17, 18], "image": "immagini/pellegrino.jpg" },
-        { "id": 15, "level": 5, "x": 200, "type": "combat", "enemy": "disertori", "title": "Livello 6 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [19], "image": "immagini/disertori.jpg" },
+        { "id": 15, "level": 5, "x": 200, "type": "combat", "enemy": "disertori", "title": "Livello 6 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [19] },
         { "id": 16, "level": 5, "x": 330, "type": "merchant", "merchantId": "default", "title": "Livello 6 - Mercante", "icon": "🪙", "done": false, "active": false, "next": [19], "image": "immagini/mercante_viaggiatore.jpg" },
         { "id": 17, "level": 5, "x": 470, "type": "rest", "restId": "default", "title": "Livello 6 - Riposo", "icon": "⛺", "done": false, "active": false, "next": [20], "image": "immagini/riposo.jpg" },
-        { "id": 18, "level": 5, "x": 600, "type": "combat", "enemy": "esploratori_predoni", "title": "Livello 6 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [20], "image": "immagini/esploratori_predoni.jpg" },
-        { "id": 19, "level": 6, "x": 300, "type": "elite", "enemy": "tremabosco", "title": "Livello 7 - Tremabosco Striato", "icon": "👹", "done": false, "active": false, "next": [21, 22], "image": "immagini/tremabosco.jpg" },
-        { "id": 20, "level": 6, "x": 500, "type": "elite", "enemy": "mastino_bokgar", "title": "Livello 7 - Mastino di Bokgar", "icon": "👹", "done": false, "active": false, "next": [22, 23], "image": "immagini/mastino_bogkar.jpg" },
+        { "id": 18, "level": 5, "x": 600, "type": "combat", "enemy": "esploratori_predoni", "title": "Livello 6 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [20] },
+        { "id": 19, "level": 6, "x": 300, "type": "elite", "enemy": "tremabosco", "title": "Livello 7 - Tremabosco Striato", "icon": "👹", "done": false, "active": false, "next": [21, 22] },
+        { "id": 20, "level": 6, "x": 500, "type": "elite", "enemy": "mastino_bokgar", "title": "Livello 7 - Mastino di Bokgar", "icon": "👹", "done": false, "active": false, "next": [22, 23] },
         { "id": 21, "level": 7, "x": 260, "type": "rest", "restId": "default", "title": "Livello 8 - Riposo", "icon": "⛺", "done": false, "active": false, "next": [24], "image": "immagini/riposo.jpg" },
         { "id": 22, "level": 7, "x": 400, "type": "merchant", "merchantId": "default", "title": "Livello 8 - Mercante", "icon": "🪙", "done": false, "active": false, "next": [25, 26], "image": "immagini/mercante_viaggiatore.jpg" },
         { "id": 23, "level": 7, "x": 540, "type": "challenge", "challengeId": "cavallo_senza_cavaliere", "title": "Livello 8 - Sfida", "icon": "❓", "done": false, "active": false, "next": [27], "image": "immagini/cavallo_senza_cavaliere.jpg" },
         { "id": 24, "level": 8, "x": 200, "type": "challenge", "challengeId": "mercante_bloccato", "title": "Livello 9 - Sfida", "icon": "❓", "done": false, "active": false, "next": [28], "image": "immagini/mercante_bloccato.jpg" },
-        { "id": 25, "level": 8, "x": 330, "type": "combat", "enemy": "predoni", "title": "Livello 9 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [28, 29], "image": "immagini/predoni.jpg" },
+        { "id": 25, "level": 8, "x": 330, "type": "combat", "enemy": "predoni", "title": "Livello 9 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [28, 29] },
         { "id": 26, "level": 8, "x": 470, "type": "challenge", "challengeId": "cappella_viandante", "title": "Livello 9 - Sfida", "icon": "❓", "done": false, "active": false, "next": [29, 30], "image": "immagini/cappella_viandante.jpg" },
-        { "id": 27, "level": 8, "x": 600, "type": "combat", "enemy": "orso_bruno", "title": "Livello 9 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [30], "image": "immagini/orso_bruno.jpg" },
-        { "id": 28, "level": 9, "x": 260, "type": "combat", "enemy": "balestrieri_disertori", "title": "Livello 10 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [31], "image": "immagini/balestrieri_disertori.jpg" },
+        { "id": 27, "level": 8, "x": 600, "type": "combat", "enemy": "orso_bruno", "title": "Livello 9 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [30] },
+        { "id": 28, "level": 9, "x": 260, "type": "combat", "enemy": "balestrieri_disertori", "title": "Livello 10 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [31] },
         { "id": 29, "level": 9, "x": 400, "type": "merchant", "merchantId": "default", "title": "Livello 10 - Mercante", "icon": "🪙", "done": false, "active": false, "next": [32], "image": "immagini/mercante_viaggiatore.jpg" },
         { "id": 30, "level": 9, "x": 540, "type": "challenge", "challengeId": "ponte_marcio", "title": "Livello 10 - Sfida", "icon": "❓", "done": false, "active": false, "next": [32, 33], "image": "immagini/ponte_marcio.jpg" },
         { "id": 31, "level": 10, "x": 260, "type": "challenge", "challengeId": "sentiero_rune", "title": "Livello 11 - Sfida", "icon": "❓", "done": false, "active": false, "next": [34, 35], "image": "immagini/sentiero_rune.jpg" },
-        { "id": 32, "level": 10, "x": 400, "type": "combat", "enemy": "picchieri_sbandati", "title": "Livello 11 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [35, 36], "image": "immagini/picchieri_sbandati.jpg" },
+        { "id": 32, "level": 10, "x": 400, "type": "combat", "enemy": "picchieri_sbandati", "title": "Livello 11 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [35, 36] },
         { "id": 33, "level": 10, "x": 540, "type": "challenge", "challengeId": "strada_scompare", "title": "Livello 11 - Sfida", "icon": "❓", "done": false, "active": false, "next": [36, 37], "image": "immagini/strada_scompare.jpg" },
         { "id": 34, "level": 11, "x": 200, "type": "merchant", "merchantId": "default", "title": "Livello 12 - Mercante", "icon": "🪙", "done": false, "active": false, "next": [38], "image": "immagini/mercante_viaggiatore.jpg" },
-        { "id": 35, "level": 11, "x": 330, "type": "combat", "enemy": "fabbro_rinnegato", "title": "Livello 12 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [38, 39], "image": "immagini/fabbro_rinnegato.jpg" },
+        { "id": 35, "level": 11, "x": 330, "type": "combat", "enemy": "fabbro_rinnegato", "title": "Livello 12 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [38, 39] },
         { "id": 36, "level": 11, "x": 470, "type": "challenge", "challengeId": "forca_crocevia", "title": "Livello 12 - Sfida", "icon": "❓", "done": false, "active": false, "next": [39, 40], "image": "immagini/forca_crocevia.jpg" },
-        { "id": 37, "level": 11, "x": 600, "type": "combat", "enemy": "cani_corsi", "title": "Livello 12 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [40], "image": "immagini/cani_corsi.jpg" },
-        { "id": 38, "level": 12, "x": 260, "type": "elite", "enemy": "boia_rinnegati", "title": "Livello 13 - Boia dei Rinnegati", "icon": "👹", "done": false, "active": false, "next": [41], "image": "immagini/boia_rinnegati.jpg" },
+        { "id": 37, "level": 11, "x": 600, "type": "combat", "enemy": "cani_corsi", "title": "Livello 12 - Scontro", "icon": "🗡️", "done": false, "active": false, "next": [40] },
+        { "id": 38, "level": 12, "x": 260, "type": "elite", "enemy": "boia_rinnegati", "title": "Livello 13 - Boia dei Rinnegati", "icon": "👹", "done": false, "active": false, "next": [41] },
         { "id": 39, "level": 12, "x": 400, "type": "challenge", "challengeId": "pedaggio", "title": "Livello 13 - Sfida", "icon": "❓", "done": false, "active": false, "next": [41, 42], "image": "immagini/pedaggio.jpg" },
         { "id": 40, "level": 12, "x": 540, "type": "rest", "restId": "default", "title": "Livello 13 - Riposo", "icon": "⛺", "done": false, "active": false, "next": [42], "image": "immagini/riposo.jpg" },
         { "id": 41, "level": 13, "x": 320, "type": "challenge", "challengeId": "rifugio_abbandonato", "title": "Livello 14 - Sfida", "icon": "❓", "done": false, "active": false, "next": [43, 44], "image": "immagini/rifugio_abbandonato.jpg" },
         { "id": 42, "level": 13, "x": 480, "type": "challenge", "challengeId": "cippo_giuramento", "title": "Livello 14 - Sfida", "icon": "❓", "done": false, "active": false, "next": [43, 44], "image": "immagini/cippo_giuramento.jpg" },
         { "id": 43, "level": 14, "x": 320, "type": "rest", "restId": "default", "title": "Livello 15 - Ultimo Bivacco Ovest", "icon": "⛺", "done": false, "active": false, "next": [45], "image": "immagini/riposo.jpg" },
         { "id": 44, "level": 14, "x": 480, "type": "rest", "restId": "default", "title": "Livello 15 - Ultimo Bivacco Est", "icon": "⛺", "done": false, "active": false, "next": [45], "image": "immagini/riposo.jpg" },
-        { "id": 45, "level": 15, "x": 400, "type": "combat", "enemy": "hungrabarn", "title": "Livello 16 - Hungrabarn (Boss)", "icon": "👑", "done": false, "active": false, "next": [], "image": "immagini/hungrabarn.jpg" }
+        { "id": 45, "level": 15, "x": 400, "type": "combat", "enemy": "hungrabarn", "title": "Livello 16 - Hungrabarn (Boss)", "icon": "👑", "done": false, "active": false, "next": [] }
     ]
 };

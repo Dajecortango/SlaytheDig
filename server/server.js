@@ -393,6 +393,18 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // Un telefono usa una pozione dal proprio zaino fuori dal combattimento
+    // (in combattimento si passa da "Usa oggetto" nel proprio turno, vedi /api/action).
+    if (pathname === '/api/item-use' && req.method === 'POST') {
+        readJsonBody(req, (err, data) => {
+            if (err || !data.heroName || typeof data.itemIndex !== 'number') { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            if (sharedState.inCombat) { sendJson(res, 409, { error: 'In combattimento le pozioni si usano nel proprio turno.' }); return; }
+            broadcast('item-use', { heroName: data.heroName, itemIndex: data.itemIndex, targetName: data.targetName || data.heroName });
+            sendJson(res, 200, { ok: true });
+        });
+        return;
+    }
+
     if (pathname === '/api/events') {
         res.writeHead(200, {
             'Content-Type': 'text/event-stream',

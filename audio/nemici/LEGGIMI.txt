@@ -1,0 +1,15 @@
+Suoni dei nemici del bestiario (data/libreria/bestiario.js).
+
+Ogni nemico ha tre campi, vuoti finché non li riempi:
+  "sfxAttack": suono quando il nemico attacca
+  "sfxHit":    suono quando il nemico viene colpito
+  "sfxDeath":  suono quando il nemico muore
+
+Metti qui i file (.ogg, .mp3 o .wav) e scrivi il percorso nel campo, ad esempio:
+  "sfxAttack": "audio/nemici/lupo_attacco.ogg"
+
+Oppure, dall'editor delle campagne (scheda Bestiario), usa "Carica…" accanto a ogni campo:
+il file viene copiato qui al salvataggio.
+
+Se un campo è vuoto il gioco usa i suoni generati di sempre.
+Se manca "sfxDeath" alla morte suona "sfxHit", se c'è.

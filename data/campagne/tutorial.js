@@ -11,35 +11,7 @@ window.CAMPAIGNS["tutorial"] = {
     "description": "Dopo la grande battaglia, il vino ha avuto la meglio. Riuscirai a rientrare prima dell'ira del Capitano?",
     "coverImage": "immagini/inizio_campagna.png",
     "introText": "Aprite gli occhi. Il soffitto è di roccia irregolare, umida e gocciolante. Una luce fioca filtra dall'esterno, accompagnata dal rumore di un martellare persistente di un fabbro dentro il tuo cranio. Hai un sapore di birra torbida in bocca. Intorno a te, sparsi sul pavimento di pietra, ci sono i tuoi familiari, chi sta abbracciando un barile vuoto urlando frasi sconnesse su chissà quale cugina, chi ha il gambesone infilato al contrario e non riesce a toglierlo... Fuori dalla grotta c'è solo nebbia e il ringhio lontano di qualcosa che speri vivamente non siano lupi affamati.",
-    "heroes": [
-        { "name": "Curio Dignitas", "str": 4, "int": 1, "fth": 2, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Prometeo Dignitas", "str": 3, "int": 2, "fth": 2, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Temistocle Dignitas", "str": 4, "int": 2, "fth": 1, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Caino Dignitas", "str": 3, "int": 3, "fth": 1, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] },
-        { "name": "Ottavio Dignitas", "str": 5, "int": 1, "fth": 1, "maxHp": 4, "hp": 4, "dmg": 1, "base_armor": 0, "current_armor": 0, "att_penalty": 0, "def_bonus": 0, "help_bonus_val": 0, "items": [] }
-    ],
-    "abilities": {
-        "Curio Dignitas": [
-            { "name": "+1 Forza", "type": "passive_stat", "stat": "str", "val": 1 },
-            { "name": "+1 HP", "type": "passive_stat", "stat": "hp", "val": 1 }
-        ],
-        "Prometeo Dignitas": [
-            { "name": "+1 Intelligenza", "type": "passive_stat", "stat": "int", "val": 1 },
-            { "name": "+1 Fede", "type": "passive_stat", "stat": "fth", "val": 1 }
-        ],
-        "Temistocle Dignitas": [
-            { "name": "+1 HP", "type": "passive_stat", "stat": "hp", "val": 1 },
-            { "name": "+1 Fede", "type": "passive_stat", "stat": "fth", "val": 1 }
-        ],
-        "Caino Dignitas": [
-            { "name": "+1 Intelligenza", "type": "passive_stat", "stat": "int", "val": 1 },
-            { "name": "+1 HP", "type": "passive_stat", "stat": "hp", "val": 1 }
-        ],
-        "Ottavio Dignitas": [
-            { "name": "+1 HP", "type": "passive_stat", "stat": "hp", "val": 1 },
-            { "name": "+1 Fede", "type": "passive_stat", "stat": "fth", "val": 1 }
-        ]
-    },
+    "heroes": ["curio_dignitas", "prometeo_dignitas", "temistocle_dignitas", "caino_dignitas", "ottavio_dignitas"],
     "initialArmory": ["spada", "ascia", "alabarda", "scudo", "armatura_leggera", "armatura_pesante", "libro_fede", "tomo_conoscenza", "unguento"],
     "challenges": {
         "fede7": {
@@ -115,25 +87,25 @@ window.CAMPAIGNS["tutorial"] = {
     "treasures": { "1": "Sulle rive del torrente ritrovate i vostri fagotti abbandonati.", "2": "Un forziere abbandonato dai fuggiaschi sulle sponde del fiume.", "3": "Il cadavere di un commilitone stringe tra le mani un manufatto prezioso." },
     "lootItems": null,
     "mapNodes": [
-        { "id": 0, "level": 0, "x": 400, "type": "combat", "enemy": "cinghiali", "title": "Livello 1 - Scontro 1", "icon": "🗡️", "done": false, "active": true, "next": [1, 2], "image": "immagini/scontro_cinghiali.jpg" },
+        { "id": 0, "level": 0, "x": 400, "type": "combat", "enemy": "cinghiali", "title": "Livello 1 - Scontro 1", "icon": "🗡️", "done": false, "active": true, "next": [1, 2] },
         { "id": 1, "level": 1, "x": 300, "type": "challenge", "challengeId": "fede7", "title": "Livello 2 - Sfida 1", "icon": "❓", "done": false, "active": false, "next": [3, 4], "image": "immagini/santuario.png" },
         { "id": 2, "level": 1, "x": 500, "type": "challenge", "challengeId": "intel7", "title": "Livello 2 - Sfida 2", "icon": "❓", "done": false, "active": false, "next": [4, 5], "image": "immagini/tracce_fango.png" },
         { "id": 3, "level": 2, "x": 200, "type": "treasure", "treasureId": 1, "title": "Livello 3 - Tesoro 1", "icon": "💎", "done": false, "active": false, "next": [6, 7], "image": "immagini/tesoro_fiume.png" },
-        { "id": 4, "level": 2, "x": 400, "type": "combat", "enemy": "disertori_affamati", "title": "Livello 3 - Scontro 2", "icon": "🗡️", "done": false, "active": false, "next": [7, 8], "image": "immagini/scontro_disertori.png" },
+        { "id": 4, "level": 2, "x": 400, "type": "combat", "enemy": "disertori_affamati", "title": "Livello 3 - Scontro 2", "icon": "🗡️", "done": false, "active": false, "next": [7, 8] },
         { "id": 5, "level": 2, "x": 600, "type": "merchant", "merchantId": 1, "title": "Livello 3 - Mercante 1", "icon": "🪙", "done": false, "active": false, "next": [8, 9], "image": "immagini/mercante_carretto.jpg" },
         { "id": 6, "level": 3, "x": 180, "type": "merchant", "merchantId": 2, "title": "Livello 4 - Mercante 2", "icon": "🪙", "done": false, "active": false, "next": [10], "image": "immagini/mercante_carovana.jfif" },
-        { "id": 7, "level": 3, "x": 340, "type": "combat", "enemy": "lupi", "title": "Livello 4 - Scontro 3", "icon": "🗡️", "done": false, "active": false, "next": [10, 11], "image": "immagini/scontro_lupi.jpg" },
+        { "id": 7, "level": 3, "x": 340, "type": "combat", "enemy": "lupi", "title": "Livello 4 - Scontro 3", "icon": "🗡️", "done": false, "active": false, "next": [10, 11] },
         { "id": 8, "level": 3, "x": 500, "type": "rest", "restId": 1, "title": "Livello 4 - Riposo 1", "icon": "⛺", "done": false, "active": false, "next": [11, 12], "image": "immagini/riposo_focolare.jpg" },
         { "id": 9, "level": 3, "x": 620, "type": "treasure", "treasureId": 2, "title": "Livello 4 - Tesoro 2", "icon": "💎", "done": false, "active": false, "next": [12], "image": "immagini/tesoro_fiume.png" },
         { "id": 10, "level": 4, "x": 250, "type": "rest", "restId": 2, "title": "Livello 5 - Riposo 2", "icon": "⛺", "done": false, "active": false, "next": [13], "image": "immagini/riposo_colle.jpg" },
         { "id": 11, "level": 4, "x": 400, "type": "challenge", "challengeId": "fede7_2", "title": "Livello 5 - Sfida 3", "icon": "❓", "done": false, "active": false, "next": [13, 14], "image": "immagini/lamenti_nebbia.jpg" },
-        { "id": 12, "level": 4, "x": 550, "type": "combat", "enemy": "banditi", "title": "Livello 5 - Scontro 4", "icon": "⚔️", "done": false, "active": false, "next": [14, 15], "image": "immagini/scontro_banditi.png" },
-        { "id": 13, "level": 5, "x": 260, "type": "elite", "enemy": "sergente", "title": "Livello 6 - Scontro Elite 1", "icon": "👹", "done": false, "active": false, "next": [16], "image": "immagini/scontro_sergente.jpg" },
+        { "id": 12, "level": 4, "x": 550, "type": "combat", "enemy": "banditi", "title": "Livello 5 - Scontro 4", "icon": "⚔️", "done": false, "active": false, "next": [14, 15] },
+        { "id": 13, "level": 5, "x": 260, "type": "elite", "enemy": "sergente", "title": "Livello 6 - Scontro Elite 1", "icon": "👹", "done": false, "active": false, "next": [16] },
         { "id": 14, "level": 5, "x": 400, "type": "treasure", "treasureId": 3, "title": "Livello 6 - Tesoro 3", "icon": "💎", "done": false, "active": false, "next": [17, 18], "image": "immagini/tesoro_cadavere.jpg" },
         { "id": 15, "level": 5, "x": 540, "type": "challenge", "challengeId": "intel8", "title": "Livello 6 - Sfida 4", "icon": "❓", "done": false, "active": false, "next": [19, 18], "image": "immagini/ricordi_marcia.jfif" },
         { "id": 16, "level": 6, "x": 180, "type": "merchant", "merchantId": 3, "title": "Livello 7 - Mercante 3", "icon": "🪙", "done": false, "active": false, "next": [20], "image": "immagini/mercante_profugo.jpg" },
         { "id": 17, "level": 6, "x": 340, "type": "challenge", "challengeId": "fede8", "title": "Livello 7 - Sfida 5", "icon": "❓", "done": false, "active": false, "next": [20], "image": "immagini/onore_caduti.jpg" },
-        { "id": 18, "level": 6, "x": 500, "type": "combat", "enemy": "profanatori", "title": "Livello 7 - Scontro 5", "icon": "🗡️", "done": false, "active": false, "next": [20], "image": "immagini/scontro_profanatori.jpg" },
+        { "id": 18, "level": 6, "x": 500, "type": "combat", "enemy": "profanatori", "title": "Livello 7 - Scontro 5", "icon": "🗡️", "done": false, "active": false, "next": [20] },
         { "id": 19, "level": 6, "x": 620, "type": "merchant", "merchantId": 4, "title": "Livello 7 - Mercante 4", "icon": "🪙", "done": false, "active": false, "next": [20], "image": "immagini/mercante_carovana.png" },
         { "id": 20, "level": 7, "x": 400, "type": "rest", "restId": 3, "title": "Livello 8 - Riposo 3", "icon": "⛺", "done": false, "active": false, "next": [21], "image": "immagini/riposo_finale.jpg" },
         { "id": 21, "level": 8, "x": 400, "type": "challenge", "challengeId": "scelta_finale", "title": "Livello 9 - Meta", "icon": "👑", "done": false, "active": false, "next": [], "image": "immagini/accampamento_arrivo.jpg" }

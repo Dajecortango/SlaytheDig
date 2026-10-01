@@ -5,195 +5,327 @@ window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.bestiario = {
     "cinghiali": {
         "name": "Cinghiali",
+        "image": "immagini/scontro_cinghiali.jpg",
         "hp": 5,
         "maxHp": 5,
         "att": 4,
         "dmg": 1,
         "ca": 6,
-        "desc": "Un fruscio improvviso squarcia il silenzio della nebbia mattutina. Sagome scure e massicce emergono dal grigiore: cinghiali con zanne ricurve terrificanti."
+        "desc": "Un fruscio improvviso squarcia il silenzio della nebbia mattutina. Sagome scure e massicce emergono dal grigiore: cinghiali con zanne ricurve terrificanti.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "disertori_affamati": {
         "name": "Disertori",
+        "image": "immagini/scontro_disertori.png",
         "hp": 6,
         "maxHp": 6,
         "att": 6,
         "dmg": 1,
         "ca": 6,
-        "desc": "Dalla cortina di nebbia spuntano soldati: disertori affamati e disperati, armati di lance e spade. Vi squadrano con odio."
+        "desc": "Dalla cortina di nebbia spuntano soldati: disertori affamati e disperati, armati di lance e spade. Vi squadrano con odio.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
-    "lupi": { "name": "Lupi", "hp": 5, "maxHp": 5, "att": 4, "dmg": 2, "ca": 6, "desc": "Dalle carcasse emergono fauci sbavate: un branco di lupi affamati si aggira tra i cadaveri in cerca di prede." },
-    "banditi": { "name": "Banditi", "hp": 6, "maxHp": 6, "att": 7, "dmg": 2, "ca": 7, "desc": "Banditi spietati che approfittano del caos della guerra vi sbarrano la strada, attratti dal fumo del falò." },
-    "profanatori": { "name": "Profanatori", "hp": 6, "maxHp": 6, "att": 4, "dmg": 2, "ca": 7, "desc": "Uomini armati di ascia e pala cercano tombe da depredare. Nessuno può profanare un caduto del Leone." },
-    "sergente": { "name": "Sergente", "hp": 8, "maxHp": 8, "att": 6, "dmg": 3, "ca": 8, "desc": "Una truppa regolare sopravvissuta, guidata da un sergente con corazza insanguinata. Si sfoderano le armi." },
+    "lupi": {
+        "name": "Lupi",
+        "image": "immagini/scontro_lupi.jpg",
+        "hp": 5,
+        "maxHp": 5,
+        "att": 4,
+        "dmg": 2,
+        "ca": 6,
+        "desc": "Dalle carcasse emergono fauci sbavate: un branco di lupi affamati si aggira tra i cadaveri in cerca di prede.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
+    },
+    "banditi": {
+        "name": "Banditi",
+        "image": "immagini/scontro_banditi.png",
+        "hp": 6,
+        "maxHp": 6,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Banditi spietati che approfittano del caos della guerra vi sbarrano la strada, attratti dal fumo del falò.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
+    },
+    "profanatori": {
+        "name": "Profanatori",
+        "image": "immagini/scontro_profanatori.jpg",
+        "hp": 6,
+        "maxHp": 6,
+        "att": 4,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Uomini armati di ascia e pala cercano tombe da depredare. Nessuno può profanare un caduto del Leone.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
+    },
+    "sergente": {
+        "name": "Sergente",
+        "image": "immagini/scontro_sergente.jpg",
+        "hp": 8,
+        "maxHp": 8,
+        "att": 6,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Una truppa regolare sopravvissuta, guidata da un sergente con corazza insanguinata. Si sfoderano le armi.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
+    },
     "banditi_strada": {
         "name": "Banditi della strada",
+        "image": "immagini/banditi_strada.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Dalle ombre di un terrapieno sbucano figure coperte da mantelli lisi e logorati dalla polvere e dalla pioggia. Impugnano spade scheggiate e clave ferrate, con i volti seminascosti da cappucci sudici. Ti sbarrano la strada con sorrisi mefistofelici, affamati di bottino e indifferenti alla vita umana; per loro la vostra spedizione è solo l'ennesima facile preda da spolpare nel fango del sentiero."
+        "desc": "Dalle ombre di un terrapieno sbucano figure coperte da mantelli lisi e logorati dalla polvere e dalla pioggia. Impugnano spade scheggiate e clave ferrate, con i volti seminascosti da cappucci sudici. Ti sbarrano la strada con sorrisi mefistofelici, affamati di bottino e indifferenti alla vita umana; per loro la vostra spedizione è solo l'ennesima facile preda da spolpare nel fango del sentiero.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "briganti_pedaggio": {
         "name": "Briganti del pedaggio",
+        "image": "immagini/briganti_pedaggio.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Hanno occupato una strettoia naturale della via, sbarrandola con assi di legno chiodate e spuntoni. Indossano pezzi di armature rubate e spaiate, ostentando un'autorità fasulla ma armata fino ai denti. Ti guardano dall'alto in basso con arroganza, stringendo balestre e picche sporche di sangue, pronti a esigere un tributo nel sangue se rifiutate di cedere ogni vostro avere."
+        "desc": "Hanno occupato una strettoia naturale della via, sbarrandola con assi di legno chiodate e spuntoni. Indossano pezzi di armature rubate e spaiate, ostentando un'autorità fasulla ma armata fino ai denti. Ti guardano dall'alto in basso con arroganza, stringendo balestre e picche sporche di sangue, pronti a esigere un tributo nel sangue se rifiutate di cedere ogni vostro avere.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "branco_lupi": {
         "name": "Branco di lupi",
+        "image": "immagini/branco_lupi.jpg",
         "hp": 9,
         "maxHp": 9,
         "att": 8,
         "dmg": 1,
         "ca": 8,
-        "desc": "Un ringhio profondo e gutturale rompe il silenzio della boscaglia. Dalla boscaglia emergono occhi gialli e famelici, fauci sbavate e pelo fitto irto di brina. È un branco di lupi invernali, grossi e spietati, guidati dal freddo e dalla fame disperata. Circondano il gruppo con movimenti fluidi e coordinati, studiando le vostre posture alla ricerca di un momento di distrazione per azzannare alla gola."
+        "desc": "Un ringhio profondo e gutturale rompe il silenzio della boscaglia. Dalla boscaglia emergono occhi gialli e famelici, fauci sbavate e pelo fitto irto di brina. È un branco di lupi invernali, grossi e spietati, guidati dal freddo e dalla fame disperata. Circondano il gruppo con movimenti fluidi e coordinati, studiando le vostre posture alla ricerca di un momento di distrazione per azzannare alla gola.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "disertori": {
         "name": "Banda di disertori",
+        "image": "immagini/disertori.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 8,
         "dmg": 2,
         "ca": 8,
-        "desc": "Soldati sbandati di un esercito ormai dissolto, con le divise lacerate e prive di insegne, ridotte a stracci sudici. Hanno lo sguardo perso, segnato dalla paranoia e dalla disperazione della guerra perduta. Armati di lance arrugginite e cortelli da campo, vi squadrano con un misto di terrore e rabbia cieca: non hanno più nulla da perdere e sono disposti a tutto pur di sottrarvi le provviste e gli abiti di dosso."
+        "desc": "Soldati sbandati di un esercito ormai dissolto, con le divise lacerate e prive di insegne, ridotte a stracci sudici. Hanno lo sguardo perso, segnato dalla paranoia e dalla disperazione della guerra perduta. Armati di lance arrugginite e cortelli da campo, vi squadrano con un misto di terrore e rabbia cieca: non hanno più nulla da perdere e sono disposti a tutto pur di sottrarvi le provviste e gli abiti di dosso.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "predoni": {
         "name": "Predoni",
+        "image": "immagini/predoni.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
         "dmg": 2,
         "ca": 9,
-        "desc": "Guerrieri nomadi e spietati delle lande di confine, agili e letali, specializzati negli agguati lungo i valichi montani. Indossano corazze leggere di pelle e pellicce, armati di scimitarre ricurve e coltelli da lancio che luccicano debolmente nella penombra. Si muovono rapidamente tra i massi, sfruttando ogni copertura per colpire i punti deboli della compagnia con tattiche mordi e fuggi."
+        "desc": "Guerrieri nomadi e spietati delle lande di confine, agili e letali, specializzati negli agguati lungo i valichi montani. Indossano corazze leggere di pelle e pellicce, armati di scimitarre ricurve e coltelli da lancio che luccicano debolmente nella penombra. Si muovono rapidamente tra i massi, sfruttando ogni copertura per colpire i punti deboli della compagnia con tattiche mordi e fuggi.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "cani_caccia": {
         "name": "Cani da caccia rinselvatichiti",
+        "image": "immagini/cani_caccia.jfif",
         "hp": 7,
         "maxHp": 7,
         "att": 7,
         "dmg": 1,
         "ca": 6,
-        "desc": "Segugi da guerra e mastini abbandonati dagli eserciti in rotta, ridotti a carcasse pelle e ossa dalla fame. Riuniti in una muta famelica, si muovono bassi tra le felci secche, coordinandosi con latrati strozzati prima di scattare verso le caviglie della compagnia."
+        "desc": "Segugi da guerra e mastini abbandonati dagli eserciti in rotta, ridotti a carcasse pelle e ossa dalla fame. Riuniti in una muta famelica, si muovono bassi tra le felci secche, coordinandosi con latrati strozzati prima di scattare verso le caviglie della compagnia.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "sciacalli_cadaveri": {
         "name": "Sciacalli di cadaveri",
+        "image": "immagini/sciacalli_cadaveri.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 6,
         "dmg": 1,
         "ca": 8,
-        "desc": "Figuri viscidi armati di coltellacci e zappe da scavo, sorpresi a spogliare le carcasse lungo il ciglio del sentiero. Vedendovi arrivare, non esitano a brandire i ferri sporchi di terra e ruggine per mettere a tacere eventuali testimoni e allargare il proprio bottino."
+        "desc": "Figuri viscidi armati di coltellacci e zappe da scavo, sorpresi a spogliare le carcasse lungo il ciglio del sentiero. Vedendovi arrivare, non esitano a brandire i ferri sporchi di terra e ruggine per mettere a tacere eventuali testimoni e allargare il proprio bottino.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "orso_bruno": {
         "name": "Orso bruno selvaggio",
+        "image": "immagini/orso_bruno.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 9,
         "dmg": 2,
         "ca": 7,
-        "desc": "Un enorme maschio solitario, reso nervoso e feroce dalla scarsità di cibo prima dell'inverno. Svegliato dal passaggio dei vostri passi, si solleva a tutta altezza tra i massi abbattendo gli artigli con rugli furibondi per difendere la sua gola."
+        "desc": "Un enorme maschio solitario, reso nervoso e feroce dalla scarsità di cibo prima dell'inverno. Svegliato dal passaggio dei vostri passi, si solleva a tutta altezza tra i massi abbattendo gli artigli con rugli furibondi per difendere la sua gola.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "balestrieri_disertori": {
         "name": "Balestrieri disertori",
+        "image": "immagini/balestrieri_disertori.jpg",
         "hp": 11,
         "maxHp": 11,
         "att": 8,
         "dmg": 2,
         "ca": 9,
-        "desc": "Tiratori scelti fuggiti dai ranghi dell'esercito regolare, appostati dietro muretti a secco e rocce sporgenti. Con le balestre cariche e dardi con punta a foglia, aprono il fuoco senza preavviso, pronti a bersagliarvi dalla distanza."
+        "desc": "Tiratori scelti fuggiti dai ranghi dell'esercito regolare, appostati dietro muretti a secco e rocce sporgenti. Con le balestre cariche e dardi con punta a foglia, aprono il fuoco senza preavviso, pronti a bersagliarvi dalla distanza.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "cinghiali_pietraie": {
         "name": "Cinghiali delle pietraie",
+        "image": "immagini/scontro_cinghiali.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Una coppia di cinghiali massicci e aggressivi, con la pelle indurita da anni di pascolo tra le rocce taglienti. Sentendosi messi all'angolo nel canalone cieco, abbassano le zanne affilate e caricano a testa bassa senza curarsi delle vostre armi."
+        "desc": "Una coppia di cinghiali massicci e aggressivi, con la pelle indurita da anni di pascolo tra le rocce taglienti. Sentendosi messi all'angolo nel canalone cieco, abbassano le zanne affilate e caricano a testa bassa senza curarsi delle vostre armi.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "picchieri_sbandati": {
         "name": "Picchieri della milizia sbandata",
+        "image": "immagini/picchieri_sbandati.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Una linea di fanti contadini un tempo arruolati a forza, ora rimasti senza paga né comando. Serrano i ranghi piantando a terra lunghe aste scheggiate, formando una barriera di punte acuminata e pericolosa per chiunque tenti di avvicinarsi frontalmente."
+        "desc": "Una linea di fanti contadini un tempo arruolati a forza, ora rimasti senza paga né comando. Serrano i ranghi piantando a terra lunghe aste scheggiate, formando una barriera di punte acuminata e pericolosa per chiunque tenti di avvicinarsi frontalmente.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "esploratori_predoni": {
         "name": "Esploratori predoni",
+        "image": "immagini/esploratori_predoni.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "L'avanguardia agile delle bande montane. Armati di archi corti e corte sciabole, si muovono silenziosi tra i dirupi per saggiare la resistenza della vostra carovana con colpi rapidi e ritirate repentine."
+        "desc": "L'avanguardia agile delle bande montane. Armati di archi corti e corte sciabole, si muovono silenziosi tra i dirupi per saggiare la resistenza della vostra carovana con colpi rapidi e ritirate repentine.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "fabbro_rinnegato": {
         "name": "Fabbro rinnegato e sgherri",
+        "image": "immagini/fabbro_rinnegato.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
         "dmg": 2,
         "ca": 9,
-        "desc": "Un artigiano delle armate campali datosi al brigantaggio insieme a due manovali. Impugna una mazza da forgia pesante e pinze incandescenti, protetto da un grembiale chiodato capace di deflettere i colpi di striscio."
+        "desc": "Un artigiano delle armate campali datosi al brigantaggio insieme a due manovali. Impugna una mazza da forgia pesante e pinze incandescenti, protetto da un grembiale chiodato capace di deflettere i colpi di striscio.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "cani_corsi": {
         "name": "Branco di cani corsi feroci",
+        "image": "immagini/cani_corsi.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 9,
         "dmg": 2,
         "ca": 7,
-        "desc": "Cani da presa sfuggiti alle tenute saccheggiate a valle. Grossi, silenziosi e privi di collare, sbarrano il sentiero ringhiando a denti stretti, pronti ad azzannare le braccia armate per trascinare a terra chiunque avanzi."
+        "desc": "Cani da presa sfuggiti alle tenute saccheggiate a valle. Grossi, silenziosi e privi di collare, sbarrano il sentiero ringhiando a denti stretti, pronti ad azzannare le braccia armate per trascinare a terra chiunque avanzi.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "capitano_predoni": {
         "name": "Capitano dei predoni",
+        "image": "immagini/capitano_predoni.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
         "dmg": 2,
         "ca": 7,
-        "desc": "Una figura imponente e massiccia avvolta in una pesante corazza di cuoio bollito e metallo nero. Impugna un'ascia bipenne intrisa di vecchia ruggine e sangue secco, emanando un'aura di brutale autorità sui suoi sottoposti. Ti fissa con un ghigno sprezzante, gli occhi freddi di un veterano della violenza che ha ridotto la predazione a mestiere: per superarlo dovrete spezzare la sua furia inarrestabile."
+        "desc": "Una figura imponente e massiccia avvolta in una pesante corazza di cuoio bollito e metallo nero. Impugna un'ascia bipenne intrisa di vecchia ruggine e sangue secco, emanando un'aura di brutale autorità sui suoi sottoposti. Ti fissa con un ghigno sprezzante, gli occhi freddi di un veterano della violenza che ha ridotto la predazione a mestiere: per superarlo dovrete spezzare la sua furia inarrestabile.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "tremabosco": {
         "name": "Tremabosco Infuriato",
+        "image": "immagini/tremabosco.jpg",
         "hp": 14,
         "maxHp": 14,
         "att": 9,
         "dmg": 2,
         "ca": 7,
-        "desc": "Un possente fruscio tra i rami spezzati anticipa l'arrivo di una mole mastodontica: un colosso ricoperto di fitto pelo bruno, con la corporatura massiccia di un toro e la testa armata di zanne ricurve simili a spade. Il Tremabosco Striato fiuta l'aria con il muso ricurvo, raspando furioso il terreno con zampe possenti mentre si raccoglie per una carica devastante. La foresta ammutolisce al suo cospetto."
+        "desc": "Un possente fruscio tra i rami spezzati anticipa l'arrivo di una mole mastodontica: un colosso ricoperto di fitto pelo bruno, con la corporatura massiccia di un toro e la testa armata di zanne ricurve simili a spade. Il Tremabosco Striato fiuta l'aria con il muso ricurvo, raspando furioso il terreno con zampe possenti mentre si raccoglie per una carica devastante. La foresta ammutolisce al suo cospetto.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "mastino_bokgar": {
         "name": "Mastino di Bokgar",
+        "image": "immagini/mastino_bogkar.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
         "dmg": 3,
         "ca": 8,
-        "desc": "Dall'oscurità delle rovine emergono sagome scure e fameliche, avvolte da un silenzio innaturale. I Mastini di Bokgar, antichi parassiti notturni sopravvissuti per secoli in cavità dimenticate, avanzano con movimenti furtivi e uno sguardo vitreo privo di paura. Le loro fauci digrignano in attesa di spolpare la carne viva, mentre il loro corpo tradisce il terrore viscerale per la luce, che li rende ancora più aggressivi e disperati."
+        "desc": "Dall'oscurità delle rovine emergono sagome scure e fameliche, avvolte da un silenzio innaturale. I Mastini di Bokgar, antichi parassiti notturni sopravvissuti per secoli in cavità dimenticate, avanzano con movimenti furtivi e uno sguardo vitreo privo di paura. Le loro fauci digrignano in attesa di spolpare la carne viva, mentre il loro corpo tradisce il terrore viscerale per la luce, che li rende ancora più aggressivi e disperati.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "boia_rinnegati": {
         "name": "Boia dei Rinnegati",
+        "image": "immagini/boia_rinnegati.jpg",
         "hp": 14,
         "maxHp": 14,
         "att": 7,
         "dmg": 3,
         "ca": 9,
-        "desc": "Un colosso umano avvolto in un grembiule di cuoio annerito e macchiato, con il volto celato da un cappuccio di canapa grezza. Poggia sulle spalle una pesante mannaia d'acciaio grezzo, usata tanto per tagliare legna quanto per punire disertori e viandanti. Attorno a lui regna un silenzio sinistro: è la retroguardia spietata delle bande montane, abituato a finire i feriti con fredda brutalità."
+        "desc": "Un colosso umano avvolto in un grembiule di cuoio annerito e macchiato, con il volto celato da un cappuccio di canapa grezza. Poggia sulle spalle una pesante mannaia d'acciaio grezzo, usata tanto per tagliare legna quanto per punire disertori e viandanti. Attorno a lui regna un silenzio sinistro: è la retroguardia spietata delle bande montane, abituato a finire i feriti con fredda brutalità.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     },
     "hungrabarn": {
         "name": "Hungrabarn",
+        "image": "immagini/hungrabarn.jpg",
         "hp": 16,
         "maxHp": 16,
         "att": 9,
         "dmg": 4,
         "ca": 9,
-        "desc": "Dall'ombra più profonda della sala emerge una sagoma colossale, un relitto vivente di una razza che il mondo credeva estinta. L'Hungrabarn si erge in tutta la sua spaventosa imponenza, raggiungendo altezze titaniche, con membra possenti e uno sguardo affamato che brama carne umana. Tra le sue mani artigliate e ai suoi piedi si calpestano teschi e ossa accumulate nei secoli, mentre un ruggito primordiale e sordo scuote le rovine. La fine della spedizione si misura adesso contro questo incubo di carne e pietra."
+        "desc": "Dall'ombra più profonda della sala emerge una sagoma colossale, un relitto vivente di una razza che il mondo credeva estinta. L'Hungrabarn si erge in tutta la sua spaventosa imponenza, raggiungendo altezze titaniche, con membra possenti e uno sguardo affamato che brama carne umana. Tra le sue mani artigliate e ai suoi piedi si calpestano teschi e ossa accumulate nei secoli, mentre un ruggito primordiale e sordo scuote le rovine. La fine della spedizione si misura adesso contro questo incubo di carne e pietra.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     }
 };
