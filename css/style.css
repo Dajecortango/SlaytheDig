@@ -2713,3 +2713,55 @@
         }
         body.no-anim .card-flip-out, body.no-anim .card-flip-in, body.no-anim .reveal-raro,
         body.no-anim .reveal-epico, body.no-anim .card-back-emblem { animation: none !important; }
+
+
+        /* Dorso delle carte: il bordo e l'anello della gemma lasciano intuire la rarità */
+        .card-back.rar-back-comune { border-color: #8d8a84 !important; }
+        .card-back.rar-back-raro { border-color: #4a8cff !important; box-shadow: 0 0 0 1px #000, 0 0 10px rgba(74, 140, 255, 0.35); }
+        .card-back.rar-back-epico { border-color: #b06cff !important; box-shadow: 0 0 0 1px #000, 0 0 14px rgba(176, 108, 255, 0.55); }
+        .rar-back-comune .card-back-emblem { border-color: #b8b4aa; }
+        .rar-back-raro .card-back-emblem { border-color: #6aa6ff; }
+        .rar-back-epico .card-back-emblem { border-color: #c995ff; }
+
+        /* Strumenti del mercante: rinnovo della merce e contrattazione */
+        .merchant-tools { display: flex; gap: 8px; margin: 8px 0 2px; }
+        .merchant-tools button { flex: 1; margin: 0 0 6px; }
+        .merchant-tools .coin { vertical-align: -2px; }
+        .merchant-haggle-note { margin: 2px 0 4px; font-size: 0.8rem; text-align: center; }
+        .merchant-haggle-note.ok { color: var(--accent-green); }
+        .merchant-haggle-note.fail { color: var(--curse-color); }
+        .price-old { color: var(--text-dim); font-size: 0.75em; margin-right: 4px; }
+        .haggle-rows { display: grid; gap: 6px; margin-top: 10px; }
+        .haggle-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; text-align: left; }
+        .haggle-row b { font-family: var(--font-title); color: var(--wc-yellow); }
+        .haggle-row button { margin: 0 0 6px; }
+        .codex-enemy-img { object-position: 50% 30%; }
+
+
+        /* Icona di reliquia o maledizione che vola verso il contatore in alto */
+        .fly-icon {
+            position: fixed;
+            z-index: 3000;
+            pointer-events: none;
+            border: 2px solid #e2b951;
+            box-shadow: 0 0 0 1px #000, 0 0 18px rgba(255, 210, 90, 0.8);
+            transform-origin: center;
+        }
+
+
+        /* Percorso animato: la strada scelta si illumina mentre il segnalino la percorre */
+        .sts-map-svg line.path-walking {
+            stroke: #ffe08a;
+            stroke-width: 4;
+            stroke-dasharray: 10 8;
+            filter: drop-shadow(0 0 6px rgba(255, 200, 60, 0.9));
+            animation: path-walk 0.6s linear infinite;
+        }
+        @keyframes path-walk { to { stroke-dashoffset: -18; } }
+        .sts-node.node-arriving { animation: node-arrive 0.9s ease-in-out; }
+        @keyframes node-arrive {
+            0%, 70% { box-shadow: none; }
+            85% { box-shadow: 0 0 0 3px #ffe08a, 0 0 22px rgba(255, 210, 90, 0.9); }
+            100% { box-shadow: none; }
+        }
+        body.no-anim .sts-map-svg line.path-walking, body.no-anim .sts-node.node-arriving { animation: none; }
