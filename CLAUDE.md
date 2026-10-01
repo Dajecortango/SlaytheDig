@@ -6,7 +6,7 @@ Guida per Claude Code (claude.ai/code) su questo repository. Idea ripresa dal br
 
 "Slay the Dig": roguelike a turni (mappa alla *Slay the Spire*, toni alla *Darkest Dungeon*) con interfaccia ispirata ai menu di *Warcraft III: Reign of Chaos*. Campagne private della "Famiglia Dignitas". Testi di gioco, commenti e nomi in italiano.
 
-App web statica in JavaScript puro: niente build, niente npm, niente bundler, niente test automatici nel repository.
+App web statica in JavaScript puro: niente build, niente npm, niente bundler, niente test automatici nel repository. Librerie esterne solo copiate in `js/vendor/` (`qrcode.js`, `gsap.min.js`).
 
 ## Avvio e sviluppo
 
@@ -17,12 +17,14 @@ App web statica in JavaScript puro: niente build, niente npm, niente bundler, ni
 ## Architettura
 
 - `index.html`: tutte le schermate (`div#screen*`) sono nel DOM; `showScreen(id)` mostra quella attiva togliendo la classe `.hidden`. I pulsanti chiamano funzioni globali con `onclick="..."`.
-- `css/style.css`: tema WC3 (cornici dorate, pulsanti in metallo in rilievo, catene, cursore a guanto), animazioni, menu.
+- `css/wc3-base.css`: base comune a gioco, editor e telefono (variabili di colori e caratteri, pulsanti in metallo, menu a tendina, scrollbar, componenti `.wc-panel`, `.wc-inset`, `.wc-card`, `.wc-heading`, colori delle parole chiave `.kw-*`). Va caricato prima degli altri fogli di stile; il telefono lo prende da `/css/wc3-base.css`.
+- `css/style.css`: tema WC3 del gioco (cornici dorate, catene, cursore a guanto), animazioni, menu.
+- `js/wc3fx.js` + `js/vendor/gsap.min.js` (GSAP in locale, niente CDN: deve funzionare con file:// e senza internet): pannelli appesi alle catene che scendono e oscillano come un pendolo, finestre che scendono appese, rimbalzo dei pulsanti al rilascio. Caricato dopo `js/game.js`, avvolge `showScreen` e `openModal`; senza GSAP o con le animazioni spente il gioco resta solo CSS.
 - `js/game.js`: motore di gioco, nessun dato di campagna. `js/loot.js` (bottino, tesori, carte coperte) e `js/shop.js` (mercante: merce, rinnovo, contrattazione, vendita) sono caricati subito dopo e condividono lo stesso ambito globale. Legge `const campaignsDatabase = window.CAMPAIGNS || {}`.
 - `data/libreria/`: libreria condivisa da tutte le campagne. `armeria.js` (oggetti, più `lootPredefinito`), `bestiario.js` (nemici, con l'immagine dello scontro), `reliquie.js`, `maledizioni.js`, `eroi.js` (statistiche, abilità e ritratti); popolano `window.LIBRERIA`, JSON puro.
 - `data/campagne/<id>.js`: una campagna per file, JSON puro senza funzioni, che richiama gli elementi della libreria **per id**. L'ordine dei `<script>` in `index.html` è l'ordine nel menu. Vanno inclusi anche in `editor.html`.
 - `js/libreria.js`: caricato dopo librerie e campagne e prima di `js/game.js`. `resolveCampaign()` sostituisce i riferimenti con gli elementi completi: `window.CAMPAIGNS` contiene le campagne risolte (stessa forma di sempre, usata da motore, simulatore e tiro da remoto), `window.CAMPAIGNS_RAW` quelle con i riferimenti (usate dall'editor).
-- `editor.html` + `js/editor.js` + `css/editor.css` (che si appoggia a `css/style.css`).
+- `editor.html` + `js/editor.js` + `css/editor.css` (che si appoggia a `css/wc3-base.css` e `css/style.css`).
 
 ### Dati di una campagna
 

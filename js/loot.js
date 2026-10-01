@@ -90,7 +90,7 @@
             if (hasRelic("Dente del grande lupo")) {
                 let lowestHero = party.filter(h => h.hp > 0).reduce((prev, curr) => prev.hp < curr.hp ? prev : curr);
                 if (lowestHero && lowestHero.hp < lowestHero.maxHp) {
-                    lowestHero.hp += 1;
+                    healHero(lowestHero, 1);
                 }
             }
 
@@ -118,7 +118,11 @@
             document.getElementById('lootCoinsText').textContent = coins;
             document.getElementById('lootItemIcon').innerHTML = itemIconHtml(currentLootItem);
             document.getElementById('lootItemName').textContent = currentLootItem.name;
-            document.getElementById('lootItemDesc').textContent = currentLootItem.desc;
+            document.getElementById('lootItemDesc').innerHTML = kw(currentLootItem.desc);
+            const lootRow = document.getElementById('lootItemRow');
+            lootRow.classList.remove('rar-card-comune', 'rar-card-raro', 'rar-card-epico');
+            lootRow.classList.add(`rar-card-${itemRarity(currentLootItem)}`);
+            lootRow.dataset.tip = itemTip(currentLootItem);
             revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
             document.getElementById('lootHeroSelect').innerHTML = heroOptionsForItem(currentLootItem);
             // Il dorso lascia intuire la rarità (grigio, blu, viola)
@@ -199,11 +203,11 @@
                     return `<div class="armory-btn taken"><span class="tile-text"><strong>Prelevato</strong></span></div>`;
                 }
                 return `
-                    <button class="armory-btn" onclick="selectTreasureItem(${idx})">
+                    <button class="armory-btn rar-card-${itemRarity(it)}" onclick="selectTreasureItem(${idx})" data-tip="${esc(itemTip(it))}">
                         ${itemIconHtml(it)}
                         <span class="tile-text">
                             <strong>${it.name}</strong>
-                            <span class="tile-sub">${it.desc}</span>
+                            <span class="tile-sub">${kw(it.desc)}</span>
                             <span class="tile-tag">Prendi</span>
                         </span>
                     </button>
@@ -221,7 +225,7 @@
             document.getElementById('treasureAssignArea').classList.remove('hidden');
 
             document.getElementById('selectedTreasureName').textContent = selectedTreasureItem.name;
-            document.getElementById('selectedTreasureDesc').textContent = selectedTreasureItem.desc;
+            document.getElementById('selectedTreasureDesc').innerHTML = kw(selectedTreasureItem.desc);
             document.getElementById('treasureHeroSelect').innerHTML = heroOptionsForItem(selectedTreasureItem);
         }
 
