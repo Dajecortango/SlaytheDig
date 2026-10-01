@@ -1,11 +1,12 @@
 /* ==========================================================================
    EDITOR DELLE CAMPAGNE
    Modifica le campagne (data/campagne/<id>.js) e la libreria condivisa
-   (data/libreria/: armeria, bestiario, reliquie, maledizioni) con moduli,
+   (data/libreria/: armeria, bestiario, reliquie, maledizioni, eroi, abilità) con moduli,
    anteprima della mappa e controlli automatici.
    Le campagne richiamano gli elementi della libreria per id (vedi js/libreria.js):
    nei nodi si sceglie il nemico dal bestiario, nelle sfide ricompensa e punizione
-   da reliquie e maledizioni, nella campagna l'armeria iniziale e il bottino dall'armeria.
+   da reliquie e maledizioni, nella campagna l'armeria iniziale e il bottino dall'armeria,
+   negli eroi le abilità dalla libreria Abilità.
    Dal branch campaign-editor di Valerio (adattate al formato con "effects"):
    - "Salva nel progetto": scrive direttamente i file nella cartella del gioco
      (File System Access API di Edge/Chrome), con .zip di riserva;
@@ -59,12 +60,36 @@ const HERO_FIELDS = [
       help: 'Facoltativo: mostrato con metà HP o meno' }
 ];
 
-// Eroe della libreria: statistiche + abilità tra cui scegliere
+// Eroe della libreria: statistiche + abilità tra cui scegliere (id della libreria Abilità)
 const HERO_LIB_FIELDS = [...HERO_FIELDS, {
-    k: 'abilities', label: 'Abilità tra cui scegliere (JSON)', type: 'json', wide: true,
-    help: 'Passive: { "id", "name", "desc", "isCombatActive": false, "effects": [...] } oppure { "name", "type": "passive_stat", "stat", "val" }. ' +
-          'Attive: { "id", "name", "desc", "isCombatActive": true, "actionName" } — il comportamento è in js/game.js per id.'
+    k: 'abilities', label: 'Abilità tra cui scegliere', type: 'reflist', lib: 'abilita', wide: true,
+    help: 'Il giocatore ne sceglie una quando recluta l\'eroe. Le abilità si creano e si modificano nella scheda Abilità.'
 }];
+
+// Abilità attive che hanno un comportamento nel motore (executeCombatHeroRoll in js/game.js)
+const ACTIVE_ABILITY_IDS = ['icaro_trucchi', 'astarte_affondo', 'ascadeo_segnato', 'zeno_colpo_benedetto', 'dioforo_penna'];
+const isPassiveStat = a => !a.isCombatActive && a.type === 'passive_stat';
+// "Passiva" o "Attiva" più la descrizione, senza ripeterlo se la descrizione comincia già così
+const abilitySummary = a => /^(passiva|attiva)/i.test(a.desc || '') ? a.desc : [a.isCombatActive ? 'Attiva' : 'Passiva', a.desc].filter(Boolean).join(' · ');
+
+// Abilità della libreria (l'id è la chiave nella libreria)
+const ABILITY_FIELDS = [
+    { k: 'name', label: 'Nome', wide: true },
+    { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
+    { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
+      help: 'Solo icone classiche di Warcraft III (non Reforged). Vuoto = icona generica' },
+    { k: 'isCombatActive', label: 'Attiva in combattimento (1 volta per scontro)', type: 'checkbox', wide: true },
+    { k: 'actionName', label: 'Nome del comando in combattimento', wide: true, showIf: a => a.isCombatActive,
+      help: 'Il comportamento di un\'abilità attiva è scritto in js/game.js per id: ' + ACTIVE_ABILITY_IDS.join(', ') + '. Un id nuovo richiede codice nel motore.' },
+    { k: 'type', label: 'Tipo di passiva', type: 'select', omitEmpty: true, showIf: a => !a.isCombatActive,
+      options: () => [['', 'Con effetti (JSON)'], ['passive_stat', 'Bonus semplice a una statistica']] },
+    { k: 'stat', label: 'Statistica', type: 'select', showIf: isPassiveStat,
+      options: () => [['str', 'Forza'], ['int', 'Intelligenza'], ['fth', 'Fede'], ['hp', 'HP massimi']] },
+    { k: 'val', label: 'Bonus', type: 'number', showIf: isPassiveStat },
+    { k: 'effects', label: 'Effetti alla scelta (JSON)', type: 'json', wide: true, nullable: true,
+      showIf: a => !a.isCombatActive && a.type !== 'passive_stat',
+      help: 'Es. [{ "effect": "hero_stat", "stat": "dmg", "val": 1 }] = +1 Danno permanente. Tipi: ' + Object.keys(KNOWN_EFFECTS).join(', ') }
+];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 const ITEM_FIELDS = [
@@ -88,7 +113,7 @@ const ITEM_FIELDS = [
 
 const ENEMY_FIELDS = [
     { k: 'name', label: 'Nome', wide: true },
-    { k: 'image', label: 'Immagine dello scontro', type: 'image', folder: 'immagini', wide: true,
+    { k: 'image', label: 'Immagine dello scontro', type: 'image', folder: 'immagini/bestiario', wide: true,
       help: 'Usata da tutti i nodi con questo nemico, salvo quelli che indicano un\'immagine propria' },
     { k: 'hp', label: 'HP', type: 'number' },
     { k: 'maxHp', label: 'HP massimi', type: 'number' },
@@ -168,7 +193,7 @@ let lib = JSON.parse(JSON.stringify(window.LIBRERIA));   // copia modificabile d
 const libDirty = new Set();                              // file della libreria modificati (armeria, bestiario, ...)
 let currentTab = 'general';
 const selection = { challenges: null, map: null, itemList: 'initialArmory',
-                    bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null };
+                    bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null, abilita: null };
 let dirty = false;
 
 const deepCopy = obj => JSON.parse(JSON.stringify(obj));
@@ -277,7 +302,8 @@ async function offerDraftRestore() {
     if (confirm(`C'è una bozza non salvata di "${draft.campaign.title}"${libNote} (${draft.savedAt}). Ripristinarla?`)) {
         pendingAssets.clear();
         (draft.assets || []).forEach(([p, blob]) => addPendingAsset(p, blob));
-        if (draft.library) lib = draft.library;
+        // Una bozza salvata prima di una nuova libreria (es. Abilità) la prende dai file del progetto
+        if (draft.library) lib = { ...deepCopy(window.LIBRERIA), ...draft.library };
         libDirty.clear();
         (draft.libDirty || []).forEach(k => libDirty.add(k));
         setCampaign(draft.campaign);
@@ -361,6 +387,11 @@ document.getElementById('edFileInput').addEventListener('change', e => {
 /* ---------- Riferimenti alla libreria in tutte le campagne ---------- */
 // Per ogni campagna (quella in modifica e le altre caricate) restituisce quante volte usa l'elemento
 function libraryUsage(kind, key) {
+    // Le abilità sono usate dagli eroi della libreria, non direttamente dalle campagne
+    if (kind === 'abilita') {
+        return Object.entries(lib.eroi).filter(([, h]) => (h.abilities || []).includes(key))
+            .map(([id, h]) => ({ id, title: h.name, n: 1, current: true }));
+    }
     const count = raw => {
         if (kind === 'bestiario') return (raw.mapNodes || []).filter(n => n.enemy === key).length;
         if (kind === 'reliquie') return Object.values(raw.challenges || {}).filter(c => c.reward === key).length;
@@ -415,14 +446,15 @@ window.CAMPAIGNS[${JSON.stringify(camp.id)}] = ${formatJson(camp)};
 `;
 }
 
-const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi'];
-const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi' };
+const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita'];
+const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi', abilita: 'Abilità' };
 const LIB_HEADERS = {
     armeria: 'Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.\n// Le campagne li richiamano per id in "initialArmory" e "lootItems".',
     bestiario: 'Bestiario: tutti i nemici, condivisi dalle campagne.\n// I nodi della mappa li richiamano per id nel campo "enemy".',
     reliquie: 'Reliquie: ricompense delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "reward". Molte reliquie hanno un effetto\n// gestito per nome in js/game.js (hasRelic): rinominarle ne cambia il comportamento.',
     maledizioni: 'Maledizioni: punizioni delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "punishment".',
-    eroi: 'Eroi: statistiche iniziali e abilità tra cui scegliere, condivisi dalle campagne.\n// Le campagne li richiamano per id nel campo "heroes". Le abilità attive (isCombatActive)\n// sono gestite per id in js/game.js; il ritratto, se manca in HERO_PORTRAITS, viene da "portrait".'
+    eroi: 'Eroi: statistiche iniziali e abilità tra cui scegliere, condivisi dalle campagne.\n// Le campagne li richiamano per id nel campo "heroes"; le abilità sono id della libreria Abilità\n// (data/libreria/abilita.js). Il ritratto, se manca in HERO_PORTRAITS, viene da "portrait".',
+    abilita: 'Abilità: passive e attive degli eroi, condivise dalla libreria Eroi.\n// Gli eroi le richiamano per id nel campo "abilities". Le passive agiscono con "effects"\n// (o con "type": "passive_stat"); le attive (isCombatActive) sono gestite per id in js/game.js.\n// "icon" è l\'icona di Warcraft III mostrata nel gioco.'
 };
 
 function libraryFileText(kind) {
@@ -443,7 +475,8 @@ const libraryFilePath = kind => `data/libreria/${kind}.js`;
 function usedPendingAssets() {
     const used = new Set([camp.coverImage, ...camp.mapNodes.map(n => n.image),
         ...Object.values(lib.bestiario).flatMap(e => [e.image, e.sfxAttack, e.sfxHit, e.sfxDeath]),
-        ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded])]);
+        ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded]),
+        ...Object.values(lib.abilita || {}).map(a => a.icon)]);
     return [...pendingAssets].filter(([path]) => used.has(path));
 }
 
@@ -680,6 +713,52 @@ function renderForm(container, obj, fields, onChange) {
             return;
         }
 
+        // Elenco di id di una libreria (abilità di un eroe): togli, riordina, aggiungi
+        if (f.type === 'reflist') {
+            const list = Array.isArray(value) ? value : (obj[f.k] = []);
+            const box = document.createElement('div');
+            box.className = 'ed-picklist';
+            box.innerHTML = list.map((ref, i) => {
+                const el = typeof ref === 'string' ? lib[f.lib][ref] : ref;
+                const label = typeof ref !== 'string' ? `${ref.name} (scritta nell'eroe)` : el ? el.name : `${ref} (non trovata)`;
+                const sub = el ? abilitySummary(el) : '';
+                return `<div class="ed-pick" data-i="${i}">
+                    ${el && el.icon ? `<img class="ed-list-portrait" src="${esc(assetUrl(el.icon))}" alt="" onerror="this.hidden=true">` : ''}
+                    <span>${esc(label)}<small>${esc(sub)}</small></span>
+                    ${i > 0 ? '<button type="button" class="btn-small" data-act="up" title="Sposta su">▲</button>' : ''}
+                    ${typeof ref === 'string' && el ? '<button type="button" class="btn-small" data-act="goto">Modifica</button>' : ''}
+                    <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
+                </div>`;
+            }).join('') || '<p class="ed-help">Nessuna abilità.</p>';
+            box.addEventListener('click', e => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const i = Number(btn.closest('.ed-pick').dataset.i);
+                if (btn.dataset.act === 'goto') { gotoLibrary(f.lib, list[i]); return; }
+                if (btn.dataset.act === 'del') list.splice(i, 1);
+                if (btn.dataset.act === 'up') [list[i - 1], list[i]] = [list[i], list[i - 1]];
+                onChange(f.k);
+                render();
+            });
+            const available = Object.entries(lib[f.lib]).filter(([k]) => !list.includes(k));
+            const row = document.createElement('div');
+            row.className = 'ed-add-row';
+            const select = document.createElement('select');
+            select.id = id;
+            select.innerHTML = available.map(([k, v]) => `<option value="${esc(k)}">${esc(v.name)} — ${v.isCombatActive ? 'Attiva' : 'Passiva'}</option>`).join('');
+            const add = document.createElement('button');
+            add.type = 'button';
+            add.className = 'btn-small';
+            add.textContent = `Aggiungi da ${LIB_LABELS[f.lib]}`;
+            add.disabled = !available.length;
+            add.addEventListener('click', () => { if (!select.value) return; list.push(select.value); onChange(f.k); render(); });
+            row.append(select, add);
+            wrap.append(box, row);
+            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
         switch (f.type) {
             case 'textarea':
                 input = document.createElement('textarea');
@@ -819,6 +898,29 @@ const COLLECTIONS = {
             if (key === 'base_armor') h.current_armor = h.base_armor;
         },
         renameRefs: (oldKey, key) => camp.heroes.forEach((h, i) => { if (h === oldKey) camp.heroes[i] = key; })
+    },
+    abilita: {
+        library: true, fields: ABILITY_FIELDS, label: a => a.name, keyHint: 'nuova_abilita',
+        create: key => ({ id: key, name: 'Nuova abilità', desc: 'Passiva: ', isCombatActive: false, effects: [] }),
+        sub: abilitySummary,
+        afterKeyChange: (obj, key) => { obj.id = key; },
+        afterChange: (a, key) => {
+            // Attiva e passiva hanno campi diversi: si tolgono quelli che non servono più e si ridisegna il modulo
+            if (key === 'isCombatActive') {
+                if (a.isCombatActive) { delete a.effects; delete a.type; delete a.stat; delete a.val; a.actionName = a.actionName || a.name; }
+                else { delete a.actionName; if (!a.effects) a.effects = []; }
+            }
+            if (key === 'type') {
+                if (a.type === 'passive_stat') { delete a.effects; a.stat = a.stat || 'str'; a.val = a.val ?? 1; }
+                else { delete a.stat; delete a.val; if (!a.effects) a.effects = []; }
+            }
+            if (key === 'isCombatActive' || key === 'type') setTimeout(render);
+        },
+        // Gli eroi che la usano stanno tutti nella libreria: si aggiornano anche loro
+        renameRefs: (oldKey, key) => Object.values(lib.eroi).forEach(h => {
+            const list = h.abilities || [];
+            if (list.includes(oldKey)) { list[list.indexOf(oldKey)] = key; markLibDirty('eroi'); }
+        })
     },
     maledizioni: {
         library: true, fields: CURSE_FIELDS, label: c => c.name, keyHint: 'nuova_maledizione',
@@ -1448,7 +1550,10 @@ function validateCampaign() {
         const name = `Eroe <b>${esc(h.name)}</b>`;
         ['str', 'int', 'fth', 'maxHp', 'dmg'].forEach(f => { if (typeof h[f] !== 'number') add('error', `${name}: "${f}" non è un numero`, 'eroi', k); });
         if (!(h.abilities || []).length) add('warn', `${name}: nessuna abilità tra cui scegliere`, 'eroi', k);
-        (h.abilities || []).forEach(a => { if (a.effects) checkEffects(a.effects, `Abilità <b>${esc(a.name)}</b> di ${esc(h.name)}`, issues, 'eroi', k); });
+        (h.abilities || []).forEach(a => {
+            if (typeof a === 'string') { if (!lib.abilita[a]) add('error', `${name}: abilità "${esc(a)}" non trovata nella libreria Abilità`, 'eroi', k); }
+            else if (a.effects) checkEffects(a.effects, `Abilità <b>${esc(a.name)}</b> di ${esc(h.name)}`, issues, 'eroi', k);
+        });
         if (checkImage(h.portrait) === 'missing') add('warn', `${name}: ritratto non trovato ${esc(h.portrait)}`, 'eroi', k);
         if (checkImage(h.portraitWounded) === 'missing') add('warn', `${name}: ritratto da ferito non trovato ${esc(h.portraitWounded)}`, 'eroi', k);
     });
@@ -1456,6 +1561,15 @@ function validateCampaign() {
     Object.entries(lib.maledizioni).forEach(([k, c]) => {
         if (!c.name) add('warn', `Maledizione <b>${k}</b>: nome mancante`, 'maledizioni', k);
         checkEffects(c.effects, `Maledizione <b>${k}</b>`, issues, 'maledizioni', k);
+    });
+    Object.entries(lib.abilita).forEach(([k, a]) => {
+        const name = `Abilità <b>${esc(a.name || k)}</b>`;
+        if (!a.name) add('warn', `Abilità <b>${k}</b>: nome mancante`, 'abilita', k);
+        if (!a.desc) add('warn', `${name}: descrizione mancante (il giocatore non sa cosa fa)`, 'abilita', k);
+        if (a.isCombatActive && !ACTIVE_ABILITY_IDS.includes(k)) add('warn', `${name}: abilità attiva senza comportamento in js/game.js, in combattimento non farà nulla`, 'abilita', k);
+        if (isPassiveStat(a) && typeof a.val !== 'number') add('error', `${name}: "Bonus" non è un numero`, 'abilita', k);
+        if (!a.isCombatActive) checkEffects(a.effects, name, issues, 'abilita', k);
+        if (checkImage(a.icon) === 'missing') add('warn', `${name}: icona non trovata ${esc(a.icon)}`, 'abilita', k);
     });
     return issues;
 }

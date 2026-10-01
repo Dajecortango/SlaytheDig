@@ -5,7 +5,7 @@ window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.bestiario = {
     "cinghiali": {
         "name": "Cinghiali",
-        "image": "immagini/scontro_cinghiali.jpg",
+        "image": "immagini/bestiario/scontro_cinghiali.jpg",
         "hp": 5,
         "maxHp": 5,
         "att": 4,
@@ -18,7 +18,7 @@ window.LIBRERIA.bestiario = {
     },
     "disertori_affamati": {
         "name": "Disertori",
-        "image": "immagini/scontro_disertori.png",
+        "image": "immagini/bestiario/scontro_disertori.png",
         "hp": 6,
         "maxHp": 6,
         "att": 6,
@@ -31,7 +31,7 @@ window.LIBRERIA.bestiario = {
     },
     "lupi": {
         "name": "Lupi",
-        "image": "immagini/scontro_lupi.jpg",
+        "image": "immagini/bestiario/lupi_inverno.jpg",
         "hp": 5,
         "maxHp": 5,
         "att": 4,
@@ -44,7 +44,7 @@ window.LIBRERIA.bestiario = {
     },
     "banditi": {
         "name": "Banditi",
-        "image": "immagini/scontro_banditi.png",
+        "image": "immagini/bestiario/banditi.jpg",
         "hp": 6,
         "maxHp": 6,
         "att": 7,
@@ -57,7 +57,7 @@ window.LIBRERIA.bestiario = {
     },
     "profanatori": {
         "name": "Profanatori",
-        "image": "immagini/scontro_profanatori.jpg",
+        "image": "immagini/bestiario/scontro_profanatori.jpg",
         "hp": 6,
         "maxHp": 6,
         "att": 4,
@@ -70,7 +70,7 @@ window.LIBRERIA.bestiario = {
     },
     "sergente": {
         "name": "Sergente",
-        "image": "immagini/scontro_sergente.jpg",
+        "image": "immagini/bestiario/scontro_sergente.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 6,
@@ -83,7 +83,7 @@ window.LIBRERIA.bestiario = {
     },
     "banditi_strada": {
         "name": "Banditi della strada",
-        "image": "immagini/banditi_strada.jpg",
+        "image": "immagini/bestiario/banditi.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
@@ -96,7 +96,7 @@ window.LIBRERIA.bestiario = {
     },
     "briganti_pedaggio": {
         "name": "Briganti del pedaggio",
-        "image": "immagini/briganti_pedaggio.jpg",
+        "image": "immagini/bestiario/briganti_pedaggio.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -109,7 +109,7 @@ window.LIBRERIA.bestiario = {
     },
     "branco_lupi": {
         "name": "Branco di lupi",
-        "image": "immagini/branco_lupi.jpg",
+        "image": "immagini/bestiario/lupi_inverno.jpg",
         "hp": 9,
         "maxHp": 9,
         "att": 8,
@@ -122,7 +122,7 @@ window.LIBRERIA.bestiario = {
     },
     "disertori": {
         "name": "Banda di disertori",
-        "image": "immagini/disertori.jpg",
+        "image": "immagini/bestiario/disertori.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 8,
@@ -135,7 +135,7 @@ window.LIBRERIA.bestiario = {
     },
     "predoni": {
         "name": "Predoni",
-        "image": "immagini/predoni.jpg",
+        "image": "immagini/bestiario/predoni.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -148,7 +148,7 @@ window.LIBRERIA.bestiario = {
     },
     "cani_caccia": {
         "name": "Cani da caccia rinselvatichiti",
-        "image": "immagini/cani_caccia.jfif",
+        "image": "immagini/bestiario/cani_caccia.jfif",
         "hp": 7,
         "maxHp": 7,
         "att": 7,
@@ -161,7 +161,7 @@ window.LIBRERIA.bestiario = {
     },
     "sciacalli_cadaveri": {
         "name": "Sciacalli di cadaveri",
-        "image": "immagini/sciacalli_cadaveri.jpg",
+        "image": "immagini/bestiario/sciacalli_cadaveri.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 6,
@@ -174,7 +174,7 @@ window.LIBRERIA.bestiario = {
     },
     "orso_bruno": {
         "name": "Orso bruno selvaggio",
-        "image": "immagini/orso_bruno.jpg",
+        "image": "immagini/bestiario/orso_bruno.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 9,
@@ -187,7 +187,7 @@ window.LIBRERIA.bestiario = {
     },
     "balestrieri_disertori": {
         "name": "Balestrieri disertori",
-        "image": "immagini/balestrieri_disertori.jpg",
+        "image": "immagini/bestiario/balestrieri_disertori.jpg",
         "hp": 11,
         "maxHp": 11,
         "att": 8,
@@ -200,7 +200,7 @@ window.LIBRERIA.bestiario = {
     },
     "cinghiali_pietraie": {
         "name": "Cinghiali delle pietraie",
-        "image": "immagini/scontro_cinghiali.jpg",
+        "image": "immagini/bestiario/scontro_cinghiali.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
@@ -213,7 +213,7 @@ window.LIBRERIA.bestiario = {
     },
     "picchieri_sbandati": {
         "name": "Picchieri della milizia sbandata",
-        "image": "immagini/picchieri_sbandati.jpg",
+        "image": "immagini/bestiario/picchieri_sbandati.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -226,7 +226,7 @@ window.LIBRERIA.bestiario = {
     },
     "esploratori_predoni": {
         "name": "Esploratori predoni",
-        "image": "immagini/esploratori_predoni.jpg",
+        "image": "immagini/bestiario/esploratori_predoni.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
@@ -239,7 +239,7 @@ window.LIBRERIA.bestiario = {
     },
     "fabbro_rinnegato": {
         "name": "Fabbro rinnegato e sgherri",
-        "image": "immagini/fabbro_rinnegato.jpg",
+        "image": "immagini/bestiario/fabbro_rinnegato.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -252,7 +252,7 @@ window.LIBRERIA.bestiario = {
     },
     "cani_corsi": {
         "name": "Branco di cani corsi feroci",
-        "image": "immagini/cani_corsi.jpg",
+        "image": "immagini/bestiario/cani_corsi.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 9,
@@ -265,7 +265,7 @@ window.LIBRERIA.bestiario = {
     },
     "capitano_predoni": {
         "name": "Capitano dei predoni",
-        "image": "immagini/capitano_predoni.jpg",
+        "image": "immagini/bestiario/capitano_predoni.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -278,7 +278,7 @@ window.LIBRERIA.bestiario = {
     },
     "tremabosco": {
         "name": "Tremabosco Infuriato",
-        "image": "immagini/tremabosco.jpg",
+        "image": "immagini/bestiario/tremabosco.jpg",
         "hp": 14,
         "maxHp": 14,
         "att": 9,
@@ -291,7 +291,7 @@ window.LIBRERIA.bestiario = {
     },
     "mastino_bokgar": {
         "name": "Mastino di Bokgar",
-        "image": "immagini/mastino_bogkar.jpg",
+        "image": "immagini/bestiario/mastino_bogkar.jpg",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -304,7 +304,7 @@ window.LIBRERIA.bestiario = {
     },
     "boia_rinnegati": {
         "name": "Boia dei Rinnegati",
-        "image": "immagini/boia_rinnegati.jpg",
+        "image": "immagini/bestiario/boia_rinnegati.jpg",
         "hp": 14,
         "maxHp": 14,
         "att": 7,
@@ -317,7 +317,7 @@ window.LIBRERIA.bestiario = {
     },
     "hungrabarn": {
         "name": "Hungrabarn",
-        "image": "immagini/hungrabarn.jpg",
+        "image": "immagini/bestiario/hungrabarn.jpg",
         "hp": 16,
         "maxHp": 16,
         "att": 9,
