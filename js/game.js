@@ -473,6 +473,10 @@ function breakRelic(relicName) {
             document.getElementById('partyStepText').textContent = `Scegli quanti membri comporranno la spedizione (${minSize} - ${maxSize}):`;
         }
 
+        // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
+        const GAME_VERSION = '0.7';
+        document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
+
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
 
         // Video di sfondo della schermata principale: muto, in riproduzione solo quando la schermata è visibile
