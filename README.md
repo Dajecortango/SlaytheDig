@@ -19,6 +19,7 @@ index.html           struttura delle schermate (markup)
 css/style.css        stile e animazioni dell'interfaccia
 editor.html          editor delle campagne (js/editor.js, css/editor.css)
 js/game.js           logica di gioco
+data/libreria/       armeria, bestiario, reliquie e maledizioni condivisi da tutte le campagne
 data/campagne/       dati di ogni campagna (un file per campagna)
 immagini/icone/      icone di oggetti, abilità e risorse
 immagini/ritratti/   ritratti degli eroi
@@ -29,15 +30,17 @@ Le illustrazioni degli eventi vanno messe nella cartella `immagini/` con i nomi 
 
 ## Campagne
 
-Ogni campagna sta in `data/campagne/<id>.js`: eroi, abilità, nemici, sfide, mercanti, riposi e nodi della mappa. Dopo `window.CAMPAIGNS["<id>"] =` il contenuto è JSON puro. È un file `.js` e non `.json` perché il browser blocca il caricamento di file `.json` locali aperti con doppio click.
+Oggetti, nemici, reliquie e maledizioni stanno nella **libreria condivisa** (`data/libreria/`: `armeria.js`, `bestiario.js`, `reliquie.js`, `maledizioni.js`) e ogni campagna li richiama per id: un nemico o un'arma si definisce una volta sola e si usa in tutte le avventure.
+
+Ogni campagna sta in `data/campagne/<id>.js`: eroi, abilità, sfide, mercanti, riposi, nodi della mappa e gli id degli elementi della libreria che usa. Dopo `window.CAMPAIGNS["<id>"] =` il contenuto è JSON puro. È un file `.js` e non `.json` perché il browser blocca il caricamento di file `.json` locali aperti con doppio click.
 
 Per aggiungere una campagna, crea un nuovo file e aggiungi il suo tag `<script>` in `index.html` (prima di `js/game.js`) e in `editor.html` (prima di `js/editor.js`). L'ordine dei tag è l'ordine nel menu.
 
 ### Editor delle campagne
 
-Apri `editor.html` con doppio click, oppure "Editor Campagne" dal menu del gioco. Schede: dati generali, mappa (con anteprima dei collegamenti), eroi (con ritratti e abilità), oggetti (armeria iniziale e bottino), nemici, sfide e testi. Il pannello **Controlli** segnala collegamenti rotti, nemici o sfide inesistenti, nodi irraggiungibili, effetti sconosciuti e immagini mancanti.
+Apri `editor.html` con doppio click, oppure "Editor Campagne" dal menu del gioco. Schede della campagna: dati generali, mappa (con anteprima dei collegamenti; il nemico di ogni nodo si sceglie dal bestiario), eroi (con ritratti e abilità), oggetti (armeria iniziale e bottino scelti dall'armeria), sfide (ricompensa e punizione scelte fra reliquie e maledizioni) e testi. Schede della libreria: Bestiario, Armeria, Reliquie, Maledizioni, con l'elenco delle campagne che usano ogni elemento; un id usato da un'altra campagna non si può rinominare né eliminare. Il pannello **Controlli** segnala collegamenti rotti, nemici o sfide inesistenti, nodi irraggiungibili, effetti sconosciuti e immagini mancanti.
 
-- **Salva nel progetto** (Edge/Chrome) scrive `data/campagne/<id>.js` e le immagini caricate direttamente nella cartella del gioco, scelta la prima volta; una campagna nuova viene aggiunta da sola a `index.html` ed `editor.html`. Negli altri browser usa **Scarica .zip** ed estrailo nella cartella del gioco.
+- **Salva nel progetto** (Edge/Chrome) scrive `data/campagne/<id>.js`, i file della libreria modificati e le immagini caricate direttamente nella cartella del gioco, scelta la prima volta; una campagna nuova viene aggiunta da sola a `index.html` ed `editor.html`. Negli altri browser usa **Scarica .zip** ed estrailo nella cartella del gioco.
 - **Prova nel gioco** apre il gioco con la campagna così com'è, anche senza averla salvata.
 - Le modifiche non salvate restano in una bozza nel browser e vengono proposte alla riapertura.
 

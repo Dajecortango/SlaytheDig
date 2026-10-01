@@ -2,6 +2,7 @@
 // Il contenuto dopo "=" è JSON puro: niente funzioni, gli effetti sono descritti nei campi "effects"
 // e interpretati da applyEffects() in js/game.js. È un file .js (e non .json) perché il gioco
 // si apre con doppio click da file:// e il browser blocca fetch() di file locali.
+// Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["tutorial"] = {
     "id": "tutorial",
@@ -39,41 +40,7 @@ window.CAMPAIGNS["tutorial"] = {
             { "name": "+1 Fede", "type": "passive_stat", "stat": "fth", "val": 1 }
         ]
     },
-    "initialArmory": [
-        { "id": "spada", "name": "Spada", "str": 1, "desc": "+1 Forza" },
-        { "id": "ascia", "name": "Ascia", "dmg": 1, "desc": "+1 Danno" },
-        { "id": "alabarda", "name": "Alabarda", "help_bonus_val": 1, "desc": "+1 Tiro Aiuto" },
-        { "id": "scudo", "name": "Scudo", "def_bonus": 1, "desc": "+1 Tiro Difesa" },
-        { "id": "armatura_leggera", "name": "Armatura leggera", "armor": 1, "desc": "+1 Punti Armatura" },
-        { "id": "armatura_pesante", "name": "Armatura pesante", "armor": 2, "att_penalty": 1, "desc": "+2 Punti Armatura, -1 Attacco" },
-        { "id": "libro_fede", "name": "Libro di fede", "fth": 1, "desc": "+1 Fede" },
-        { "id": "tomo_conoscenza", "name": "Tomo di conoscenza", "int": 1, "desc": "+1 Intelligenza" },
-        { "id": "unguento", "name": "Unguento lenitivo", "type": "consumable_heal", "heal_val": 2, "desc": "Consumabile: Cura 2 HP" }
-    ],
-    "enemies": {
-        "cinghiali": {
-            "name": "Cinghiali",
-            "hp": 5,
-            "maxHp": 5,
-            "att": 4,
-            "dmg": 1,
-            "ca": 6,
-            "desc": "Un fruscio improvviso squarcia il silenzio della nebbia mattutina. Sagome scure e massicce emergono dal grigiore: cinghiali con zanne ricurve terrificanti."
-        },
-        "disertori": {
-            "name": "Disertori",
-            "hp": 6,
-            "maxHp": 6,
-            "att": 6,
-            "dmg": 1,
-            "ca": 6,
-            "desc": "Dalla cortina di nebbia spuntano soldati: disertori affamati e disperati, armati di lance e spade. Vi squadrano con odio."
-        },
-        "lupi": { "name": "Lupi", "hp": 5, "maxHp": 5, "att": 4, "dmg": 2, "ca": 6, "desc": "Dalle carcasse emergono fauci sbavate: un branco di lupi affamati si aggira tra i cadaveri in cerca di prede." },
-        "banditi": { "name": "Banditi", "hp": 6, "maxHp": 6, "att": 7, "dmg": 2, "ca": 7, "desc": "Banditi spietati che approfittano del caos della guerra vi sbarrano la strada, attratti dal fumo del falò." },
-        "profanatori": { "name": "Profanatori", "hp": 6, "maxHp": 6, "att": 4, "dmg": 2, "ca": 7, "desc": "Uomini armati di ascia e pala cercano tombe da depredare. Nessuno può profanare un caduto del Leone." },
-        "sergente": { "name": "Sergente", "hp": 8, "maxHp": 8, "att": 6, "dmg": 3, "ca": 8, "desc": "Una truppa regolare sopravvissuta, guidata da un sergente con corazza insanguinata. Si sfoderano le armi." }
-    },
+    "initialArmory": ["spada", "ascia", "alabarda", "scudo", "armatura_leggera", "armatura_pesante", "libro_fede", "tomo_conoscenza", "unguento"],
     "challenges": {
         "fede7": {
             "title": "Un piccolo santuario",
@@ -83,22 +50,8 @@ window.CAMPAIGNS["tutorial"] = {
             "failText": "Storditi, fate cadere goffamente la statuetta a terra.",
             "stat": "fth",
             "cd": 7,
-            "reward": {
-                "type": "relic",
-                "name": "Anello d'Arvale",
-                "desc": "+1 fede a tutti",
-                "effects": [
-                    { "effect": "party_stat", "stat": "fth", "val": 1 }
-                ]
-            },
-            "punishment": {
-                "type": "curse",
-                "name": "-15% ricompensa monete",
-                "desc": "Monete future ridotte del 15%",
-                "effects": [
-                    { "effect": "add_curse", "text": "Maledizione: -15% monete" }
-                ]
-            }
+            "reward": "anello_d_arvale",
+            "punishment": "15_ricompensa_monete"
         },
         "intel7": {
             "title": "Tracce nel fango",
@@ -108,22 +61,8 @@ window.CAMPAIGNS["tutorial"] = {
             "failText": "Non riuscite a decifrare nulla e fuggite frettolosamente.",
             "stat": "int",
             "cd": 7,
-            "reward": {
-                "type": "relic",
-                "name": "Armatura d'ordinanza",
-                "desc": "+1 HP max a tutti",
-                "effects": [
-                    { "effect": "party_max_hp", "val": 1 }
-                ]
-            },
-            "punishment": {
-                "type": "curse",
-                "name": "Sbornia pesante",
-                "desc": "-1 ai tiri attacco",
-                "effects": [
-                    { "effect": "party_stat", "stat": "att_penalty", "val": 1 }
-                ]
-            }
+            "reward": "armatura_d_ordinanza",
+            "punishment": "sbornia_pesante"
         },
         "fede7_2": {
             "title": "Lamenti nelle nebbie",
@@ -133,22 +72,8 @@ window.CAMPAIGNS["tutorial"] = {
             "failText": "I fumi e l'odore nauseabondo vi respingono.",
             "stat": "fth",
             "cd": 7,
-            "reward": {
-                "type": "relic",
-                "name": "Benedetti da Jag Antar",
-                "desc": "+1 ai tiri di attacco",
-                "effects": [
-                    { "effect": "party_stat", "stat": "att_bonus", "val": 1 }
-                ]
-            },
-            "punishment": {
-                "type": "curse",
-                "name": "Maledetti dai popolani",
-                "desc": "-1 fede al party",
-                "effects": [
-                    { "effect": "party_stat", "stat": "fth", "val": -1 }
-                ]
-            }
+            "reward": "benedetti_da_jag_antar",
+            "punishment": "maledetti_dai_popolani"
         },
         "intel8": {
             "title": "Ricordi della marcia",
@@ -158,22 +83,8 @@ window.CAMPAIGNS["tutorial"] = {
             "failText": "Non ricordate nulla e procedete a caso.",
             "stat": "int",
             "cd": 8,
-            "reward": {
-                "type": "relic",
-                "name": "Mappa della regione",
-                "desc": "+1 intelligenza al party",
-                "effects": [
-                    { "effect": "party_stat", "stat": "int", "val": 1 }
-                ]
-            },
-            "punishment": {
-                "type": "curse",
-                "name": "Cattiva memoria",
-                "desc": "-1 intelligenza al party",
-                "effects": [
-                    { "effect": "party_stat", "stat": "int", "val": -1 }
-                ]
-            }
+            "reward": "mappa_della_regione",
+            "punishment": "cattiva_memoria"
         },
         "fede8": {
             "title": "Onore ai caduti",
@@ -208,7 +119,7 @@ window.CAMPAIGNS["tutorial"] = {
         { "id": 1, "level": 1, "x": 300, "type": "challenge", "challengeId": "fede7", "title": "Livello 2 - Sfida 1", "icon": "❓", "done": false, "active": false, "next": [3, 4], "image": "immagini/santuario.png" },
         { "id": 2, "level": 1, "x": 500, "type": "challenge", "challengeId": "intel7", "title": "Livello 2 - Sfida 2", "icon": "❓", "done": false, "active": false, "next": [4, 5], "image": "immagini/tracce_fango.png" },
         { "id": 3, "level": 2, "x": 200, "type": "treasure", "treasureId": 1, "title": "Livello 3 - Tesoro 1", "icon": "💎", "done": false, "active": false, "next": [6, 7], "image": "immagini/tesoro_fiume.png" },
-        { "id": 4, "level": 2, "x": 400, "type": "combat", "enemy": "disertori", "title": "Livello 3 - Scontro 2", "icon": "🗡️", "done": false, "active": false, "next": [7, 8], "image": "immagini/scontro_disertori.png" },
+        { "id": 4, "level": 2, "x": 400, "type": "combat", "enemy": "disertori_affamati", "title": "Livello 3 - Scontro 2", "icon": "🗡️", "done": false, "active": false, "next": [7, 8], "image": "immagini/scontro_disertori.png" },
         { "id": 5, "level": 2, "x": 600, "type": "merchant", "merchantId": 1, "title": "Livello 3 - Mercante 1", "icon": "🪙", "done": false, "active": false, "next": [8, 9], "image": "immagini/mercante_carretto.jpg" },
         { "id": 6, "level": 3, "x": 180, "type": "merchant", "merchantId": 2, "title": "Livello 4 - Mercante 2", "icon": "🪙", "done": false, "active": false, "next": [10], "image": "immagini/mercante_carovana.jfif" },
         { "id": 7, "level": 3, "x": 340, "type": "combat", "enemy": "lupi", "title": "Livello 4 - Scontro 3", "icon": "🗡️", "done": false, "active": false, "next": [10, 11], "image": "immagini/scontro_lupi.jpg" },
