@@ -296,3 +296,38 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-subtab.active { opacity: 1; }
 .ed-check { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 0.85rem; color: #e6dcc4; }
 .ed-hint a { color: var(--gold); }
+
+/* ---------- Libreria condivisa ---------- */
+.ed-tabs-sep {
+    align-self: center;
+    margin: 0 4px 0 14px;
+    font-family: var(--font-title);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+.ed-tabs .ed-lib-tab { background: var(--noise-fine), linear-gradient(#2e2a1c, #1b170f 55%, #100d08); }
+.ed-tabs .ed-lib-tab.active { background: var(--noise-fine), linear-gradient(#5a4210, #33240a 55%, #1d1405); }
+.ed-lib-note { margin: 0 0 10px; font-size: 0.82rem; color: var(--text-dim); text-align: left; }
+.ed-lib-note a, .ed-goto { color: var(--gold); }
+.ed-goto { font-size: 0.75rem; align-self: flex-start; }
+.ed-usage { color: #b9925a !important; }
+.ed-usage-box { margin: 0 0 12px; font-size: 0.8rem; color: #e6dcc4; text-align: left; }
+.ed-usage-box b { color: var(--gold); font-family: var(--font-title); font-weight: 700; }
+.ed-lib-unsaved { margin: 0 0 8px; padding: 6px 9px; font-size: 0.8rem; color: var(--wc-yellow); border: 1px dashed var(--gold); }
+.ed-picklist { display: grid; gap: 5px; text-align: left; }
+.ed-pick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 9px;
+    background: linear-gradient(#1d1814, #120f0c);
+    border: 1px solid #3a2a12;
+}
+.ed-pick > span { flex: 1; min-width: 0; font-size: 0.86rem; }
+.ed-pick small { display: block; color: var(--text-dim); font-size: 0.72rem; }
+.ed-pick button { margin: 0 0 4px; flex-shrink: 0; }
+.ed-add-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+.ed-add-row select { flex: 1; margin: 0; }
+.ed-add-row button { margin: 0 0 4px; flex-shrink: 0; }

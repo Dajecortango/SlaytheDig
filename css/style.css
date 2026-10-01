@@ -2649,3 +2649,67 @@
         .sim-run-table .log-fail { color: #ff8a70; }
         .sim-report-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
         .codex-card .tile-tag { align-self: flex-start; background: none; border: none; box-shadow: none; padding: 0; color: var(--text-dim); font-size: 0.68rem; letter-spacing: 0.04em; }
+
+
+        /* ---------- Carte coperte (mercante e bottino) ----------
+           Dorso scuro con cornice dorata e un "?" su gemma rossa; al clic la carta
+           si chiude di taglio (card-flip-out) e si riapre sull'oggetto (card-flip-in),
+           con un bagliore del colore della rarità. */
+        .card-back {
+            position: relative;
+            width: 100%;
+            justify-content: flex-start;
+            background:
+                repeating-linear-gradient(45deg, rgba(226, 185, 81, 0.06) 0 2px, transparent 2px 12px),
+                repeating-linear-gradient(-45deg, rgba(226, 185, 81, 0.06) 0 2px, transparent 2px 12px),
+                var(--noise-fine), linear-gradient(#3a1410, #1c0806 60%, #120403) !important;
+            border-color: #8a6418 !important;
+        }
+        .card-back:hover { filter: brightness(1.25); }
+        .card-back .tile-text strong { color: var(--wc-yellow); }
+        .card-back .tile-sub { color: var(--text-dim); font-style: italic; }
+        .card-back-emblem {
+            flex: 0 0 40px;
+            width: 40px; height: 40px;
+            display: grid;
+            place-items: center;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 1.3rem;
+            color: var(--wc-yellow);
+            text-shadow: 0 2px 0 #000;
+            background: radial-gradient(circle at 38% 34%, #ffb09a, #c41a14 35%, #300204);
+            border: 2px solid #e2b951;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #000, 0 0 12px rgba(255, 90, 40, 0.45);
+            animation: card-emblem-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes card-emblem-pulse {
+            0%, 100% { box-shadow: 0 0 0 1px #000, 0 0 8px rgba(255, 90, 40, 0.35); }
+            50% { box-shadow: 0 0 0 1px #000, 0 0 18px rgba(255, 150, 60, 0.7); }
+        }
+        .loot-card-back { margin: 4px 0 2px; }
+
+        .card-flip-out { animation: card-flip-out 0.17s ease-in forwards; }
+        .card-flip-in { animation: card-flip-in 0.45s ease-out; }
+        @keyframes card-flip-out {
+            from { transform: perspective(700px) rotateY(0deg); }
+            to { transform: perspective(700px) rotateY(90deg); }
+        }
+        @keyframes card-flip-in {
+            0% { transform: perspective(700px) rotateY(-90deg); filter: brightness(2); }
+            60% { filter: brightness(1.4); }
+            100% { transform: perspective(700px) rotateY(0deg); filter: none; }
+        }
+        .reveal-raro { animation: card-flip-in 0.45s ease-out, reveal-glow-raro 1.4s ease-out; }
+        .reveal-epico { animation: card-flip-in 0.45s ease-out, reveal-glow-epico 1.8s ease-out; }
+        @keyframes reveal-glow-raro {
+            0%, 30% { box-shadow: 0 0 0 1px #000, 0 0 22px 4px rgba(80, 150, 255, 0.75); }
+            100% { box-shadow: none; }
+        }
+        @keyframes reveal-glow-epico {
+            0%, 30% { box-shadow: 0 0 0 1px #000, 0 0 30px 8px rgba(190, 110, 255, 0.85); }
+            100% { box-shadow: none; }
+        }
+        body.no-anim .card-flip-out, body.no-anim .card-flip-in, body.no-anim .reveal-raro,
+        body.no-anim .reveal-epico, body.no-anim .card-back-emblem { animation: none !important; }

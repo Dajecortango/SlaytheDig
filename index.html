@@ -413,7 +413,14 @@
                                 <p class="loot-coins">Monete trovate: <strong id="lootCoinsText"></strong> <span class="coin"></span></p>
                                 <p id="lootCoinsBonus" class="loot-coins-bonus"></p>
                                 <p style="color:#d8cba8;">Oggetto rinvenuto:</p>
-                                <div class="loot-item-row">
+                                <button id="lootCardBack" class="armory-btn card-back loot-card-back" onclick="revealLootItem()">
+                                    <span class="card-back-emblem" aria-hidden="true">?</span>
+                                    <span class="tile-text">
+                                        <strong>Bottino coperto</strong>
+                                        <span class="tile-sub">Clicca per scoprire cosa avete trovato</span>
+                                    </span>
+                                </button>
+                                <div id="lootItemRow" class="loot-item-row hidden">
                                     <span id="lootItemIcon"></span>
                                     <div>
                                         <h3 id="lootItemName"></h3>
@@ -422,7 +429,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="lootAssignArea">
+                        <div id="lootAssignArea" class="hidden">
                             <p class="panel-label">A chi vuoi assegnare questo oggetto?</p>
                             <select id="lootHeroSelect"></select>
                             <button onclick="confirmLootAssignment()" class="btn-proceed">Assegna e Prosegui</button>
@@ -677,8 +684,15 @@
     <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
 
     <!-- Dati delle campagne: l'ordine qui è l'ordine nel menu -->
+    <!-- Libreria condivisa: oggetti, nemici, reliquie e maledizioni richiamati per id dalle campagne -->
+    <script src="data/libreria/armeria.js"></script>
+    <script src="data/libreria/bestiario.js"></script>
+    <script src="data/libreria/reliquie.js"></script>
+    <script src="data/libreria/maledizioni.js"></script>
     <script src="data/campagne/tutorial.js"></script>
     <script src="data/campagne/astarte_ch1.js"></script>
+    <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
+    <script src="js/libreria.js"></script>
     <script src="js/game.js"></script>
     <script src="js/simulator.js"></script>
     <script src="js/vendor/qrcode.js"></script>

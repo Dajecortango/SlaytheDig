@@ -19,12 +19,16 @@ App web statica in JavaScript puro: niente build, niente npm, niente bundler, ni
 - `index.html`: tutte le schermate (`div#screen*`) sono nel DOM; `showScreen(id)` mostra quella attiva togliendo la classe `.hidden`. I pulsanti chiamano funzioni globali con `onclick="..."`.
 - `css/style.css`: tema WC3 (cornici dorate, pulsanti in metallo in rilievo, catene, cursore a guanto), animazioni, menu.
 - `js/game.js`: solo motore di gioco, nessun dato di campagna. Legge `const campaignsDatabase = window.CAMPAIGNS || {}`.
-- `data/campagne/<id>.js`: una campagna per file. Dopo `window.CAMPAIGNS["<id>"] =` il contenuto è **JSON puro**, senza funzioni. L'ordine dei `<script>` in `index.html` (prima di `js/game.js`) è l'ordine nel menu. Vanno inclusi anche in `editor.html` (prima di `js/editor.js`).
+- `data/libreria/`: libreria condivisa da tutte le campagne. `armeria.js` (oggetti, più `lootPredefinito`), `bestiario.js` (nemici), `reliquie.js`, `maledizioni.js`; popolano `window.LIBRERIA`, JSON puro.
+- `data/campagne/<id>.js`: una campagna per file, JSON puro senza funzioni, che richiama gli elementi della libreria **per id**. L'ordine dei `<script>` in `index.html` è l'ordine nel menu. Vanno inclusi anche in `editor.html`.
+- `js/libreria.js`: caricato dopo librerie e campagne e prima di `js/game.js`. `resolveCampaign()` sostituisce i riferimenti con gli elementi completi: `window.CAMPAIGNS` contiene le campagne risolte (stessa forma di sempre, usata da motore, simulatore e tiro da remoto), `window.CAMPAIGNS_RAW` quelle con i riferimenti (usate dall'editor).
 - `editor.html` + `js/editor.js` + `css/editor.css` (che si appoggia a `css/style.css`).
 
 ### Dati di una campagna
 
-`heroes`, `abilities` (per nome dell'eroe), `initialArmory`, `lootItems` (`null` = catalogo `DEFAULT_GAME_ITEMS` di `game.js`), `enemies`, `challenges`, `merchants` / `rests` / `treasures` (testi per chiave, `"default"` vale per tutti), `mapNodes` (`id`, `level`, `x`, `type`, riferimento `enemy` / `challengeId` / `restId` / `merchantId` / `treasureId`, `next`, `active`, `image`).
+`heroes`, `abilities` (per nome dell'eroe), `initialArmory` e `lootItems` (id dell'armeria; `lootItems: null` = `LIBRERIA.lootPredefinito`), `challenges` (`reward` = id di una reliquia, `punishment` = id di una maledizione, oppure un oggetto scritto nella sfida per premi e punizioni immediati come monete o ferite), `merchants` / `rests` / `treasures` (testi per chiave, `"default"` vale per tutti), `mapNodes` (`id`, `level`, `x`, `type`, `enemy` = id del bestiario, `challengeId` / `restId` / `merchantId` / `treasureId`, `next`, `active`, `image`).
+
+I salvataggi tengono dei nodi solo lo stato (`done`, `active`): il contenuto viene dalla campagna attuale, così un id cambiato nel bestiario non rompe le partite salvate.
 
 Gli eroi possono avere `portrait` e `portraitWounded`: valgono se `HERO_PORTRAITS` in `game.js` non ha già un ritratto per quel nome (`registerCampaignHeroPortraits`).
 
@@ -42,7 +46,7 @@ Stato globale in variabili (`party`, `partyCoins`, `unlockedRelics`, `activeCurs
 
 ### Editor
 
-Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database `dignitas_editor`, store `kv`). "Salva nel progetto" usa la File System Access API (Edge/Chrome) per scrivere `data/campagne/<id>.js`, le immagini caricate e i tag `<script>` di una campagna nuova; altrimenti "Scarica .zip". `index.html?prova=<id>` carica la campagna di prova.
+Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database `dignitas_editor`, store `kv`). "Salva nel progetto" usa la File System Access API (Edge/Chrome) per scrivere `data/campagne/<id>.js`, i file di `data/libreria/` modificati (schede Bestiario, Armeria, Reliquie, Maledizioni), le immagini caricate e i tag `<script>` di una campagna nuova; altrimenti "Scarica .zip". `index.html?prova=<id>` carica la campagna di prova.
 
 ### Convenzioni dell'interfaccia
 

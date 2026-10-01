@@ -70,16 +70,9 @@ function breakRelic(relicName) {
 	
 
 
-        const DEFAULT_GAME_ITEMS = [
-            { id: "spada_affilata", name: "Spada affilata", rarity: "raro", str: 1, dmg: 1, desc: "+1 Forza, +1 Danno" },
-            { id: "ascia_pesante", name: "Ascia pesante", rarity: "raro", dmg: 2, desc: "+2 Danni" },
-            { id: "armatura_leggera_loot", name: "Armatura leggera", rarity: "comune", armor: 1, desc: "+1 Armatura" },
-            { id: "armatura_pesante_loot", name: "Armatura pesante", rarity: "raro", armor: 2, att_penalty: 1, desc: "+2 Armatura, -1 Tiro Attacco" },
-            { id: "pozione", name: "Pozione di guarigione", rarity: "raro", type: "consumable_full", desc: "Consumabile: Recupera 100% HP" },
-            { id: "amuleto", name: "Amuleto sacro", rarity: "comune", fth: 1, desc: "+1 Fede" },
-            { id: "anello", name: "Anello della concentrazione", rarity: "comune", int: 1, desc: "+1 Intelligenza" },
-            { id: "scudo_pesante", name: "Scudo pesante", rarity: "raro", armor: 1, def_bonus: 1, desc: "+1 Armatura, +1 Tiro Difesa" }
-        ];
+        // Bottino delle campagne con "lootItems": null (elenco in data/libreria/armeria.js)
+        const LIBRERIA = window.LIBRERIA || { armeria: {}, bestiario: {}, reliquie: {}, maledizioni: {}, lootPredefinito: [] };
+        const DEFAULT_GAME_ITEMS = (LIBRERIA.lootPredefinito || []).map(id => LIBRERIA.armeria[id]).filter(Boolean);
         let gameItems = DEFAULT_GAME_ITEMS;
 
         /* ==========================================================================
@@ -228,7 +221,10 @@ function breakRelic(relicName) {
                 }
 
                 currentCampaign = JSON.parse(JSON.stringify(rawCamp));
-                stsMapNodes = data.stsMapNodes;
+                stsMapNodes = (data.stsMapNodes || []).map(saved => {
+                    const fresh = currentCampaign.mapNodes.find(n => n.id === saved.id);
+                    return fresh ? { ...fresh, done: saved.done, active: saved.active } : saved;
+                });
                 enemies = currentCampaign.enemies;
                 challengesData = currentCampaign.challenges;
                 restsData = currentCampaign.rests;
@@ -258,14 +254,8 @@ function breakRelic(relicName) {
                     }
                 });
 
-                unlockedRelics = (data.unlockedRelics || []).map(savedRelic => {
-                    for (const k in challengesData) {
-                        if (challengesData[k].reward && challengesData[k].reward.name === savedRelic.name) {
-                            return challengesData[k].reward;
-                        }
-                    }
-                    return savedRelic;
-                });
+                unlockedRelics = (data.unlockedRelics || []).map(savedRelic =>
+                    Object.values(LIBRERIA.reliquie).find(r => r.name === savedRelic.name) || savedRelic);
 
                 document.getElementById('mapCampaignHeader').textContent = `Mappa: ${currentCampaign.title}`;
                 updatePartyStatusBars();
@@ -340,10 +330,16 @@ function breakRelic(relicName) {
                 get.onsuccess = () => {
                     const data = get.result;
                     if (!data || !data.campaign || data.campaign.id !== id) return;
+                    // Libreria modificata nell'editor: vale solo per questa scheda; si risolvono di nuovo tutte le campagne
+                    if (data.library) {
+                        Object.assign(LIBRERIA, data.library);
+                        DEFAULT_GAME_ITEMS.splice(0, DEFAULT_GAME_ITEMS.length, ...(LIBRERIA.lootPredefinito || []).map(i => LIBRERIA.armeria[i]).filter(Boolean));
+                        resolveAllCampaigns();
+                    }
                     // Le immagini caricate nell'editor e non ancora salvate arrivano come file: le si mostra da memoria
                     const urls = new Map((data.assets || []).map(([path, blob]) => [path, URL.createObjectURL(blob)]));
                     const fix = path => urls.get(path) || path;
-                    const camp = data.campaign;
+                    const camp = resolveCampaign(data.campaign, LIBRERIA);
                     camp.coverImage = fix(camp.coverImage);
                     (camp.mapNodes || []).forEach(n => { n.image = fix(n.image); });
                     (camp.heroes || []).forEach(h => {
@@ -621,6 +617,25 @@ function breakRelic(relicName) {
                     tick(at, 1800 + Math.random() * 1600, 0.35 + Math.random() * 0.3);
                     at += 0.04 + Math.random() * 0.04;
                 }
+                return;
+            }
+            if (kind === 'flip') {
+                // Carta che si gira: fruscio breve che sale di tono
+                const len = Math.floor(ctx.sampleRate * 0.16);
+                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / len);
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                const band = ctx.createBiquadFilter();
+                band.type = 'bandpass';
+                band.Q.value = 1.2;
+                band.frequency.setValueAtTime(900, t);
+                band.frequency.exponentialRampToValueAtTime(3200, t + 0.16);
+                const g = ctx.createGain();
+                g.gain.value = 0.5;
+                src.connect(band).connect(g).connect(out);
+                src.start(t);
                 return;
             }
             if (kind === 'dice-land') {
@@ -1471,7 +1486,7 @@ function breakRelic(relicName) {
         function startCombat(enemyKey) {
     showScreen('screenCombat');
     activeEnemy = JSON.parse(JSON.stringify(enemies[enemyKey]));
-    discover('enemies', `${currentCampaign.id}:${enemyKey}`);
+    discover('enemies', enemyKey);
     activeEnemy.isStunned = false;
     
     // Reliquia: Occhio del corvo
@@ -1952,9 +1967,14 @@ function breakRelic(relicName) {
 
         // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
         function pickLootItem(isElite, progress) {
-            const weights = lootRarityWeights(isElite, progress);
-            const available = Object.keys(weights).filter(r => gameItems.some(i => itemRarity(i) === r));
-            if (available.length === 0) return gameItems[Math.floor(Math.random() * gameItems.length)];
+            return pickByRarity(gameItems, lootRarityWeights(isElite, progress));
+        }
+
+        // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti), poi un oggetto a caso di quella rarità
+        function pickByRarity(pool, weights) {
+            if (pool.length === 0) return null;
+            const available = Object.keys(weights).filter(r => pool.some(i => itemRarity(i) === r));
+            if (available.length === 0) return pool[Math.floor(Math.random() * pool.length)];
             const total = available.reduce((sum, r) => sum + weights[r], 0);
             let pick = Math.random() * total;
             let rarity = available[available.length - 1];
@@ -1962,8 +1982,8 @@ function breakRelic(relicName) {
                 pick -= weights[r];
                 if (pick < 0) { rarity = r; break; }
             }
-            const pool = gameItems.filter(i => itemRarity(i) === rarity);
-            return pool[Math.floor(Math.random() * pool.length)];
+            const sameRarity = pool.filter(i => itemRarity(i) === rarity);
+            return sameRarity[Math.floor(Math.random() * sameRarity.length)];
         }
 
         // Oro base moltiplicato per l'avanzamento (fino a x2 all'ultimo livello) e +50% negli scontri elite
@@ -2010,8 +2030,24 @@ function breakRelic(relicName) {
             document.getElementById('lootItemDesc').textContent = currentLootItem.desc;
             revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
             document.getElementById('lootHeroSelect').innerHTML = heroOptionsForItem(currentLootItem);
+            document.getElementById('lootCardBack').classList.remove('hidden', 'card-flip-out');
+            document.getElementById('lootItemRow').classList.add('hidden');
+            document.getElementById('lootItemRow').classList.remove('card-flip-in', 'reveal-comune', 'reveal-raro', 'reveal-epico');
+            document.getElementById('lootAssignArea').classList.add('hidden');
 
             updatePartyStatusBars();
+        }
+
+        function revealLootItem() {
+            const back = document.getElementById('lootCardBack');
+            if (back.classList.contains('hidden')) return;
+            flipCard(back, currentLootItem, () => {
+                back.classList.add('hidden');
+                const row = document.getElementById('lootItemRow');
+                row.classList.remove('hidden');
+                row.classList.add('card-flip-in', `reveal-${itemRarity(currentLootItem)}`);
+                document.getElementById('lootAssignArea').classList.remove('hidden');
+            });
         }
 
         function confirmLootAssignment() {
@@ -2123,21 +2159,30 @@ function breakRelic(relicName) {
         let currentMerchantItem = null;
 
         // Genera il banco del mercante: 1 comune, 1 raro, 1 raro o epico, con prezzi e sconti/maledizioni applicati.
-        function generateMerchantStock() {
-            const commons = gameItems.filter(i => itemRarity(i) === 'comune');
-            const rares = gameItems.filter(i => itemRarity(i) === 'raro');
-            const epics = gameItems.filter(i => itemRarity(i) === 'epico');
-            // Se manca una fascia di rarità si pesca dall'intero bottino
-            const pick = pool => {
-                const source = pool.length > 0 ? pool : gameItems;
-                return source[Math.floor(Math.random() * source.length)];
-            };
+        // Merce del mercante: 5 oggetti da equipaggiare (senza doppioni finché il bottino lo permette)
+        // più 1 consumabile, tutti dal bottino della campagna. Le rarità alte diventano più probabili
+        // andando avanti nella mappa: comune/raro/epico 60/35/5 % al primo livello, 20/50/30 % all'ultimo.
+        const MERCHANT_EQUIPMENT_SLOTS = 5;
+        const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
-            const shopPool = [
-                pick(commons),
-                pick(rares),
-                (Math.random() > 0.7 && epics.length > 0) ? pick(epics) : pick(rares)
-            ];
+        function merchantRarityWeights(progress) {
+            const lerp = (a, b) => a + (b - a) * progress;
+            return { comune: lerp(60, 20), raro: lerp(35, 50), epico: lerp(5, 30) };
+        }
+
+        function generateMerchantStock() {
+            const weights = merchantRarityWeights(mapProgress());
+            const equipment = gameItems.filter(i => !isConsumableItem(i));
+            // Se il bottino della campagna non ha consumabili, si prendono quelli dell'armeria condivisa
+            let consumables = gameItems.filter(isConsumableItem);
+            if (consumables.length === 0) consumables = Object.values(LIBRERIA.armeria).filter(isConsumableItem);
+
+            const shopPool = [];
+            for (let i = 0; i < MERCHANT_EQUIPMENT_SLOTS && equipment.length > 0; i++) {
+                const notYetOffered = equipment.filter(item => !shopPool.includes(item));
+                shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : equipment, weights));
+            }
+            shopPool.push(pickByRarity(consumables, weights));
 
             return shopPool.filter(Boolean).map(item => {
                 const rarity = itemRarity(item);
@@ -2150,7 +2195,7 @@ function breakRelic(relicName) {
                 // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
                 if (hasCurse("Rancore del Mercante")) basePrice += 2;
 
-                return { item, price: basePrice };
+                return { item, price: basePrice, revealed: false };
             });
         }
 
@@ -2169,14 +2214,53 @@ function breakRelic(relicName) {
     renderMerchantShop();
 }
 
+        /* ---------- Carte coperte: merce del mercante e bottino degli scontri si scoprono con un clic ---------- */
+        let justRevealedMerchantIdx = null;
+
+        function cardBackHtml(onclick, title, sub, extraClass = '') {
+            return `
+                <button class="armory-btn card-back ${extraClass}" onclick="${onclick}">
+                    <span class="card-back-emblem" aria-hidden="true">?</span>
+                    <span class="tile-text">
+                        <strong>${title}</strong>
+                        <span class="tile-sub">${sub}</span>
+                    </span>
+                </button>`;
+        }
+
+        // Gira la carta: prima si chiude di taglio, poi si riapre mostrando l'oggetto (vedi card-flip-in)
+        function flipCard(el, item, onRevealed) {
+            synthSfx('flip');
+            if (itemRarity(item) === 'epico') setTimeout(() => synthSfx('six'), 200);
+            if (!el || !animationsEnabled()) { onRevealed(); return; }
+            el.classList.add('card-flip-out');
+            setTimeout(onRevealed, 170);
+        }
+
+        function revealMerchantItem(idx) {
+            const entry = merchantItemsWithPrices[idx];
+            if (!entry || entry.revealed) return;
+            flipCard(document.querySelector(`#merchantItemsList [data-idx="${idx}"]`), entry.item, () => {
+                entry.revealed = true;
+                justRevealedMerchantIdx = idx;
+                renderMerchantShop();
+                justRevealedMerchantIdx = null;
+            });
+        }
+
         function renderMerchantShop() {
             document.getElementById('merchantItemsList').innerHTML = merchantItemsWithPrices.map((entry, idx) => {
                 if(!entry) {
                     return `<div class="armory-btn taken"><span class="tile-text"><strong>Venduto</strong></span></div>`;
                 }
+                if (!entry.revealed) {
+                    return cardBackHtml(`revealMerchantItem(${idx})`, 'Merce coperta', 'Clicca per scoprire cosa offre il mercante')
+                        .replace('<button ', `<button data-idx="${idx}" `);
+                }
                 const canAfford = partyCoins >= entry.price;
+                const flip = idx === justRevealedMerchantIdx ? `card-flip-in reveal-${itemRarity(entry.item)}` : '';
                 return `
-                    <button class="armory-btn ${canAfford ? '' : 'unaffordable'}" onclick="tryBuyMerchantItem(${idx})">
+                    <button data-idx="${idx}" class="armory-btn ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})">
                         ${itemIconHtml(entry.item)}
                         <span class="tile-text">
                             <strong>${entry.item.name}</strong>
@@ -2190,6 +2274,7 @@ function breakRelic(relicName) {
 
         function tryBuyMerchantItem(idx) {
             let entry = merchantItemsWithPrices[idx];
+            if (!entry || !entry.revealed) return;
             if(partyCoins < entry.price) {
                 alert("Non hai abbastanza monete per questo oggetto!");
                 return;
@@ -2490,7 +2575,12 @@ function breakRelic(relicName) {
             const healAmount = 1 + (hasRelic("Unguento dell'erborista") ? 1 : 0);
             const healed = [];
             party.forEach(h => {
-                if (h.hp <= 0) return;
+                // Un eroe caduto (0 HP) si rialza con 1 HP
+                if (h.hp <= 0) {
+                    h.hp = 1;
+                    healed.push({ name: h.name, gained: 1, hp: h.hp, maxHp: h.maxHp, revived: true });
+                    return;
+                }
                 const before = h.hp;
                 h.hp = Math.min(h.maxHp, h.hp + healAmount);
                 healed.push({ name: h.name, gained: h.hp - before, hp: h.hp, maxHp: h.maxHp });
@@ -2518,9 +2608,11 @@ function breakRelic(relicName) {
             document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${restDesc}`;
 
             const res = resolveRest();
-            const healLines = res.healed.map(h => h.gained > 0
-                ? `${esc(h.name)}: +${h.gained} HP (${h.hp}/${h.maxHp})`
-                : `${esc(h.name)}: già in piena salute`);
+            const healLines = res.healed.map(h => h.revived
+                ? `${esc(h.name)}: si rialza (${h.hp}/${h.maxHp})`
+                : h.gained > 0
+                    ? `${esc(h.name)}: +${h.gained} HP (${h.hp}/${h.maxHp})`
+                    : `${esc(h.name)}: già in piena salute`);
             document.getElementById('restDescBox').innerHTML += `<br><br><strong>Il riposo vi ristora:</strong><br>${healLines.join('<br>')}`;
             if (res.geloRemoved) {
                 document.getElementById('restDescBox').innerHTML += `<br>Il calore del fuoco scioglie il <strong>Gelo nelle ossa</strong>: la penalità ai tiri per colpire svanisce.`;
@@ -3242,6 +3334,9 @@ function breakRelic(relicName) {
         const compendium = (() => {
             let saved = {};
             try { saved = JSON.parse(localStorage.getItem(COMPENDIUM_KEY) || '{}'); } catch (e) {}
+            // Prima i nemici erano registrati come "campagna:chiave": si passa all'id del bestiario
+            const ENEMY_ALIASES = { 'tutorial:disertori': 'disertori_affamati' };
+            if (saved.enemies) saved.enemies = saved.enemies.map(k => ENEMY_ALIASES[k] || (k.includes(':') ? k.split(':').pop() : k));
             return Object.fromEntries(COMPENDIUM_KINDS.map(k => [k, new Set(saved[k] || [])]));
         })();
 
@@ -3253,32 +3348,27 @@ function breakRelic(relicName) {
             } catch (e) {}
         }
 
-        // Tutte le voci possibili, lette dai dati delle campagne (senza doppioni)
+        // Tutte le voci possibili: la libreria condivisa (data/libreria/), con le campagne in cui compaiono
         function compendiumCatalog() {
-            const catalog = { enemies: [], relics: [], curses: [], items: [] };
-            const seen = { relics: new Set(), curses: new Set(), items: new Set() };
-            const addItem = item => {
-                if (!item || seen.items.has(item.id)) return;
-                seen.items.add(item.id);
-                catalog.items.push({ key: item.id, item });
-            };
-            Object.values(campaignsDatabase).forEach(camp => {
-                Object.entries(camp.enemies || {}).forEach(([k, e]) => catalog.enemies.push({ key: `${camp.id}:${k}`, enemy: e, campaign: camp.title }));
-                Object.values(camp.challenges || {}).forEach(ch => {
-                    if (ch.reward && ch.reward.type === 'relic' && !seen.relics.has(ch.reward.name)) {
-                        seen.relics.add(ch.reward.name);
-                        catalog.relics.push({ key: ch.reward.name, entry: ch.reward, campaign: camp.title });
-                    }
-                    if (ch.punishment && ch.punishment.type === 'curse' && !seen.curses.has(ch.punishment.name)) {
-                        seen.curses.add(ch.punishment.name);
-                        catalog.curses.push({ key: ch.punishment.name, entry: ch.punishment, campaign: camp.title });
-                    }
+            const usedIn = {};  // "tipo:id" -> titoli delle campagne
+            const mark = (kind, id, camp) => { (usedIn[kind + ':' + id] = usedIn[kind + ':' + id] || new Set()).add(camp.title); };
+            Object.entries(window.CAMPAIGNS_RAW || {}).forEach(([id, raw]) => {
+                const camp = campaignsDatabase[id] || raw;
+                (raw.mapNodes || []).forEach(n => { if (n.enemy) mark('enemies', n.enemy, camp); });
+                Object.values(raw.challenges || {}).forEach(ch => {
+                    if (typeof ch.reward === 'string') mark('relics', ch.reward, camp);
+                    if (typeof ch.punishment === 'string') mark('curses', ch.punishment, camp);
                 });
-                (camp.initialArmory || []).forEach(addItem);
-                (camp.lootItems || []).forEach(addItem);
+                [...(raw.initialArmory || []), ...(raw.lootItems || LIBRERIA.lootPredefinito || [])]
+                    .forEach(ref => { if (typeof ref === 'string') mark('items', ref, camp); });
             });
-            DEFAULT_GAME_ITEMS.forEach(addItem);
-            return catalog;
+            const where = (kind, id) => [...(usedIn[kind + ':' + id] || [])].join(', ');
+            return {
+                enemies: Object.entries(LIBRERIA.bestiario).map(([id, e]) => ({ key: id, enemy: e, campaign: where('enemies', id) })),
+                relics: Object.entries(LIBRERIA.reliquie).map(([id, r]) => ({ key: r.name, entry: r, campaign: where('relics', id) })),
+                curses: Object.entries(LIBRERIA.maledizioni).map(([id, c]) => ({ key: c.name, entry: c, campaign: where('curses', id) })),
+                items: Object.values(LIBRERIA.armeria).map(item => ({ key: item.id, item }))
+            };
         }
 
         const COMPENDIUM_TABS = [
@@ -3750,10 +3840,14 @@ function breakRelic(relicName) {
         }
 
         function confirmLeaveMerchant() {
-            const affordable = merchantItemsWithPrices.some(entry => entry && partyCoins >= entry.price);
-            if (!affordable) { advanceNode(); return; }
+            const hidden = merchantItemsWithPrices.filter(entry => entry && !entry.revealed).length;
+            const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed && partyCoins >= entry.price);
+            if (!affordable && !hidden) { advanceNode(); return; }
+            const reasons = [];
+            if (hidden) reasons.push(hidden === 1 ? 'c\'è ancora <b>1</b> carta da scoprire' : `ci sono ancora <b>${hidden}</b> carte da scoprire`);
+            if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${partyCoins}</b> monete e ci sono oggetti che puoi permetterti`);
             openModal('Lasciare il mercante?',
-                `<p>Hai ancora <b style="color:var(--wc-yellow)">${partyCoins}</b> monete e ci sono oggetti che puoi permetterti.</p>`,
+                `<p>${reasons.join(' e ').replace(/^./, c => c.toUpperCase())}.</p>`,
                 [{ label: 'Resta nel negozio', className: 'btn-proceed' }, { label: 'Esci comunque', className: 'btn-danger', onClick: advanceNode }]);
         }
 

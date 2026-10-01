@@ -2,6 +2,7 @@
 // Il contenuto dopo "=" è JSON puro: niente funzioni, gli effetti sono descritti nei campi "effects"
 // e interpretati da applyEffects() in js/game.js. È un file .js (e non .json) perché il gioco
 // si apre con doppio click da file:// e il browser blocca fetch() di file locali.
+// Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["astarte_ch1"] = {
     "id": "astarte_ch1",
@@ -86,189 +87,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             }
         ]
     },
-    "initialArmory": [
-        { "id": "pugnale_rapido", "name": "Pugnale Rapido", "rarity": "comune", "str": 1, "desc": "+1 Forza" },
-        { "id": "ascia_taglialegna", "name": "Ascia da Taglialegna", "rarity": "comune", "dmg": 1, "desc": "+1 Danno" },
-        { "id": "bastone_rinforzato", "name": "Bastone Rinforzato", "rarity": "comune", "help_bonus_val": 1, "desc": "+1 Tiro Aiuto" },
-        { "id": "scudo_legno", "name": "Scudo Tondo di Legno", "rarity": "comune", "def_bonus": 1, "desc": "+1 Tiro Difesa" },
-        { "id": "corazza_cuoio", "name": "Corazza di Cuoio Bollito", "rarity": "comune", "armor": 1, "desc": "+1 Armatura" },
-        { "id": "amuleto_legno_santo", "name": "Amuleto di Legno Santo", "rarity": "comune", "fth": 1, "desc": "+1 Fede" },
-        { "id": "taccuino_cartografo", "name": "Taccuino del Cartografo", "rarity": "comune", "int": 1, "desc": "+1 Intelligenza" },
-        { "id": "balsamo_curativo", "name": "Balsamo Lenitivo", "rarity": "comune", "type": "consumable_heal", "heal_val": 2, "desc": "Consumabile: Cura 2 HP" }
-    ],
-    "enemies": {
-        "banditi_strada": {
-            "name": "Banditi della strada",
-            "hp": 8,
-            "maxHp": 8,
-            "att": 7,
-            "dmg": 1,
-            "ca": 7,
-            "desc": "Dalle ombre di un terrapieno sbucano figure coperte da mantelli lisi e logorati dalla polvere e dalla pioggia. Impugnano spade scheggiate e clave ferrate, con i volti seminascosti da cappucci sudici. Ti sbarrano la strada con sorrisi mefistofelici, affamati di bottino e indifferenti alla vita umana; per loro la vostra spedizione è solo l'ennesima facile preda da spolpare nel fango del sentiero."
-        },
-        "briganti_pedaggio": {
-            "name": "Briganti del pedaggio",
-            "hp": 10,
-            "maxHp": 10,
-            "att": 7,
-            "dmg": 1,
-            "ca": 7,
-            "desc": "Hanno occupato una strettoia naturale della via, sbarrandola con assi di legno chiodate e spuntoni. Indossano pezzi di armature rubate e spaiate, ostentando un'autorità fasulla ma armata fino ai denti. Ti guardano dall'alto in basso con arroganza, stringendo balestre e picche sporche di sangue, pronti a esigere un tributo nel sangue se rifiutate di cedere ogni vostro avere."
-        },
-        "branco_lupi": {
-            "name": "Branco di lupi",
-            "hp": 9,
-            "maxHp": 9,
-            "att": 8,
-            "dmg": 1,
-            "ca": 8,
-            "desc": "Un ringhio profondo e gutturale rompe il silenzio della boscaglia. Dalla boscaglia emergono occhi gialli e famelici, fauci sbavate e pelo fitto irto di brina. È un branco di lupi invernali, grossi e spietati, guidati dal freddo e dalla fame disperata. Circondano il gruppo con movimenti fluidi e coordinati, studiando le vostre posture alla ricerca di un momento di distrazione per azzannare alla gola."
-        },
-        "disertori": {
-            "name": "Banda di disertori",
-            "hp": 10,
-            "maxHp": 10,
-            "att": 8,
-            "dmg": 2,
-            "ca": 8,
-            "desc": "Soldati sbandati di un esercito ormai dissolto, con le divise lacerate e prive di insegne, ridotte a stracci sudici. Hanno lo sguardo perso, segnato dalla paranoia e dalla disperazione della guerra perduta. Armati di lance arrugginite e cortelli da campo, vi squadrano con un misto di terrore e rabbia cieca: non hanno più nulla da perdere e sono disposti a tutto pur di sottrarvi le provviste e gli abiti di dosso."
-        },
-        "predoni": {
-            "name": "Predoni",
-            "hp": 12,
-            "maxHp": 12,
-            "att": 7,
-            "dmg": 2,
-            "ca": 9,
-            "desc": "Guerrieri nomadi e spietati delle lande di confine, agili e letali, specializzati negli agguati lungo i valichi montani. Indossano corazze leggere di pelle e pellicce, armati di scimitarre ricurve e coltelli da lancio che luccicano debolmente nella penombra. Si muovono rapidamente tra i massi, sfruttando ogni copertura per colpire i punti deboli della compagnia con tattiche mordi e fuggi."
-        },
-        "cani_caccia": {
-            "name": "Cani da caccia rinselvatichiti",
-            "hp": 7,
-            "maxHp": 7,
-            "att": 7,
-            "dmg": 1,
-            "ca": 6,
-            "desc": "Segugi da guerra e mastini abbandonati dagli eserciti in rotta, ridotti a carcasse pelle e ossa dalla fame. Riuniti in una muta famelica, si muovono bassi tra le felci secche, coordinandosi con latrati strozzati prima di scattare verso le caviglie della compagnia."
-        },
-        "sciacalli_cadaveri": {
-            "name": "Sciacalli di cadaveri",
-            "hp": 8,
-            "maxHp": 8,
-            "att": 6,
-            "dmg": 1,
-            "ca": 8,
-            "desc": "Figuri viscidi armati di coltellacci e zappe da scavo, sorpresi a spogliare le carcasse lungo il ciglio del sentiero. Vedendovi arrivare, non esitano a brandire i ferri sporchi di terra e ruggine per mettere a tacere eventuali testimoni e allargare il proprio bottino."
-        },
-        "orso_bruno": {
-            "name": "Orso bruno selvaggio",
-            "hp": 12,
-            "maxHp": 12,
-            "att": 9,
-            "dmg": 2,
-            "ca": 7,
-            "desc": "Un enorme maschio solitario, reso nervoso e feroce dalla scarsità di cibo prima dell'inverno. Svegliato dal passaggio dei vostri passi, si solleva a tutta altezza tra i massi abbattendo gli artigli con rugli furibondi per difendere la sua gola."
-        },
-        "balestrieri_disertori": {
-            "name": "Balestrieri disertori",
-            "hp": 11,
-            "maxHp": 11,
-            "att": 8,
-            "dmg": 2,
-            "ca": 9,
-            "desc": "Tiratori scelti fuggiti dai ranghi dell'esercito regolare, appostati dietro muretti a secco e rocce sporgenti. Con le balestre cariche e dardi con punta a foglia, aprono il fuoco senza preavviso, pronti a bersagliarvi dalla distanza."
-        },
-        "cinghiali_pietraie": {
-            "name": "Cinghiali delle pietraie",
-            "hp": 8,
-            "maxHp": 8,
-            "att": 7,
-            "dmg": 1,
-            "ca": 7,
-            "desc": "Una coppia di cinghiali massicci e aggressivi, con la pelle indurita da anni di pascolo tra le rocce taglienti. Sentendosi messi all'angolo nel canalone cieco, abbassano le zanne affilate e caricano a testa bassa senza curarsi delle vostre armi."
-        },
-        "picchieri_sbandati": {
-            "name": "Picchieri della milizia sbandata",
-            "hp": 12,
-            "maxHp": 12,
-            "att": 7,
-            "dmg": 1,
-            "ca": 8,
-            "desc": "Una linea di fanti contadini un tempo arruolati a forza, ora rimasti senza paga né comando. Serrano i ranghi piantando a terra lunghe aste scheggiate, formando una barriera di punte acuminata e pericolosa per chiunque tenti di avvicinarsi frontalmente."
-        },
-        "esploratori_predoni": {
-            "name": "Esploratori predoni",
-            "hp": 8,
-            "maxHp": 8,
-            "att": 7,
-            "dmg": 1,
-            "ca": 8,
-            "desc": "L'avanguardia agile delle bande montane. Armati di archi corti e corte sciabole, si muovono silenziosi tra i dirupi per saggiare la resistenza della vostra carovana con colpi rapidi e ritirate repentine."
-        },
-        "fabbro_rinnegato": {
-            "name": "Fabbro rinnegato e sgherri",
-            "hp": 10,
-            "maxHp": 10,
-            "att": 7,
-            "dmg": 2,
-            "ca": 9,
-            "desc": "Un artigiano delle armate campali datosi al brigantaggio insieme a due manovali. Impugna una mazza da forgia pesante e pinze incandescenti, protetto da un grembiale chiodato capace di deflettere i colpi di striscio."
-        },
-        "cani_corsi": {
-            "name": "Branco di cani corsi feroci",
-            "hp": 12,
-            "maxHp": 12,
-            "att": 9,
-            "dmg": 2,
-            "ca": 7,
-            "desc": "Cani da presa sfuggiti alle tenute saccheggiate a valle. Grossi, silenziosi e privi di collare, sbarrano il sentiero ringhiando a denti stretti, pronti ad azzannare le braccia armate per trascinare a terra chiunque avanzi."
-        },
-        "capitano_predoni": {
-            "name": "Capitano dei predoni",
-            "hp": 10,
-            "maxHp": 10,
-            "att": 7,
-            "dmg": 2,
-            "ca": 7,
-            "desc": "Una figura imponente e massiccia avvolta in una pesante corazza di cuoio bollito e metallo nero. Impugna un'ascia bipenne intrisa di vecchia ruggine e sangue secco, emanando un'aura di brutale autorità sui suoi sottoposti. Ti fissa con un ghigno sprezzante, gli occhi freddi di un veterano della violenza che ha ridotto la predazione a mestiere: per superarlo dovrete spezzare la sua furia inarrestabile."
-        },
-        "tremabosco": {
-            "name": "Tremabosco Infuriato",
-            "hp": 14,
-            "maxHp": 14,
-            "att": 9,
-            "dmg": 2,
-            "ca": 7,
-            "desc": "Un possente fruscio tra i rami spezzati anticipa l'arrivo di una mole mastodontica: un colosso ricoperto di fitto pelo bruno, con la corporatura massiccia di un toro e la testa armata di zanne ricurve simili a spade. Il Tremabosco Striato fiuta l'aria con il muso ricurvo, raspando furioso il terreno con zampe possenti mentre si raccoglie per una carica devastante. La foresta ammutolisce al suo cospetto."
-        },
-        "mastino_bokgar": {
-            "name": "Mastino di Bokgar",
-            "hp": 10,
-            "maxHp": 10,
-            "att": 7,
-            "dmg": 3,
-            "ca": 8,
-            "desc": "Dall'oscurità delle rovine emergono sagome scure e fameliche, avvolte da un silenzio innaturale. I Mastini di Bokgar, antichi parassiti notturni sopravvissuti per secoli in cavità dimenticate, avanzano con movimenti furtivi e uno sguardo vitreo privo di paura. Le loro fauci digrignano in attesa di spolpare la carne viva, mentre il loro corpo tradisce il terrore viscerale per la luce, che li rende ancora più aggressivi e disperati."
-        },
-        "boia_rinnegati": {
-            "name": "Boia dei Rinnegati",
-            "hp": 14,
-            "maxHp": 14,
-            "att": 7,
-            "dmg": 3,
-            "ca": 9,
-            "desc": "Un colosso umano avvolto in un grembiule di cuoio annerito e macchiato, con il volto celato da un cappuccio di canapa grezza. Poggia sulle spalle una pesante mannaia d'acciaio grezzo, usata tanto per tagliare legna quanto per punire disertori e viandanti. Attorno a lui regna un silenzio sinistro: è la retroguardia spietata delle bande montane, abituato a finire i feriti con fredda brutalità."
-        },
-        "hungrabarn": {
-            "name": "Hungrabarn",
-            "hp": 16,
-            "maxHp": 16,
-            "att": 9,
-            "dmg": 4,
-            "ca": 9,
-            "desc": "Dall'ombra più profonda della sala emerge una sagoma colossale, un relitto vivente di una razza che il mondo credeva estinta. L'Hungrabarn si erge in tutta la sua spaventosa imponenza, raggiungendo altezze titaniche, con membra possenti e uno sguardo affamato che brama carne umana. Tra le sue mani artigliate e ai suoi piedi si calpestano teschi e ossa accumulate nei secoli, mentre un ruggito primordiale e sordo scuote le rovine. La fine della spedizione si misura adesso contro questo incubo di carne e pietra."
-        }
-    },
+    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {
         "carro_rovesciato": {
             "title": "Il carro rovesciato",
@@ -296,16 +115,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Fraintendete un'abbreviazione cartografica e scambiate una conca franosa per una scorciatoia carrozzabile. Il gruppo marcia a vuoto per ore in mezzo a pozzanghere gelide e pietraie instabili.",
             "stat": "int",
             "cd": 7,
-            "reward": { "type": "relic", "name": "Corno antico", "desc": "Durante il terzo turno tutti gli eroi ottengono +1 al danno" },
-            "punishment": {
-                "type": "curse",
-                "name": "Gelo nelle ossa",
-                "desc": "-1 a tutti i tiri per colpire del party finché non visiterete un'area di riposo",
-                "effects": [
-                    { "effect": "add_curse", "text": "Gelo nelle ossa (-1 tiri per colpire)" },
-                    { "effect": "party_stat", "stat": "att_penalty", "val": 1 }
-                ]
-            }
+            "reward": "corno_antico",
+            "punishment": "gelo_nelle_ossa"
         },
         "mercante_bloccato": {
             "title": "Il mercante bloccato",
@@ -315,15 +126,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Posizionate la leva nel punto di massima tensione dell'asse di frassino: la struttura schiocca e si spezza a metà, lasciando il carro irrimediabilmente inservibile. Il mercante vi copre di insulti e maledizioni velenose.",
             "stat": "int",
             "cd": 8,
-            "reward": { "type": "relic", "name": "Lasciapassare mercantile", "desc": "Gli oggetti dai mercanti sono scontati di 3 monete" },
-            "punishment": {
-                "type": "curse",
-                "name": "Rancore del Mercante",
-                "desc": "I mercanti futuri applicheranno un sovrapprezzo di 2 monete su ogni articolo",
-                "effects": [
-                    { "effect": "add_curse", "text": "Rancore del Mercante (+2 monete prezzi)" }
-                ]
-            }
+            "reward": "lasciapassare_mercantile",
+            "punishment": "rancore_del_mercante"
         },
         "ponte_marcio": {
             "title": "Il ponte marcio",
@@ -333,7 +137,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Una trave all'apparenza solida si polverizza sotto il peso di uno scarpone. Nel disperato tentativo di non cadere vi aggrappate alle corde sfilacciate, ma lo strattone disorienta la squadra.",
             "stat": "int",
             "cd": 8,
-            "reward": { "type": "relic", "name": "Pietra del focolare", "desc": "Durante il riposo rimuove una maledizione casuale" },
+            "reward": "pietra_del_focolare",
             "punishment": {
                 "type": "injury",
                 "name": "Marcia estenuante",
@@ -351,7 +155,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Seguite un falso avvallamento che vi conduce dritti dentro un pantano ingannevole. Camminate in cerchio per ore nel gelo della nebbia, sprofondando nel fango fino alle ginocchia prima di ritrovare la riva.",
             "stat": "int",
             "cd": 9,
-            "reward": { "type": "relic", "name": "Frammento di matrice", "desc": "La prossima sfida fallita diventa un successo, poi si rompe" },
+            "reward": "frammento_di_matrice",
             "punishment": {
                 "type": "injury",
                 "name": "Marcia estenuante",
@@ -369,7 +173,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Vi impappinate nel contestare le ordinanze e mostrate insicurezza: i falsi gabellieri mangiano la foglia, diventano aggressivi e vi intimoriscono con le balestre spianate, pretendendo il doppio della somma come sanzione per oltraggio.",
             "stat": "int",
             "cd": 9,
-            "reward": { "type": "relic", "name": "Dente del grande lupo", "desc": "Dopo ogni scontro l'eroe con meno HP recupera 1 HP" },
+            "reward": "dente_del_grande_lupo",
             "punishment": {
                 "type": "penalty",
                 "name": "Pedaggio forzato",
@@ -387,16 +191,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Tentate di sfilare il reliquiario con impazienza prima ancora di aver reso omaggio al caduto. Le dita rigide del cavaliere sembrano serrare la presa, un soffio di gelo spettrale investe l'intero gruppo e la statuetta sacra si scheggia sul selciato.",
             "stat": "fth",
             "cd": 7,
-            "reward": { "type": "relic", "name": "Frammento di Yr-Drazul", "desc": "+1 a tutti i tiri di dado" },
-            "punishment": {
-                "type": "curse",
-                "name": "Sacrilego",
-                "desc": "-1 Fede a tutti i membri del party",
-                "effects": [
-                    { "effect": "add_curse", "text": "Sacrilego (-1 Fede)" },
-                    { "effect": "party_stat", "stat": "fth", "val": -1 }
-                ]
-            }
+            "reward": "frammento_di_yr_drazul",
+            "punishment": "sacrilego"
         },
         "pellegrino": {
             "title": "Il pellegrino",
@@ -406,15 +202,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "La vostra preghiera è frettolosa, meccanica e distratta dalla fretta di ripartire. Il pellegrino percepisce l'ipocrisia del gesto, scuote mestamente la testa e rovescia la ciotola nel fango: un senso di pesantezza grava sullo spirito di tutti.",
             "stat": "fth",
             "cd": 7,
-            "reward": { "type": "relic", "name": "Favore di Valgoren", "desc": "Quando un eroe recupera HP, cura 1 HP ad un altro eroe casuale" },
-            "punishment": {
-                "type": "curse",
-                "name": "Fede Inaridita",
-                "desc": "Durante le prove di fede tira due dadi e usa il risultato più basso",
-                "effects": [
-                    { "effect": "add_curse", "text": "Fede Inaridita (Svantaggio prove Fede)" }
-                ]
-            }
+            "reward": "favore_di_valgoren",
+            "punishment": "fede_inaridita"
         },
         "cavallo_senza_cavaliere": {
             "title": "Il cavallo senza cavaliere",
@@ -424,7 +213,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Il vostro canto tradisce un tremito di paura collettiva. La bestia percepisce l'esitazione come una minaccia, nitrisce furibonda e carica il gruppo, travolgendoli e ferendo i compagni prima di fuggire nella boscaglia.",
             "stat": "fth",
             "cd": 8,
-            "reward": { "type": "relic", "name": "Idolo del cacciatore", "desc": "+1 al danno durante gli scontri elite" },
+            "reward": "idolo_del_cacciatore",
             "punishment": {
                 "type": "injury",
                 "name": "Carica violenta",
@@ -442,15 +231,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Nel rimettere mano all'altare pronunciate le formule sacre in modo confuso e disordinato. Una folata di vento putrido spegne la fiamma e frantuma l'icona in legno: la profanazione del luogo ricade negativamente sull'intera carovana.",
             "stat": "fth",
             "cd": 9,
-            "reward": { "type": "relic", "name": "Occhio del corvo", "desc": "Diminuisce di 1 la statistica attacco dei mostri" },
-            "punishment": {
-                "type": "curse",
-                "name": "Presagio di Morte",
-                "desc": "La Morte vi dà la caccia: aumenta tutti i danni subiti di 1",
-                "effects": [
-                    { "effect": "add_curse", "text": "Presagio di Morte (+1 danno subito)" }
-                ]
-            }
+            "reward": "occhio_del_corvo",
+            "punishment": "presagio_di_morte"
         },
         "sentiero_rune": {
             "title": "Il sentiero delle rune",
@@ -460,16 +242,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "La concentrazione del gruppo si spezza sotto il peso del dubbio; un senso improvviso di claustrofobia e terrore viscerale assale la carovana, lasciandovi storditi e con la mente offuscata.",
             "stat": "fth",
             "cd": 9,
-            "reward": { "type": "relic", "name": "Anello del giuramento", "desc": "+3 al tiro per la prossima sfida, poi la reliquia si rompe" },
-            "punishment": {
-                "type": "curse",
-                "name": "Tormento Mentale",
-                "desc": "-1 a Intelligenza a tutta la compagnia",
-                "effects": [
-                    { "effect": "add_curse", "text": "Tormento Mentale (-1 Int)" },
-                    { "effect": "party_stat", "stat": "int", "val": -1 }
-                ]
-            }
+            "reward": "anello_del_giuramento",
+            "punishment": "tormento_mentale"
         },
         "forca_crocevia": {
             "title": "La forca al crocevia",
@@ -479,16 +253,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "L'orrore della scena paralizza la compagnia e la litania si trasforma in un balbettio collettivo. L'inquietudine degli impiccati si lega alla psiche del gruppo: una cappa di angoscia opprime tutti i membri.",
             "stat": "fth",
             "cd": 9,
-            "reward": { "type": "relic", "name": "Marchio di Jag Antar", "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe" },
-            "punishment": {
-                "type": "curse",
-                "name": "Ombra sul Cuore",
-                "desc": "-1 a Fede a tutta la compagnia",
-                "effects": [
-                    { "effect": "add_curse", "text": "Ombra sul Cuore (-1 Fede)" },
-                    { "effect": "party_stat", "stat": "fth", "val": -1 }
-                ]
-            }
+            "reward": "marchio_di_jag_antar",
+            "punishment": "ombra_sul_cuore"
         },
         "rifugio_abbandonato": {
             "title": "Il rifugio abbandonato",
@@ -498,7 +264,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Tranciate la corda sbagliata: una sbarra uncinata scatta con violenza schiaffeggiando il gruppo ed emettendo un fragore metallico che disorienta la spedizione.",
             "stat": "int",
             "cd": 8,
-            "reward": { "type": "relic", "name": "Sigillo runico", "desc": "+2 al tiro delle prossime 2 prove, poi si rompe" },
+            "reward": "sigillo_runico",
             "punishment": {
                 "type": "injury",
                 "name": "Marcia estenuante",
@@ -516,23 +282,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "failText": "Durante la deposizione del sasso, un gesto distratto fa franare l'intero cumulo sul fango. Il silenzio che segue è cupo e accusatorio, lasciando la carovana priva di conforto.",
             "stat": "fth",
             "cd": 8,
-            "reward": {
-                "type": "relic",
-                "name": "Lanterna dei morti",
-                "desc": "+1 permanente alla caratteristica Fede di tutti gli eroi",
-                "effects": [
-                    { "effect": "party_stat", "stat": "fth", "val": 1 }
-                ]
-            },
-            "punishment": {
-                "type": "curse",
-                "name": "Sacrilego",
-                "desc": "-1 Fede a tutti i membri del party",
-                "effects": [
-                    { "effect": "add_curse", "text": "Sacrilego (-1 Fede)" },
-                    { "effect": "party_stat", "stat": "fth", "val": -1 }
-                ]
-            }
+            "reward": "lanterna_dei_morti",
+            "punishment": "sacrilego"
         }
     },
     "merchants": {
@@ -542,32 +293,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
         "default": "Trovate un angolo di pace in mezzo alla natura selvaggia: la quiete della radura vi ricorda all'improvviso tutto il peso e la stanchezza che vi portate sulle spalle. Accendete un piccolo focolare protetto dal vento e vi fermate a riscaldare corpo e spirito, raccogliendo le forze prima di rimettervi in marcia lungo il sentiero."
     },
     "treasures": {},
-    "lootItems": [
-        { "id": "pugnale_rapido", "name": "Pugnale Rapido", "rarity": "comune", "str": 1, "desc": "+1 Forza" },
-        { "id": "ascia_taglialegna", "name": "Ascia da Taglialegna", "rarity": "comune", "dmg": 1, "desc": "+1 Danno" },
-        { "id": "bastone_rinforzato", "name": "Bastone Rinforzato", "rarity": "comune", "help_bonus_val": 1, "desc": "+1 Tiro Aiuto" },
-        { "id": "scudo_legno", "name": "Scudo Tondo di Legno", "rarity": "comune", "def_bonus": 1, "desc": "+1 Tiro Difesa" },
-        { "id": "corazza_cuoio", "name": "Corazza di Cuoio Bollito", "rarity": "comune", "armor": 1, "desc": "+1 Armatura" },
-        { "id": "amuleto_legno_santo", "name": "Amuleto di Legno Santo", "rarity": "comune", "fth": 1, "desc": "+1 Fede" },
-        { "id": "taccuino_cartografo", "name": "Taccuino del Cartografo", "rarity": "comune", "int": 1, "desc": "+1 Intelligenza" },
-        { "id": "balsamo_curativo", "name": "Balsamo Lenitivo", "rarity": "comune", "type": "consumable_heal", "heal_val": 2, "desc": "Consumabile: Cura 2 HP" },
-        { "id": "spada_norgrad", "name": "Spada di Norgrad", "rarity": "raro", "str": 1, "dmg": 1, "desc": "+1 Forza, +1 Danno" },
-        { "id": "alabarda_guardia", "name": "Alabarda da Guardia", "rarity": "raro", "str": 1, "help_bonus_val": 1, "desc": "+1 Forza, +1 Tiro Aiuto" },
-        { "id": "mannaia_pesante", "name": "Mannaia Pesante", "rarity": "raro", "dmg": 2, "att_penalty": 1, "desc": "+2 Danni, -1 al tiro per Colpire" },
-        { "id": "scudo_ferro", "name": "Scudo Rinforzato in Ferro", "rarity": "raro", "armor": 1, "def_bonus": 1, "desc": "+1 Armatura, +1 Tiro Difesa" },
-        { "id": "corazza_scaglie", "name": "Corazza a Scaglie", "rarity": "raro", "armor": 2, "att_penalty": 1, "desc": "+2 Armatura, -1 al tiro per Colpire" },
-        { "id": "tomo_proibito", "name": "Tomo della Conoscenza Proibita", "rarity": "raro", "int": 2, "desc": "+2 Intelligenza" },
-        { "id": "reliquiario_tascabile", "name": "Reliquiario Tascabile", "rarity": "raro", "fth": 2, "desc": "+2 Fede" },
-        { "id": "pozione_rigenerazione", "name": "Pozione di Rigenerazione", "rarity": "raro", "type": "consumable_full", "desc": "Consumabile: Ripristina 100% HP" },
-        { "id": "unguento_fortificante", "name": "Unguento Fortificante", "rarity": "raro", "type": "consumable_heal", "heal_val": 3, "desc": "Consumabile: Cura 3 HP" },
-        { "id": "lama_acciaio_lunare", "name": "Lama d'Acciaio Lunare", "rarity": "epico", "str": 2, "dmg": 1, "desc": "+2 Forza, +1 Danno" },
-        { "id": "martello_breccia", "name": "Martello della Breccia", "rarity": "epico", "dmg": 3, "att_penalty": 1, "desc": "+3 Danni, -1 al tiro per Colpire" },
-        { "id": "gorgiera_veterano", "name": "Gorgiera del Veterano", "rarity": "epico", "armor": 2, "def_bonus": 1, "desc": "+2 Armatura, +1 Tiro Difesa" },
-        { "id": "corazza_piastre_leone", "name": "Corazza a Piastre del Leone", "rarity": "epico", "armor": 3, "att_penalty": 1, "desc": "+3 Armatura, -1 al tiro per Colpire" },
-        { "id": "cappa_sussurri", "name": "Cappa dei Sussurri Antichi", "rarity": "epico", "fth": 2, "int": 1, "help_bonus_val": 1, "desc": "+2 Fede, +1 Intelligenza, +1 Aiuto" },
-        { "id": "simbolo_jag_antar", "name": "Simbolo Primordiale di Jag Antar", "rarity": "epico", "fth": 2, "str": 1, "desc": "+2 Fede, +1 Forza" },
-        { "id": "elisir_sangue_vivo", "name": "Elisir di Sangue Vivo", "rarity": "epico", "type": "consumable_full", "desc": "Consumabile: Ripristina tutti gli HP" }
-    ],
+    "lootItems": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo", "spada_norgrad", "alabarda_guardia", "mannaia_pesante", "scudo_ferro", "corazza_scaglie", "tomo_proibito", "reliquiario_tascabile", "pozione_rigenerazione", "unguento_fortificante", "lama_acciaio_lunare", "martello_breccia", "gorgiera_veterano", "corazza_piastre_leone", "cappa_sussurri", "simbolo_jag_antar", "elisir_sangue_vivo"],
     "mapNodes": [
         { "id": 0, "level": 0, "x": 300, "type": "combat", "enemy": "banditi_strada", "title": "Livello 1 - Scontro Ovest", "icon": "🗡️", "done": false, "active": true, "next": [2, 3], "image": "immagini/banditi_strada.jpg" },
         { "id": 1, "level": 0, "x": 500, "type": "combat", "enemy": "cani_caccia", "title": "Livello 1 - Scontro Est", "icon": "🗡️", "done": false, "active": true, "next": [3, 4], "image": "immagini/cani_caccia.jfif" },
