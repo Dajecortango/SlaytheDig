@@ -56,6 +56,14 @@ Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database
 - Suoni: `click.ogg` su ogni pulsante; gli altri effetti sono generati con Web Audio in `synthSfx()` (colpi, dadi, passaggio del mouse).
 - Tasti rapidi in combattimento Q/W/E/R/T, Spazio per tirare.
 
+### Stile WoW / WC3
+
+- Rarità degli oggetti come in WoW: `scarso` (grigio), `comune` (bianco), `non_comune` (verde), `raro` (blu), `epico` (viola), `leggendario` (arancio). Etichette in `RARITY_LABELS` (`game.js`), prezzi in `ITEM_BASE_PRICE` (`shop.js`), probabilità in `lootRarityWeights` / `merchantRarityWeights`, colori (`--rar`, `--rar-glow`) in `css/wc3-base.css`.
+- Texture in `immagini/ui/` (`pietra.svg`, `cuoio.svg`, `pergamena.svg`, generate; `Human-inventory-slotfiller.png` di WC3): si sostituiscono con quelle originali cambiando `--tex-*` in `css/wc3-base.css`.
+- Caratteri: `--font-title`, `--font-lore` (pergamene), `--font-numbers` (danni). Se Friz Quadrata, Morpheus o Skurri sono installati, o copiati in `fonts/` come `FrizQuadrata.ttf`, `Morpheus.ttf`, `Skurri.ttf`, si usano gli originali; altrimenti Cinzel, Metamorphous, Skranji.
+- Messaggi a schermo: `uiError(testo)` (rosso) e `uiMessage(testo)` (giallo) al posto di `alert` per gli avvisi brevi.
+- Cursori in `immagini/cursori/`: guanto (normale, rosso sul nemico, grigio sui disattivati), spada sui comandi d'attacco e sui nodi di scontro.
+
 ### Icone
 
 Solo icone classiche di Warcraft III (non Reforged) in `immagini/icone/`, associate in `game.js` da `ITEM_IMAGES_BY_ID`, `ITEM_IMAGES` e `ABILITY_IMAGES`. L'archivio completo è in `warcraft3_icons/` (ignorato da git): i file senza `-Reforged` sono quelli classici.

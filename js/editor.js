@@ -69,7 +69,7 @@ const HERO_LIB_FIELDS = [...HERO_FIELDS, {
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 const ITEM_FIELDS = [
     { k: 'name', label: 'Nome' },
-    { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ['comune', 'Comune'], ['raro', 'Raro'], ['epico', 'Epico']] },
+    { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ['scarso', 'Scarso (grigio)'], ['comune', 'Comune (bianco)'], ['non_comune', 'Non comune (verde)'], ['raro', 'Raro (blu)'], ['epico', 'Epico (viola)'], ['leggendario', 'Leggendario (arancio)']] },
     { k: 'type', label: 'Tipo', type: 'select', omitEmpty: true,
       options: () => [['', 'Equipaggiamento'], ['consumable_heal', 'Consumabile: cura'], ['consumable_full', 'Consumabile: cura completa']] },
     { k: 'heal_val', label: 'HP curati', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_heal' },
