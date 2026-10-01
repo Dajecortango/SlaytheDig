@@ -5,6 +5,14 @@
    (editor.html) e pagina del telefono (server/public/phone.html).
    Va caricato PRIMA dei fogli di stile specifici.
    ========================================================= */
+        /* ---------- Caratteri di Warcraft III / WoW ----------
+           Se sul computer sono installati (o copiati in fonts/ con questi nomi) si usano gli originali:
+           Friz Quadrata (titoli), Morpheus (pergamene), Skurri (numeri dei danni). Altrimenti le
+           alternative gratuite di Google Fonts: Cinzel, Metamorphous, Skranji. */
+        @font-face { font-family: 'WC Friz'; src: local('Friz Quadrata TT'), local('FrizQuadrataTT'), local('Friz Quadrata Std'), local('FrizQuadrataStd'), local('Friz Quadrata'), url('../fonts/FrizQuadrata.ttf') format('truetype'); }
+        @font-face { font-family: 'WC Morpheus'; src: local('Morpheus'), url('../fonts/Morpheus.ttf') format('truetype'); }
+        @font-face { font-family: 'WC Skurri'; src: local('Skurri'), local('Skurri Bold'), url('../fonts/Skurri.ttf') format('truetype'); }
+
         :root {
             /* Variabili usate anche dal JS inline: non rinominare */
             --gold: #e2b951;
@@ -23,7 +31,14 @@
             --metal-lo: #6b4a12;
             --metal-dk: #2e1f06;
 
-            --font-title: 'Cinzel', 'Trajan Pro', 'Georgia', serif;
+            --font-title: 'WC Friz', 'Cinzel', 'Trajan Pro', 'Georgia', serif;
+            --font-lore: 'WC Morpheus', 'Metamorphous', 'Marcellus', 'Georgia', serif;
+            --font-numbers: 'WC Skurri', 'Skranji', 'Cinzel', sans-serif;
+            /* Texture (1): generate in SVG, si possono sostituire con quelle originali tenendo il nome */
+            --tex-stone: url('../immagini/ui/pietra.svg');
+            --tex-leather: url('../immagini/ui/cuoio.svg');
+            --tex-parchment: url('../immagini/ui/pergamena.svg');
+            --tex-slot: url('../immagini/ui/Human-inventory-slotfiller.png');
             --font-body: 'Marcellus', 'Palatino Linotype', 'Georgia', serif;
 
             --noise-fine: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .7 -.22'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
@@ -186,9 +201,7 @@
             border: 1px solid #3a2a12;
             box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255, 220, 150, 0.05);
         }
-        .wc-card.rar-comune { border-color: #8d8a84; }
-        .wc-card.rar-raro { border-color: #4a8cff; }
-        .wc-card.rar-epico { border-color: #b06cff; }
+        .wc-card[class*="rar-"] { border-color: var(--rar); }
         /* Titolo con filetti dorati e rombi ai lati */
         .wc-heading {
             display: flex;
@@ -286,3 +299,19 @@
         }
         @media (prefers-reduced-motion: reduce) { button:hover::after { animation: none !important; } }
         body.no-anim button:hover::after { animation: none !important; }
+
+
+        /* ---------- 6. Rarità in stile World of Warcraft ----------
+           Ogni classe di rarità (rar-, rar-back-, rar-card-, tip-rar-) imposta --rar (colore) e --rar-glow (alone). */
+        .rar-scarso, .rar-back-scarso, .rar-card-scarso, .tip-rar-scarso { --rar: #9d9d9d; --rar-glow: rgba(157, 157, 157, 0); }
+        .rar-comune, .rar-back-comune, .rar-card-comune, .tip-rar-comune { --rar: #f2f2f2; --rar-glow: rgba(255, 255, 255, 0.12); }
+        .rar-non_comune, .rar-back-non_comune, .rar-card-non_comune, .tip-rar-non_comune { --rar: #1eff00; --rar-glow: rgba(30, 255, 0, 0.3); }
+        .rar-raro, .rar-back-raro, .rar-card-raro, .tip-rar-raro { --rar: #2f8cff; --rar-glow: rgba(47, 140, 255, 0.4); }
+        .rar-epico, .rar-back-epico, .rar-card-epico, .tip-rar-epico { --rar: #b84cff; --rar-glow: rgba(184, 76, 255, 0.5); }
+        .rar-leggendario, .rar-back-leggendario, .rar-card-leggendario, .tip-rar-leggendario { --rar: #ff8000; --rar-glow: rgba(255, 128, 0, 0.6); }
+        [class*="tip-rar-"] { color: var(--rar); }
+
+        /* Pannelli: pietra sotto la sfumatura scura */
+        .wc-panel {
+            background: var(--noise-fine), linear-gradient(rgba(24, 20, 17, 0.8), rgba(10, 8, 7, 0.9)), var(--tex-stone);
+        }

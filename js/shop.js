@@ -7,8 +7,8 @@
    ========================================================================== */
 
         // Prezzo base per rarità: il mercante vende con una piccola oscillazione e compra a metà
-        const ITEM_BASE_PRICE = { comune: 5, raro: 11, epico: 21 };
-        const ITEM_PRICE_SPREAD = { comune: 1, raro: 2, epico: 3 };
+        const ITEM_BASE_PRICE = { scarso: 3, comune: 5, non_comune: 8, raro: 11, epico: 21, leggendario: 30 };
+        const ITEM_PRICE_SPREAD = { scarso: 1, comune: 1, non_comune: 1, raro: 2, epico: 3, leggendario: 4 };
 
         function itemSellPrice(item) {
             return Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
@@ -19,13 +19,13 @@
 
         // Merce del mercante: 5 oggetti da equipaggiare (senza doppioni finché il bottino lo permette)
         // più 1 consumabile, tutti dal bottino della campagna. Le rarità alte diventano più probabili
-        // andando avanti nella mappa: comune/raro/epico 60/35/5 % al primo livello, 20/50/30 % all'ultimo.
+        // andando avanti nella mappa (scarso/comune/non comune/raro/epico/leggendario, % dal primo all'ultimo livello).
         const MERCHANT_EQUIPMENT_SLOTS = 5;
         const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
         function merchantRarityWeights(progress) {
             const lerp = (a, b) => a + (b - a) * progress;
-            return { comune: lerp(60, 20), raro: lerp(35, 50), epico: lerp(5, 30) };
+            return { scarso: lerp(10, 0), comune: lerp(38, 8), non_comune: lerp(27, 20), raro: lerp(20, 35), epico: lerp(5, 27), leggendario: lerp(0, 10) };
         }
 
         // Usata anche dal simulatore: niente stato dell'interfaccia (contrattazione, carte scoperte) qui dentro
@@ -207,7 +207,7 @@
             let entry = merchantItemsWithPrices[idx];
             if (!entry || !entry.revealed) return;
             if(partyCoins < entry.price) {
-                alert("Non hai abbastanza monete per questo oggetto!");
+                uiError("Non hai abbastanza monete");
                 return;
             }
 

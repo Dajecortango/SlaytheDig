@@ -7,11 +7,11 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus&family=Metamorphous&family=Skranji:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/wc3-base.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="no-party menu-mode menu-start">
+<body class="no-party menu-mode">
 
     <!-- Gradienti condivisi per le icone SVG inline -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -119,20 +119,12 @@
 
     <!-- Console inferiore: la Compagnia -->
     <div class="party-console" id="partyConsole">
-        <div class="console-plaque">
-            <div class="plaque-title">Compagnia</div>
-            <div class="plaque-count" id="consoleCount">—</div>
-            <div class="plaque-sub">eroi in piedi</div>
-        </div>
+        <!-- Leoni di pietra alle estremità della fila di eroi, come i grifoni della barra delle abilità di WoW -->
+        <div class="console-lion left" aria-hidden="true"></div>
         <div class="party-heroes-container" id="partyStatusBarContent">
             <div class="console-empty">Nessun eroe reclutato</div>
         </div>
-        <div class="console-hint">
-            <div><b>Comandi</b></div>
-            <div><span class="keycap">Q</span><span class="keycap">W</span><span class="keycap">E</span><span class="keycap">R</span><span class="keycap">T</span> azioni</div>
-            <div><span class="keycap">Spazio</span> tira il dado</div>
-            <div>Clicca una pozione nello zaino per usarla.</div>
-        </div>
+        <div class="console-lion right" aria-hidden="true"></div>
     </div>
 
     <div class="game-layout">
