@@ -45,8 +45,10 @@ function simBestFaithIntHero(alive) {
 // Valore approssimativo di un oggetto: somma dei bonus statistici (i consumabili valgono poco ma non zero)
 function simItemValue(item) {
     if (item.type && item.type.startsWith('consumable')) return 0.5;
+    // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): stimati per un eroe con 3 punti
+    const scaled = (item.scaling || []).reduce((sum, sc) => sum + Math.min(sc.max != null ? sc.max : 99, Math.floor(3 / Math.max(1, sc.every || 1))), 0);
     return (item.str || 0) + (item.dmg || 0) + (item.armor || 0) + (item.fth || 0) + (item.int || 0)
-        + (item.def_bonus || 0) + (item.help_bonus_val || 0) - (item.att_penalty || 0);
+        + (item.def_bonus || 0) + (item.help_bonus_val || 0) - (item.att_penalty || 0) + scaled;
 }
 
 function simChooseDiscard(hero) {
@@ -75,8 +77,8 @@ function simAssignItem(item, hero) {
 function simUseConsumable(hero, itemIdx, target) {
     const item = hero.items[itemIdx];
     if (!item || !item.type || !item.type.startsWith('consumable')) return false;
-    if (item.type === 'consumable_heal') target.hp = Math.min(target.maxHp, target.hp + item.heal_val);
-    else if (item.type === 'consumable_full') target.hp = target.maxHp;
+    if (item.type === 'consumable_heal') healHero(target, item.heal_val);
+    else if (item.type === 'consumable_full') healHero(target, Infinity);
     hero.items.splice(itemIdx, 1);
     return true;
 }
@@ -358,7 +360,7 @@ function simResolveVictoryLoot(profile, runCtx) {
 
     if (hasRelic("Dente del grande lupo")) {
         const lowest = simAliveMinBy(party, h => h.hp);
-        if (lowest && lowest.hp < lowest.maxHp) lowest.hp += 1;
+        if (lowest && lowest.hp < lowest.maxHp) healHero(lowest, 1);
     }
 
     expeditionStats.combatsWon++;
@@ -384,6 +386,7 @@ function simExecuteCombatAction(hero, action) {
 }
 
 function simRunCombat(enemyData, profile, runCtx) {
+    party.forEach(refreshScaledBonuses);  // Fede/Int possono essere cambiate da reliquie, maledizioni o scarti
     activeEnemy = JSON.parse(JSON.stringify(enemyData));
     activeEnemy.isStunned = false;
     party.atamanoUsed = false;

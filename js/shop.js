@@ -2,7 +2,7 @@
    MERCANTE
    Merce (5 oggetti + 1 consumabile, rarità in base all'avanzamento),
    carte coperte da scoprire, rinnovo della merce a pagamento, contrattazione
-   (prova di Intelligenza o Fede sempre più difficile), acquisto, vendita e uscita.
+   (prova di Intelligenza sempre più difficile), acquisto, vendita e uscita.
    Caricato dopo js/game.js (stesso ambito globale: usa party, gameItems, LIBRERIA...).
    ========================================================================== */
 
@@ -80,7 +80,7 @@
             merchantItemsWithPrices = generateMerchantStock().map(entry => ({ ...entry, basePrice: entry.price, price: hagglePrice(entry.price) }));
         }
 
-        // Stesse regole delle prove: vantaggio di Dioforo (Intelligenza e Fede), svantaggio di Fede Inaridita (Fede)
+        // Stesse regole delle prove: vantaggio di Dioforo con l'Intelligenza (Fede Inaridita qui non conta: si contratta solo con l'Intelligenza)
         function haggleRollMode(hero, stat) {
             const advantage = !!hero.hasAdvantageOnIntFth || (hero.chosenAbility && hero.chosenAbility.id === 'dioforo_era_solo_una_prova');
             const disadvantage = stat === 'fth' && hasCurse("Fede Inaridita");
@@ -118,11 +118,11 @@
                 const flip = idx === justRevealedMerchantIdx ? `card-flip-in reveal-${itemRarity(entry.item)}` : '';
                 const oldPrice = entry.price !== entry.basePrice ? `<s class="price-old">${entry.basePrice}</s>` : '';
                 return `
-                    <button data-idx="${idx}" class="armory-btn ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})">
+                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})" data-tip="${esc(itemTip(entry.item))}">
                         ${itemIconHtml(entry.item)}
                         <span class="tile-text">
                             <strong>${entry.item.name}</strong>
-                            <span class="tile-sub">${entry.item.desc}</span>
+                            <span class="tile-sub">${kw(entry.item.desc)}</span>
                         </span>
                         <span class="price ${canAfford ? '' : 'too-much'}">${oldPrice}<span class="coin"></span>${entry.price}</span>
                     </button>
@@ -138,7 +138,7 @@
             reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} monete e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via).`;
             const haggle = document.getElementById('btnMerchantHaggle');
             haggle.disabled = merchantHaggle !== null || !party.some(h => h.hp > 0);
-            haggle.dataset.tip = `Contratta||Una prova di Intelligenza o Fede (CD ${haggleCd()}, cresce andando avanti nella spedizione). ` +
+            haggle.dataset.tip = `Contratta||Una prova di Intelligenza (CD ${haggleCd()}, cresce andando avanti nella spedizione). ` +
                 `Successo: -${HAGGLE_DISCOUNT * 100}% su tutta la merce. Fallimento: +${HAGGLE_PENALTY} monete su ogni articolo. Una sola proposta per mercante.`;
             const note = document.getElementById('merchantHaggleNote');
             note.classList.toggle('hidden', merchantHaggle === null);
@@ -163,20 +163,21 @@
             const rows = party.filter(h => h.hp > 0).map(h => {
                 const btn = (stat, label) => {
                     const mode = haggleRollMode(h, stat);
-                    const info = chanceText(cd - (h[stat] || 0), mode === 'best', mode === 'worst');
+                    const info = chanceText(cd - (h[stat] || 0) - relicDiceBonus(), mode === 'best', mode === 'worst');
                     return `<button class="btn-small" onclick="haggle('${esc(h.name)}', '${stat}')">${label} ${h[stat] || 0} · ${info.short}</button>`;
                 };
-                return `<div class="haggle-row"><b>${esc(h.name)}</b>${btn('int', 'Intelligenza')}${btn('fth', 'Fede')}</div>`;
+                return `<div class="haggle-row"><b>${esc(h.name)}</b>${btn('int', 'Intelligenza')}</div>`;
             }).join('');
             openModal('Contrattare con il mercante',
-                `<p>Il mercante ascolta una sola proposta. Prova di <b>Intelligenza</b> o <b>Fede</b>, Classe di Difficoltà <b>${cd}</b>.</p>
+                `<p>Il mercante ascolta una sola proposta. Prova di <b>Intelligenza</b>, Classe di Difficoltà <b>${cd}</b>.</p>
                  <p>Successo: <b style="color:var(--accent-green)">-${HAGGLE_DISCOUNT * 100}%</b> su tutta la merce (anche se la rinnovi).
                     Fallimento: <b style="color:var(--curse-color)">+${HAGGLE_PENALTY}</b> monete su ogni articolo.</p>
                  <div class="haggle-rows">${rows}</div>`,
                 [{ label: 'Lascia stare', className: 'btn-danger' }], { wide: true });
         }
 
-        function haggle(heroName, stat) {
+        function haggle(heroName) {
+            const stat = 'int';  // si contratta solo con l'Intelligenza
             const hero = party.find(h => h.name === heroName);
             if (!hero || merchantHaggle !== null) return;
             closeModal();
@@ -185,7 +186,7 @@
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
-            const total = roll + (hero[stat] || 0);
+            const total = roll + (hero[stat] || 0) + relicDiceBonus();
             const success = total >= cd;
             merchantHaggle = success ? 'ok' : 'fail';
             merchantItemsWithPrices.forEach(entry => { if (entry) entry.price = hagglePrice(entry.basePrice); });
@@ -193,10 +194,10 @@
             synthSfx('dice');
             setTimeout(() => {
                 diceOutcomeSfx(roll);
-                const statLabel = stat === 'int' ? 'Intelligenza' : 'Fede';
+                const statLabel = 'Intelligenza';
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (${mode === 'best' ? 'Era solo una prova!' : 'Fede Inaridita'})`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
-                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)}) = <b>${total}</b> contro CD ${cd}.</p>
+                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${relicDiceBonus() ? ' + 1 Frammento di Yr-Drazul' : ''} = <b>${total}</b> contro CD ${cd}.</p>
                      <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} monete in più.`}</p>`);
                 renderMerchantShop();
             }, 500);
@@ -255,11 +256,11 @@
                 return;
             }
             list.innerHTML = entries.map(({ hero, item, idx }) => `
-                <button class="armory-btn" onclick="trySellItem('${esc(hero.name)}', ${idx})">
+                <button class="armory-btn rar-card-${itemRarity(item)}" onclick="trySellItem('${esc(hero.name)}', ${idx})" data-tip="${esc(itemTip(item, hero))}">
                     ${itemIconHtml(item)}
                     <span class="tile-text">
                         <strong>${item.name}</strong>
-                        <span class="tile-sub">${item.desc}</span>
+                        <span class="tile-sub">${kw(item.desc)}</span>
                         <span class="tile-tag">${esc(hero.name)}</span>
                     </span>
                     <span class="price sell"><span class="coin"></span>+${itemSellPrice(item)}</span>

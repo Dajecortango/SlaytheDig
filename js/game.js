@@ -66,6 +66,8 @@ function breakRelic(relicName) {
                     default: console.warn('Effetto sconosciuto:', e);
                 }
             });
+            // Fede o Intelligenza cambiate: aggiorna i bonus degli oggetti in scala
+            if (typeof refreshScaledBonuses === 'function') { party.forEach(refreshScaledBonuses); if (hero) refreshScaledBonuses(hero); }
         }
 	
 
@@ -498,7 +500,23 @@ function breakRelic(relicName) {
             video.addEventListener('error', () => document.body.classList.remove('menu-video-ok'));
         })();
 
+        // 26. Breve "sipario" scuro che copre il cambio di schermata
+        function playScreenCurtain() {
+            if (!animationsEnabled()) return;
+            let curtain = document.getElementById('screenCurtain');
+            if (!curtain) {
+                curtain = document.createElement('div');
+                curtain.id = 'screenCurtain';
+                curtain.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(curtain);
+            }
+            curtain.classList.remove('play');
+            void curtain.offsetWidth;
+            curtain.classList.add('play');
+        }
+
         function showScreen(screenId) {
+            if (currentScreenId && currentScreenId !== screenId) playScreenCurtain();
             currentScreenId = screenId;
             if (screenId !== 'screenCombat') combatPhase = 'none';
             document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
@@ -672,6 +690,12 @@ function breakRelic(relicName) {
                 return;
             }
 
+            if (kind === 'chain') {
+                // Tintinnio di catene: colpetti metallici acuti, sempre più deboli
+                [0, 0.05, 0.1, 0.17, 0.25, 0.34].forEach((s, i) => tick(s, 2600 + Math.random() * 1800, 0.35 / (1 + i * 0.5)));
+                return;
+            }
+
             if (kind === 'armor') {
                 // Toni acuti non armonici che si spengono in fretta, come metallo colpito
                 [880, 1370, 2120].forEach((freq, i) => {
@@ -772,16 +796,25 @@ function breakRelic(relicName) {
             updateMenuMusic('screenStart');
         });
 
+        function setCounter(el, value) {
+            const prev = el.dataset.value != null ? Number(el.dataset.value) : null;
+            el.dataset.value = value;
+            if (prev === null || prev === value) { el.textContent = value; return; }
+            countText(el, prev, value, null, 400);
+            setTimeout(() => { el.textContent = value; }, 460);
+        }
+
         function updatePartyStatusBars() {
+            party.forEach(refreshScaledBonuses);
             const container = document.getElementById('partyStatusBarContent');
             animateCoinCounter(partyCoins);
 
-            document.getElementById('topBarRelics').textContent = unlockedRelics.length;
+            setCounter(document.getElementById('topBarRelics'), unlockedRelics.length);
             document.getElementById('topBarRelicsWrap').dataset.tip = unlockedRelics.length > 0
                 ? `Reliquie||${unlockedRelics.map(r => `<b style="color:var(--relic-color)">${r.name}</b>: ${r.desc}`).join('<br>')}`
                 : 'Reliquie||Nessuna reliquia ottenuta.';
 
-            document.getElementById('topBarCurses').textContent = activeCurses.length;
+            setCounter(document.getElementById('topBarCurses'), activeCurses.length);
             document.getElementById('topBarCursesWrap').dataset.tip = activeCurses.length > 0
                 ? `Maledizioni||${activeCurses.join('<br>')}`
                 : 'Maledizioni||Nessuna maledizione attiva.';
@@ -797,6 +830,7 @@ function breakRelic(relicName) {
             }
 
             container.innerHTML = party.map(heroCardHtml).join('');
+            animateBars(container);
             fxDiffHeroes();
             renderTurnBar();
         }
@@ -1230,6 +1264,48 @@ function breakRelic(relicName) {
             startMap();
         }
 
+        /* ---------- Oggetti che scalano con Fede o Intelligenza ----------
+           Campo "scaling" dell'oggetto: [{ "stat": "dmg", "per": "fth", "every": 2, "max": 3 }]
+           = +1 Danno ogni 2 punti di Fede dell'eroe (al massimo +3). "stat" può essere str, dmg,
+           armor, def_bonus o help_bonus_val; "per" è fth o int (mai le stesse: niente circoli).
+           Il bonus si ricalcola quando cambiano Fede o Intelligenza (oggetti, reliquie, maledizioni):
+           hero.scaledBonus ricorda quanto è già stato aggiunto, così si applica solo la differenza. */
+        const SCALING_TARGETS = ['str', 'dmg', 'armor', 'def_bonus', 'help_bonus_val'];
+
+        function scaledItemBonuses(hero) {
+            const out = {};
+            (hero.items || []).forEach(it => (it.scaling || []).forEach(sc => {
+                if (!SCALING_TARGETS.includes(sc.stat) || !['fth', 'int'].includes(sc.per)) return;
+                let bonus = Math.floor(Math.max(0, hero[sc.per] || 0) / Math.max(1, sc.every || 1));
+                if (sc.max != null) bonus = Math.min(sc.max, bonus);
+                out[sc.stat] = (out[sc.stat] || 0) + bonus;
+            }));
+            return out;
+        }
+
+        function refreshScaledBonuses(hero) {
+            if (!hero) return;
+            const now = scaledItemBonuses(hero);
+            const prev = hero.scaledBonus || {};
+            SCALING_TARGETS.forEach(k => {
+                const diff = (now[k] || 0) - (prev[k] || 0);
+                if (!diff) return;
+                if (k === 'armor') {
+                    hero.base_armor += diff;
+                    if (hero.hp > 0) hero.current_armor = Math.max(0, hero.current_armor + diff);
+                } else {
+                    hero[k] = (hero[k] || 0) + diff;
+                }
+            });
+            hero.scaledBonus = now;
+        }
+
+        // Testo per l'interfaccia, es. "+1 Danno ogni 2 Fede"
+        const SCALING_LABELS = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_bonus: 'Difesa', help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza' };
+        function scalingText(item) {
+            return (item.scaling || []).map(sc => `+1 ${SCALING_LABELS[sc.stat]} ogni ${sc.every} ${SCALING_LABELS[sc.per]}${sc.max != null ? ` (max +${sc.max})` : ''}`).join(', ');
+        }
+
         function applyItemEffects(item, hero) {
             if(item.str) hero.str += item.str;
             if(item.dmg) hero.dmg += item.dmg;
@@ -1242,6 +1318,8 @@ function breakRelic(relicName) {
             if(item.help_bonus_val) hero.help_bonus_val += item.help_bonus_val;
             if(item.fth) hero.fth += item.fth;
             if(item.int) hero.int += item.int;
+            // L'oggetto è già nello zaino: ricalcola i bonus in scala (anche degli altri oggetti, se cambia Fede o Int)
+            refreshScaledBonuses(hero);
         }
 
         function revertItemEffects(item, hero) {
@@ -1256,6 +1334,10 @@ function breakRelic(relicName) {
             if(item.help_bonus_val) hero.help_bonus_val -= item.help_bonus_val;
             if(item.fth) hero.fth -= item.fth;
             if(item.int) hero.int -= item.int;
+            // Ricalcola i bonus in scala come se l'oggetto fosse già fuori dallo zaino
+            const idx = (hero.items || []).indexOf(item);
+            if (idx >= 0) { hero.items.splice(idx, 1); refreshScaledBonuses(hero); hero.items.splice(idx, 0, item); }
+            else refreshScaledBonuses(hero);
         }
 
         window.useConsumable = function(heroName, itemIdx, targetName = null) {
@@ -1271,18 +1353,38 @@ function breakRelic(relicName) {
             }
 
             if(item.type === 'consumable_heal') {
-                target.hp = Math.min(target.maxHp, target.hp + item.heal_val);
+                healHero(target, item.heal_val);
                 hero.items.splice(itemIdx, 1);
                 updatePartyStatusBars();
                 triggerConsumableFeedback(hero, target, item);
             } else if(item.type === 'consumable_full') {
-                target.hp = target.maxHp;
+                healHero(target, Infinity);
                 hero.items.splice(itemIdx, 1);
                 updatePartyStatusBars();
                 triggerConsumableFeedback(hero, target, item);
             }
             return true;
         };
+
+        // Cura un eroe di "amount" HP (Infinity = tutti) e restituisce quanti ne ha recuperati.
+        // Con il Favore di Valgoren ogni cura riuscita fa recuperare 1 HP a un altro eroe a caso.
+        function healHero(target, amount) {
+            const before = target.hp;
+            target.hp = Math.min(target.maxHp, target.hp + amount);
+            const gained = target.hp - before;
+            if (gained > 0) valgorenEcho(target);
+            return gained;
+        }
+
+        // Favore di Valgoren: 1 HP a un altro eroe vivo e ferito, scelto a caso. Restituisce l'eroe curato.
+        function valgorenEcho(source) {
+            if (!hasRelic("Favore di Valgoren")) return null;
+            const others = party.filter(h => h !== source && h.hp > 0 && h.hp < h.maxHp);
+            if (!others.length) return null;
+            const lucky = others[Math.floor(Math.random() * others.length)];
+            lucky.hp += 1;
+            return lucky;
+        }
 
         function triggerConsumableFeedback(hero, target, item) {
             const log = document.getElementById('combatLog');
@@ -1291,6 +1393,41 @@ function breakRelic(relicName) {
             } else {
                 alert(`${hero.name} ha usato ${item.name} su ${target.name}!`);
             }
+        }
+
+        /* ---------- 35. Parole chiave colorate nei testi ----------
+           Solo su testo semplice (descrizioni di campagne, sfide, oggetti): prima si fa l'escape,
+           poi le parole chiave diventano <span class="kw kw-..."> (colori in css/wc3-base.css). */
+        const KEYWORD_CLASS = {
+            forza: 'str', fede: 'fth', intelligenza: 'int', hp: 'hp', armatura: 'armor', danno: 'dmg', danni: 'dmg',
+            moneta: 'coin', monete: 'coin', oro: 'coin', reliquia: 'relic', reliquie: 'relic',
+            maledizione: 'curse', maledizioni: 'curse', aiuto: 'help', difesa: 'armor'
+        };
+        const KEYWORD_RE = new RegExp(`\\b(${Object.keys(KEYWORD_CLASS).join('|')})\\b`, 'gi');
+        function kw(text) {
+            return esc(text == null ? '' : String(text)).replace(KEYWORD_RE, w => `<span class="kw kw-${KEYWORD_CLASS[w.toLowerCase()]}">${w}</span>`);
+        }
+
+        /* ---------- 22. Tooltip ricco degli oggetti ---------- */
+        const ITEM_TIP_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
+        function itemTip(item, hero) {
+            const rarity = itemRarity(item);
+            const title = `<span class="tip-rar tip-rar-${rarity}">${esc(item.name)}</span>`;
+            const lines = [`<span class="tip-rar-label tip-rar-${rarity}">${RARITY_LABELS[rarity] || ''}${item.type && item.type.startsWith('consumable') ? ' · consumabile' : ''}</span>`];
+            ITEM_TIP_LINES.forEach(([k, label]) => { if (item[k]) lines.push(kw(`${item[k] > 0 ? '+' : ''}${item[k]} ${label}`)); });
+            if (item.att_penalty) lines.push(`<span class="kw kw-curse">-${item.att_penalty} al tiro per colpire</span>`);
+            if (item.type === 'consumable_heal') lines.push(kw(`Cura ${item.heal_val} HP`));
+            if (item.type === 'consumable_full') lines.push(kw('Cura tutti gli HP'));
+            (item.scaling || []).forEach(sc => {
+                const who = (hero ? [hero] : party.filter(h => h.hp > 0)).map(h => {
+                    let b = Math.floor(Math.max(0, h[sc.per] || 0) / Math.max(1, sc.every || 1));
+                    if (sc.max != null) b = Math.min(sc.max, b);
+                    return `${esc(h.name)} +${b}`;
+                }).join(', ');
+                lines.push(kw(`+1 ${SCALING_LABELS[sc.stat]} ogni ${sc.every} ${SCALING_LABELS[sc.per]}${sc.max != null ? ` (max +${sc.max})` : ''}`) + (who ? `<br><span class="tip-hint">ora: ${who}</span>` : ''));
+            });
+            if (item.desc) lines.push(`<span class="tip-desc">${kw(item.desc)}</span>`);
+            return `${title}||${lines.join('<br>')}`;
         }
 
         // Statistiche che un oggetto modifica, con l'etichetta mostrata nell'anteprima
@@ -1308,11 +1445,13 @@ function breakRelic(relicName) {
         // Es. "Forza 3→4, Danno 1→2": come cambierebbe l'eroe equipaggiando l'oggetto
         function itemDeltaText(item, hero) {
             if (item.type && item.type.startsWith('consumable')) return 'consumabile nello zaino';
-            const parts = ITEM_STAT_PREVIEW.filter(st => item[st.key]).map(st => {
-                const before = st.get(hero);
-                return `${st.label} ${before}→${before + item[st.key] * (st.sign || 1)}`;
-            });
-            return parts.join(', ') || 'nessun effetto sulle statistiche';
+            const after = JSON.parse(JSON.stringify(hero));
+            const copy = JSON.parse(JSON.stringify(item));
+            after.items.push(copy);
+            applyItemEffects(copy, after);
+            const parts = ITEM_STAT_PREVIEW.filter(st => st.get(after) !== st.get(hero))
+                .map(st => `${st.label} ${st.get(hero)}→${st.get(after)}`);
+            return parts.join(', ') || 'nessun effetto sulle statistiche (per ora)';
         }
 
         function heroOptionsForItem(item) {
@@ -1357,6 +1496,7 @@ function breakRelic(relicName) {
         }
 
         function executeDiscard(idx) {
+            // (dopo la rimozione updatePartyStatusBars ricalcola i bonus in scala)
             const itemToRemove = heroNeedingDiscard.items[idx];
             revertItemEffects(itemToRemove, heroNeedingDiscard);
             heroNeedingDiscard.items.splice(idx, 1);
@@ -1390,37 +1530,52 @@ function breakRelic(relicName) {
             return Math.floor(Math.random() * 6) + 1;
         }
 
+        // Frammento di Yr-Drazul: +1 a tutti i tiri di dado degli eroi (combattimento, prove, contrattazione)
+        function relicDiceBonus() {
+            return hasRelic("Frammento di Yr-Drazul") ? 1 : 0;
+        }
+
+        // Bonus delle reliquie a tiro per colpire (att) e danno (dmg) in questo round di combattimento.
+        // Valgono per l'attacco E per le abilità d'attacco; "notes" finisce nel log.
+        function relicCombatBonus() {
+            const node = stsMapNodes.find(n => n.id === currentNodeId);
+            const isElite = !!node && (node.type === 'elite' || node.type === 'captain');
+            const b = { att: 0, dmg: 0, notes: [] };
+            const add = (when, name, att, dmg) => {
+                if (!when || !hasRelic(name)) return;
+                b.att += att; b.dmg += dmg;
+                b.notes.push(`${name} (${att ? `+${att} al tiro` : `+${dmg} danno`})`);
+            };
+            add(combatRound === 1, "Stendardo da battaglia", 1, 0);
+            add(combatRound === 2, "Zanna del leone bianco", 0, 2);
+            add(combatRound === 3, "Corno antico", 0, 1);
+            add(isElite, "Idolo del cacciatore", 0, 1);
+            add(isElite, "Catena di Norgrad", 1, 0);
+            const dice = relicDiceBonus();
+            if (dice) { b.att += dice; b.notes.push('Frammento di Yr-Drazul (+1 al tiro)'); }
+            return b;
+        }
+
         // Tiro di attacco: muta enemy.hp, consuma helpBonus. Ritorna l'esito per log/DOM.
         function resolveAttack(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
-            let relicAttBonus = 0;
-            let relicDmgBonus = 0;
-            const isElite = stsMapNodes.find(n => n.id === currentNodeId)?.type === 'elite';
-
-            if (combatRound === 1 && hasRelic("Stendardo da battaglia")) relicAttBonus += 1;
-            if (combatRound === 2 && hasRelic("Zanna del leone bianco")) relicDmgBonus += 2;
-            if (combatRound === 3 && hasRelic("Corno antico")) relicDmgBonus += 1;
-            if (isElite) {
-                if (hasRelic("Idolo del cacciatore")) relicDmgBonus += 1;
-                if (hasRelic("Catena di Norgrad")) relicAttBonus += 1;
-            }
-
-            const total = roll + hero.str + helpBonus + attackMod(hero) + relicAttBonus;
+            const rb = relicCombatBonus();
+            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
             helpBonus = 0;
 
             const hit = total >= enemy.ca;
             let dmg = 0;
             if (hit) {
-                dmg = hero.dmg + relicDmgBonus;
+                dmg = hero.dmg + rb.dmg;
                 enemy.hp -= dmg;
             }
-            return { roll, total, hit, dmg, relicAttBonus };
+            return { roll, total, hit, dmg, relicAttBonus: rb.att, relicNotes: rb.notes };
         }
 
         // Tiro di difesa: in caso di successo aggiunge 1 armatura corrente all'eroe.
         function resolveDefend(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + (hero.def_bonus || 0);
+            const total = roll + hero.str + (hero.def_bonus || 0) + relicDiceBonus();
             const success = total >= enemy.att;
             if (success) hero.current_armor += 1;
             return { roll, total, success };
@@ -1429,7 +1584,7 @@ function breakRelic(relicName) {
         // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
         function resolveHelp(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + (hero.help_bonus_val || 0);
+            const total = roll + hero.str + (hero.help_bonus_val || 0) + relicDiceBonus();
             const success = total >= enemy.att;
             if (success) helpBonus = 1;
             return { roll, total, success };
@@ -1437,52 +1592,60 @@ function breakRelic(relicName) {
 
         function resolveZenoAbility(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + helpBonus + attackMod(hero);
+            const rb = relicCombatBonus();
+            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
             helpBonus = 0;
             const hit = total >= enemy.ca;
-            const dmg = hero.dmg + (hero.fth || 0);
+            const dmg = hero.dmg + (hero.fth || 0) + rb.dmg;
             if (hit) enemy.hp -= dmg;
-            return { abId: 'zeno_colpo_benedetto', roll, total, hit, dmg };
+            return { abId: 'zeno_colpo_benedetto', roll, total, hit, dmg, relicDmgBonus: rb.dmg, relicNotes: rb.notes };
         }
 
         function resolveDioforoAbility(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const intBonus = hero.int || 0;
-            const total = roll + hero.str + intBonus + helpBonus + attackMod(hero);
+            const rb = relicCombatBonus();
+            const total = roll + hero.str + intBonus + helpBonus + attackMod(hero) + rb.att;
             helpBonus = 0;
             const hit = total >= enemy.ca;
-            if (hit) enemy.hp -= hero.dmg;
-            return { abId: 'dioforo_penna', roll, total, hit, dmg: hero.dmg, intBonus };
+            const dmg = hero.dmg + rb.dmg;
+            if (hit) enemy.hp -= dmg;
+            return { abId: 'dioforo_penna', roll, total, hit, dmg, intBonus, relicNotes: rb.notes };
         }
 
         function resolveIcaroAbility(hero, enemy, rolls) {
             const d1 = rollD6(rolls, 0);
             const d2 = rollD6(rolls, 1);
             const roll = Math.max(d1, d2);
-            const total = roll + hero.str + helpBonus + attackMod(hero);
+            const rb = relicCombatBonus();
+            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
             helpBonus = 0;
             const hit = total >= enemy.ca;
-            if (hit) enemy.hp -= hero.dmg;
-            return { abId: 'icaro_trucchi', d1, d2, roll, total, hit, dmg: hero.dmg };
+            const dmg = hero.dmg + rb.dmg;
+            if (hit) enemy.hp -= dmg;
+            return { abId: 'icaro_trucchi', d1, d2, roll, total, hit, dmg, relicNotes: rb.notes };
         }
 
         function resolveAstarteAbility(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + helpBonus + attackMod(hero);
+            const rb = relicCombatBonus();
+            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
             helpBonus = 0;
             const hit = total >= enemy.ca;
-            const dmg = hero.dmg * 2;
+            const dmg = (hero.dmg + rb.dmg) * 2;
             if (hit) enemy.hp -= dmg;
-            return { abId: 'astarte_affondo', roll, total, hit, dmg };
+            return { abId: 'astarte_affondo', roll, total, hit, dmg, relicNotes: rb.notes };
         }
 
         function resolveAscadeoAbility(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + helpBonus + attackMod(hero);
+            const rb = relicCombatBonus();
+            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
             helpBonus = 0;
             const hit = total >= enemy.ca;
-            if (hit) { enemy.hp -= hero.dmg; enemy.isStunned = true; }
-            return { abId: 'ascadeo_segnato', roll, total, hit, dmg: hero.dmg };
+            const dmg = hero.dmg + rb.dmg;
+            if (hit) { enemy.hp -= dmg; enemy.isStunned = true; }
+            return { abId: 'ascadeo_segnato', roll, total, hit, dmg, relicNotes: rb.notes };
         }
 
         // Dispaccia l'abilità attiva in combattimento in base al suo id.
@@ -1558,7 +1721,7 @@ function breakRelic(relicName) {
 
     helpBonus = 0;
 
-            document.getElementById('combatDescBox').innerHTML = `<strong>Descrizione:</strong> ${activeEnemy.desc}`;
+            document.getElementById('combatDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(activeEnemy.desc)}`;
 
             party.forEach(h => {
                 if(h.hp > 0) {
@@ -1576,6 +1739,10 @@ function breakRelic(relicName) {
             startHeroesTurnCycle();
         }
 
+        function logRelicNotes(res) {
+            if (res && res.relicNotes && res.relicNotes.length) logCombat(`💎 Reliquie: ${res.relicNotes.join(', ')}`);
+        }
+
         function logCombat(text) {
             const log = document.getElementById('combatLog');
             log.innerHTML += text + "<br>";
@@ -1591,8 +1758,10 @@ function breakRelic(relicName) {
                     <div class="icon-frame enemy-emblem">${svgIcon('skull')}</div>
                     <div class="enemy-main">
                         <div class="enemy-name">${activeEnemy.name}${stunBadge}</div>
-                        <div class="hp-bar-container big">
+                        <div class="hp-bar-container big" id="enemyHpBar">
+                            ${barGhostHtml(`enemy:${activeEnemy.name}`, hpPercent, Math.max(0, activeEnemy.hp))}
                             <div class="hp-bar-fill ${hpClass(hpPercent)}" style="width: ${hpPercent}%;"></div>
+                            <div class="hp-bar-preview hidden"></div>
                             <div class="hp-bar-text">${Math.max(0, activeEnemy.hp)} / ${activeEnemy.maxHp}</div>
                         </div>
                     </div>
@@ -1604,7 +1773,45 @@ function breakRelic(relicName) {
                 </div>
             `;
             fxDiffEnemy();
+            animateBars(document.getElementById('enemyInfo'));
         }
+
+        // 11. Passando su "Attacca" o sull'abilità, la parte di vita che il colpo toglierebbe lampeggia
+        function expectedHitDamage(hero, action) {
+            if (!hero || !activeEnemy) return 0;
+            let dmg = hero.dmg + relicCombatBonus().dmg;
+            if (action === 'ability' && hero.chosenAbility) {
+                if (hero.chosenAbility.id === 'zeno_colpo_benedetto') dmg += hero.fth || 0;
+                if (hero.chosenAbility.id === 'astarte_affondo') dmg *= 2;
+            }
+            return Math.max(0, dmg);
+        }
+
+        function showHitPreview(action) {
+            const bar = document.getElementById('enemyHpBar');
+            if (!bar || !activeEnemy || activeEnemy.hp <= 0 || !currentActiveHero) return;
+            const dmg = Math.min(activeEnemy.hp, expectedHitDamage(currentActiveHero, action));
+            const preview = bar.querySelector('.hp-bar-preview');
+            if (!preview || dmg <= 0) return;
+            preview.style.left = `${clampPct(activeEnemy.hp - dmg, activeEnemy.maxHp)}%`;
+            preview.style.width = `${clampPct(dmg, activeEnemy.maxHp)}%`;
+            preview.classList.remove('hidden');
+        }
+
+        function hideHitPreview() {
+            const preview = document.querySelector('#enemyHpBar .hp-bar-preview');
+            if (preview) preview.classList.add('hidden');
+        }
+
+        document.addEventListener('mouseover', e => {
+            const btn = e.target.closest && e.target.closest('#cmdAttack, #btnCombatAbility');
+            if (!btn || btn.disabled) return;
+            showHitPreview(btn.id === 'cmdAttack' ? 'attack' : 'ability');
+        });
+        document.addEventListener('mouseout', e => {
+            const btn = e.target.closest && e.target.closest('#cmdAttack, #btnCombatAbility');
+            if (btn && !btn.contains(e.relatedTarget)) hideHitPreview();
+        });
 
         function startHeroesTurnCycle() {
             party.forEach(h => { if(h.hp > 0) h.hasActed = false; });
@@ -1696,9 +1903,10 @@ function breakRelic(relicName) {
         // Stessi calcoli usati da executeCombatHeroRoll, mostrati prima del tiro
         function updateActionPreviews(hero) {
             if (!hero || !activeEnemy) return;
-            const attackNeeded = activeEnemy.ca - hero.str - helpBonus - attackMod(hero);
-            const defendNeeded = activeEnemy.att - hero.str - (hero.def_bonus || 0);
-            const helpNeeded = activeEnemy.att - hero.str - (hero.help_bonus_val || 0);
+            const rb = relicCombatBonus();
+            const attackNeeded = activeEnemy.ca - hero.str - helpBonus - attackMod(hero) - rb.att;
+            const defendNeeded = activeEnemy.att - hero.str - (hero.def_bonus || 0) - relicDiceBonus();
+            const helpNeeded = activeEnemy.att - hero.str - (hero.help_bonus_val || 0) - relicDiceBonus();
 
             const setPreview = (id, title, desc, needed, twoDice) => {
                 const btn = document.getElementById(id);
@@ -1708,7 +1916,7 @@ function breakRelic(relicName) {
                 btn.dataset.tip = `${title}||${desc}<br><span class="tip-hint">${info.long}</span>`;
             };
 
-            setPreview('cmdAttack', 'Attacca [Q]', `Forza + d6 contro CA ${activeEnemy.ca}. Se riesci infliggi ${hero.dmg} danni.`, attackNeeded, false);
+            setPreview('cmdAttack', 'Attacca [Q]', `Forza + d6 contro CA ${activeEnemy.ca}. Se riesci infliggi ${expectedHitDamage(hero, 'attack')} danni.${rb.notes.length ? `<br>Reliquie: ${rb.notes.join(', ')}` : ''}`, attackNeeded, false);
             setPreview('cmdDefend', 'Difendi [W]', `Forza + d6 contro l'attacco nemico (${activeEnemy.att}). Se riesci ottieni +1 Armatura.`, defendNeeded, false);
             setPreview('cmdHelp', 'Aiuta [E]', `Forza + d6 contro l'attacco nemico (${activeEnemy.att}). Se riesci il prossimo attacco ottiene +1.`, helpNeeded, false);
 
@@ -1716,7 +1924,7 @@ function breakRelic(relicName) {
             if (ability && ability.isCombatActive && !hero.abilityUsedThisCombat) {
                 let needed = attackNeeded;
                 if (ability.id === 'dioforo_penna') {
-                    needed = activeEnemy.ca - (hero.str + hero.int) - helpBonus - attackMod(hero);
+                    needed = activeEnemy.ca - (hero.str + hero.int) - helpBonus - attackMod(hero) - rb.att;
                 }
                 setPreview('btnCombatAbility', `${ability.name} [T]`, ability.desc, needed, ability.id === 'icaro_trucchi');
             }
@@ -1818,6 +2026,7 @@ function breakRelic(relicName) {
 
                     if(chosenAction === 'attack') {
                         const res = resolveAttack(hero, activeEnemy, externalRolls);
+                        logRelicNotes(res);
                         diceBox.textContent = res.roll;
 
                         logCombat(`${hero.name} attacca: Tiro ${res.roll} + Forza ${hero.str}${attackMod(hero) ? ` ${attackMod(hero) > 0 ? '+' : '−'} ${Math.abs(attackMod(hero))} Mod.` : ''}${res.relicAttBonus > 0 ? ' + Reliquia' : ''} = ${res.total} (CA: ${activeEnemy.ca})`);
@@ -1832,13 +2041,14 @@ function breakRelic(relicName) {
                     else if(chosenAction === 'ability') {
     const abId = hero.chosenAbility.id;
     const res = resolveAbility(hero, activeEnemy, externalRolls);
+    logRelicNotes(res);
 
     if (abId === 'zeno_colpo_benedetto') {
         diceBox.textContent = res.roll;
         logCombat(`✨ ${hero.name} infonde il colpo di fede sacra! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
 
         if (res.hit) {
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO BENEDETTO!</span> Infliggi ${res.dmg} danni (${hero.dmg} base + ${hero.fth} Fede)!`;
+            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO BENEDETTO!</span> Infliggi ${res.dmg} danni (${hero.dmg} base + ${hero.fth} Fede${res.relicDmgBonus ? ` + ${res.relicDmgBonus} reliquie` : ''})!`;
             logCombat(`La luce divina guida la lama: infliggi ${res.dmg} danni!`);
         } else {
             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
@@ -2026,7 +2236,7 @@ function breakRelic(relicName) {
             };
 
             document.getElementById('challengeTitle').textContent = challengeState.title;
-            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${challengeState.desc}`;
+            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(challengeState.desc)}`;
 
             document.getElementById('challengeStage1').classList.remove('hidden');
             document.getElementById('challengeStage2').classList.add('hidden');
@@ -2038,7 +2248,7 @@ function breakRelic(relicName) {
 
         function challengeChoose(approach) {
             if(!approach) {
-                document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${challengeState.ignoreText}`;
+                document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(challengeState.ignoreText)}`;
                 document.getElementById('challengeStage1').classList.add('hidden');
                 document.getElementById('closeChallengeBtn').classList.remove('hidden');
                 return;
@@ -2113,6 +2323,7 @@ function breakRelic(relicName) {
             const relics = [];
             if (hasRelic("Anello del giuramento")) relics.push({ name: "Anello del giuramento", val: 3 });
             if (hasRelic("Sigillo runico")) relics.push({ name: "Sigillo runico", val: 2 });
+            if (relicDiceBonus()) relics.push({ name: "Frammento di Yr-Drazul", val: 1 });
             return {
                 statValue,
                 relics,
@@ -2169,6 +2380,11 @@ function breakRelic(relicName) {
                 const broken = party.sigilloCharges >= 2;
                 if (broken) breakRelic("Sigillo runico");
                 events.push({ type: 'relic', text: `+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})` });
+            }
+
+            if (relicDiceBonus()) {
+                relicBonus += 1;
+                events.push({ type: 'relic', text: '+1 Frammento di Yr-Drazul' });
             }
 
             let total = kept + mods.statValue + relicBonus;
@@ -2253,7 +2469,7 @@ function breakRelic(relicName) {
                             rewardMsg = `<br><strong style="color:var(--relic-color);">Reliquia ottenuta: ${res.rewardGranted.name} (${res.rewardGranted.desc})</strong>`;
                             showOutcomeOverlay('relic', res.rewardGranted);
                         }
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${challengeState.cd})</strong><br>${challengeState.successText || 'Prova superata!'}${rewardMsg}`;
+                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${challengeState.cd})</strong><br>${kw(challengeState.successText || 'Prova superata!')}${rewardMsg}`;
 
                         if (res.isFinal) {
                             document.getElementById('closeChallengeBtn').onclick = () => showScreen('screenVictory');
@@ -2266,7 +2482,7 @@ function breakRelic(relicName) {
                             punishmentMsg = `<br><strong style="color:var(--curse-color);">Maledizione subita: ${res.punishmentApplied.name} (${res.punishmentApplied.desc})</strong>`;
                             showOutcomeOverlay('curse', res.punishmentApplied);
                         }
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${challengeState.cd})</strong><br>${challengeState.failText || 'Prova fallita!'}${punishmentMsg}`;
+                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${challengeState.cd})</strong><br>${kw(challengeState.failText || 'Prova fallita!')}${punishmentMsg}`;
                         document.getElementById('closeChallengeBtn').onclick = advanceNode;
                     }
 
@@ -2292,6 +2508,14 @@ function breakRelic(relicName) {
                 healed.push({ name: h.name, gained: h.hp - before, hp: h.hp, maxHp: h.maxHp });
             });
 
+            // Favore di Valgoren: il riposo è una cura, quindi 1 HP in più a un eroe ancora ferito
+            const healedSomeone = healed.some(h => h.gained > 0);
+            const valgoren = healedSomeone ? valgorenEcho(null) : null;
+            if (valgoren) {
+                const line = healed.find(h => h.name === valgoren.name);
+                if (line) { line.gained += 1; line.hp = valgoren.hp; line.valgoren = true; }
+            }
+
             let geloRemoved = false;
             const geloIdx = activeCurses.findIndex(c => c.startsWith("Gelo nelle ossa"));
             if (geloIdx > -1) {
@@ -2311,13 +2535,13 @@ function breakRelic(relicName) {
         function startRest(restId) {
             showScreen('screenRest');
             const restDesc = restsData[restId] || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
-            document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${restDesc}`;
+            document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(restDesc)}`;
 
             const res = resolveRest();
             const healLines = res.healed.map(h => h.revived
                 ? `${esc(h.name)}: si rialza (${h.hp}/${h.maxHp})`
                 : h.gained > 0
-                    ? `${esc(h.name)}: +${h.gained} HP (${h.hp}/${h.maxHp})`
+                    ? `${esc(h.name)}: +${h.gained} HP (${h.hp}/${h.maxHp})${h.valgoren ? ' · Favore di Valgoren' : ''}`
                     : `${esc(h.name)}: già in piena salute`);
             document.getElementById('restDescBox').innerHTML += `<br><br><strong>Il riposo vi ristora:</strong><br>${healLines.join('<br>')}`;
             if (res.geloRemoved) {
@@ -2421,15 +2645,15 @@ function breakRelic(relicName) {
             const key = `${item.id || ''} ${item.name}`.toLowerCase();
             if (/pozione|unguento|balsamo/.test(key)) return 'potion';
             if (/ascia/.test(key)) return 'axe';
-            if (/pugnale/.test(key)) return 'sword';
+            if (/pugnale|stocco|martello/.test(key)) return 'sword';
             if (/corazza/.test(key)) return 'armor';
             if (/balsamo/.test(key)) return 'potion';
             if (/alabarda/.test(key)) return 'spear';
             if (/spada/.test(key)) return 'sword';
             if (/scudo/.test(key)) return 'shield';
-            if (/armatura/.test(key)) return 'armor';
+            if (/armatura|brigantina/.test(key)) return 'armor';
             if (/libro|tomo/.test(key)) return 'book';
-            if (/amuleto/.test(key)) return 'amulet';
+            if (/amuleto|ankh|corona/.test(key)) return 'amulet';
             if (/anello/.test(key)) return 'ring';
             return 'bag';
         }
@@ -2494,6 +2718,13 @@ function breakRelic(relicName) {
             simbolo_jag_antar: 'immagini/icone/BTNPeriapt.png',
             reliquiario_tascabile: 'immagini/icone/BTNSacredRelic.png',
             cappa_sussurri: 'immagini/icone/BTNCloak.png',
+            ankh_pellegrino: 'immagini/icone/BTNAnkh.png',
+            bastone_eremita: 'immagini/icone/BTNMindStaff.png',
+            martello_consacrato: 'immagini/icone/BTNHolyBolt.png',
+            brigantina_benedetta: 'immagini/icone/BTNRunedBracers.png',
+            stocco_duellante: 'immagini/icone/BTNAssassinsBlade.png',
+            scettro_savio: 'immagini/icone/BTNScepterOfMastery.png',
+            corona_martire: 'immagini/icone/BTNCirclet.png',
             anello: 'immagini/icone/BTNRingPurple.png',
 
             // Consumabili
@@ -2697,6 +2928,57 @@ function breakRelic(relicName) {
             return pct > 60 ? '' : (pct > 30 ? 'hp-mid' : 'hp-low');
         }
 
+        // 23. Statistica verde se più alta di quella iniziale dell'eroe, rossa se più bassa (oggetti, reliquie, maledizioni)
+        function heroStatHtml(h, key, short, label, help) {
+            const base = (campaignHeroes || []).find(b => b.name === h.name);
+            const start = base ? base[key] : h[key];
+            const cls = h[key] > start ? 'stat-up' : h[key] < start ? 'stat-down' : '';
+            const note = cls ? `<br><span class="tip-hint">Iniziale ${start}, ora ${h[key]}</span>` : '';
+            return `<span class="${cls}" data-tip="${esc(label + '||' + help + note)}"><i>${short}</i>${h[key]}</span>`;
+        }
+
+        /* ---------- 10. Barre della vita con scia e 27. numeri che scorrono ----------
+           La scia chiara resta dov'era la vita e si accorcia con un attimo di ritardo;
+           il numero scorre dal valore precedente al nuovo. barMemory ricorda l'ultimo stato. */
+        const barMemory = new Map();  // chiave -> { pct, value }
+        function barGhostHtml(key, pct, value) {
+            return `<div class="hp-bar-ghost" data-ghost-key="${esc(key)}" data-pct="${pct}" data-value="${value}" style="width: ${pct}%;"></div>`;
+        }
+
+        function animateBars(scope) {
+            (scope || document).querySelectorAll('.hp-bar-ghost[data-ghost-key]').forEach(ghost => {
+                const key = ghost.dataset.ghostKey;
+                const pct = Number(ghost.dataset.pct), value = Number(ghost.dataset.value);
+                const prev = barMemory.get(key);
+                barMemory.set(key, { pct, value });
+                const text = ghost.parentNode.querySelector('[data-count-key]');
+                if (!prev || !animationsEnabled()) return;
+                if (prev.pct > pct) {
+                    ghost.style.transition = 'none';
+                    ghost.style.width = `${prev.pct}%`;
+                    void ghost.offsetWidth;
+                    ghost.style.transition = '';
+                    ghost.style.width = `${pct}%`;
+                }
+                if (text && prev.value !== value) countText(text, prev.value, value, text.dataset.countMax);
+            });
+        }
+
+        // Fa scorrere un numero (anche nella forma "x/max") dal valore precedente al nuovo
+        function countText(el, from, to, max, duration = 450) {
+            if (!animationsEnabled() || from === to) return;
+            const start = performance.now();
+            const suffix = max ? `/${max}` : '';
+            el.classList.add(to < from ? 'count-down' : 'count-up');
+            const step = now => {
+                const t = Math.min(1, (now - start) / duration);
+                el.textContent = `${Math.round(from + (to - from) * t)}${suffix}`;
+                if (t < 1) requestAnimationFrame(step);
+                else setTimeout(() => el.classList.remove('count-down', 'count-up'), 300);
+            };
+            requestAnimationFrame(step);
+        }
+
         function heroCardHtml(h) {
             const hpPct = clampPct(h.hp, h.maxHp);
             const armorMax = Math.max(h.base_armor, h.current_armor);
@@ -2707,7 +2989,7 @@ function breakRelic(relicName) {
                 const it = h.items[i];
                 if (!it) { slots += `<div class="inv-slot empty"></div>`; continue; }
                 const usable = it.type && it.type.startsWith('consumable');
-                const tip = `${it.name}||${it.desc}${usable ? '<br><span class="tip-hint">Clicca per usare</span>' : ''}`;
+                const tip = itemTip(it, h) + (usable ? '<br><span class="tip-hint">Clicca per usare</span>' : '');
                 const hasImage = !!itemImageSrc(it);
                 slots += `<div class="inv-slot ic-${itemCategory(it)} rar-${itemRarity(it)} ${usable ? 'usable' : ''} ${hasImage ? 'has-img' : ''}" data-tip="${esc(tip)}" ${usable ? `onclick="useConsumableFromTopbar('${h.name}', ${i})"` : ''}>${itemIconInner(it)}</div>`;
             }
@@ -2718,8 +3000,9 @@ function breakRelic(relicName) {
                     <div class="hero-bars">
                         <div class="hero-card-name" title="${esc(h.name)}">${h.name}</div>
                         <div class="hp-bar-container" data-tip="Punti Vita||${h.hp} su ${h.maxHp}">
+                            ${barGhostHtml(`hero:${h.name}`, hpPct, h.hp)}
                             <div class="hp-bar-fill ${hpClass(hpPct)}" style="width: ${hpPct}%;"></div>
-                            <div class="hp-bar-text">${h.hp}/${h.maxHp}</div>
+                            <div class="hp-bar-text" data-count-key="hero:${esc(h.name)}" data-count-max="${h.maxHp}">${h.hp}/${h.maxHp}</div>
                         </div>
                         <div class="hp-bar-container armor" data-tip="Armatura||${h.current_armor} attuale su ${h.base_armor} base. Assorbe i danni prima degli HP e si rigenera a ogni scontro.">
                             <div class="hp-bar-fill" style="width: ${armorPct}%;"></div>
@@ -2727,10 +3010,10 @@ function breakRelic(relicName) {
                         </div>
                     </div>
                     <div class="hero-stats">
-                        <span data-tip="Forza||Si somma ai tiri di attacco, difesa e aiuto."><i>FOR</i>${h.str}</span>
-                        <span data-tip="Intelligenza||Usata nelle prove di intelletto."><i>INT</i>${h.int}</span>
-                        <span data-tip="Fede||Usata nelle prove di fede."><i>FED</i>${h.fth}</span>
-                        <span data-tip="Danno||Danni inflitti con un attacco riuscito."><i>DAN</i>${h.dmg}</span>
+                        ${heroStatHtml(h, 'str', 'FOR', 'Forza', 'Si somma ai tiri di attacco, difesa e aiuto.')}
+                        ${heroStatHtml(h, 'int', 'INT', 'Intelligenza', 'Usata nelle prove di intelletto e nella contrattazione.')}
+                        ${heroStatHtml(h, 'fth', 'FED', 'Fede', 'Usata nelle prove di fede.')}
+                        ${heroStatHtml(h, 'dmg', 'DAN', 'Danno', 'Danni inflitti con un attacco riuscito.')}
                     </div>
                     ${h.chosenAbility ? `<div class="hero-ability" data-tip="${esc(h.chosenAbility.name + "||" + (h.chosenAbility.desc || ""))}">${abilityMarkHtml(h.chosenAbility)} ${h.chosenAbility.name}</div>` : ""}
                     <div class="hero-inventory">${slots}<span class="inv-label">Zaino</span></div>
@@ -2750,7 +3033,13 @@ function breakRelic(relicName) {
 
         /* ---------- Finestra modale ---------- */
         function openModal(title, bodyHtml, actions, options = {}) {
-            document.querySelector('#wc3Modal .modal-box').classList.toggle('wide', !!options.wide);
+            const box = document.querySelector('#wc3Modal .modal-box');
+            box.classList.toggle('wide', !!options.wide);
+            if (document.getElementById('wc3Modal').classList.contains('hidden')) {
+                box.classList.remove('modal-drop');
+                void box.offsetWidth;
+                box.classList.add('modal-drop');
+            }
             document.getElementById('wc3ModalTitle').textContent = title;
             document.getElementById('wc3ModalBody').innerHTML = bodyHtml;
             const actionsBox = document.getElementById('wc3ModalActions');
@@ -3438,7 +3727,7 @@ function breakRelic(relicName) {
                     <div class="outcome-icon"><img src="${isRelic ? 'immagini/icone/BTNEnchantedGemstone.png' : 'immagini/icone/BTNOrbOfCorruption.png'}" alt=""></div>
                     <div class="outcome-kind">${isRelic ? 'Reliquia ottenuta' : 'Maledizione subita'}</div>
                     <div class="outcome-name">${data.name}</div>
-                    <div class="outcome-desc">${data.desc || ''}</div>
+                    <div class="outcome-desc">${kw(data.desc || '')}</div>
                     <div class="outcome-hint">Clicca per continuare</div>
                 </div>`;
 

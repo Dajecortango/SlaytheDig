@@ -1,0 +1,288 @@
+/* =========================================================
+   BASE WARCRAFT III COMUNE
+   Variabili (colori, caratteri, cornici), pulsanti in metallo, menu a tendina,
+   scrollbar, titoli e componenti condivisi da gioco (index.html), editor
+   (editor.html) e pagina del telefono (server/public/phone.html).
+   Va caricato PRIMA dei fogli di stile specifici.
+   ========================================================= */
+        :root {
+            /* Variabili usate anche dal JS inline: non rinominare */
+            --gold: #e2b951;
+            --gold-hover: #fff0a8;
+            --text-main: #efe6d0;
+            --accent-red: #c0281e;
+            --accent-red-hover: #e0402f;
+            --accent-green: #3fbf4a;
+            --relic-color: #c79bff;
+            --curse-color: #ff5a4a;
+
+            --wc-yellow: #ffcc00;
+            --text-dim: #a89a7c;
+            --metal-hi: #fff0b0;
+            --metal: #c9982f;
+            --metal-lo: #6b4a12;
+            --metal-dk: #2e1f06;
+
+            --font-title: 'Cinzel', 'Trajan Pro', 'Georgia', serif;
+            --font-body: 'Marcellus', 'Palatino Linotype', 'Georgia', serif;
+
+            --noise-fine: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .7 -.22'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+            --noise-cloud: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.1 -.42'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+            --frame: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23fff0b0'/><stop offset='.45' stop-color='%23d4a53a'/><stop offset='1' stop-color='%236b4a12'/></linearGradient><radialGradient id='r' cx='.38' cy='.34' r='.7'><stop offset='0' stop-color='%23ffb09a'/><stop offset='.35' stop-color='%23c41a14'/><stop offset='1' stop-color='%23300204'/></radialGradient><g id='c'><rect x='.5' y='.5' width='25' height='25' fill='url(%23g)' stroke='%23000'/><rect x='4.5' y='4.5' width='17' height='17' fill='%23241606' stroke='%23000'/><path d='M4.5 21.5v-17h17' fill='none' stroke='%23fff0b0' stroke-opacity='.5'/><circle cx='13' cy='13' r='5.5' fill='url(%23r)' stroke='%23000'/><circle cx='11.3' cy='11.2' r='1.6' fill='%23fff' fill-opacity='.75'/></g></defs><rect x='1' y='1' width='88' height='88' fill='none' stroke='%23000' stroke-width='2'/><rect x='2.5' y='2.5' width='85' height='85' fill='none' stroke='%236b4a12'/><rect x='4' y='4' width='82' height='82' fill='none' stroke='%23d4a53a' stroke-width='2'/><rect x='5.5' y='5.5' width='79' height='79' fill='none' stroke='%23fff0b0' stroke-opacity='.7'/><rect x='7' y='7' width='76' height='76' fill='none' stroke='%238a6418' stroke-width='2'/><rect x='8.5' y='8.5' width='73' height='73' fill='none' stroke='%23000'/><use href='%23c'/><use href='%23c' x='64'/><use href='%23c' y='64'/><use href='%23c' x='64' y='64'/></svg>");
+            --diamond: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M6 .5L11.5 6 6 11.5.5 6z' fill='%23e2b951' stroke='%23000'/><path d='M6 3.5L8.5 6 6 8.5 3.5 6z' fill='%23c41a14'/></svg>");
+            --select-arrow: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1l5 6 5-6z' fill='%23e2b951' stroke='%23000'/></svg>");
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        ::selection { background: rgba(255, 204, 0, 0.35); color: #fff; }
+
+        /* Scrollbar stile metallo */
+        * { scrollbar-width: thin; scrollbar-color: #8a6418 #0b0908; }
+        ::-webkit-scrollbar { width: 12px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #0b0908; box-shadow: inset 0 0 4px #000; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #6b4a12, #e2b951 50%, #6b4a12);
+            border: 2px solid #0b0908;
+            border-radius: 2px;
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-title);
+            color: var(--wc-yellow);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 180, 40, 0.25);
+            margin: 0.2em 0 0.6em;
+        }
+
+        /* ---------- Pulsanti in metallo ---------- */
+        button {
+            position: relative;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--wc-yellow);
+            padding: 10px 22px;
+            margin: 8px 5px;
+            cursor: pointer;
+            background: var(--noise-fine), linear-gradient(#72190f, #3c0b07 55%, #220604);
+            border: 2px solid;
+            border-color: #f3d27a #8a6418 #4a3208 #b8923e;
+            border-radius: 3px;
+            --btn-depth: 5px;
+            box-shadow:
+                0 0 0 1px #000,
+                inset 0 2px 0 rgba(255, 235, 180, 0.45),
+                inset 2px 0 0 rgba(255, 220, 150, 0.14),
+                inset -2px 0 0 rgba(0, 0, 0, 0.45),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.55),
+                inset 0 -12px 16px rgba(0, 0, 0, 0.4),
+                inset 0 10px 14px rgba(255, 200, 140, 0.08),
+                0 var(--btn-depth) 0 #1a1006,
+                0 calc(var(--btn-depth) + 1px) 0 #000,
+                0 calc(var(--btn-depth) + 5px) 12px rgba(0, 0, 0, 0.75);
+            text-shadow: 0 2px 0 #000, 0 0 4px #000;
+            transition: color 0.15s, filter 0.15s, box-shadow 0.12s, transform 0.12s;
+        }
+        button:hover:not(:disabled) {
+            color: #fff3b0;
+            filter: brightness(1.2);
+            text-shadow: 0 0 8px rgba(255, 210, 90, 0.9), 0 2px 0 #000;
+            transform: translateY(-1px);
+            --btn-depth: 6px;
+            box-shadow:
+                0 0 0 1px #000,
+                inset 0 2px 0 rgba(255, 235, 180, 0.55),
+                inset 2px 0 0 rgba(255, 220, 150, 0.18),
+                inset -2px 0 0 rgba(0, 0, 0, 0.45),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.55),
+                inset 0 -12px 16px rgba(0, 0, 0, 0.3),
+                inset 0 10px 14px rgba(255, 200, 140, 0.12),
+                0 0 16px rgba(255, 190, 60, 0.3),
+                0 var(--btn-depth) 0 #1a1006,
+                0 calc(var(--btn-depth) + 1px) 0 #000,
+                0 calc(var(--btn-depth) + 7px) 14px rgba(0, 0, 0, 0.75);
+        }
+        button:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow:
+                0 0 0 1px #000,
+                inset 0 3px 8px rgba(0, 0, 0, 0.75),
+                inset 0 -1px 0 rgba(255, 220, 150, 0.12),
+                0 1px 0 #1a1006,
+                0 2px 0 #000,
+                0 3px 6px rgba(0, 0, 0, 0.7);
+        }
+        button:disabled {
+            color: #8a8478;
+            filter: grayscale(1) brightness(0.65);
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        button:focus-visible, select:focus-visible, .campaign-card:focus-visible {
+            outline: 2px solid var(--wc-yellow);
+            outline-offset: 3px;
+        }
+
+        .btn-proceed {
+            width: 100%;
+            padding: 12px;
+            margin: 14px 0 0;
+            font-size: 1rem;
+            background: var(--noise-fine), linear-gradient(#236628, #103816 55%, #0a240d);
+        }
+        .btn-danger {
+            background: var(--noise-fine), linear-gradient(#9a1e12, #520b06 55%, #300503);
+        }
+        .btn-small { padding: 7px 12px; font-size: 0.75rem; margin: 4px 0; }
+        .btn-block { width: 100%; margin: 4px 0; }
+
+        /* ---------- Menu a tendina ---------- */
+        select {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            margin: 8px 0;
+            padding: 9px 36px 9px 12px;
+            font-family: var(--font-body);
+            font-size: 0.92rem;
+            color: #f3e2b0;
+            background: var(--select-arrow) right 11px center / 13px no-repeat, linear-gradient(#0c0a09, #18130f);
+            border: 1px solid #8a6418;
+            border-radius: 2px;
+            box-shadow: 0 0 0 1px #000, inset 0 2px 6px rgba(0, 0, 0, 0.85);
+            cursor: pointer;
+        }
+        select:hover { border-color: #f0cf73; }
+        select option { background: #110e0c; color: #f3e2b0; }
+
+        .hidden { display: none !important; }
+
+
+        /* ---------- Componenti comuni (gioco, editor, telefono) ---------- */
+        /* Pannello con la cornice dorata e le gemme agli angoli */
+        .wc-panel {
+            border: 22px solid transparent;
+            border-image: var(--frame) 26 / 22px stretch;
+            background: var(--noise-fine), radial-gradient(ellipse at 50% 0%, rgba(110, 80, 40, 0.28), transparent 60%), linear-gradient(#171412, #0c0a09);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85);
+        }
+        /* Riquadro incassato per testi e descrizioni */
+        .wc-inset {
+            padding: 12px 14px;
+            color: #e6dcc4;
+            line-height: 1.55;
+            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            border: 1px solid #5a4520;
+            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255, 220, 130, 0.07), inset 0 0 26px rgba(0, 0, 0, 0.8);
+        }
+        /* Carta/riga di elenco in pietra scura */
+        .wc-card {
+            padding: 8px 10px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255, 220, 150, 0.05);
+        }
+        .wc-card.rar-comune { border-color: #8d8a84; }
+        .wc-card.rar-raro { border-color: #4a8cff; }
+        .wc-card.rar-epico { border-color: #b06cff; }
+        /* Titolo con filetti dorati e rombi ai lati */
+        .wc-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-title);
+            font-weight: 900;
+            color: var(--wc-yellow);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-shadow: 0 2px 0 #000;
+        }
+        .wc-heading::before, .wc-heading::after {
+            content: '';
+            flex: 1;
+            height: 12px;
+            min-width: 16px;
+            background:
+                var(--diamond) right center / 12px 12px no-repeat,
+                linear-gradient(90deg, transparent, #8a6418 40%, #f0cf73) left center / calc(100% - 14px) 2px no-repeat;
+        }
+        .wc-heading::after { transform: scaleX(-1); }
+
+        /* Parole chiave colorate nei testi (vedi decorateKeywords in js/game.js) */
+        .kw { font-weight: 700; white-space: nowrap; }
+        .kw-str { color: #ff9a6a; }
+        .kw-fth { color: #fff0b0; text-shadow: 0 0 6px rgba(255, 220, 120, 0.45); }
+        .kw-int { color: #8cc4ff; }
+        .kw-hp { color: #8dff78; }
+        .kw-armor { color: #a9c8ff; }
+        .kw-dmg { color: #ffb36a; }
+        .kw-coin { color: var(--wc-yellow); }
+        .kw-relic { color: var(--relic-color); }
+        .kw-curse { color: var(--curse-color); }
+        .kw-help { color: #c9f0a8; }
+
+        /* ---------- Profondità dei pulsanti in metallo ----------
+           ::before = smussatura (luce in alto, ombra in basso, filo dorato interno),
+           ::after = riflesso dorato che attraversa il metallo al passaggio del mouse.
+           Stanno sotto il testo (z-index -1 dentro il pulsante, che isola il proprio strato).
+           Esclusi i "pulsanti" che sono carte, schede o frecce con una grafica propria. */
+        button { isolation: isolate; }
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::before,
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::before {
+            background:
+                radial-gradient(ellipse 70% 55% at 50% 0%, rgba(255, 228, 160, 0.22), transparent 70%),
+                linear-gradient(180deg, rgba(255, 240, 200, 0.2) 0, rgba(255, 240, 200, 0.05) 42%, transparent 52%, rgba(0, 0, 0, 0.28) 100%);
+            box-shadow:
+                inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+                inset 0 0 0 2px rgba(255, 214, 120, 0.14),
+                inset 0 1px 0 2px rgba(255, 240, 190, 0.1);
+        }
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::after {
+            background: linear-gradient(105deg, transparent 38%, rgba(255, 236, 170, 0.35) 47%, rgba(255, 250, 225, 0.6) 50%, rgba(255, 236, 170, 0.35) 53%, transparent 62%) no-repeat;
+            background-size: 260% 100%;
+            background-position: 170% 0;
+            mix-blend-mode: screen;
+            opacity: 0;
+        }
+        button:hover:not(:disabled)::after { animation: btn-sheen 0.9s ease-out; }
+        @keyframes btn-sheen {
+            0% { background-position: 170% 0; opacity: 1; }
+            100% { background-position: -70% 0; opacity: 1; }
+        }
+        /* Premuto: la smussatura si inverte, come una piastra spinta dentro la cornice */
+        button:active:not(:disabled)::before {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.38), transparent 45%, rgba(255, 240, 200, 0.1) 100%);
+        }
+
+        /* Pulsanti dei menu: borchie dorate agli angoli e bagliore interno al passaggio del mouse */
+        .wc-menu-btn { --btn-depth: 6px; }
+        .wc-menu-btn::before {
+            background:
+                radial-gradient(circle at 7px 7px, #fff0b0 0 1.6px, #8a6418 2.4px, transparent 3.2px),
+                radial-gradient(circle at calc(100% - 7px) 7px, #fff0b0 0 1.6px, #8a6418 2.4px, transparent 3.2px),
+                radial-gradient(circle at 7px calc(100% - 7px), #fff0b0 0 1.6px, #8a6418 2.4px, transparent 3.2px),
+                radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), #fff0b0 0 1.6px, #8a6418 2.4px, transparent 3.2px),
+                radial-gradient(ellipse 70% 55% at 50% 0%, rgba(255, 228, 160, 0.22), transparent 70%),
+                linear-gradient(180deg, rgba(255, 240, 200, 0.2) 0, rgba(255, 240, 200, 0.05) 42%, transparent 52%, rgba(0, 0, 0, 0.28) 100%) !important;
+        }
+        .wc-menu-btn:hover:not(:disabled) { color: #fff6c8; }
+        .wc-menu-btn:hover:not(:disabled)::before {
+            box-shadow:
+                inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+                inset 0 0 0 2px rgba(255, 214, 120, 0.3),
+                inset 0 0 18px rgba(255, 190, 70, 0.35) !important;
+        }
+        @media (prefers-reduced-motion: reduce) { button:hover::after { animation: none !important; } }
+        body.no-anim button:hover::after { animation: none !important; }

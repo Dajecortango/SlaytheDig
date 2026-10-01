@@ -81,6 +81,8 @@ const ITEM_FIELDS = [
     { k: 'help_bonus_val', label: 'Bonus aiuto', type: 'number', omitEmpty: true },
     { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true },
     { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true },
+    { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', wide: true, nullable: true,
+      help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true }
 ];
 
@@ -1425,6 +1427,14 @@ function validateCampaign() {
     });
     Object.entries(lib.armeria).forEach(([k, it]) => {
         if (it.id !== k) add('error', `Armeria <b>${k}</b>: il campo id ("${esc(it.id)}") deve coincidere con la chiave`, 'armeria', k);
+        if (it.scaling != null) {
+            if (!Array.isArray(it.scaling)) add('error', `Armeria <b>${k}</b>: "scaling" deve essere un elenco`, 'armeria', k);
+            else it.scaling.forEach(sc => {
+                if (!['str', 'dmg', 'armor', 'def_bonus', 'help_bonus_val'].includes(sc.stat)) add('error', `Armeria <b>${k}</b>: scaling con "stat" non valida (${esc(sc.stat)})`, 'armeria', k);
+                if (!['fth', 'int'].includes(sc.per)) add('error', `Armeria <b>${k}</b>: scaling con "per" non valido (${esc(sc.per)}): usa fth o int`, 'armeria', k);
+                if (!(sc.every >= 1)) add('error', `Armeria <b>${k}</b>: scaling con "every" mancante o minore di 1`, 'armeria', k);
+            });
+        }
         if (!it.name) add('warn', `Armeria <b>${k}</b>: nome mancante`, 'armeria', k);
     });
     (lib.lootPredefinito || []).forEach(id => { if (!lib.armeria[id]) add('error', `Bottino predefinito: "${esc(id)}" non trovato nell'armeria`, 'armeria'); });
