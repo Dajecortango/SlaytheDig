@@ -1204,6 +1204,8 @@
             border: 1px solid #3a2e1c;
             box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0, 0, 0, 0.9);
         }
+        /* Registro dello scontro nascosto per ora: il gioco continua a scriverci, basta togliere questa riga per riaverlo */
+        #combatLog { display: none; }
 
         /* =========================================================
            MAPPA

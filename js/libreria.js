@@ -1,7 +1,8 @@
 /* ==========================================================================
-   LIBRERIA CONDIVISA: armeria, bestiario, reliquie, maledizioni
+   LIBRERIA CONDIVISA: armeria, bestiario, reliquie, maledizioni, eroi, abilità
    I file data/libreria/*.js riempiono window.LIBRERIA; le campagne in
    data/campagne/*.js richiamano gli elementi per id:
+     - heroes                      -> LIBRERIA.eroi  (e i loro "abilities" -> LIBRERIA.abilita)
      - mapNodes[].enemy            -> LIBRERIA.bestiario
      - initialArmory, lootItems    -> LIBRERIA.armeria  (lootItems: null = LIBRERIA.lootPredefinito)
      - challenges[].reward         -> LIBRERIA.reliquie     (se è una stringa)
@@ -17,7 +18,7 @@
    ========================================================================== */
 
 window.LIBRERIA = window.LIBRERIA || {};
-['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi'].forEach(k => { window.LIBRERIA[k] = window.LIBRERIA[k] || {}; });
+['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita'].forEach(k => { window.LIBRERIA[k] = window.LIBRERIA[k] || {}; });
 window.LIBRERIA.lootPredefinito = window.LIBRERIA.lootPredefinito || [];
 
 // Restituisce una copia della campagna con i riferimenti sostituiti dagli elementi della libreria.
@@ -34,7 +35,12 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
         const entry = lib.eroi && lib.eroi[ref];
         if (!entry) { missing('eroe', ref); return null; }
         const { abilities: list, ...hero } = copy(entry);
-        abilities[hero.name] = list || [];
+        // Le abilità sono id della libreria Abilità; un'abilità scritta per intero nell'eroe resta com'è
+        abilities[hero.name] = (list || []).map(a => {
+            if (typeof a !== 'string') return a;
+            if (!lib.abilita || !lib.abilita[a]) { missing('abilità', a); return null; }
+            return { id: a, ...copy(lib.abilita[a]) };
+        }).filter(Boolean);
         return hero;
     }).filter(Boolean);
     camp.abilities = Object.assign(abilities, camp.abilities || {});

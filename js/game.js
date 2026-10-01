@@ -476,7 +476,7 @@ function breakRelic(relicName) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '0.8';
+        const GAME_VERSION = '0.9';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
@@ -2819,33 +2819,27 @@ function breakRelic(relicName) {
             return `<span class="icon-frame ic-${itemCategory(item)} rar-${itemRarity(item)} ${hasImage ? 'has-img' : ''}">${itemIconInner(item)}</span>`;
         }
 
-        // Icone raster WC3 per abilità, indicizzate per id abilità; le altre usano l'icona SVG
-        const ABILITY_IMAGES = {
-            astarte_veleni: 'immagini/icone/BTNCorrosiveBreath.png',
-            astarte_affondo: 'immagini/icone/BTNSacrifice.png',
-            icaro_oro: 'immagini/icone/BTNMagicalSentry.png',
-            icaro_trucchi: 'immagini/icone/BTNSilence.png',
-            ascadeo_ghiaccio: 'immagini/icone/BTNFreezingBreath.png',
-            ascadeo_segnato: 'immagini/icone/BTNFrostWolf.png',
-            zeno_colpo_benedetto: 'immagini/icone/BTNInnerFire.png',
-            zeno_addestramento: 'immagini/icone/BTNGauntletsOfOgrePower.png',
-            dioforo_era_solo_una_prova: 'immagini/icone/BTNSnazzyScroll.png',
-            dioforo_penna: 'immagini/icone/BTNBrilliance.png'
-        };
+        // Icona WC3 dell'abilità: campo "icon" della libreria Abilità (data/libreria/abilita.js).
+        // Le partite salvate prima della libreria non hanno "icon": si cerca per id. Senza icona resta quella SVG.
+        function abilityIconSrc(ability) {
+            if (!ability) return null;
+            const fromLib = window.LIBRERIA && window.LIBRERIA.abilita && window.LIBRERIA.abilita[ability.id];
+            return ability.icon || (fromLib && fromLib.icon) || null;
+        }
 
         function abilityIconHtml(ability) {
-            const src = ABILITY_IMAGES[ability.id];
+            const src = abilityIconSrc(ability);
             if (src) return `<span class="icon-frame ic-arcane has-img"><img class="item-img" src="${src}" alt=""></span>`;
             return `<span class="icon-frame ic-arcane">${svgIcon(ability.isCombatActive ? 'star' : 'rune')}</span>`;
         }
 
         function abilityCmdIconHtml(ability) {
-            const src = ABILITY_IMAGES[ability.id];
+            const src = abilityIconSrc(ability);
             return src ? `<img class="cmd-img" src="${src}" alt="">` : svgIcon('star');
         }
 
         function abilityMarkHtml(ability) {
-            const src = ABILITY_IMAGES[ability.id];
+            const src = abilityIconSrc(ability);
             return src ? `<img class="ability-mark" src="${src}" alt="">` : '★';
         }
 
