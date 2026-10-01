@@ -4,21 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Scheda Eroe — Slay the Dig</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Marcellus&display=swap" rel="stylesheet">
+<!-- Base comune con gioco ed editor: colori, caratteri, pulsanti in metallo, componenti .wc-* -->
+<link rel="stylesheet" href="/css/wc3-base.css">
 <style>
-    :root { --gold:#d4af37; --bg:#120f0c; --text:#e6dcc4; --dim:#9a8f74; }
+    :root { --bg:#120f0c; --text: var(--text-main); --dim: var(--text-dim); }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
         margin: 0; min-height: 100vh; background: radial-gradient(circle at top, #221a10, var(--bg));
-        color: var(--text); font-family: Georgia, 'Times New Roman', serif; padding: 16px;
+        color: var(--text); font-family: var(--font-body); padding: 16px;
+        background: radial-gradient(ellipse at top, #2a1f12, var(--bg) 70%) fixed;
     }
-    h1 { color: var(--gold); text-align: center; font-size: 1.4rem; margin: 8px 0 4px; letter-spacing: 0.04em; }
+    h1 { font-size: 1.15rem; margin: 6px 0 4px; justify-content: center; }
     .status { text-align: center; font-size: 0.8rem; color: var(--dim); margin-bottom: 16px; }
     .hidden { display: none; }
+    /* Pannello: cornice dorata del gioco, più sottile per lo schermo del telefono */
     .panel {
-        background: linear-gradient(rgba(30,24,16,0.95), rgba(10,8,6,0.95));
-        border: 1px solid #5a4520; box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0,0,0,0.6);
-        padding: 16px; margin-bottom: 14px;
+        border: 14px solid transparent;
+        border-image: var(--frame) 26 / 14px stretch;
+        background: var(--noise-fine), radial-gradient(ellipse at 50% 0%, rgba(110, 80, 40, 0.28), transparent 60%), linear-gradient(#171412, #0c0a09);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        padding: 8px 6px; margin-bottom: 14px;
     }
+    /* I pulsanti prendono il metallo di wc3-base.css: qui solo misure da dito */
+    button { margin: 0; letter-spacing: 0.04em; }
     /* Stile ripreso dalla card della Compagnia nel gioco principale (.hero-mini-card in css/style.css) */
     .hero-card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
     .hero-portrait-mini {
@@ -27,11 +37,11 @@
         background: radial-gradient(circle at 40% 28%, hsl(var(--hue, 30) 55% 44%), hsl(var(--hue, 30) 60% 12%) 78%);
         border: 1px solid #000;
         box-shadow: 0 0 0 2px #b8923e, 0 0 0 3px #000, inset 0 0 14px rgba(0,0,0,0.85);
-        font-family: Georgia, 'Times New Roman', serif; font-weight: 900; font-size: 1.7rem; color: #ffe9a8;
+        font-family: var(--font-title); font-weight: 900; font-size: 1.7rem; color: #ffe9a8;
         text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,0.9);
     }
     .hero-card-info { flex: 1; min-width: 0; }
-    .hero-card-title { font-weight: 700; color: var(--gold); text-shadow: 0 1px 0 #000; margin-bottom: 4px; }
+    .hero-card-title { font-family: var(--font-title); font-weight: 700; color: var(--wc-yellow); text-shadow: 0 1px 0 #000; margin-bottom: 4px; }
     .mini-bar-container {
         position: relative; height: 13px; margin-bottom: 4px;
         background: #0a0605; border: 1px solid #000; box-shadow: 0 0 0 1px #4a3a22, inset 0 2px 4px rgba(0,0,0,0.9);
@@ -53,7 +63,7 @@
     .hero-ability-line { font-size: 0.72rem; color: #e0bcff; }
     .items { font-size: 0.85rem; line-height: 1.6; }
     /* Zaino: icone come nel gioco, bordo del colore della rarità, pozioni utilizzabili fuori dal combattimento */
-    .bag-title { font-size: 0.8rem; color: var(--gold); margin-bottom: 8px; letter-spacing: 0.04em; }
+    .bag-title { font-family: var(--font-title); font-size: 0.8rem; color: var(--wc-yellow); margin-bottom: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
     .bag-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(226,185,81,0.12); }
     .bag-item:last-child { border-bottom: none; }
     .bag-icon { width: 40px; height: 40px; flex: 0 0 40px; border: 2px solid #8d8a84; box-shadow: 0 0 0 1px #000; background: #0a0605; object-fit: cover; }
@@ -62,20 +72,16 @@
     .bag-text { flex: 1; min-width: 0; line-height: 1.3; }
     .bag-text b { color: #f3e2b0; }
     .bag-text small { display: block; color: var(--dim); font-size: 0.72rem; }
-    .use-btn { padding: 8px 12px; font-weight: bold; background: linear-gradient(#236628, #103816); color: #eaffd0; border: 1px solid #8dff78; }
+    .use-btn { padding: 8px 12px; font-size: 0.75rem; background: var(--noise-fine), linear-gradient(#236628, #103816 55%, #0a240d); }
     .use-btn:disabled { opacity: 0.35; }
     .use-target { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
-    .use-target button { flex: 1; padding: 10px 8px; font-size: 0.8rem; background: linear-gradient(#5a4520, #2a1d0c); color: var(--gold); border: 1px solid #b8923e; }
+    .use-target button { flex: 1; padding: 10px 8px; font-size: 0.75rem; }
     .bag-note { font-size: 0.72rem; color: var(--dim); margin-top: 6px; }
     .hero-portrait-mini img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
     .hero-ability-desc { font-size: 0.7rem; color: var(--dim); margin-top: 2px; }
     .roll-area { text-align: center; }
-    .roll-btn {
-        width: 100%; padding: 18px; font-size: 1.1rem; font-weight: bold;
-        background: linear-gradient(#5a4520, #2a1d0c); color: var(--gold);
-        border: 1px solid #000; opacity: 0.45;
-    }
-    .roll-btn.active { opacity: 1; background: linear-gradient(#8a6d1a, #4a3a0c); animation: pulse 1.2s infinite; }
+    .roll-btn { width: 100%; padding: 18px; font-size: 1.05rem; opacity: 0.45; }
+    .roll-btn.active { opacity: 1; background: var(--noise-fine), linear-gradient(#236628, #103816 55%, #0a240d); animation: pulse 1.2s infinite; }
     @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6);} 50% { box-shadow: 0 0 0 10px rgba(212,175,55,0);} }
     .empty { text-align: center; color: var(--dim); padding: 30px 10px; }
 
@@ -83,7 +89,7 @@
     .dice-box {
         width: 56px; height: 56px;
         display: grid; place-items: center;
-        font-family: Georgia, 'Times New Roman', serif; font-size: 1.8rem; font-weight: bold; color: var(--gold);
+        font-family: var(--font-title); font-size: 1.8rem; font-weight: 900; color: var(--wc-yellow);
         background: linear-gradient(#2a1d0c, #120f0c);
         border: 2px solid #b8923e;
         box-shadow: 0 0 0 1px #000, inset 0 0 10px rgba(0,0,0,0.6);
@@ -100,24 +106,19 @@
         0% { transform: scale(1.4); }
         100% { transform: scale(1); }
     }
-    .roll-result-text { font-size: 0.9rem; color: var(--gold); margin-top: 4px; min-height: 1.2em; }
+    .roll-result-text { font-family: var(--font-title); font-size: 0.9rem; color: var(--wc-yellow); margin-top: 4px; min-height: 1.2em; }
 
-    .action-title { font-size: 0.85rem; color: var(--gold); margin-bottom: 10px; }
+    .action-title { font-family: var(--font-title); font-size: 0.85rem; color: var(--wc-yellow); margin-bottom: 10px; text-align: center; letter-spacing: 0.06em; }
     .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .action-btn, .item-btn, .back-btn {
-        padding: 14px 10px; font-size: 0.95rem; font-weight: bold;
-        background: linear-gradient(#5a4520, #2a1d0c); color: var(--gold);
-        border: 1px solid #b8923e; text-align: center;
-    }
-    .action-btn:disabled, .item-btn:disabled { opacity: 0.35; }
-    .action-btn:not(:disabled):active, .item-btn:not(:disabled):active { background: linear-gradient(#8a6d1a, #4a3a0c); }
-    .item-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-    .item-btn { text-align: left; font-weight: normal; font-size: 0.85rem; }
-    .back-btn { width: 100%; font-weight: normal; font-size: 0.8rem; color: var(--dim); background: transparent; border-color: #5a4520; }
+    .action-btn, .item-btn, .back-btn { padding: 14px 8px; font-size: 0.82rem; text-align: center; }
+    .action-grid { gap: 12px 8px; }
+    .item-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+    .item-btn { text-align: left; font-family: var(--font-body); text-transform: none; letter-spacing: 0; font-size: 0.9rem; }
+    .back-btn { width: 100%; font-size: 0.72rem; background: var(--noise-fine), linear-gradient(#2a221a, #15110d 55%, #0c0a08); color: var(--text-dim); }
 </style>
 </head>
 <body>
-    <h1 id="heroName">Connessione...</h1>
+    <h1 id="heroName" class="wc-heading">Connessione...</h1>
     <div class="status" id="statusText">In attesa di dati dal gioco...</div>
     <div id="content"></div>
     <div class="panel roll-area hidden" id="actionPanel"></div>

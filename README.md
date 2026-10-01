@@ -16,7 +16,9 @@ Apri `index.html` in un browser moderno. Non serve installare nulla né avviare 
 
 ```
 index.html           struttura delle schermate (markup)
+css/wc3-base.css     base grafica comune (gioco, editor, telefono)
 css/style.css        stile e animazioni dell'interfaccia
+js/wc3fx.js          animazioni dei menu con GSAP (js/vendor/gsap.min.js)
 editor.html          editor delle campagne (js/editor.js, css/editor.css)
 js/game.js           logica di gioco
 data/libreria/       armeria, bestiario, reliquie e maledizioni condivisi da tutte le campagne
