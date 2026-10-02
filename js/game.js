@@ -158,6 +158,8 @@ function breakRelic(relicName) {
                     // Le immagini caricate nell'editor e non ancora salvate arrivano come file: le si mostra da memoria
                     const urls = new Map((data.assets || []).map(([path, blob]) => [path, URL.createObjectURL(blob)]));
                     const fix = path => urls.get(path) || path;
+                    // Icone di oggetti e abilità caricate nell'editor (prima di risolvere la campagna, che ne copia i dati)
+                    ['armeria', 'abilita'].forEach(kind => Object.values(LIBRERIA[kind] || {}).forEach(el => { if (el.icon) el.icon = fix(el.icon); }));
                     const camp = resolveCampaign(data.campaign, LIBRERIA);
                     camp.coverImage = fix(camp.coverImage);
                     (camp.mapNodes || []).forEach(n => { n.image = fix(n.image); });
@@ -1315,72 +1317,19 @@ function breakRelic(relicName) {
             axe: 'immagini/icone/BTNOrcMeleeUpOne.webp'
         };
 
-        // Icone raster per singolo oggetto (id); hanno la precedenza su quelle per tipo
-        const ITEM_IMAGES_BY_ID = {
-            // Armi
-            spada: 'immagini/icone/BTNSteelMelee.png',
-            spada_affilata: 'immagini/icone/BTNThoriumMelee.png',
-            spada_norgrad: 'immagini/icone/BTNArcaniteMelee.png',
-            lama_acciaio_lunare: 'immagini/icone/BTNFrostMourne.png',
-            pugnale_rapido: 'immagini/icone/BTNDaggerOfEscape.png',
-            ascia: 'immagini/icone/BTNOrcMeleeUpOne.png',
-            ascia_taglialegna: 'immagini/icone/BTNSturdyWarAxe.png',
-            ascia_pesante: 'immagini/icone/BTNOrcMeleeUpThree.png',
-            mannaia_pesante: 'immagini/icone/BTNOrcMeleeUpTwo.png',
-            martello_breccia: 'immagini/icone/BTNHammer.png',
-            alabarda: 'immagini/icone/BTNEnvenomedSpear.png',
-            alabarda_guardia: 'immagini/icone/BTNImpalingBolt.png',
-            bastone_rinforzato: 'immagini/icone/BTNAncestralStaff.png',
-
-            // Scudi e armature (gli oggetti con lo stesso nome condividono l'icona)
-            scudo: 'immagini/icone/BTNHumanArmorUpOne.png',
-            scudo_legno: 'immagini/icone/BTNSteelArmor.png',
-            scudo_ferro: 'immagini/icone/BTNHumanArmorUpTwo.png',
-            scudo_pesante: 'immagini/icone/BTNShieldOfHonor.png',
-            armatura_leggera: 'immagini/icone/BTNReinforcedHides.png',
-            armatura_leggera_loot: 'immagini/icone/BTNReinforcedHides.png',
-            corazza_cuoio: 'immagini/icone/BTNLeatherUpgradeOne.png',
-            armatura_pesante: 'immagini/icone/BTNMoonArmor.png',
-            armatura_pesante_loot: 'immagini/icone/BTNMoonArmor.png',
-            corazza_scaglie: 'immagini/icone/BTNNagaArmorUp1.png',
-            gorgiera_veterano: 'immagini/icone/BTNImprovedMoonArmor.png',
-            corazza_piastre_leone: 'immagini/icone/BTNBladeBaneArmor.png',
-
-            // Libri, amuleti e oggetti arcani
-            libro_fede: 'immagini/icone/BTNSpellBookBLS.png',
-            tomo_conoscenza: 'immagini/icone/BTNTomeOfIntelligence.png',
-            tomo_proibito: 'immagini/icone/BTNBookOfTheDead.png',
-            taccuino_cartografo: 'immagini/icone/BTNGerardsLostLedger.png',
-            amuleto_legno_santo: 'immagini/icone/BTNPeriapt1.png',
-            amuleto: 'immagini/icone/BTNAmulet.png',
-            simbolo_jag_antar: 'immagini/icone/BTNPeriapt.png',
-            reliquiario_tascabile: 'immagini/icone/BTNSacredRelic.png',
-            cappa_sussurri: 'immagini/icone/BTNCloak.png',
-            ankh_pellegrino: 'immagini/icone/BTNAnkh.png',
-            bastone_eremita: 'immagini/icone/BTNMindStaff.png',
-            martello_consacrato: 'immagini/icone/BTNHolyBolt.png',
-            brigantina_benedetta: 'immagini/icone/BTNRunedBracers.png',
-            stocco_duellante: 'immagini/icone/BTNAssassinsBlade.png',
-            scettro_savio: 'immagini/icone/BTNScepterOfMastery.png',
-            corona_martire: 'immagini/icone/BTNCirclet.png',
-            anello: 'immagini/icone/BTNRingPurple.png',
-
-            // Consumabili
-            unguento: 'immagini/icone/BTNHealingSalve.png',
-            balsamo_curativo: 'immagini/icone/BTNSnazzyPotion.png',
-            unguento_fortificante: 'immagini/icone/BTNPotionGreen.png',
-            pozione: 'immagini/icone/BTNPotionRed.png',
-            pozione_rigenerazione: 'immagini/icone/BTNPotionOfRestoration.png',
-            elisir_sangue_vivo: 'immagini/icone/BTNPotionOfVampirism.png',
-
-            // Oggetti non più presenti nelle campagne, tenuti per i vecchi salvataggi
+        // Icone di oggetti non più nell'armeria, tenute per i vecchi salvataggi.
+        // Le icone degli oggetti stanno nel campo "icon" di data/libreria/armeria.js (si caricano dall'editor).
+        const ITEM_ICONS_LEGACY = {
             amuleto_viandante: 'immagini/icone/BTNNecklace.png',
             tomo_alchemico: 'immagini/icone/BTNSorceressMaster.png',
             corazza_nordica: 'immagini/icone/BTNLeatherUpgradeOne.png'
         };
 
+        // Icona dell'oggetto: campo "icon" (anche per gli oggetti dei salvataggi vecchi, presa dall'armeria),
+        // poi le icone tenute per i vecchi salvataggi, poi quella per tipo
         function itemImageSrc(item) {
-            return ITEM_IMAGES_BY_ID[item.id] || ITEM_IMAGES[itemIconName(item)];
+            const fromLib = LIBRERIA.armeria && LIBRERIA.armeria[item.id];
+            return item.icon || (fromLib && fromLib.icon) || ITEM_ICONS_LEGACY[item.id] || ITEM_IMAGES[itemIconName(item)];
         }
 
         function itemIconInner(item) {
@@ -1501,7 +1450,7 @@ function breakRelic(relicName) {
                             <div class="hp-bar-fill ${hpClass(hpPct)}" style="width: ${hpPct}%;"></div>
                             <div class="hp-bar-text" data-count-key="hero:${esc(h.name)}" data-count-max="${h.maxHp}">${h.hp}/${h.maxHp}</div>
                         </div>
-                        <div class="hp-bar-container armor" data-tip="Armatura||${h.current_armor} attuale su ${h.base_armor} base. Assorbe i danni prima degli HP e si rigenera a ogni scontro.">
+                        <div class="hp-bar-container armor ${h.base_armor > 0 || h.current_armor > 0 ? '' : 'is-empty'}" data-tip="Armatura||${h.current_armor} attuale su ${h.base_armor} base. Assorbe i danni prima degli HP e si rigenera a ogni scontro.">
                             <div class="hp-bar-fill" style="width: ${armorPct}%;"></div>
                             <div class="hp-bar-text">${h.current_armor}/${h.base_armor}</div>
                         </div>
@@ -2058,6 +2007,8 @@ function breakRelic(relicName) {
                 <span class="progress-label">Livello ${Math.min(completed + 1, total)} / ${total}</span>
                 <div class="progress-track">${segments}</div>
                 <span class="progress-boss ${completed >= total ? 'reached' : ''}" data-tip="Meta finale||Livello ${total}">${svgIcon('crown')}</span>`;
+            // Contatore del livello nella barra delle risorse in alto a destra
+            document.getElementById('topBarLevel').textContent = `${Math.min(completed + 1, total)}/${total}`;
         }
 
         /* ---------- 12. Monete che volano verso il contatore ---------- */

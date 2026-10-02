@@ -58,10 +58,6 @@ Salvataggio diretto, caricamento immagini, bozze e prova nel gioco riprendono le
 
 ## Icone personalizzate
 
-Le icone si associano in `js/game.js` tramite tre tabelle:
-
-- `ITEM_IMAGES_BY_ID` — icona per singolo oggetto (per `id`)
-- `ITEM_IMAGES` — icona per tipo di oggetto (`sword`, `axe`, `shield`, ...)
-- `ABILITY_IMAGES` — icona per abilità (per `id`)
+Oggetti e abilità hanno il campo `icon` nei dati (`data/libreria/armeria.js` e `data/libreria/abilita.js`): dall'editor, schede Armeria e Abilità, si sceglie con "Carica…". Senza icona, un oggetto usa l'icona generica del suo tipo (`ITEM_IMAGES` in `js/game.js`).
 
 Le icone in `immagini/icone/` provengono da *Warcraft III* © Blizzard Entertainment e sono usate a scopo personale e non commerciale.

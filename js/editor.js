@@ -101,6 +101,8 @@ const ABILITY_FIELDS = [
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 const ITEM_FIELDS = [
     { k: 'name', label: 'Nome' },
+    { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
+      help: 'Solo icone classiche di Warcraft III (non Reforged). Vuoto = icona generica del tipo di oggetto' },
     { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ...Object.entries(RARITY_LABELS).map(([k, label]) => [k, `${label} (${RARITY_COLORS[k]})`])] },
     { k: 'type', label: 'Tipo', type: 'select', omitEmpty: true,
       options: () => [['', 'Equipaggiamento'], ['consumable_heal', 'Consumabile: cura'], ['consumable_full', 'Consumabile: cura completa']] },
@@ -1131,6 +1133,7 @@ function renderCollection(name) {
         <div class="ed-split">
             <div class="ed-list">${keys.map(k => `
                 <div class="ed-list-item ${k === sel ? 'active' : ''}" onclick="selectKeyed('${name}', '${esc(k)}')">
+                    ${items[k] && items[k].icon ? `<img class="ed-list-icon" src="${esc(assetUrl(items[k].icon))}" alt="" onerror="this.hidden=true">` : ''}
                     ${esc(col.label(items[k]) || k)}<small>${esc(k)}${col.sub ? ' · ' + esc(col.sub(items[k]) || '') : ''}</small>
                     <small class="ed-usage">${esc(usageText(col.usage(k)))}</small>
                 </div>`).join('') || '<div class="ed-list-item">Nessun elemento</div>'}
