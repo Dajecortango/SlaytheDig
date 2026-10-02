@@ -269,8 +269,22 @@
                     <span data-tip="Danno||Danni inflitti a ogni attacco del nemico.">${svgIcon('drop')} Dmg <b>${stato.activeEnemy.dmg}</b></span>
                 </div>
             `;
+            document.getElementById('enemyIntent').innerHTML = enemyIntentHtml(stato.activeEnemy);
             fxDiffEnemy();
             animateBars(document.getElementById('enemyInfo'));
+        }
+
+        // Intenzione del nemico: cosa farà al suo turno (il bersaglio lo sceglie comunque il giocatore)
+        function enemyIntentHtml(enemy) {
+            if (!enemy || enemy.hp <= 0) return '';
+            if (enemy.isStunned) {
+                return `<span class="intent-icon stunned">${svgIcon('skull')}</span>
+                    <span class="intent-text"><small>Intenzione</small><span>Stordito: salta il prossimo attacco</span></span>`;
+            }
+            const dmg = enemy.dmg + (hasCurse("Presagio di Morte") ? 1 : 0);
+            return `<span class="intent-icon">${svgIcon('sword')}</span>
+                <span class="intent-text"><small>Intenzione</small><span>Attaccherà per <b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b></span>
+                <em>Difendi e Aiuta devono superare ${enemy.att}</em></span>`;
         }
 
         // 11. Passando su "Attacca" o sull'abilità, la parte di vita che il colpo toglierebbe lampeggia

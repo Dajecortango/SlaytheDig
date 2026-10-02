@@ -115,6 +115,7 @@
             display: flex;
             align-items: center;
             gap: 7px;
+            min-width: 92px;
             padding: 4px 14px 4px 6px;
             background: rgba(0, 0, 0, 0.55);
             border: 1px solid #000;
@@ -132,7 +133,8 @@
             border: 1px solid #000;
             box-shadow: 0 0 0 1px #8a6418;
         }
-        .res-label { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+        /* Come oro, legno e cibo di WC3: solo icona e valore, il nome resta nel tooltip */
+        .res-label { display: none; }
         .res-val {
             font-family: var(--font-title);
             font-weight: 700;
@@ -338,24 +340,29 @@
             overflow: hidden;
         }
         .hp-bar-container.big { height: 16px; }
+        /* Riflesso vetroso sopra la barra, come la texture delle barre di stato di WoW */
         .hp-bar-container::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: repeating-linear-gradient(90deg, transparent 0 11px, rgba(0, 0, 0, 0.35) 11px 12px);
+            z-index: 2;
+            background: linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 45%, transparent 50%, rgba(0, 0, 0, 0.25));
             pointer-events: none;
         }
         .hp-bar-fill {
+            --bar: #10b010;
             height: 100%;
             width: 100%;
-            background: linear-gradient(#8dff78, #22b01c 50%, #0c6a0a);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
-            transition: width 0.35s ease, background 0.35s;
+            background: var(--noise-fine), linear-gradient(90deg, rgba(0, 0, 0, 0.25), transparent 30%), var(--bar);
+            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.5), 1px 0 0 rgba(0, 0, 0, 0.8);
+            transition: width 0.35s ease, background-color 0.35s;
         }
-        .hp-bar-fill.hp-mid { background: linear-gradient(#fff28a, #d8b40a 50%, #7a6205); }
-        .hp-bar-fill.hp-low { background: linear-gradient(#ff9a8a, #d0180f 50%, #6a0805); }
+        .hp-bar-fill.hp-mid { --bar: #c9a400; }
+        .hp-bar-fill.hp-low { --bar: #c41a0e; }
         .hp-bar-container.armor { height: 9px; }
-        .hp-bar-container.armor .hp-bar-fill { background: linear-gradient(#b8dcff, #2f6fd6 50%, #123a80); }
+        /* Senza armatura la barra non si mostra, ma tiene il suo spazio perché la console non salti */
+        .hp-bar-container.armor.is-empty { visibility: hidden; }
+        .hp-bar-container.armor .hp-bar-fill { --bar: #2a55d6; }
         .hp-bar-text {
             position: absolute;
             inset: 0;
@@ -1042,9 +1049,15 @@
         .icon-frame[class*="rar-"], .inv-slot[class*="rar-"] {
             box-shadow: inset 0 0 0 1px var(--rar), inset 0 0 0 2px #000, inset 0 0 10px rgba(0, 0, 0, 0.9), 0 0 6px var(--rar-glow);
         }
+        /* Bordo della rarità come negli zaini di WoW: filo colorato di 2px e alone per i non comuni in su */
         .icon-frame.has-img[class*="rar-"]::after, .inv-slot.has-img[class*="rar-"]::after {
-            box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px var(--rar), inset 0 0 6px rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 0 1px #000, inset 0 0 0 3px var(--rar), inset 0 0 0 4px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(0, 0, 0, 0.6);
         }
+        .icon-frame.rar-scarso::after, .inv-slot.rar-scarso::after,
+        .icon-frame.rar-comune::after, .inv-slot.rar-comune::after { box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px #8a6418, inset 0 0 8px rgba(0, 0, 0, 0.6) !important; }
+        .icon-frame.rar-non_comune, .icon-frame.rar-raro, .icon-frame.rar-epico, .icon-frame.rar-leggendario,
+        .inv-slot.rar-non_comune, .inv-slot.rar-raro, .inv-slot.rar-epico, .inv-slot.rar-leggendario { filter: drop-shadow(0 0 4px var(--rar-glow)); }
+        #merchantItemsList .icon-frame { flex-basis: 50px; width: 50px; height: 50px; }
 
         /* ---------- Plancia comandi (combattimento) ---------- */
         .command-card {
@@ -1087,12 +1100,16 @@
         #btnCombatAbility { color: #e0bcff; }
         .cmd-ability-icon { display: grid; place-items: center; height: 34px; }
         .cmd-ability-icon .ico { width: 32px; height: 32px; filter: drop-shadow(0 2px 0 #000); }
+        /* Icona del comando come nella plancia di WC3: quadrata, smussata, bordo nero e filo d'oro */
         .cmd-img {
-            width: 34px;
-            height: 34px;
+            width: 44px;
+            height: 44px;
             border: 1px solid #000;
-            box-shadow: 0 0 0 1px #c9982f, 0 2px 4px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 0 1px #c9982f, 0 0 0 2px #000, 0 3px 6px rgba(0, 0, 0, 0.8);
         }
+        .cmd-btn:hover:not(:disabled) .cmd-img { box-shadow: 0 0 0 1px #ffe27a, 0 0 0 2px #000, 0 0 10px rgba(255, 210, 90, 0.7); }
+        .cmd-ability-icon { height: 46px; }
+        .cmd-ability-icon .ico { width: 44px; height: 44px; }
         .cmd-btn:disabled .cmd-img { filter: grayscale(1) brightness(0.6); }
         .cmd-ability-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .stun-badge {
@@ -1212,17 +1229,35 @@
         /* =========================================================
            MAPPA
            ========================================================= */
-        .sts-map-wrapper {
+        /* Carta di guerra su pergamena (come le mappe delle campagne di WC3):
+           terreno a inchiostro (immagini/ui/mappa_terreno.svg, ripetuto in verticale), rosa dei venti,
+           bordi bruciati disegnati da .map-frame::after sopra la pergamena che scorre. */
+        .map-frame {
             position: relative;
             width: 100%;
             max-width: 820px;
-            height: clamp(280px, calc(var(--stage-h) + 20px), 480px);
             margin: 10px auto;
+            box-shadow: 0 0 0 2px #8a6418, 0 0 0 3px #000, 0 0 0 5px #3a2806, 0 0 0 6px #000, 0 14px 30px rgba(0, 0, 0, 0.85);
+        }
+        .map-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            box-shadow:
+                inset 0 0 0 1px #000,
+                inset 0 0 18px 4px rgba(40, 18, 2, 0.85),
+                inset 0 0 70px 10px rgba(70, 36, 8, 0.55);
+        }
+        .sts-map-wrapper {
+            position: relative;
+            width: 100%;
+            height: clamp(280px, calc(var(--stage-h) + 20px), 480px);
+            margin: 0;
             padding: 0;
             overflow: auto;
-            border: 1px solid #000;
-            background: #0d0b09;
-            box-shadow: 0 0 0 2px #8a6418, 0 0 0 3px #000, 0 0 0 5px #3a2806, 0 0 0 6px #000, 0 14px 30px rgba(0, 0, 0, 0.85);
+            background: #cdb586;
         }
         .sts-map-nodes {
             position: relative;
@@ -1230,15 +1265,11 @@
             height: 1550px; /* sovrascritta dal JS in base ai livelli */
             margin: 0 auto;
             background:
-                radial-gradient(ellipse 160px 110px at 18% 12%, rgba(40, 70, 40, 0.35), transparent 70%),
-                radial-gradient(ellipse 200px 140px at 80% 28%, rgba(40, 60, 35, 0.3), transparent 70%),
-                radial-gradient(ellipse 220px 120px at 30% 48%, rgba(80, 60, 30, 0.3), transparent 70%),
-                radial-gradient(ellipse 180px 150px at 75% 66%, rgba(35, 60, 40, 0.3), transparent 70%),
-                radial-gradient(ellipse 240px 130px at 22% 84%, rgba(90, 65, 35, 0.3), transparent 70%),
-                radial-gradient(ellipse 300px 200px at 50% 100%, rgba(255, 110, 30, 0.12), transparent 70%),
-                var(--noise-cloud),
-                var(--noise-fine),
-                linear-gradient(#15130f, #1d1914 50%, #15120e);
+                url('../immagini/ui/rosa_venti.svg') right 22px top 22px / 120px no-repeat,
+                url('../immagini/ui/mappa_terreno.svg') center top / 800px 1000px repeat-y,
+                radial-gradient(ellipse 260px 160px at 20% 30%, rgba(120, 70, 20, 0.18), transparent 70%),
+                radial-gradient(ellipse 300px 200px at 78% 70%, rgba(120, 70, 20, 0.16), transparent 70%),
+                var(--tex-parchment) center / 400px;
         }
         .sts-map-svg {
             position: absolute;
@@ -1248,24 +1279,25 @@
             pointer-events: none;
             z-index: 1;
         }
-        .sts-map-svg line { stroke: #54432c; stroke-width: 2; stroke-dasharray: 6 7; stroke-linecap: round; }
-        .sts-map-svg line.path-next { stroke: #b08a3a; stroke-width: 2.5; }
-        .sts-map-svg line.path-closed { stroke: #2a2118; stroke-width: 1.5; opacity: 0.45; }
-        /* Percorso già fatto: scia dorata continua e luminosa */
+        /* Strade a inchiostro: puntini per quelle da percorrere, rosso pieno per il cammino fatto */
+        .sts-map-svg line { stroke: #4a3218; stroke-opacity: 0.55; stroke-width: 2.4; stroke-dasharray: 1 7; stroke-linecap: round; }
+        .sts-map-svg line.path-next { stroke: #3b2611; stroke-opacity: 0.85; stroke-width: 3; }
+        .sts-map-svg line.path-closed { stroke-opacity: 0.18; stroke-width: 1.5; }
         .sts-map-svg line.path-taken {
-            stroke: #f0cf73;
-            stroke-width: 4.5;
+            stroke: #8e1f12;
+            stroke-opacity: 0.9;
+            stroke-width: 4;
             stroke-dasharray: none;
-            filter: drop-shadow(0 0 5px rgba(255, 196, 60, 0.85));
+            filter: drop-shadow(0 1px 0 rgba(255, 240, 200, 0.5));
         }
         .sts-map-svg line.path-open {
-            stroke: var(--wc-yellow);
-            stroke-width: 3.5;
-            stroke-dasharray: 9 6;
+            stroke: #8e1f12;
+            stroke-opacity: 1;
+            stroke-width: 3.2;
+            stroke-dasharray: 9 7;
             animation: dash-flow 0.9s linear infinite;
-            filter: drop-shadow(0 0 4px rgba(255, 204, 0, 0.75));
         }
-        @keyframes dash-flow { to { stroke-dashoffset: -15; } }
+        @keyframes dash-flow { to { stroke-dashoffset: -16; } }
 
         .sts-node {
             --ring: 0 0 0 2px #000, 0 0 0 4px #b8923e, 0 0 0 5px #000, 0 6px 10px rgba(0, 0, 0, 0.8), inset 0 2px 3px rgba(255, 255, 255, 0.25), inset 0 -5px 7px rgba(0, 0, 0, 0.6);
@@ -1336,26 +1368,32 @@
         /* =========================================================
            TOOLTIP E FINESTRE MODALI
            ========================================================= */
+        /* Tooltip come quelli di World of Warcraft: fondo blu notte traslucido, bordo argento,
+           titolo bianco (o del colore della rarità), descrizione in giallo oro */
         .wc3-tooltip {
             position: fixed;
             z-index: 3000;
-            max-width: 280px;
-            padding: 8px 11px;
-            font-size: 0.78rem;
-            line-height: 1.45;
+            min-width: 140px;
+            max-width: 300px;
+            padding: 9px 12px 10px;
+            font-size: 0.84rem;
+            line-height: 1.4;
             color: #fff;
-            background: rgba(0, 0, 0, 0.93);
-            border: 1px solid #8a6418;
-            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255, 220, 130, 0.15), 0 8px 20px rgba(0, 0, 0, 0.8);
+            background: linear-gradient(rgba(10, 14, 40, 0.94), rgba(4, 6, 20, 0.95));
+            border: 2px solid #c8c8cf;
+            border-color: #e2e2e8 #9a9aa4 #7a7a84 #b8b8c0;
+            border-radius: 5px;
+            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(0, 0, 0, 0.9), inset 0 0 0 2px rgba(150, 160, 200, 0.18), 0 8px 22px rgba(0, 0, 0, 0.85);
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.12s;
             left: -999px; top: -999px;
         }
         .wc3-tooltip.show { opacity: 1; }
-        .tip-title { font-family: var(--font-title); font-weight: 700; color: var(--wc-yellow); }
-        .tip-body { color: #e6dcc4; margin-top: 2px; }
-        .tip-hint { color: #9dff8a; font-size: 0.72rem; }
+        .tip-title { font-family: var(--font-title); font-weight: 700; font-size: 1.05em; color: #fff; text-shadow: 0 1px 1px #000; }
+        .tip-body { color: #ffd100; margin-top: 3px; text-shadow: 0 1px 1px #000; }
+        .tip-hint { color: #1eff00; font-size: 0.9em; }
+        .wc3-tooltip:has(.tip-rar) .tip-body { color: #fff; }
 
         .modal-overlay {
             position: fixed;
@@ -1392,8 +1430,43 @@
         .modal-box::before { left: 34px; }
         .modal-box::after { right: 34px; }
         .modal-body { font-size: 0.92rem; line-height: 1.55; color: #e6dcc4; }
-        .modal-actions { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
-        .modal-actions button { margin: 3px 0; }
+        /* Finestre come i menu di WC3: titolo su una targa di metallo incastrata nella cornice
+           e pulsanti allineati in basso a destra. Con più di due scelte (es. a quale eroe dare
+           una pozione) i pulsanti restano in colonna, come un elenco. */
+        .modal-box { width: 520px; }
+        .modal-box > h3 {
+            position: relative;
+            width: fit-content;
+            max-width: calc(100% + 20px);
+            margin: -36px auto 16px;
+            padding: 9px 46px 13px;
+            font-size: 1.05rem;
+            background: linear-gradient(#fff0b0, #c9982f 40%, #6b4a12);
+            clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%);
+            filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.8));
+            isolation: isolate;
+        }
+        .modal-box > h3::before {
+            content: '';
+            position: absolute;
+            inset: 0 3px 3px;
+            z-index: -1;
+            background: var(--noise-fine), linear-gradient(#3b352f, #1a1714);
+            clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%);
+        }
+        .modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 4px 12px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #000;
+            box-shadow: inset 0 1px 0 rgba(226, 185, 81, 0.35);
+        }
+        .modal-actions button { width: auto; margin: 6px 0; min-width: 130px; padding: 10px 22px; font-size: 0.9rem; }
+        .modal-actions:has(> button:nth-child(3)) { flex-direction: column; align-items: stretch; }
+        .modal-actions:has(> button:nth-child(3)) button { margin: 3px 0; }
 
         /* =========================================================
            RESPONSIVE
@@ -2541,11 +2614,10 @@
         @media (max-width: 600px) { #merchantItemsList { grid-template-columns: 1fr !important; } }
 
         /* 22. Tooltip degli oggetti */
-        .tip-rar-comune { color: #e6e2d8; }
-        .tip-rar-raro { color: #7fb2ff; }
-        .tip-rar-epico { color: #c995ff; }
-        .tip-rar-label { font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.08em; }
-        .tip-desc { color: var(--text-dim); font-style: italic; }
+        .tip-rar-label { display: inline-block; margin-bottom: 2px; font-size: 0.78em; color: #fff !important; }
+        .tip-desc { color: #ffd100; }
+        .tip-desc::before { content: '"'; }
+        .tip-desc::after { content: '"'; }
 
         /* 23. Statistiche sopra o sotto quelle iniziali */
         .hero-stats .stat-up { color: #8dff78; }
@@ -2738,3 +2810,48 @@
         .inv-label.full { color: var(--curse-color, #ff6b5a); }
         .discard-picker { margin: 6px 0 10px; font-size: 0.85rem; color: #ffb4a8; }
         .discard-picker select { margin-left: 6px; }
+
+        /* ---------- Scontro: nemico grande, vita e statistiche sopra l'immagine, intenzione ---------- */
+        #screenCombat .event-grid-layout { grid-template-columns: minmax(0, 1.75fr) minmax(340px, 1fr); }
+        /* Mai più bassa delle altre scene (--stage-h), più alta quando lo schermo lo permette */
+        .event-left-image-box.combat-stage { height: max(var(--stage-h), min(640px, calc(100vh - var(--top-h) - var(--console-h) - 150px))); }
+        .enemy-box.enemy-overlay {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            z-index: 2;
+            margin: 0;
+            padding: 56px 20px 14px;
+            background: linear-gradient(transparent, rgba(10, 4, 3, 0.78) 38%, rgba(8, 3, 2, 0.95));
+            border: 0;
+            box-shadow: none;
+        }
+        .enemy-overlay .enemy-emblem { display: none; }
+        .enemy-overlay .enemy-name { font-size: 1.6rem; margin-bottom: 6px; color: var(--wc-yellow); }
+        .enemy-overlay .hp-bar-container.big { height: 20px; }
+        .enemy-overlay .enemy-stats { justify-content: flex-start; gap: 22px; margin-top: 10px; font-size: 0.9rem; }
+        .enemy-intent {
+            position: absolute;
+            top: 14px; left: 14px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: calc(100% - 28px);
+            padding: 8px 14px 8px 10px;
+            background: rgba(12, 10, 9, 0.88);
+            border: 1px solid #c0281e;
+            box-shadow: 0 0 0 1px #000, 0 0 16px rgba(192, 40, 30, 0.45);
+        }
+        .enemy-intent:empty { display: none; }
+        .intent-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; color: var(--curse-color); }
+        .intent-icon svg { width: 26px; height: 26px; }
+        .intent-icon.stunned { color: #8cc4ff; }
+        .enemy-intent:has(.stunned) { border-color: #2f8cff; box-shadow: 0 0 0 1px #000, 0 0 16px rgba(47, 140, 255, 0.45); }
+        .intent-text { display: flex; flex-direction: column; font-size: 0.95rem; line-height: 1.3; color: var(--text-main); }
+        .intent-text small { font-size: 0.66rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); }
+        .intent-text b { color: var(--curse-color); }
+        .intent-text em { font-style: normal; font-size: 0.78rem; color: var(--text-dim); }
+        @media (max-width: 1000px) {
+            #screenCombat .event-grid-layout { grid-template-columns: 1fr; }
+            .event-left-image-box.combat-stage { height: 360px; }
+        }

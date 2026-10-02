@@ -20,3 +20,6 @@ tools/ngrok/
 
 # Profilo browser dedicato alla finestra di gioco (avvia-server.bat)
 tools/browser-profile/
+
+# Chiave API di Gemini per tools/genera_immagini.mjs
+tools/chiave_gemini.txt

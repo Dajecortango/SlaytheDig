@@ -31,6 +31,8 @@ App web statica in JavaScript puro: niente build, niente npm, niente bundler, ni
 
 `heroes` (id della libreria Eroi; le abilità arrivano da lì, risolte da `LIBRERIA.abilita`), `initialArmory` e `lootItems` (id dell'armeria; `lootItems: null` = `LIBRERIA.lootPredefinito`), `challenges` (`reward` = id di una reliquia, `punishment` = id di una maledizione, oppure un oggetto scritto nella sfida per premi e punizioni immediati come monete o ferite), `merchants` / `rests` / `treasures` (testi per chiave, `"default"` vale per tutti), `mapNodes` (`id`, `level`, `x`, `type`, `enemy` = id del bestiario (senza `image` il nodo usa quella del nemico), `challengeId` / `restId` / `merchantId` / `treasureId`, `next`, `active`, `image`).
 
+Se l'immagine di un nodo (o del nemico) non esiste su disco si vede `immagini/segnaposto/<tipo>.svg`; i prompt per generare quelle mancanti sono in `immagini/PROMPT_IMMAGINI.md`.
+
 I salvataggi tengono dei nodi solo lo stato (`done`, `active`): il contenuto viene dalla campagna attuale, così un id cambiato nel bestiario non rompe le partite salvate.
 
 Ritratti degli eroi nei dati (`data/libreria/eroi.js`): `portrait`, `portraitWounded` (mostrato con 2 HP o meno, `isHeroWounded`), `portraitPos` (punto da tenere al centro) e `portraitZoom` per l'icona, `portraitWoundedPos` / `portraitWoundedZoom` se il ritratto da ferito va inquadrato diversamente, `portraitStrikeZoom` facoltativo per la cinematica d'attacco (altrimenti `strikeZoomFor`). `js/ritratti.js` costruisce `HERO_PORTRAITS` (per nome) dalla libreria e dagli eroi della campagna (`registerCampaignHeroPortraits`). Nell'editor (scheda Eroi) l'inquadratura si regola trascinando l'anteprima.
@@ -72,7 +74,7 @@ Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database
 
 ### Icone
 
-Solo icone classiche di Warcraft III (non Reforged) in `immagini/icone/`, associate in `game.js` da `ITEM_IMAGES_BY_ID` e `ITEM_IMAGES`; le abilità hanno il campo `icon` in `data/libreria/abilita.js` (`abilityIconSrc`). L'archivio completo è in `warcraft3_icons/` (ignorato da git): i file senza `-Reforged` sono quelli classici.
+Solo icone classiche di Warcraft III (non Reforged) in `immagini/icone/`, nel campo `icon` di oggetti (`data/libreria/armeria.js`, `itemImageSrc`; senza icona quella del tipo in `ITEM_IMAGES`) e abilità (`data/libreria/abilita.js`, `abilityIconSrc`), scelte nell'editor con "Carica…". Anche i comandi del combattimento (`index.html`) usano icone BTN classiche. L'archivio completo è in `warcraft3_icons/` (ignorato da git): i file senza `-Reforged` sono quelli classici.
 
 ### Telefono (server di Valerio)
 

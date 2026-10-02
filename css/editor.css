@@ -355,3 +355,6 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-portrait-strike-zoom { flex-basis: 100%; }
 .ed-portrait-info { font-size: 0.7rem; color: var(--text-dim); }
 .ed-portrait-actions { display: flex; gap: 6px; }
+
+/* Icona dell'elemento nell'elenco a sinistra (oggetti dell'armeria, abilità) */
+.ed-list-icon { float: left; width: 30px; height: 30px; margin: 0 8px 0 0; object-fit: cover; border: 1px solid #8a6418; box-shadow: 0 0 0 1px #000; }

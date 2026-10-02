@@ -324,3 +324,20 @@
                 <span><span class="sts-node node-${type} legend-dot">${svgIcon(NODE_ICON[type])}</span>${NODE_LABEL[type]}</span>
             `).join('') + `<span><span class="sts-node node-goal legend-dot">${svgIcon('crown')}</span>Meta</span>`;
         }
+
+        /* ---------- Segnaposto per le immagini dei nodi che mancano ----------
+           Se il file dell'immagine non esiste (nodo o nemico del bestiario) si mostra
+           immagini/segnaposto/<tipo>.svg: scena cupa con l'icona del tipo di nodo. */
+        const EVENT_IMG_PLACEHOLDER = { combatImg: 'combat', challengeImg: 'challenge', restImg: 'rest', merchantImg: 'merchant', treasureImg: 'treasure' };
+        document.addEventListener('DOMContentLoaded', () => {
+            Object.entries(EVENT_IMG_PLACEHOLDER).forEach(([imgId, type]) => {
+                const img = document.getElementById(imgId);
+                if (!img) return;
+                img.addEventListener('error', () => {
+                    if (img.src.includes('immagini/segnaposto/')) return;
+                    const node = stato.stsMapNodes && stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+                    const kind = node && node.type === 'elite' && type === 'combat' ? 'elite' : type;
+                    img.src = `immagini/segnaposto/${kind}.svg`;
+                });
+            });
+        });
