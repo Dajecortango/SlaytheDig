@@ -1,7 +1,7 @@
 /* ==========================================================================
    SIMULATORE "Test Tasso di Vittoria"
    Gioca automaticamente una campagna N volte per uno o più profili
-   comportamentali, riusando le funzioni pure di risoluzione di js/game.js
+   comportamentali, riusando le funzioni pure di risoluzione di js/combattimento.js e js/game.js
    (resolveAttack, resolveAbility, resolveDefend, resolveHelp,
    resolveMonsterAttack, resolveChallenge, resolveRest, generateMerchantStock,
    generateTreasureOffer, resolveCaptainAction, pickLootItem, scaledCoins,
@@ -12,7 +12,7 @@
    quelle userebbero timer da 500ms per tiro (troppo lente per centinaia di
    run) e discover() inquinerebbe il Compendio reale del giocatore con le
    scoperte delle run simulate. Le run girano quindi sulle stesse variabili
-   globali di stato di js/game.js (party, stsMapNodes, activeEnemy, ...),
+   dello stato di js/game.js (stato.party, stato.stsMapNodes, stato.activeEnemy, ...),
    reimpostate da zero a ogni run, così i numeri restano sempre coerenti
    con le regole vere del gioco.
    ========================================================================== */
@@ -26,14 +26,14 @@ function hasUsableAbility(hero) {
     return !!(hero.chosenAbility && hero.chosenAbility.isCombatActive && !hero.abilityUsedThisCombat);
 }
 
-function simAliveMaxBy(party, fn) {
-    const alive = party.filter(h => h.hp > 0);
+function simAliveMaxBy(members, fn) {
+    const alive = members.filter(h => h.hp > 0);
     if (alive.length === 0) return null;
     return alive.reduce((best, h) => fn(h) > fn(best) ? h : best, alive[0]);
 }
 
-function simAliveMinBy(party, fn) {
-    const alive = party.filter(h => h.hp > 0);
+function simAliveMinBy(members, fn) {
+    const alive = members.filter(h => h.hp > 0);
     if (alive.length === 0) return null;
     return alive.reduce((best, h) => fn(h) < fn(best) ? h : best, alive[0]);
 }
@@ -66,7 +66,7 @@ function simAssignItem(item, hero) {
     const newItem = JSON.parse(JSON.stringify(item));
     hero.items.push(newItem);
     applyItemEffects(newItem, hero);
-    if (hero.items.length > 3) {
+    if (hero.items.length > BACKPACK_SIZE) {
         const idx = simChooseDiscard(hero);
         const removed = hero.items[idx];
         revertItemEffects(removed, hero);
@@ -93,9 +93,9 @@ const SIM_PROFILES = {
         nodePriority: ['elite', 'combat', 'treasure', 'challenge', 'merchant', 'rest'],
         consumableThreshold: 0.25,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : 'attack',
-        monsterTarget: (party) => simAliveMaxBy(party, h => h.current_armor),
+        monsterTarget: (members) => simAliveMaxBy(members, h => h.current_armor),
         attemptChallenge: () => true,
-        lootRecipient: (party) => simAliveMaxBy(party, h => (h.str || 0) + (h.dmg || 0)),
+        lootRecipient: (members) => simAliveMaxBy(members, h => (h.str || 0) + (h.dmg || 0)),
         merchantFilter: item => !!(item.str || item.dmg || (item.type && item.type.startsWith('consumable'))),
         merchantReserve: 0,
         captainHero: simBestFaithIntHero,
@@ -111,9 +111,9 @@ const SIM_PROFILES = {
         nodePriority: ['treasure', 'merchant', 'challenge', 'rest', 'combat', 'elite'],
         consumableThreshold: 0.5,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : 'attack',
-        monsterTarget: (party) => simAliveMaxBy(party, h => h.hp),
+        monsterTarget: (members) => simAliveMaxBy(members, h => h.hp),
         attemptChallenge: (chance) => chance >= 0.33,
-        lootRecipient: (party) => simAliveMinBy(party, h => h.items.length),
+        lootRecipient: (members) => simAliveMinBy(members, h => h.items.length),
         merchantFilter: null,
         merchantReserve: 0,
         captainHero: simBestFaithIntHero,
@@ -129,9 +129,9 @@ const SIM_PROFILES = {
         nodePriority: ['rest', 'merchant', 'challenge', 'treasure', 'combat', 'elite'],
         consumableThreshold: 0.5,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : ((hero.hp / hero.maxHp) < 0.5 ? 'defend' : 'attack'),
-        monsterTarget: (party) => simAliveMaxBy(party, h => h.current_armor + h.hp),
+        monsterTarget: (members) => simAliveMaxBy(members, h => h.current_armor + h.hp),
         attemptChallenge: (chance) => chance >= 0.67,
-        lootRecipient: (party) => simAliveMinBy(party, h => h.hp / h.maxHp),
+        lootRecipient: (members) => simAliveMinBy(members, h => h.hp / h.maxHp),
         merchantFilter: item => !!(item.armor || item.def_bonus || (item.type && item.type.startsWith('consumable'))),
         merchantReserve: 5,
         captainHero: simBestFaithIntHero,
@@ -145,16 +145,16 @@ const SIM_PROFILES = {
         combatAction: (hero, enemy, ctx) => hasUsableAbility(hero)
             ? 'ability'
             : (ctx.isLastActor ? 'attack' : (ctx.combatRound % 2 === 0 ? 'help' : 'attack')),
-        monsterTarget: (party, runCtx) => {
-            const alive = party.filter(h => h.hp > 0);
+        monsterTarget: (members, runCtx) => {
+            const alive = members.filter(h => h.hp > 0);
             if (alive.length === 0) return null;
             const t = alive[runCtx.monsterTargetRotationIdx % alive.length];
             runCtx.monsterTargetRotationIdx++;
             return t;
         },
         attemptChallenge: () => true,
-        lootRecipient: (party, runCtx) => {
-            const alive = party.filter(h => h.hp > 0);
+        lootRecipient: (members, runCtx) => {
+            const alive = members.filter(h => h.hp > 0);
             if (alive.length === 0) return null;
             const t = alive[runCtx.lootRotationIdx % alive.length];
             runCtx.lootRotationIdx++;
@@ -175,15 +175,15 @@ const SIM_PROFILES = {
             return champion ? [...alive.filter(h => h !== champion), champion] : alive;
         },
         combatAction: (hero, enemy, ctx) => hasUsableAbility(hero) ? 'ability' : (hero === ctx.champion ? 'attack' : 'help'),
-        monsterTarget: (party) => {
-            const alive = party.filter(h => h.hp > 0);
+        monsterTarget: (members) => {
+            const alive = members.filter(h => h.hp > 0);
             if (alive.length === 0) return null;
             const champion = simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0));
             const others = alive.filter(h => h !== champion);
             return others.length ? simAliveMaxBy(others, h => h.hp) : champion;
         },
         attemptChallenge: () => true,
-        lootRecipient: (party) => simAliveMaxBy(party, h => (h.str || 0) + (h.dmg || 0)),
+        lootRecipient: (members) => simAliveMaxBy(members, h => (h.str || 0) + (h.dmg || 0)),
         merchantFilter: item => !!(item.fth || (item.type && item.type.startsWith('consumable'))),
         merchantReserve: 0,
         captainHero: simBestFaithIntHero,
@@ -195,9 +195,9 @@ const SIM_PROFILES = {
         nodePriority: ['rest', 'treasure', 'merchant', 'challenge', 'combat', 'elite'],
         consumableThreshold: 0.75,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : ((hero.hp / hero.maxHp) >= 0.75 ? 'attack' : 'defend'),
-        monsterTarget: (party) => simAliveMaxBy(party, h => h.maxHp),
+        monsterTarget: (members) => simAliveMaxBy(members, h => h.maxHp),
         attemptChallenge: (chance) => chance >= 0.85,
-        lootRecipient: (party) => simAliveMaxBy(party, h => h.maxHp),
+        lootRecipient: (members) => simAliveMaxBy(members, h => h.maxHp),
         merchantFilter: item => !!(item.armor || item.def_bonus || (item.type && item.type.startsWith('consumable'))),
         merchantReserve: 8,
         sellFilter: item => !item.armor && !item.def_bonus && !(item.type && item.type.startsWith('consumable')),
@@ -210,9 +210,9 @@ const SIM_PROFILES = {
         nodePriority: ['challenge', 'treasure', 'merchant', 'combat', 'elite', 'rest'],
         consumableThreshold: 0.5,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : 'attack',
-        monsterTarget: (party) => simAliveMaxBy(party, h => h.items.length),
+        monsterTarget: (members) => simAliveMaxBy(members, h => h.items.length),
         attemptChallenge: () => true,
-        lootRecipient: (party) => simAliveMinBy(party, h => h.items.length),
+        lootRecipient: (members) => simAliveMinBy(members, h => h.items.length),
         merchantFilter: null,
         merchantReserve: 0,
         captainHero: simBestFaithIntHero,
@@ -224,9 +224,9 @@ const SIM_PROFILES = {
         nodePriority: ['combat', 'elite', 'treasure', 'merchant', 'rest', 'challenge'],
         consumableThreshold: 0,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : 'attack',
-        monsterTarget: (party) => simAliveMinBy(party, h => (h.str || 0) + (h.dmg || 0)),
+        monsterTarget: (members) => simAliveMinBy(members, h => (h.str || 0) + (h.dmg || 0)),
         attemptChallenge: (chance) => chance >= 0.5,
-        lootRecipient: (party) => simAliveMaxBy(party, h => (h.str || 0) + (h.dmg || 0)),
+        lootRecipient: (members) => simAliveMaxBy(members, h => (h.str || 0) + (h.dmg || 0)),
         merchantFilter: null,
         merchantReserve: 0,
         sellFilter: item => !!(item.type && item.type.startsWith('consumable')),
@@ -273,8 +273,8 @@ function simBuildHero(campaignData, heroName, abilityIdx, itemIdx) {
 }
 
 function simBuildParty(campaignData, heroSelection) {
-    party = [];
-    heroSelection.forEach(sel => party.push(simBuildHero(campaignData, sel.name, sel.abilityIdx, sel.itemIdx)));
+    stato.party = [];
+    heroSelection.forEach(sel => stato.party.push(simBuildHero(campaignData, sel.name, sel.abilityIdx, sel.itemIdx)));
 }
 
 /* ==========================================================================
@@ -299,9 +299,9 @@ function simChooseNextNode(available, profile, runCtx) {
 function simResolveChallengeNode(campaignData, node, profile) {
     const challenge = campaignData.challenges[node.challengeId];
     if (!challenge) return { defeat: false, finalVictory: false };
-    challengeState = challenge; // richiesto da challengeModifiers/challengeRollMode (leggono la globale)
+    stato.challengeState = challenge; // richiesto da challengeModifiers/challengeRollMode (leggono la globale)
 
-    const alive = party.filter(h => h.hp > 0);
+    const alive = stato.party.filter(h => h.hp > 0);
     const hero = alive.reduce((best, h) => (h[challenge.stat] || 0) > (best[challenge.stat] || 0) ? h : best, alive[0]);
     const chance = challengeChanceInfo(challengeModifiers(hero)).pct / 100;
     if (!profile.attemptChallenge(chance)) return { defeat: false, finalVictory: false };
@@ -314,11 +314,11 @@ function simResolveChallengeNode(campaignData, node, profile) {
 // Meccanica presente nel gioco reale (scheda "Vendi" del mercante) ma finora usata da nessun profilo.
 function simSellSurplusItems(profile) {
     if (!profile.sellFilter) return;
-    party.forEach(hero => {
+    stato.party.forEach(hero => {
         for (let i = hero.items.length - 1; i >= 0; i--) {
             const item = hero.items[i];
             if (profile.sellFilter(item)) {
-                partyCoins += itemSellPrice(item);
+                stato.partyCoins += itemSellPrice(item);
                 revertItemEffects(item, hero);
                 hero.items.splice(i, 1);
             }
@@ -331,47 +331,47 @@ function simResolveMerchantNode(campaignData, node, profile, runCtx) {
     const stock = generateMerchantStock();
     stock.forEach(entry => {
         if (profile.merchantFilter && !profile.merchantFilter(entry.item)) return;
-        if (partyCoins - entry.price < (profile.merchantReserve || 0)) return;
-        const recipient = profile.lootRecipient(party, runCtx);
+        if (stato.partyCoins - entry.price < (profile.merchantReserve || 0)) return;
+        const recipient = profile.lootRecipient(stato.party, runCtx);
         if (!recipient) return;
-        partyCoins -= entry.price;
+        stato.partyCoins -= entry.price;
         simAssignItem(entry.item, recipient);
     });
 }
 
 function simResolveTreasureNode(campaignData, node, profile, runCtx) {
     const offer = generateTreasureOffer();
-    partyCoins += offer.coins;
+    stato.partyCoins += offer.coins;
     offer.items.forEach(item => {
-        const recipient = profile.lootRecipient(party, runCtx);
+        const recipient = profile.lootRecipient(stato.party, runCtx);
         if (recipient) simAssignItem(item, recipient);
     });
 }
 
 function simResolveVictoryLoot(profile, runCtx) {
-    const node = stsMapNodes.find(n => n.id === currentNodeId);
+    const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
     const isElite = !!(node && (node.type === 'elite' || node.type === 'captain'));
     let coins = scaledCoins([3, 5, 7, 9, 12], isElite);
-    if (activeCurses.includes("Maledizione: -15% monete")) coins = Math.floor(coins * 0.85);
+    if (stato.activeCurses.includes("Maledizione: -15% monete")) coins = Math.floor(coins * 0.85);
 
-    const lootBonusHeroes = party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
+    const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
     coins += lootBonusHeroes.reduce((sum, h) => sum + (h.bonusLootCoins || 3), 0);
-    partyCoins += coins;
+    stato.partyCoins += coins;
 
     if (hasRelic("Dente del grande lupo")) {
-        const lowest = simAliveMinBy(party, h => h.hp);
+        const lowest = simAliveMinBy(stato.party, h => h.hp);
         if (lowest && lowest.hp < lowest.maxHp) healHero(lowest, 1);
     }
 
-    expeditionStats.combatsWon++;
-    expeditionStats.itemsFound++;
+    stato.expeditionStats.combatsWon++;
+    stato.expeditionStats.itemsFound++;
     const item = pickLootItem(isElite, mapProgress());
-    const recipient = profile.lootRecipient(party, runCtx);
+    const recipient = profile.lootRecipient(stato.party, runCtx);
     if (recipient) simAssignItem(item, recipient);
 }
 
 function simResolveCaptainNode(profile) {
-    const alive = party.filter(h => h.hp > 0);
+    const alive = stato.party.filter(h => h.hp > 0);
     if (alive.length === 0) return;
     const hero = profile.captainHero(alive);
     const type = profile.captainActionType(hero);
@@ -379,29 +379,29 @@ function simResolveCaptainNode(profile) {
 }
 
 function simExecuteCombatAction(hero, action) {
-    if (action === 'ability' && hasUsableAbility(hero)) resolveAbility(hero, activeEnemy);
-    else if (action === 'defend') resolveDefend(hero, activeEnemy);
-    else if (action === 'help') resolveHelp(hero, activeEnemy);
-    else resolveAttack(hero, activeEnemy);
+    if (action === 'ability' && hasUsableAbility(hero)) resolveAbility(hero, stato.activeEnemy);
+    else if (action === 'defend') resolveDefend(hero, stato.activeEnemy);
+    else if (action === 'help') resolveHelp(hero, stato.activeEnemy);
+    else resolveAttack(hero, stato.activeEnemy);
 }
 
 function simRunCombat(enemyData, profile, runCtx) {
-    party.forEach(refreshScaledBonuses);  // Fede/Int possono essere cambiate da reliquie, maledizioni o scarti
-    activeEnemy = JSON.parse(JSON.stringify(enemyData));
-    activeEnemy.isStunned = false;
-    party.atamanoUsed = false;
-    helpBonus = 0;
-    combatRound = 0;
-    party.forEach(h => {
+    stato.party.forEach(refreshScaledBonuses);  // Fede/Int possono essere cambiate da reliquie, maledizioni o scarti
+    stato.activeEnemy = JSON.parse(JSON.stringify(enemyData));
+    stato.activeEnemy.isStunned = false;
+    stato.party.atamanoUsed = false;
+    stato.helpBonus = 0;
+    stato.combatRound = 0;
+    stato.party.forEach(h => {
         if (h.hp > 0) { h.current_armor = h.base_armor; h.abilityUsedThisCombat = false; }
         else h.current_armor = 0;
     });
 
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
-        combatRound++;
-        party.forEach(h => { if (h.hp > 0) h.hasActed = false; });
-        const alive = party.filter(h => h.hp > 0);
+        stato.combatRound++;
+        stato.party.forEach(h => { if (h.hp > 0) h.hasActed = false; });
+        const alive = stato.party.filter(h => h.hp > 0);
         const order = profile.turnOrder ? profile.turnOrder(alive) : alive;
         const champion = simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0));
 
@@ -412,7 +412,7 @@ function simRunCombat(enemyData, profile, runCtx) {
             // Uso proattivo di un consumabile sul membro più ferito, secondo la soglia del profilo
             const consumableIdx = hero.items.findIndex(it => it.type && it.type.startsWith('consumable'));
             if (consumableIdx > -1) {
-                const weakest = simAliveMinBy(party, h => h.hp / h.maxHp);
+                const weakest = simAliveMinBy(stato.party, h => h.hp / h.maxHp);
                 if (weakest && (weakest.hp / weakest.maxHp) <= profile.consumableThreshold) {
                     simUseConsumable(hero, consumableIdx, weakest);
                     hero.hasActed = true;
@@ -421,30 +421,30 @@ function simRunCombat(enemyData, profile, runCtx) {
             }
 
             const remaining = order.slice(i + 1).filter(h => h.hp > 0 && !h.hasActed);
-            const action = profile.combatAction(hero, activeEnemy, { combatRound, isLastActor: remaining.length === 0, champion });
+            const action = profile.combatAction(hero, stato.activeEnemy, { combatRound: stato.combatRound, isLastActor: remaining.length === 0, champion });
             simExecuteCombatAction(hero, action);
             hero.hasActed = true;
-            if (activeEnemy.hp <= 0) break;
+            if (stato.activeEnemy.hp <= 0) break;
         }
 
-        if (activeEnemy.hp <= 0) {
+        if (stato.activeEnemy.hp <= 0) {
             simResolveVictoryLoot(profile, runCtx);
             return { defeat: false };
         }
 
-        if (activeEnemy.isStunned) {
-            activeEnemy.isStunned = false; // salta il turno, poi si riprende
+        if (stato.activeEnemy.isStunned) {
+            stato.activeEnemy.isStunned = false; // salta il turno, poi si riprende
         } else {
-            const target = profile.monsterTarget(party, runCtx);
-            if (target) resolveMonsterAttack(activeEnemy, target);
-            if (party.every(h => h.hp <= 0)) return { defeat: true };
+            const target = profile.monsterTarget(stato.party, runCtx);
+            if (target) resolveMonsterAttack(stato.activeEnemy, target);
+            if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
         }
     }
     return { defeat: true }; // stallo oltre il limite di round: conta come sconfitta per non falsare il report
 }
 
 function simResolveNode(campaignData, node, profile, runCtx) {
-    currentNodeId = node.id;
+    stato.currentNodeId = node.id;
     runCtx.visitCounts[node.type] = (runCtx.visitCounts[node.type] || 0) + 1;
 
     if (node.type === 'combat' || node.type === 'elite') {
@@ -463,19 +463,19 @@ function simResolveNode(campaignData, node, profile, runCtx) {
 function simAdvance(node) {
     node.done = true;
     node.active = false;
-    stsMapNodes.forEach(n => { if (n.level === node.level && n.active) n.active = false; });
+    stato.stsMapNodes.forEach(n => { if (n.level === node.level && n.active) n.active = false; });
     if (node.next.length === 0) return true;
     node.next.forEach(id => {
-        const n = stsMapNodes.find(x => x.id === id);
+        const n = stato.stsMapNodes.find(x => x.id === id);
         if (n) n.active = true;
     });
     return false;
 }
 
 function simCollectResult(victory, lastNode, campaignData) {
-    const doneLevels = stsMapNodes.filter(n => n.done).map(n => n.level);
+    const doneLevels = stato.stsMapNodes.filter(n => n.done).map(n => n.level);
     const levelReached = doneLevels.length ? Math.max(...doneLevels) + 1 : 0;
-    const totalLevels = stsMapNodes.length ? Math.max(...stsMapNodes.map(n => n.level)) + 1 : 0;
+    const totalLevels = stato.stsMapNodes.length ? Math.max(...stato.stsMapNodes.map(n => n.level)) + 1 : 0;
     let deathCause = null;
     if (!victory && lastNode) {
         deathCause = (lastNode.type === 'combat' || lastNode.type === 'elite')
@@ -486,14 +486,14 @@ function simCollectResult(victory, lastNode, campaignData) {
         victory,
         levelReached,
         totalLevels,
-        combatsWon: expeditionStats.combatsWon,
-        challengesPassed: expeditionStats.challengesPassed,
-        challengesFailed: expeditionStats.challengesFailed,
-        coins: partyCoins,
-        relicsFound: unlockedRelics.map(r => r.name),
-        cursesSuffered: activeCurses.length,
-        survivors: party.filter(h => h.hp > 0).length,
-        partySize: party.length,
+        combatsWon: stato.expeditionStats.combatsWon,
+        challengesPassed: stato.expeditionStats.challengesPassed,
+        challengesFailed: stato.expeditionStats.challengesFailed,
+        coins: stato.partyCoins,
+        relicsFound: stato.unlockedRelics.map(r => r.name),
+        cursesSuffered: stato.activeCurses.length,
+        survivors: stato.party.filter(h => h.hp > 0).length,
+        partySize: stato.party.length,
         deathCause
     };
 }
@@ -503,27 +503,27 @@ function simCollectResult(victory, lastNode, campaignData) {
    ========================================================================== */
 function simRunOne(campaignData, heroSelection, profile) {
     simBuildParty(campaignData, heroSelection);
-    partyCoins = 0;
-    unlockedRelics = [];
-    activeCurses = [];
-    stsMapNodes = JSON.parse(JSON.stringify(campaignData.mapNodes));
-    currentNodeId = null;
+    stato.partyCoins = 0;
+    stato.unlockedRelics = [];
+    stato.activeCurses = [];
+    stato.stsMapNodes = JSON.parse(JSON.stringify(campaignData.mapNodes));
+    stato.currentNodeId = null;
     enemies = campaignData.enemies;
     challengesData = campaignData.challenges;
     restsData = campaignData.rests;
     merchantsData = campaignData.merchants;
     treasuresData = campaignData.treasures;
     gameItems = campaignData.gameItems;
-    currentCampaign = campaignData.campaign;
-    combatRound = 0;
-    helpBonus = 0;
-    expeditionStats = newExpeditionStats();
+    stato.currentCampaign = campaignData.campaign;
+    stato.combatRound = 0;
+    stato.helpBonus = 0;
+    stato.expeditionStats = newExpeditionStats();
 
     const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0 };
 
     let visits = 0;
     while (visits++ < SIM_MAX_NODE_VISITS) {
-        const available = stsMapNodes.filter(n => n.active && !n.done);
+        const available = stato.stsMapNodes.filter(n => n.active && !n.done);
         if (available.length === 0) return simCollectResult(false, null, campaignData);
 
         const node = simChooseNextNode(available, profile, runCtx);
@@ -577,8 +577,8 @@ function simRunAll(campaignData, heroSelection, profileKeys, runsPerProfile) {
     });
 
     // Pulizia: non lasciare in giro uno stato di gioco "fantasma" dopo il test
-    party = []; partyCoins = 0; unlockedRelics = []; activeCurses = [];
-    stsMapNodes = []; currentNodeId = null; currentCampaign = null; challengeState = null;
+    stato.party = []; stato.partyCoins = 0; stato.unlockedRelics = []; stato.activeCurses = [];
+    stato.stsMapNodes = []; stato.currentNodeId = null; stato.currentCampaign = null; stato.challengeState = null;
 
     return results;
 }

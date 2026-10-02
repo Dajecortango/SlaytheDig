@@ -12,16 +12,17 @@
 
     function buildStatePayload() {
         return {
-            campaignTitle: (typeof currentCampaign !== 'undefined' && currentCampaign) ? currentCampaign.title : '',
-            coins: (typeof partyCoins !== 'undefined') ? partyCoins : 0,
+            campaignTitle: (typeof stato.currentCampaign !== 'undefined' && stato.currentCampaign) ? stato.currentCampaign.title : '',
+            coins: (typeof stato.partyCoins !== 'undefined') ? stato.partyCoins : 0,
             // In combattimento le pozioni si usano nel proprio turno; fuori (mappa, riposo, mercante...) dal telefono
             inCombat: typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat',
-            heroes: (typeof party !== 'undefined' ? party : []).map(h => ({
+            heroes: (typeof stato.party !== 'undefined' ? stato.party : []).map(h => ({
                 name: h.name,
                 hp: h.hp, maxHp: h.maxHp,
                 str: h.str, int: h.int, fth: h.fth, dmg: h.dmg,
                 base_armor: h.base_armor, current_armor: h.current_armor,
-                portrait: (typeof HERO_PORTRAITS !== 'undefined' && HERO_PORTRAITS[h.name]) ? HERO_PORTRAITS[h.name].src : null,
+                // Ritratto con la stessa inquadratura dell'icona del gioco (da ferito con 2 HP o meno)
+                ...remotePortrait(h),
                 items: (h.items || []).map(it => ({
                     name: it.name,
                     desc: it.desc,
@@ -32,6 +33,17 @@
                 chosenAbility: h.chosenAbility ? h.chosenAbility.name : null,
                 abilityDesc: h.chosenAbility ? (h.chosenAbility.desc || '') : ''
             }))
+        };
+    }
+
+    function remotePortrait(h) {
+        const p = (typeof HERO_PORTRAITS !== 'undefined') ? HERO_PORTRAITS[h.name] : null;
+        if (!p) return { portrait: null };
+        const wounded = p.woundedSrc && typeof isHeroWounded === 'function' && isHeroWounded(h.hp);
+        return {
+            portrait: wounded ? p.woundedSrc : p.src,
+            portraitPos: wounded ? p.woundedPos : p.pos,
+            portraitZoom: wounded ? p.woundedZoom : p.zoom
         };
     }
 
@@ -140,7 +152,7 @@
         const consumables = (hero.items || [])
             .map((it, idx) => (it.type && it.type.startsWith('consumable')) ? { index: idx, name: it.name, desc: it.desc } : null)
             .filter(Boolean);
-        const livingAllies = (typeof party !== 'undefined' ? party : []).filter(p => p.hp > 0).map(p => p.name);
+        const livingAllies = (typeof stato.party !== 'undefined' ? stato.party : []).filter(p => p.hp > 0).map(p => p.name);
 
         fetch(`${REMOTE_BASE}/api/action-request`, {
             method: 'POST',
@@ -168,7 +180,7 @@
         if (itemSubmenu) itemSubmenu.classList.add('hidden');
         if (controlArea) controlArea.classList.add('hidden');
 
-        const available = (typeof party !== 'undefined' ? party : []).filter(p => p.hp > 0 && !p.hasActed);
+        const available = (typeof stato.party !== 'undefined' ? stato.party : []).filter(p => p.hp > 0 && !p.hasActed);
         if (available.length === 0 && typeof startMonsterTurn === 'function') startMonsterTurn();
         else if (typeof showHeroSelectionPhase === 'function') showHeroSelectionPhase();
     }

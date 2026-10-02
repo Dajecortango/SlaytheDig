@@ -3,12 +3,19 @@
    Merce (5 oggetti + 1 consumabile, rarità in base all'avanzamento),
    carte coperte da scoprire, rinnovo della merce a pagamento, contrattazione
    (prova di Intelligenza sempre più difficile), acquisto, vendita e uscita.
-   Caricato dopo js/game.js (stesso ambito globale: usa party, gameItems, LIBRERIA...).
+   Caricato dopo js/game.js (stesso ambito globale: usa stato, gameItems, LIBRERIA...).
    ========================================================================== */
 
         // Prezzo base per rarità: il mercante vende con una piccola oscillazione e compra a metà
         const ITEM_BASE_PRICE = { scarso: 3, comune: 5, non_comune: 8, raro: 11, epico: 21, leggendario: 30 };
         const ITEM_PRICE_SPREAD = { scarso: 1, comune: 1, non_comune: 1, raro: 2, epico: 3, leggendario: 4 };
+
+        // Più si avanza nella mappa più il mercante alza i prezzi: +40% all'ultimo livello
+        // (anche le monete trovate crescono con l'avanzamento, vedi scaledCoins)
+        const MERCHANT_PROGRESS_MARKUP = 0.4;
+        function merchantProgressMultiplier() {
+            return 1 + MERCHANT_PROGRESS_MARKUP * mapProgress();
+        }
 
         function itemSellPrice(item) {
             return Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
@@ -47,6 +54,7 @@
                 const rarity = itemRarity(item);
                 const spread = ITEM_PRICE_SPREAD[rarity];
                 let basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
+                basePrice = Math.round(basePrice * merchantProgressMultiplier());
 
                 // Applica gli sconti delle reliquie
                 if (hasRelic("Moneta di fredlos")) basePrice = Math.floor(basePrice * 0.5);
@@ -92,7 +100,9 @@
        function startMerchant(merchantId) {
     showScreen('screenMerchant');
     const descText = merchantsData[merchantId] || merchantsData.default || "Un mercante di passaggio offre i suoi beni.";
-    document.getElementById('merchantDescBox').innerHTML = `<strong>Descrizione:</strong> ${descText}`;
+    const markup = Math.round((merchantProgressMultiplier() - 1) * 100);
+    document.getElementById('merchantDescBox').innerHTML = `<strong>Descrizione:</strong> ${descText}`
+        + (markup > 0 ? `<br><em>Così lontano dalle strade battute il mercante chiede il ${markup}% in più.</em>` : '');
 
     document.getElementById('merchantAssignArea').classList.add('hidden');
     document.getElementById('merchantItemsList').classList.remove('hidden');
@@ -114,7 +124,7 @@
                     return cardBackHtml(`revealMerchantItem(${idx})`, 'Merce coperta', 'Clicca per scoprire cosa offre il mercante', `rar-back-${itemRarity(entry.item)}`)
                         .replace('<button ', `<button data-idx="${idx}" `);
                 }
-                const canAfford = partyCoins >= entry.price;
+                const canAfford = stato.partyCoins >= entry.price;
                 const flip = idx === justRevealedMerchantIdx ? `card-flip-in reveal-${itemRarity(entry.item)}` : '';
                 const oldPrice = entry.price !== entry.basePrice ? `<s class="price-old">${entry.basePrice}</s>` : '';
                 return `
@@ -134,10 +144,10 @@
         // Pulsanti "Rinnova la merce" e "Contratta" con lo stato della contrattazione
         function renderMerchantTools() {
             const reroll = document.getElementById('btnMerchantReroll');
-            reroll.disabled = partyCoins < MERCHANT_REROLL_COST;
+            reroll.disabled = stato.partyCoins < MERCHANT_REROLL_COST;
             reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} monete e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via).`;
             const haggle = document.getElementById('btnMerchantHaggle');
-            haggle.disabled = merchantHaggle !== null || !party.some(h => h.hp > 0);
+            haggle.disabled = merchantHaggle !== null || !stato.party.some(h => h.hp > 0);
             haggle.dataset.tip = `Contratta||Una prova di Intelligenza (CD ${haggleCd()}, cresce andando avanti nella spedizione). ` +
                 `Successo: -${HAGGLE_DISCOUNT * 100}% su tutta la merce. Fallimento: +${HAGGLE_PENALTY} monete su ogni articolo. Una sola proposta per mercante.`;
             const note = document.getElementById('merchantHaggleNote');
@@ -148,8 +158,8 @@
         }
 
         function rerollMerchantStock() {
-            if (partyCoins < MERCHANT_REROLL_COST) return;
-            partyCoins -= MERCHANT_REROLL_COST;
+            if (stato.partyCoins < MERCHANT_REROLL_COST) return;
+            stato.partyCoins -= MERCHANT_REROLL_COST;
             stockMerchant();
             synthSfx('flip');
             updatePartyStatusBars();
@@ -160,7 +170,7 @@
         function openHaggle() {
             if (merchantHaggle !== null) return;
             const cd = haggleCd();
-            const rows = party.filter(h => h.hp > 0).map(h => {
+            const rows = stato.party.filter(h => h.hp > 0).map(h => {
                 const btn = (stat, label) => {
                     const mode = haggleRollMode(h, stat);
                     const info = chanceText(cd - (h[stat] || 0) - relicDiceBonus(), mode === 'best', mode === 'worst');
@@ -178,7 +188,7 @@
 
         function haggle(heroName) {
             const stat = 'int';  // si contratta solo con l'Intelligenza
-            const hero = party.find(h => h.name === heroName);
+            const hero = stato.party.find(h => h.name === heroName);
             if (!hero || merchantHaggle !== null) return;
             closeModal();
             const cd = haggleCd();
@@ -187,7 +197,7 @@
             const d2 = Math.floor(Math.random() * 6) + 1;
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
             const total = roll + (hero[stat] || 0) + relicDiceBonus();
-            const success = total >= cd;
+            const success = naturalRollSuccess(roll, total, cd);
             merchantHaggle = success ? 'ok' : 'fail';
             merchantItemsWithPrices.forEach(entry => { if (entry) entry.price = hagglePrice(entry.basePrice); });
 
@@ -198,6 +208,7 @@
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (${mode === 'best' ? 'Era solo una prova!' : 'Fede Inaridita'})`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
                     `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${relicDiceBonus() ? ' + 1 Frammento di Yr-Drazul' : ''} = <b>${total}</b> contro CD ${cd}.</p>
+                     ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
                      <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} monete in più.`}</p>`);
                 renderMerchantShop();
             }, 500);
@@ -206,12 +217,12 @@
         function tryBuyMerchantItem(idx) {
             let entry = merchantItemsWithPrices[idx];
             if (!entry || !entry.revealed) return;
-            if(partyCoins < entry.price) {
+            if(stato.partyCoins < entry.price) {
                 uiError("Non hai abbastanza monete");
                 return;
             }
 
-            partyCoins -= entry.price;
+            stato.partyCoins -= entry.price;
             currentMerchantItem = entry.item;
             merchantItemsWithPrices[idx] = null;
 
@@ -220,13 +231,13 @@
             document.getElementById('merchantTools').classList.add('hidden');
             document.getElementById('btnExitMerchant').classList.add('hidden');
             document.getElementById('merchantAssignArea').classList.remove('hidden');
-            document.getElementById('merchantHeroSelect').innerHTML = heroOptionsForItem(currentMerchantItem);
+            fillHeroSelectForItem('merchantHeroSelect', currentMerchantItem);
 
             updatePartyStatusBars();
         }
 
         function confirmMerchantAssignment() {
-            const hero = party.find(p => p.name === document.getElementById('merchantHeroSelect').value);
+            const hero = stato.party.find(p => p.name === document.getElementById('merchantHeroSelect').value);
             document.getElementById('merchantAssignArea').classList.add('hidden');
             assignItemToHero(currentMerchantItem, hero, () => {
                 document.getElementById('merchantItemsList').classList.remove('hidden');
@@ -234,7 +245,7 @@
                 document.getElementById('merchantTools').classList.remove('hidden');
                 document.getElementById('btnExitMerchant').classList.remove('hidden');
                 renderMerchantShop();
-            });
+            }, chosenDiscardIdx('merchantHeroSelect'));
         }
 
         function showMerchantTab(tab) {
@@ -249,7 +260,7 @@
 
         function renderMerchantSellList() {
             const entries = [];
-            party.forEach(hero => hero.items.forEach((item, idx) => entries.push({ hero, item, idx })));
+            stato.party.forEach(hero => hero.items.forEach((item, idx) => entries.push({ hero, item, idx })));
             const list = document.getElementById('merchantSellList');
             if (entries.length === 0) {
                 list.innerHTML = `<p class="panel-label">La compagnia non ha oggetti da vendere.</p>`;
@@ -269,7 +280,7 @@
         }
 
         function trySellItem(heroName, idx) {
-            const hero = party.find(h => h.name === heroName);
+            const hero = stato.party.find(h => h.name === heroName);
             const item = hero && hero.items[idx];
             if (!item) return;
             const price = itemSellPrice(item);
@@ -278,7 +289,7 @@
                 [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Vendi', className: 'btn-danger', onClick: () => {
                     revertItemEffects(item, hero);
                     hero.items.splice(idx, 1);
-                    partyCoins += price;
+                    stato.partyCoins += price;
                     updatePartyStatusBars();
                     renderMerchantSellList();
                 } }]);
@@ -286,11 +297,11 @@
 
         function confirmLeaveMerchant() {
             const hidden = merchantItemsWithPrices.filter(entry => entry && !entry.revealed).length;
-            const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed && partyCoins >= entry.price);
+            const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed && stato.partyCoins >= entry.price);
             if (!affordable && !hidden) { advanceNode(); return; }
             const reasons = [];
             if (hidden) reasons.push(hidden === 1 ? 'c\'è ancora <b>1</b> carta da scoprire' : `ci sono ancora <b>${hidden}</b> carte da scoprire`);
-            if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${partyCoins}</b> monete e ci sono oggetti che puoi permetterti`);
+            if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${stato.partyCoins}</b> monete e ci sono oggetti che puoi permetterti`);
             openModal('Lasciare il mercante?',
                 `<p>${reasons.join(' e ').replace(/^./, c => c.toUpperCase())}.</p>`,
                 [{ label: 'Resta nel negozio', className: 'btn-proceed' }, { label: 'Esci comunque', className: 'btn-danger', onClick: advanceNode }]);

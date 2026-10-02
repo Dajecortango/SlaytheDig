@@ -20,12 +20,20 @@ css/wc3-base.css     base grafica comune (gioco, editor, telefono)
 css/style.css        stile e animazioni dell'interfaccia
 js/wc3fx.js          animazioni dei menu con GSAP (js/vendor/gsap.min.js)
 editor.html          editor delle campagne (js/editor.js, css/editor.css)
-js/game.js           logica di gioco
+js/comune.js         costanti e funzioni condivise da gioco ed editor
+js/game.js           logica di gioco: stato, campagne, eroi, oggetti, sfide, interfaccia
+js/salvataggi.js     tre slot di salvataggio
+js/audio.js          musica con dissolvenze incrociate ed effetti sonori
+js/mappa.js          mappa, nodi e avanzamento
+js/combattimento.js  motore del combattimento e abilità attive
+js/ritratti.js       ritratti degli eroi e cinematica d'attacco
+js/loot.js, shop.js  bottino, tesori e mercante
+js/avvio.js          avvio, caricato per ultimo
 data/libreria/       armeria, bestiario, reliquie e maledizioni condivisi da tutte le campagne
 data/campagne/       dati di ogni campagna (un file per campagna)
 immagini/icone/      icone di oggetti, abilità e risorse
 immagini/ritratti/   ritratti degli eroi
-audio/               musica e effetti sonori
+audio/               effetti sonori (audio/temi/: musiche di menu, scontri ed elite in .ogg)
 ```
 
 Le illustrazioni degli eventi vanno messe nella cartella `immagini/` con i nomi indicati nei dati delle campagne; se un'immagine manca, il gioco mostra un riquadro segnaposto.

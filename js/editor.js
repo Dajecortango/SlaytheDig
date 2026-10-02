@@ -15,16 +15,8 @@
    - "Prova nel gioco": apre il gioco con la campagna in modifica.
    ========================================================================== */
 
-// Tipi di effetto interpretati da applyEffects() in js/game.js
-const KNOWN_EFFECTS = {
-    hero_stat: ['stat', 'val'],
-    hero_set: ['stat', 'val'],
-    party_stat: ['stat', 'val'],
-    party_max_hp: ['val'],
-    party_damage: ['val'],
-    coins: ['val'],
-    add_curse: ['text']
-};
+// esc, RARITY_LABELS, STAT_LABELS, EFFECT_TYPES (tipi di effetto di applyEffects) e i valori dei ritratti
+// sono in js/comune.js, condiviso con il gioco.
 
 const NODE_TYPES = {
     combat: { label: 'Scontro', color: '#c0392b', ref: 'enemy' },
@@ -47,17 +39,18 @@ const GENERAL_FIELDS = [
 ];
 
 const HERO_FIELDS = [
-    { k: 'name', label: 'Nome', wide: true, help: 'Il nome decide anche il ritratto se l\'eroe ne ha uno in HERO_PORTRAITS (js/game.js)' },
+    { k: 'name', label: 'Nome', wide: true, help: 'Il nome collega l\'eroe al suo ritratto nelle card del gioco' },
     { k: 'str', label: 'Forza', type: 'number' },
     { k: 'int', label: 'Intelligenza', type: 'number' },
     { k: 'fth', label: 'Fede', type: 'number' },
     { k: 'maxHp', label: 'HP massimi', type: 'number' },
     { k: 'dmg', label: 'Danno', type: 'number' },
     { k: 'base_armor', label: 'Armatura base', type: 'number' },
-    { k: 'portrait', label: 'Ritratto', type: 'image', folder: 'immagini/ritratti', wide: true,
-      help: 'Usato se il gioco non ha già un ritratto per questo nome' },
+    { k: 'portrait', label: 'Ritratto', type: 'image', folder: 'immagini/ritratti', wide: true },
     { k: 'portraitWounded', label: 'Ritratto da ferito', type: 'image', folder: 'immagini/ritratti', wide: true,
-      help: 'Facoltativo: mostrato con metà HP o meno' }
+      help: 'Facoltativo: mostrato con 2 HP o meno' },
+    { k: 'portraitFrame', label: 'Inquadratura del ritratto', type: 'portraitframe', wide: true,
+      help: 'Trascina il ritratto per scegliere il punto da tenere al centro, regola lo zoom con il cursore. Sotto ogni icona c\'è l\'anteprima della cinematica d\'attacco.' }
 ];
 
 // Eroe della libreria: statistiche + abilità tra cui scegliere (id della libreria Abilità)
@@ -66,8 +59,9 @@ const HERO_LIB_FIELDS = [...HERO_FIELDS, {
     help: 'Il giocatore ne sceglie una quando recluta l\'eroe. Le abilità si creano e si modificano nella scheda Abilità.'
 }];
 
-// Abilità attive che hanno un comportamento nel motore (executeCombatHeroRoll in js/game.js)
-const ACTIVE_ABILITY_IDS = ['icaro_trucchi', 'astarte_affondo', 'ascadeo_segnato', 'zeno_colpo_benedetto', 'dioforo_penna'];
+// Statistiche che un'abilità attiva può aggiungere al tiro per colpire o al danno (campo "combat", vedi abilityCombat in js/game.js)
+const COMBAT_STAT_OPTIONS = () => [['', 'Nessuna'], ['int', STAT_LABELS.int], ['fth', STAT_LABELS.fth], ['str', STAT_LABELS.str + ' (di nuovo)']];
+const isActive = a => !!a.isCombatActive;
 const isPassiveStat = a => !a.isCombatActive && a.type === 'passive_stat';
 // "Passiva" o "Attiva" più la descrizione, senza ripeterlo se la descrizione comincia già così
 const abilitySummary = a => /^(passiva|attiva)/i.test(a.desc || '') ? a.desc : [a.isCombatActive ? 'Attiva' : 'Passiva', a.desc].filter(Boolean).join(' · ');
@@ -79,8 +73,21 @@ const ABILITY_FIELDS = [
     { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
       help: 'Solo icone classiche di Warcraft III (non Reforged). Vuoto = icona generica' },
     { k: 'isCombatActive', label: 'Attiva in combattimento (1 volta per scontro)', type: 'checkbox', wide: true },
-    { k: 'actionName', label: 'Nome del comando in combattimento', wide: true, showIf: a => a.isCombatActive,
-      help: 'Il comportamento di un\'abilità attiva è scritto in js/game.js per id: ' + ACTIVE_ABILITY_IDS.join(', ') + '. Un id nuovo richiede codice nel motore.' },
+    { k: 'actionName', label: 'Nome del comando in combattimento', wide: true, showIf: isActive },
+    { k: 'combat.dice', label: 'Dadi per colpire', type: 'select', showIf: isActive, numeric: true,
+      options: () => [['1', 'Un dado'], ['2', 'Due dadi, tiene il migliore']] },
+    { k: 'combat.attackStat', label: 'Aggiunge al tiro per colpire', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS,
+      help: 'Il tiro è sempre d6 + Forza: qui si aggiunge un\'altra statistica' },
+    { k: 'combat.damageStat', label: 'Aggiunge al danno', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS },
+    { k: 'combat.damageMult', label: 'Moltiplicatore del danno', type: 'number', omitEmpty: true, showIf: isActive,
+      help: 'Vuoto = normale, 2 = danno raddoppiato' },
+    { k: 'combat.stun', label: 'Se colpisce, stordisce il nemico (salta il suo prossimo attacco)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.critical', label: 'Il colpo a segno mostra i numeri del critico', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
+      help: '{eroe} = nome dell\'eroe. Es. "✨ {eroe} infonde il colpo di fede sacra!"' },
+    { k: 'combat.hitLabel', label: 'Scritta del colpo a segno', omitEmpty: true, showIf: isActive, help: 'Es. COLPO CRITICO! (vuoto = COLPO A SEGNO!)' },
+    { k: 'combat.hitText', label: 'Diario: se colpisce', wide: true, omitEmpty: true, showIf: isActive,
+      help: '{danni} = danni inflitti. Es. "La luce divina guida la lama: infliggi {danni} danni!"' },
     { k: 'type', label: 'Tipo di passiva', type: 'select', omitEmpty: true, showIf: a => !a.isCombatActive,
       options: () => [['', 'Con effetti (JSON)'], ['passive_stat', 'Bonus semplice a una statistica']] },
     { k: 'stat', label: 'Statistica', type: 'select', showIf: isPassiveStat,
@@ -88,13 +95,13 @@ const ABILITY_FIELDS = [
     { k: 'val', label: 'Bonus', type: 'number', showIf: isPassiveStat },
     { k: 'effects', label: 'Effetti alla scelta (JSON)', type: 'json', wide: true, nullable: true,
       showIf: a => !a.isCombatActive && a.type !== 'passive_stat',
-      help: 'Es. [{ "effect": "hero_stat", "stat": "dmg", "val": 1 }] = +1 Danno permanente. Tipi: ' + Object.keys(KNOWN_EFFECTS).join(', ') }
+      help: 'Es. [{ "effect": "hero_stat", "stat": "dmg", "val": 1 }] = +1 Danno permanente. Tipi: ' + Object.keys(EFFECT_TYPES).join(', ') }
 ];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 const ITEM_FIELDS = [
     { k: 'name', label: 'Nome' },
-    { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ['scarso', 'Scarso (grigio)'], ['comune', 'Comune (bianco)'], ['non_comune', 'Non comune (verde)'], ['raro', 'Raro (blu)'], ['epico', 'Epico (viola)'], ['leggendario', 'Leggendario (arancio)']] },
+    { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ...Object.entries(RARITY_LABELS).map(([k, label]) => [k, `${label} (${RARITY_COLORS[k]})`])] },
     { k: 'type', label: 'Tipo', type: 'select', omitEmpty: true,
       options: () => [['', 'Equipaggiamento'], ['consumable_heal', 'Consumabile: cura'], ['consumable_full', 'Consumabile: cura completa']] },
     { k: 'heal_val', label: 'HP curati', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_heal' },
@@ -197,7 +204,6 @@ const selection = { challenges: null, map: null, itemList: 'initialArmory',
 let dirty = false;
 
 const deepCopy = obj => JSON.parse(JSON.stringify(obj));
-const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function markDirty() {
     dirty = true;
@@ -453,8 +459,8 @@ const LIB_HEADERS = {
     bestiario: 'Bestiario: tutti i nemici, condivisi dalle campagne.\n// I nodi della mappa li richiamano per id nel campo "enemy".',
     reliquie: 'Reliquie: ricompense delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "reward". Molte reliquie hanno un effetto\n// gestito per nome in js/game.js (hasRelic): rinominarle ne cambia il comportamento.',
     maledizioni: 'Maledizioni: punizioni delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "punishment".',
-    eroi: 'Eroi: statistiche iniziali e abilità tra cui scegliere, condivisi dalle campagne.\n// Le campagne li richiamano per id nel campo "heroes"; le abilità sono id della libreria Abilità\n// (data/libreria/abilita.js). Il ritratto, se manca in HERO_PORTRAITS, viene da "portrait".',
-    abilita: 'Abilità: passive e attive degli eroi, condivise dalla libreria Eroi.\n// Gli eroi le richiamano per id nel campo "abilities". Le passive agiscono con "effects"\n// (o con "type": "passive_stat"); le attive (isCombatActive) sono gestite per id in js/game.js.\n// "icon" è l\'icona di Warcraft III mostrata nel gioco.'
+    eroi: 'Eroi: statistiche iniziali e abilità tra cui scegliere, condivisi dalle campagne.\n// Le campagne li richiamano per id nel campo "heroes"; le abilità sono id della libreria Abilità\n// (data/libreria/abilita.js). Ritratti: "portrait" e "portraitWounded" (2 HP o meno),\n// inquadratura nell\'icona con "portraitPos" (punto da tenere al centro) e "portraitZoom";\n// "portraitWoundedPos"/"portraitWoundedZoom" se il ritratto da ferito va inquadrato diversamente,\n// "portraitStrikeZoom" per lo zoom nella cinematica d\'attacco (vuoto = calcolato da portraitZoom).',
+    abilita: 'Abilità: passive e attive degli eroi, condivise dalla libreria Eroi.\n// Gli eroi le richiamano per id nel campo "abilities". Le passive agiscono con "effects"\n// (o con "type": "passive_stat"); le attive (isCombatActive) agiscono con "combat" (vedi abilityCombat in js/game.js).\n// "icon" è l\'icona di Warcraft III mostrata nel gioco.'
 };
 
 function libraryFileText(kind) {
@@ -665,6 +671,165 @@ async function playtest() {
 }
 
 /* ---------- Moduli generici ---------- */
+// I campi possono indicare un percorso con il punto (es. "combat.dice" = obj.combat.dice)
+function getPath(obj, path) {
+    return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
+}
+function setPath(obj, path, value) {
+    const keys = path.split('.');
+    const last = keys.pop();
+    const target = keys.reduce((o, k) => (o[k] && typeof o[k] === 'object' ? o[k] : (o[k] = {})), obj);
+    target[last] = value;
+}
+function deletePath(obj, path) {
+    const keys = path.split('.');
+    const last = keys.pop();
+    const parents = [obj];
+    for (const k of keys) {
+        const next = parents[parents.length - 1][k];
+        if (!next || typeof next !== 'object') return;
+        parents.push(next);
+    }
+    delete parents[parents.length - 1][last];
+    // Toglie gli oggetti rimasti vuoti (es. "combat": {})
+    for (let i = keys.length - 1; i >= 0; i--) {
+        if (Object.keys(parents[i + 1]).length) break;
+        delete parents[i][keys[i]];
+    }
+}
+
+// Valori predefiniti e zoom della cinematica: HERO_PORTRAIT_DEFAULTS e strikeZoomFor in js/comune.js
+const parsePos = pos => (pos || HERO_PORTRAIT_DEFAULTS.pos).split(/\s+/).map(v => parseFloat(v)).map(v => (Number.isFinite(v) ? v : 50));
+const round1 = v => Math.round(v * 10) / 10;
+
+// Modulo "Inquadratura del ritratto": per il ritratto normale e per quello da ferito
+// un'icona da trascinare, il cursore dello zoom e l'anteprima della cinematica d'attacco.
+function portraitFrameEditor(hero, onChange) {
+    const box = document.createElement('div');
+    box.className = 'ed-portrait-frames';
+    if (!hero.portrait) {
+        box.innerHTML = '<p class="ed-help">Carica prima un ritratto.</p>';
+        return box;
+    }
+
+    const variants = [{ label: 'Ritratto', src: 'portrait', pos: 'portraitPos', zoom: 'portraitZoom' }];
+    if (hero.portraitWounded) variants.push({ label: 'Da ferito', src: 'portraitWounded', pos: 'portraitWoundedPos', zoom: 'portraitWoundedZoom', wounded: true });
+
+    const current = v => {
+        const pos = hero[v.pos] || (v.wounded && hero.portraitPos) || HERO_PORTRAIT_DEFAULTS.pos;
+        const zoom = Number(hero[v.zoom]) || (v.wounded && Number(hero.portraitZoom)) || HERO_PORTRAIT_DEFAULTS.zoom;
+        return { pos, zoom };
+    };
+    const strikeZoom = v => Number(hero.portraitStrikeZoom) || strikeZoomFor(current(v).zoom);
+
+    const cards = variants.map(v => {
+        const card = document.createElement('div');
+        card.className = 'ed-portrait-card';
+        card.innerHTML = `
+            <strong>${esc(v.label)}</strong>
+            <div class="ed-portrait-icon" title="Trascina per spostare l'inquadratura"><img alt="" draggable="false"></div>
+            <label class="ed-portrait-zoom">Zoom <input type="range" min="1" max="3.5" step="0.05"><output></output></label>
+            <div class="ed-portrait-strike" title="Anteprima della cinematica d'attacco"><img alt="" draggable="false"></div>
+            <small class="ed-portrait-info"></small>
+            <div class="ed-portrait-actions">
+                ${v.wounded
+                    ? '<button type="button" class="btn-small" data-act="same">Come il ritratto normale</button>'
+                    : '<button type="button" class="btn-small" data-act="reset">Ripristina</button>'}
+            </div>`;
+        const icon = card.querySelector('.ed-portrait-icon img');
+        const strike = card.querySelector('.ed-portrait-strike img');
+        const range = card.querySelector('input[type=range]');
+        const out = card.querySelector('output');
+        const info = card.querySelector('.ed-portrait-info');
+        icon.src = strike.src = assetUrl(hero[v.src]);
+
+        const paint = () => {
+            const { pos, zoom } = current(v);
+            const sz = strikeZoom(v);
+            Object.assign(icon.style, { objectPosition: pos, transformOrigin: pos, transform: `scale(${zoom})` });
+            Object.assign(strike.style, { objectPosition: pos, transformOrigin: pos, transform: `scale(${sz})` });
+            range.value = zoom;
+            out.textContent = zoom.toFixed(2);
+            info.textContent = `Centro ${pos} · zoom cinematica ${sz.toFixed(2)}${hero.portraitStrikeZoom ? '' : ' (automatico)'}`;
+        };
+        card.paint = paint;
+
+        range.addEventListener('input', () => {
+            hero[v.zoom] = Number(range.value);
+            if (v.wounded && !hero[v.pos]) hero[v.pos] = current(v).pos;
+            onChange(v.zoom);
+            cards.forEach(c => c.paint());
+        });
+
+        // Trascinando verso destra l'immagine si sposta a destra: il centro inquadrato va a sinistra
+        const frame = card.querySelector('.ed-portrait-icon');
+        frame.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            frame.setPointerCapture(e.pointerId);
+            const start = { x: e.clientX, y: e.clientY, pos: parsePos(current(v).pos), zoom: current(v).zoom };
+            const size = frame.getBoundingClientRect().width;
+            const move = ev => {
+                const x = Math.min(100, Math.max(0, start.pos[0] - (ev.clientX - start.x) / size * 100 / start.zoom));
+                const y = Math.min(100, Math.max(0, start.pos[1] - (ev.clientY - start.y) / size * 100 / start.zoom));
+                hero[v.pos] = `${round1(x)}% ${round1(y)}%`;
+                if (v.wounded && !hero[v.zoom]) hero[v.zoom] = start.zoom;
+                paint();
+            };
+            const up = () => {
+                frame.removeEventListener('pointermove', move);
+                frame.removeEventListener('pointerup', up);
+                frame.removeEventListener('pointercancel', up);
+                onChange(v.pos);
+            };
+            frame.addEventListener('pointermove', move);
+            frame.addEventListener('pointerup', up);
+            frame.addEventListener('pointercancel', up);
+        });
+
+        card.querySelector('.ed-portrait-actions').addEventListener('click', e => {
+            const act = e.target.closest('button') && e.target.closest('button').dataset.act;
+            if (!act) return;
+            delete hero[v.pos];
+            delete hero[v.zoom];
+            if (act === 'reset' && !v.wounded) { hero.portraitPos = HERO_PORTRAIT_DEFAULTS.pos; hero.portraitZoom = HERO_PORTRAIT_DEFAULTS.zoom; }
+            onChange(v.pos);
+            cards.forEach(c => c.paint());
+        });
+        return card;
+    });
+
+    // Zoom della cinematica: automatico (calcolato dallo zoom dell'icona) oppure scelto a mano
+    const strikeRow = document.createElement('label');
+    strikeRow.className = 'ed-portrait-zoom ed-portrait-strike-zoom';
+    strikeRow.innerHTML = `<input type="checkbox"> Zoom della cinematica scelto a mano <input type="range" min="1" max="3" step="0.05"><output></output>`;
+    const [manual, strikeRange] = strikeRow.querySelectorAll('input');
+    const strikeOut = strikeRow.querySelector('output');
+    const paintStrike = () => {
+        manual.checked = !!hero.portraitStrikeZoom;
+        strikeRange.disabled = !manual.checked;
+        strikeRange.value = strikeZoom(variants[0]);
+        strikeOut.textContent = Number(strikeRange.value).toFixed(2);
+    };
+    manual.addEventListener('change', () => {
+        if (manual.checked) hero.portraitStrikeZoom = strikeZoom(variants[0]);
+        else delete hero.portraitStrikeZoom;
+        onChange('portraitStrikeZoom');
+        paintStrike();
+        cards.forEach(c => c.paint());
+    });
+    strikeRange.addEventListener('input', () => {
+        hero.portraitStrikeZoom = Number(strikeRange.value);
+        onChange('portraitStrikeZoom');
+        paintStrike();
+        cards.forEach(c => c.paint());
+    });
+
+    box.append(...cards, strikeRow);
+    cards.forEach(c => c.paint());
+    paintStrike();
+    return box;
+}
+
 function renderForm(container, obj, fields, onChange) {
     container.innerHTML = '';
     const form = document.createElement('div');
@@ -673,10 +838,10 @@ function renderForm(container, obj, fields, onChange) {
         if (f.showIf && !f.showIf(obj)) return;
         const wrap = document.createElement('div');
         wrap.className = 'ed-field' + (f.wide ? ' wide' : '');
-        const id = `f_${f.k}_${Math.random().toString(36).slice(2, 7)}`;
+        const id = `f_${f.k.replace(/\./g, '_')}_${Math.random().toString(36).slice(2, 7)}`;
         wrap.innerHTML = `<label for="${id}">${esc(f.label)}</label>`;
         let input;
-        const value = obj[f.k];
+        const value = getPath(obj, f.k);
 
         // Riferimento a una libreria (reliquie, maledizioni) oppure elemento personalizzato scritto nella sfida
         if (f.type === 'libref') {
@@ -708,6 +873,14 @@ function renderForm(container, obj, fields, onChange) {
             } else if (mode) {
                 wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" onclick="gotoLibrary('${f.lib}', '${esc(mode)}'); return false;">Modifica in ${LIB_LABELS[f.lib]}</a>`);
             }
+            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Inquadratura dei ritratti (icona e cinematica d'attacco), come le calcola js/game.js
+        if (f.type === 'portraitframe') {
+            wrap.appendChild(portraitFrameEditor(obj, onChange));
             if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
@@ -803,10 +976,10 @@ function renderForm(container, obj, fields, onChange) {
                     try { v = JSON.parse(input.value); input.classList.remove('ed-invalid'); }
                     catch (err) { input.classList.add('ed-invalid'); input.title = err.message; return; }
                 }
-            } else v = input.value;
-            // Campi facoltativi: vuoto o zero = campo assente, per tenere pulito il JSON
-            if ((f.omitEmpty && (v === null || v === '' || v === 0)) || (f.type === 'json' && f.nullable && v === null)) delete obj[f.k];
-            else obj[f.k] = v;
+            } else v = f.numeric ? Number(input.value) : input.value;
+            // Campi facoltativi: vuoto, zero o falso = campo assente, per tenere pulito il JSON
+            if ((f.omitEmpty && (v === null || v === '' || v === 0 || v === false)) || (f.type === 'json' && f.nullable && v === null)) deletePath(obj, f.k);
+            else setPath(obj, f.k, v);
             onChange(f.k);
         };
         input.addEventListener(f.type === 'select' || f.type === 'checkbox' ? 'change' : 'input', commit);
@@ -896,6 +1069,8 @@ const COLLECTIONS = {
         afterChange: (h, key) => {
             if (key === 'maxHp') h.hp = h.maxHp;
             if (key === 'base_armor') h.current_armor = h.base_armor;
+            // Nuovo ritratto: si ridisegna il modulo per aggiornare l'inquadratura
+            if (key === 'portrait' || key === 'portraitWounded') setTimeout(render);
         },
         renameRefs: (oldKey, key) => camp.heroes.forEach((h, i) => { if (h === oldKey) camp.heroes[i] = key; })
     },
@@ -907,8 +1082,8 @@ const COLLECTIONS = {
         afterChange: (a, key) => {
             // Attiva e passiva hanno campi diversi: si tolgono quelli che non servono più e si ridisegna il modulo
             if (key === 'isCombatActive') {
-                if (a.isCombatActive) { delete a.effects; delete a.type; delete a.stat; delete a.val; a.actionName = a.actionName || a.name; }
-                else { delete a.actionName; if (!a.effects) a.effects = []; }
+                if (a.isCombatActive) { delete a.effects; delete a.type; delete a.stat; delete a.val; a.actionName = a.actionName || a.name; a.combat = a.combat || { dice: 1 }; }
+                else { delete a.actionName; delete a.combat; if (!a.effects) a.effects = []; }
             }
             if (key === 'type') {
                 if (a.type === 'passive_stat') { delete a.effects; a.stat = a.stat || 'str'; a.val = a.val ?? 1; }
@@ -1454,7 +1629,7 @@ function checkEffects(effects, where, issues, tab, sel) {
     if (effects == null) return;
     if (!Array.isArray(effects)) { issues.push({ level: 'error', msg: `${where}: "effects" deve essere un elenco`, tab, sel }); return; }
     effects.forEach(e => {
-        const needed = KNOWN_EFFECTS[e && e.effect];
+        const needed = EFFECT_TYPES[e && e.effect];
         if (!needed) issues.push({ level: 'error', msg: `${where}: effetto sconosciuto "${e && e.effect}"`, tab, sel });
         else needed.filter(p => e[p] === undefined).forEach(p => issues.push({ level: 'error', msg: `${where}: all'effetto "${e.effect}" manca "${p}"`, tab, sel }));
     });
@@ -1566,7 +1741,7 @@ function validateCampaign() {
         const name = `Abilità <b>${esc(a.name || k)}</b>`;
         if (!a.name) add('warn', `Abilità <b>${k}</b>: nome mancante`, 'abilita', k);
         if (!a.desc) add('warn', `${name}: descrizione mancante (il giocatore non sa cosa fa)`, 'abilita', k);
-        if (a.isCombatActive && !ACTIVE_ABILITY_IDS.includes(k)) add('warn', `${name}: abilità attiva senza comportamento in js/game.js, in combattimento non farà nulla`, 'abilita', k);
+        if (a.isCombatActive && !(a.combat && typeof a.combat === 'object')) add('warn', `${name}: abilità attiva senza comportamento ("combat"), in combattimento non farà nulla`, 'abilita', k);
         if (isPassiveStat(a) && typeof a.val !== 'number') add('error', `${name}: "Bonus" non è un numero`, 'abilita', k);
         if (!a.isCombatActive) checkEffects(a.effects, name, issues, 'abilita', k);
         if (checkImage(a.icon) === 'missing') add('warn', `${name}: icona non trovata ${esc(a.icon)}`, 'abilita', k);

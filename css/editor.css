@@ -339,3 +339,19 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-map .link-preview { stroke: #ffe08a; stroke-width: 3; stroke-dasharray: 8 6; pointer-events: none; }
 .ed-map .link-preview.hidden { display: none; }
 .ed-map-help { margin: 4px 10px 6px; font-size: 0.75rem; color: var(--text-dim); text-align: left; }
+
+/* Inquadratura del ritratto: icona da trascinare (stessa misura della card del gioco) e banda della cinematica */
+.ed-portrait-frames { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.ed-portrait-card { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(226, 185, 81, 0.25); }
+.ed-portrait-card strong { font-family: var(--font-title); color: var(--wc-yellow); font-size: 0.85rem; }
+.ed-portrait-icon { position: relative; width: 110px; height: 110px; overflow: hidden; cursor: grab; touch-action: none; border: 1px solid #000; box-shadow: 0 0 0 2px #b8923e, 0 0 0 3px #000; }
+.ed-portrait-icon:active { cursor: grabbing; }
+.ed-portrait-icon img, .ed-portrait-strike img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; pointer-events: none; }
+.ed-portrait-strike { position: relative; width: 260px; height: 150px; overflow: hidden; background: #1c130b; border-top: 2px solid #c9982f; border-bottom: 2px solid #c9982f;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%); }
+.ed-portrait-zoom { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-dim); }
+.ed-portrait-zoom input[type=range] { flex: 1; min-width: 90px; }
+.ed-portrait-zoom output { min-width: 34px; color: #f3e2b0; }
+.ed-portrait-strike-zoom { flex-basis: 100%; }
+.ed-portrait-info { font-size: 0.7rem; color: var(--text-dim); }
+.ed-portrait-actions { display: flex; gap: 6px; }
