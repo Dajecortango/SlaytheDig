@@ -12,22 +12,22 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 6,
         "desc": "Un fruscio improvviso squarcia il silenzio della nebbia mattutina. Sagome scure e massicce emergono dal grigiore: cinghiali con zanne ricurve terrificanti.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/cinghiale_attacco.ogg",
+        "sfxHit": "audio/nemici/cinghiale_colpito.ogg",
+        "sfxDeath": "audio/nemici/cinghiale_morte.ogg"
     },
     "disertori_affamati": {
         "name": "Disertori",
-        "image": "immagini/bestiario/scontro_disertori.png",
+        "image": "immagini/bestiario/disertori.jpg",
         "hp": 6,
         "maxHp": 6,
         "att": 6,
         "dmg": 1,
         "ca": 6,
         "desc": "Dalla cortina di nebbia spuntano soldati: disertori affamati e disperati, armati di lance e spade. Vi squadrano con odio.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "lupi": {
         "name": "Lupi",
@@ -38,9 +38,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 6,
         "desc": "Dalle carcasse emergono fauci sbavate: un branco di lupi affamati si aggira tra i cadaveri in cerca di prede.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/lupo_attacco.ogg",
+        "sfxHit": "audio/nemici/lupo_colpito.ogg",
+        "sfxDeath": "audio/nemici/lupo_morte.ogg"
     },
     "banditi": {
         "name": "Banditi",
@@ -51,9 +51,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 7,
         "desc": "Banditi spietati che approfittano del caos della guerra vi sbarrano la strada, attratti dal fumo del falò.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "profanatori": {
         "name": "Profanatori",
@@ -64,9 +64,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 7,
         "desc": "Uomini armati di ascia e pala cercano tombe da depredare. Nessuno può profanare un caduto del Leone.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "sergente": {
         "name": "Sergente",
@@ -77,9 +77,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 3,
         "ca": 8,
         "desc": "Una truppa regolare sopravvissuta, guidata da un sergente con corazza insanguinata. Si sfoderano le armi.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "banditi_strada": {
         "name": "Banditi della strada",
@@ -90,9 +90,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 7,
         "desc": "Dalle ombre di un terrapieno sbucano figure coperte da mantelli lisi e logorati dalla polvere e dalla pioggia. Impugnano spade scheggiate e clave ferrate, con i volti seminascosti da cappucci sudici. Ti sbarrano la strada con sorrisi mefistofelici, affamati di bottino e indifferenti alla vita umana; per loro la vostra spedizione è solo l'ennesima facile preda da spolpare nel fango del sentiero.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "briganti_pedaggio": {
         "name": "Briganti del pedaggio",
@@ -103,9 +103,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 7,
         "desc": "Hanno occupato una strettoia naturale della via, sbarrandola con assi di legno chiodate e spuntoni. Indossano pezzi di armature rubate e spaiate, ostentando un'autorità fasulla ma armata fino ai denti. Ti guardano dall'alto in basso con arroganza, stringendo balestre e picche sporche di sangue, pronti a esigere un tributo nel sangue se rifiutate di cedere ogni vostro avere.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "branco_lupi": {
         "name": "Branco di lupi",
@@ -116,9 +116,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 8,
         "desc": "Un ringhio profondo e gutturale rompe il silenzio della boscaglia. Dalla boscaglia emergono occhi gialli e famelici, fauci sbavate e pelo fitto irto di brina. È un branco di lupi invernali, grossi e spietati, guidati dal freddo e dalla fame disperata. Circondano il gruppo con movimenti fluidi e coordinati, studiando le vostre posture alla ricerca di un momento di distrazione per azzannare alla gola.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/lupo_attacco.ogg",
+        "sfxHit": "audio/nemici/lupo_colpito.ogg",
+        "sfxDeath": "audio/nemici/lupo_morte.ogg"
     },
     "disertori": {
         "name": "Banda di disertori",
@@ -129,9 +129,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 8,
         "desc": "Soldati sbandati di un esercito ormai dissolto, con le divise lacerate e prive di insegne, ridotte a stracci sudici. Hanno lo sguardo perso, segnato dalla paranoia e dalla disperazione della guerra perduta. Armati di lance arrugginite e cortelli da campo, vi squadrano con un misto di terrore e rabbia cieca: non hanno più nulla da perdere e sono disposti a tutto pur di sottrarvi le provviste e gli abiti di dosso.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "predoni": {
         "name": "Predoni",
@@ -142,9 +142,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 9,
         "desc": "Guerrieri nomadi e spietati delle lande di confine, agili e letali, specializzati negli agguati lungo i valichi montani. Indossano corazze leggere di pelle e pellicce, armati di scimitarre ricurve e coltelli da lancio che luccicano debolmente nella penombra. Si muovono rapidamente tra i massi, sfruttando ogni copertura per colpire i punti deboli della compagnia con tattiche mordi e fuggi.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "cani_caccia": {
         "name": "Cani da caccia rinselvatichiti",
@@ -168,9 +168,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 8,
         "desc": "Figuri viscidi armati di coltellacci e zappe da scavo, sorpresi a spogliare le carcasse lungo il ciglio del sentiero. Vedendovi arrivare, non esitano a brandire i ferri sporchi di terra e ruggine per mettere a tacere eventuali testimoni e allargare il proprio bottino.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "orso_bruno": {
         "name": "Orso bruno selvaggio",
@@ -187,16 +187,16 @@ window.LIBRERIA.bestiario = {
     },
     "balestrieri_disertori": {
         "name": "Balestrieri disertori",
-        "image": "immagini/bestiario/balestrieri_disertori.jpg",
+        "image": "immagini/bestiario/disertori.jpg",
         "hp": 11,
         "maxHp": 11,
         "att": 8,
         "dmg": 2,
         "ca": 9,
         "desc": "Tiratori scelti fuggiti dai ranghi dell'esercito regolare, appostati dietro muretti a secco e rocce sporgenti. Con le balestre cariche e dardi con punta a foglia, aprono il fuoco senza preavviso, pronti a bersagliarvi dalla distanza.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "cinghiali_pietraie": {
         "name": "Cinghiali delle pietraie",
@@ -207,9 +207,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 7,
         "desc": "Una coppia di cinghiali massicci e aggressivi, con la pelle indurita da anni di pascolo tra le rocce taglienti. Sentendosi messi all'angolo nel canalone cieco, abbassano le zanne affilate e caricano a testa bassa senza curarsi delle vostre armi.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/cinghiale_attacco.ogg",
+        "sfxHit": "audio/nemici/cinghiale_colpito.ogg",
+        "sfxDeath": "audio/nemici/cinghiale_morte.ogg"
     },
     "picchieri_sbandati": {
         "name": "Picchieri della milizia sbandata",
@@ -220,9 +220,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 8,
         "desc": "Una linea di fanti contadini un tempo arruolati a forza, ora rimasti senza paga né comando. Serrano i ranghi piantando a terra lunghe aste scheggiate, formando una barriera di punte acuminata e pericolosa per chiunque tenti di avvicinarsi frontalmente.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "esploratori_predoni": {
         "name": "Esploratori predoni",
@@ -233,9 +233,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 1,
         "ca": 8,
         "desc": "L'avanguardia agile delle bande montane. Armati di archi corti e corte sciabole, si muovono silenziosi tra i dirupi per saggiare la resistenza della vostra carovana con colpi rapidi e ritirate repentine.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "fabbro_rinnegato": {
         "name": "Fabbro rinnegato e sgherri",
@@ -246,9 +246,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 9,
         "desc": "Un artigiano delle armate campali datosi al brigantaggio insieme a due manovali. Impugna una mazza da forgia pesante e pinze incandescenti, protetto da un grembiale chiodato capace di deflettere i colpi di striscio.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "cani_corsi": {
         "name": "Branco di cani corsi feroci",
@@ -272,9 +272,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 7,
         "desc": "Una figura imponente e massiccia avvolta in una pesante corazza di cuoio bollito e metallo nero. Impugna un'ascia bipenne intrisa di vecchia ruggine e sangue secco, emanando un'aura di brutale autorità sui suoi sottoposti. Ti fissa con un ghigno sprezzante, gli occhi freddi di un veterano della violenza che ha ridotto la predazione a mestiere: per superarlo dovrete spezzare la sua furia inarrestabile.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "tremabosco": {
         "name": "Tremabosco Infuriato",
@@ -311,9 +311,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 3,
         "ca": 9,
         "desc": "Un colosso umano avvolto in un grembiule di cuoio annerito e macchiato, con il volto celato da un cappuccio di canapa grezza. Poggia sulle spalle una pesante mannaia d'acciaio grezzo, usata tanto per tagliare legna quanto per punire disertori e viandanti. Attorno a lui regna un silenzio sinistro: è la retroguardia spietata delle bande montane, abituato a finire i feriti con fredda brutalità.",
-        "sfxAttack": "",
-        "sfxHit": "",
-        "sfxDeath": ""
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "hungrabarn": {
         "name": "Hungrabarn",

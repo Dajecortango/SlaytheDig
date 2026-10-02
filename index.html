@@ -87,8 +87,10 @@
             </div>
         </div>
 
-        <!-- Musica dei menu: dalla schermata iniziale fino alla fine della scelta di eroi ed equipaggiamento -->
-        <audio id="menuMusic" src="audio/menu_theme.mp3" loop preload="auto"></audio>
+        <!-- Musica (menu, scontri, elite): due lettori che si passano il brano con una dissolvenza incrociata.
+             Brani e passaggi li decidono setMusic() e updateMenuMusic() in js/audio.js -->
+        <audio id="musicA" preload="auto"></audio>
+        <audio id="musicB" preload="none"></audio>
 
         <div class="topbar-plate">
             <svg class="brand-crest" viewBox="0 0 64 72" aria-hidden="true">
@@ -273,7 +275,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img id="campaignIntroImg" src="immagini/inizio_campagna.png" alt="Inizio Campagna">
+                            <img id="campaignIntroImg" src="immagini/inizio_campagna.jpg" alt="Inizio Campagna">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -324,6 +326,7 @@
                                 </div>
                                 <div id="heroActionControlArea" class="hidden">
                                     <p id="activeCombatantText" class="turn-label"></p>
+                                    <button id="combatChangeHeroBtn" class="btn-small combat-back-btn" onclick="cancelCombatHeroChoice()" data-tip="Cambia eroe [Esc]||Torna alla scelta dell'eroe che agisce. Si può fare finché non tiri il dado.">Cambia eroe</button>
                                     <div id="combatActionButtons" class="command-card">
                                         <button id="cmdAttack" class="cmd-btn" onclick="selectCombatAction('attack')" data-tip="Attacca [Q]||Tira Forza + d6 contro la CA del nemico. Se riesci infliggi i tuoi danni.">
                                             <span class="cmd-key">Q</span>
@@ -367,6 +370,7 @@
                                             <div id="diceCombat2" class="dice-box hidden">6</div>
                                         </div>
                                         <button id="rollCombatBtn" onclick="executeCombatHeroRoll()">Tira (D6)</button>
+                                        <button id="combatDiceBackBtn" class="btn-small combat-back-btn" onclick="backToCombatActions()" data-tip="Indietro [Esc]||Torna alla scelta dell'azione senza tirare.">Indietro</button>
                                         <div id="diceCombatResult" class="dice-result"></div>
                                     </div>
                                 </div>
@@ -541,12 +545,6 @@
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica riposo -->
                             <img id="restImg" src="immagini/riposo.jpg" alt="Riposo">
-                            <div class="campfire" aria-hidden="true">
-                                <div class="campfire-glow"></div>
-                                <div class="campfire-sparks"><span></span><span></span><span></span><span></span><span></span></div>
-                                <span class="flame f1"></span><span class="flame f2"></span><span class="flame f3"></span>
-                                <div class="campfire-logs"></div>
-                            </div>
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -693,10 +691,17 @@
     <script src="data/campagne/astarte_ch1.js"></script>
     <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
     <script src="js/libreria.js"></script>
+    <script src="js/comune.js"></script>
     <script src="js/vendor/gsap.min.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/salvataggi.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/mappa.js"></script>
+    <script src="js/combattimento.js"></script>
+    <script src="js/ritratti.js"></script>
     <script src="js/loot.js"></script>
     <script src="js/shop.js"></script>
+    <script src="js/avvio.js"></script>
     <script src="js/simulator.js"></script>
     <script src="js/vendor/qrcode.js"></script>
     <script src="js/remote.js"></script>

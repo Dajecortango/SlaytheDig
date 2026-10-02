@@ -8,8 +8,6 @@
         /* ==========================================================================
            STATO GLOBALE RUNTIME
            ========================================================================== */
-        let currentCampaign = null;
-        let stsMapNodes = [];
         let enemies = {};
         let challengesData = {};
         let restsData = {};
@@ -21,53 +19,67 @@
         let campaignArmory = [];
 
         let partySize = 3;
-        let party = [];
-        let partyCoins = 0;
-        let unlockedRelics = [];
-        let activeCurses = [];
-        let currentNodeId = null;
-        let challengeState = null;
 
-        // Stato della presentazione: schermata attiva, fase e round del combattimento, statistiche
+        // Stato della partita in corso, tutto in un oggetto: è quello che finisce nei salvataggi
+        // (vedi saveData in js/salvataggi.js) e che il simulatore reimposta a ogni run.
+        //   currentCampaign: campagna risolta (copia), stsMapNodes: nodi con done/active, currentNodeId: nodo attuale
+        //   party: eroi, partyCoins: monete, unlockedRelics / activeCurses: reliquie e maledizioni
+        //   expeditionStats: statistiche della spedizione (anche la rotazione dei temi musicali)
+        //   challengeState: sfida in corso; activeEnemy, helpBonus, combatRound: scontro in corso
+        const newExpeditionStats = () => ({ combatsWon: 0, challengesPassed: 0, challengesFailed: 0, coinsEarned: 0, itemsFound: 0, combatThemes: 0 });
+        const stato = {
+            currentCampaign: null,
+            stsMapNodes: [],
+            currentNodeId: null,
+            party: [],
+            partyCoins: 0,
+            unlockedRelics: [],
+            activeCurses: [],
+            expeditionStats: newExpeditionStats(),
+            challengeState: null,
+            activeEnemy: null,
+            helpBonus: 0,
+            combatRound: 0
+        };
+
+        // Stato della presentazione: schermata attiva, fase del combattimento
         let currentScreenId = 'screenStart';
         let combatPhase = 'none';
-        let combatRound = 0;
-        const newExpeditionStats = () => ({ combatsWon: 0, challengesPassed: 0, challengesFailed: 0, coinsEarned: 0, itemsFound: 0 });
-        let expeditionStats = newExpeditionStats();
 	function hasRelic(relicName) {
-    return unlockedRelics.some(r => r.name === relicName);
+    return stato.unlockedRelics.some(r => r.name === relicName);
 }
 
 // Le maledizioni sono salvate come testo "Nome (descrizione)": si riconoscono dal nome iniziale
 function hasCurse(curseName) {
-    return activeCurses.some(c => c.startsWith(curseName));
+    return stato.activeCurses.some(c => c.startsWith(curseName));
 }
 
 function breakRelic(relicName) {
-    const idx = unlockedRelics.findIndex(r => r.name === relicName);
+    const idx = stato.unlockedRelics.findIndex(r => r.name === relicName);
     if (idx > -1) {
-        unlockedRelics.splice(idx, 1);
+        stato.unlockedRelics.splice(idx, 1);
         updatePartyStatusBars();
     }
 }
 
         // Interprete degli effetti descritti nei dati delle campagne (campo "effects").
         // Gli effetti "hero_*" agiscono sull'eroe passato, gli altri sull'intera compagnia.
+        // I tipi sono elencati in EFFECT_TYPES (js/comune.js, usato anche dall'editor): un tipo nuovo va aggiunto lì e qui.
         function applyEffects(effects, hero) {
             (effects || []).forEach(e => {
                 switch (e.effect) {
                     case 'hero_stat': hero[e.stat] = (hero[e.stat] || 0) + e.val; break;
                     case 'hero_set': hero[e.stat] = e.val; break;
-                    case 'party_stat': party.forEach(h => { h[e.stat] = Math.max(0, (h[e.stat] || 0) + e.val); }); break;
-                    case 'party_max_hp': party.forEach(h => { h.maxHp += e.val; h.hp += e.val; }); break;
-                    case 'party_damage': party.forEach(h => { h.hp = Math.max(1, h.hp - e.val); }); break;
-                    case 'coins': partyCoins = Math.max(0, partyCoins + e.val); break;
-                    case 'add_curse': activeCurses.push(e.text); break;
+                    case 'party_stat': stato.party.forEach(h => { h[e.stat] = Math.max(0, (h[e.stat] || 0) + e.val); }); break;
+                    case 'party_max_hp': stato.party.forEach(h => { h.maxHp += e.val; h.hp += e.val; }); break;
+                    case 'party_damage': stato.party.forEach(h => { h.hp = Math.max(1, h.hp - e.val); }); break;
+                    case 'coins': stato.partyCoins = Math.max(0, stato.partyCoins + e.val); break;
+                    case 'add_curse': stato.activeCurses.push(e.text); break;
                     default: console.warn('Effetto sconosciuto:', e);
                 }
             });
             // Fede o Intelligenza cambiate: aggiorna i bonus degli oggetti in scala
-            if (typeof refreshScaledBonuses === 'function') { party.forEach(refreshScaledBonuses); if (hero) refreshScaledBonuses(hero); }
+            if (typeof refreshScaledBonuses === 'function') { stato.party.forEach(refreshScaledBonuses); if (hero) refreshScaledBonuses(hero); }
         }
 	
 
@@ -76,201 +88,6 @@ function breakRelic(relicName) {
         const LIBRERIA = window.LIBRERIA || { armeria: {}, bestiario: {}, reliquie: {}, maledizioni: {}, lootPredefinito: [] };
         const DEFAULT_GAME_ITEMS = (LIBRERIA.lootPredefinito || []).map(id => LIBRERIA.armeria[id]).filter(Boolean);
         let gameItems = DEFAULT_GAME_ITEMS;
-
-        /* ==========================================================================
-           SISTEMA DI SALVATAGGIO / CARICAMENTO (LOCALSTORAGE)
-           ========================================================================== */
-        // Tre slot di salvataggio in localStorage. Il vecchio salvataggio unico finisce nello slot 1.
-        const SAVE_SLOTS = 3;
-        const saveKey = slot => `dignitas_save_${slot}`;
-        let currentSaveSlot = null;  // slot della partita in corso (per sovrascriverlo e cancellarlo alla sconfitta)
-
-        function readSave(slot) {
-            try { return JSON.parse(localStorage.getItem(saveKey(slot)) || 'null'); } catch (e) { return null; }
-        }
-
-        function migrateOldSave() {
-            try {
-                const old = localStorage.getItem("dignitas_savegame");
-                if (old && !localStorage.getItem(saveKey(1))) localStorage.setItem(saveKey(1), old);
-                localStorage.removeItem("dignitas_savegame");
-            } catch (e) {}
-        }
-
-        function hasAnySave() {
-            for (let slot = 1; slot <= SAVE_SLOTS; slot++) if (readSave(slot)) return true;
-            return false;
-        }
-
-        function checkSavedGame() {
-            migrateOldSave();
-            const btn = document.getElementById("btnContinueSavedGame");
-            if (btn) btn.classList.toggle("hidden", !hasAnySave());
-        }
-
-        function deleteCurrentSave() {
-            if (currentSaveSlot == null) return;
-            try { localStorage.removeItem(saveKey(currentSaveSlot)); } catch (e) {}
-            checkSavedGame();
-        }
-
-        // Riga descrittiva di uno slot: campagna, livello raggiunto, compagnia e data
-        function saveSlotHtml(slot, data, actions) {
-            if (!data) {
-                return `<div class="save-slot empty"><div class="save-slot-info"><b>Slot ${slot}</b><span>Vuoto</span></div><div class="save-slot-actions">${actions}</div></div>`;
-            }
-            const camp = campaignsDatabase[data.campaignId];
-            const node = (data.stsMapNodes || []).find(n => n.id === data.currentNodeId);
-            const maxLevel = Math.max(0, ...(data.stsMapNodes || []).map(n => n.level));
-            const levelText = node ? `Livello ${node.level + 1} di ${maxLevel + 1}` : 'Inizio della mappa';
-            const heroes = (data.party || []).map(h => esc(h.name)).join(', ');
-            return `<div class="save-slot">
-                <div class="save-slot-info">
-                    <b>Slot ${slot} · ${esc(camp ? camp.title : data.campaignId)}</b>
-                    <span>${levelText} · ${data.partyCoins || 0} monete</span>
-                    <span>${heroes}</span>
-                    <small>Salvata il ${esc(data.timestamp || '')}</small>
-                </div>
-                <div class="save-slot-actions">${actions}</div>
-            </div>`;
-        }
-
-        function saveGame() {
-            if (!currentCampaign || party.length === 0) {
-                uiError("Non c'è nessuna partita in corso da salvare");
-                return;
-            }
-            if (party.every(p => p.hp <= 0)) {
-                uiError("La compagnia è caduta: non si può salvare una partita persa");
-                return;
-            }
-            const rows = [];
-            for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
-                const current = slot === currentSaveSlot ? ' <em class="save-current">partita attuale</em>' : '';
-                rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small" onclick="saveToSlot(${slot})">Salva qui</button>${current}`));
-            }
-            openModal('Salva partita', `<div class="save-slots">${rows.join('')}</div>`, [{ label: 'Annulla', className: 'btn-danger' }], { wide: true });
-        }
-
-        function saveToSlot(slot) {
-            const existing = readSave(slot);
-            const write = () => {
-                const saveData = {
-                    campaignId: currentCampaign.id,
-                    party: party,
-                    partyCoins: partyCoins,
-                    unlockedRelics: unlockedRelics.map(r => ({ name: r.name, desc: r.desc })),
-                    activeCurses: activeCurses,
-                    stsMapNodes: stsMapNodes,
-                    currentNodeId: currentNodeId,
-                    expeditionStats: expeditionStats,
-                    timestamp: new Date().toLocaleString("it-IT")
-                };
-                try {
-                    localStorage.setItem(saveKey(slot), JSON.stringify(saveData));
-                    currentSaveSlot = slot;
-                    checkSavedGame();
-                    openModal('Partita salvata', `<p>Salvata nello slot ${slot} (${saveData.timestamp}).</p>`);
-                } catch (e) {
-                    openModal('Errore', '<p>Salvataggio non riuscito: memoria piena o non disponibile.</p>');
-                }
-            };
-            closeModal();
-            if (existing && slot !== currentSaveSlot) {
-                openModal('Sovrascrivere lo slot?', saveSlotHtml(slot, existing, ''),
-                    [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Sovrascrivi', className: 'btn-danger', onClick: () => setTimeout(write, 0) }]);
-            } else {
-                write();
-            }
-        }
-
-        function loadGame() {
-            migrateOldSave();
-            const rows = [];
-            for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
-                const data = readSave(slot);
-                const actions = data
-                    ? `<button class="btn-small btn-proceed" onclick="loadFromSlot(${slot})">Carica</button><button class="btn-small btn-danger" onclick="deleteSlot(${slot})">Elimina</button>`
-                    : '';
-                rows.push(saveSlotHtml(slot, data, actions));
-            }
-            openModal('Carica partita', `<div class="save-slots">${rows.join('')}</div>`, [{ label: 'Chiudi', className: 'btn-danger' }], { wide: true });
-        }
-
-        function deleteSlot(slot) {
-            const data = readSave(slot);
-            closeModal();
-            openModal('Eliminare il salvataggio?', saveSlotHtml(slot, data, ''),
-                [{ label: 'Annulla', className: 'btn-proceed', onClick: () => setTimeout(loadGame, 0) },
-                 { label: 'Elimina', className: 'btn-danger', onClick: () => {
-                    try { localStorage.removeItem(saveKey(slot)); } catch (e) {}
-                    if (currentSaveSlot === slot) currentSaveSlot = null;
-                    checkSavedGame();
-                    setTimeout(loadGame, 0);
-                 } }]);
-        }
-
-        function loadFromSlot(slot) {
-            const data = readSave(slot);
-            closeModal();
-            if (!data) { openModal('Slot vuoto', '<p>Nessun salvataggio in questo slot.</p>'); return; }
-
-            try {
-                const rawCamp = campaignsDatabase[data.campaignId];
-                if (!rawCamp) {
-                    openModal('Errore', '<p>Campagna del salvataggio non trovata.</p>');
-                    return;
-                }
-
-                currentCampaign = JSON.parse(JSON.stringify(rawCamp));
-                stsMapNodes = (data.stsMapNodes || []).map(saved => {
-                    const fresh = currentCampaign.mapNodes.find(n => n.id === saved.id);
-                    return fresh ? { ...fresh, done: saved.done, active: saved.active } : saved;
-                });
-                enemies = currentCampaign.enemies;
-                challengesData = currentCampaign.challenges;
-                restsData = currentCampaign.rests;
-                merchantsData = currentCampaign.merchants;
-                treasuresData = currentCampaign.treasures;
-                gameItems = currentCampaign.lootItems && currentCampaign.lootItems.length > 0 ? currentCampaign.lootItems : DEFAULT_GAME_ITEMS;
-
-                campaignHeroes = currentCampaign.heroes || [];
-                registerCampaignHeroPortraits(campaignHeroes);
-                campaignAbilities = rawCamp.abilities || {};
-                campaignArmory = currentCampaign.initialArmory || [];
-
-                party = data.party;
-                partyCoins = data.partyCoins;
-                activeCurses = data.activeCurses || [];
-                expeditionStats = Object.assign(newExpeditionStats(), data.expeditionStats || {});
-                displayedCoins = data.partyCoins;
-                currentNodeId = data.currentNodeId;
-                currentSaveSlot = slot;
-
-                // Ricolleghiamo abilità e reliquie ai dati della campagna
-                party.forEach(hero => {
-                    if (hero.chosenAbility) {
-                        const heroAbList = campaignAbilities[hero.name] || [];
-                        const fullAb = heroAbList.find(a => a.name === hero.chosenAbility.name || a.id === hero.chosenAbility.id);
-                        if (fullAb) hero.chosenAbility = fullAb;
-                    }
-                });
-
-                unlockedRelics = (data.unlockedRelics || []).map(savedRelic =>
-                    Object.values(LIBRERIA.reliquie).find(r => r.name === savedRelic.name) || savedRelic);
-
-                document.getElementById('mapCampaignHeader').textContent = `Mappa: ${currentCampaign.title}`;
-                updatePartyStatusBars();
-                startMap();
-            } catch (err) {
-                openModal('Errore', '<p>Errore durante il caricamento del salvataggio.</p>');
-                console.error(err);
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            checkSavedGame();
-        });
 
         function goToCampaigns() {
             showScreen('screenCampaigns');
@@ -432,27 +249,27 @@ function breakRelic(relicName) {
             const rawCamp = campaignsDatabase[campaignId];
             if(!rawCamp) return;
 
-            currentCampaign = JSON.parse(JSON.stringify(rawCamp));
+            stato.currentCampaign = JSON.parse(JSON.stringify(rawCamp));
 
-            stsMapNodes = currentCampaign.mapNodes;
-            enemies = currentCampaign.enemies;
-            challengesData = currentCampaign.challenges;
-            restsData = currentCampaign.rests;
-            merchantsData = currentCampaign.merchants;
-            treasuresData = currentCampaign.treasures;
+            stato.stsMapNodes = stato.currentCampaign.mapNodes;
+            enemies = stato.currentCampaign.enemies;
+            challengesData = stato.currentCampaign.challenges;
+            restsData = stato.currentCampaign.rests;
+            merchantsData = stato.currentCampaign.merchants;
+            treasuresData = stato.currentCampaign.treasures;
 
-            campaignHeroes = currentCampaign.heroes || [];
+            campaignHeroes = stato.currentCampaign.heroes || [];
             registerCampaignHeroPortraits(campaignHeroes);
             campaignAbilities = rawCamp.abilities || {};
-            campaignArmory = currentCampaign.initialArmory || [];
+            campaignArmory = stato.currentCampaign.initialArmory || [];
 
-            gameItems = currentCampaign.lootItems && currentCampaign.lootItems.length > 0 ? currentCampaign.lootItems : DEFAULT_GAME_ITEMS;
+            gameItems = stato.currentCampaign.lootItems && stato.currentCampaign.lootItems.length > 0 ? stato.currentCampaign.lootItems : DEFAULT_GAME_ITEMS;
             currentSaveSlot = null;  // nuova partita: nessuno slot finché non la si salva
 
-            document.getElementById('campaignIntroTitle').textContent = currentCampaign.title;
-            document.getElementById('campaignIntroImg').src = currentCampaign.coverImage;
-            document.getElementById('campaignIntroDesc').innerHTML = `<strong>Descrizione:</strong> ${currentCampaign.introText}`;
-            document.getElementById('mapCampaignHeader').textContent = `Mappa: ${currentCampaign.title}`;
+            document.getElementById('campaignIntroTitle').textContent = stato.currentCampaign.title;
+            document.getElementById('campaignIntroImg').src = stato.currentCampaign.coverImage;
+            document.getElementById('campaignIntroDesc').innerHTML = `<strong>Descrizione:</strong> ${stato.currentCampaign.introText}`;
+            document.getElementById('mapCampaignHeader').textContent = `Mappa: ${stato.currentCampaign.title}`;
 
             setupPartySizeSelector();
             startPartyCreation();
@@ -476,7 +293,7 @@ function breakRelic(relicName) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '0.9';
+        const GAME_VERSION = '1.0';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
@@ -534,267 +351,6 @@ function breakRelic(relicName) {
             startPendingTypewriters(screen);
         }
 
-        /* ---------- Audio: musica dei menu ed effetti sonori ---------- */
-        const MENU_MUSIC_SCREENS = ['screenStart', 'screenCampaigns', 'screenParty'];
-        let currentAudioScreen = 'screenStart';
-        let soundMuted = false;
-        let musicFadeTimer = null;
-        try { soundMuted = localStorage.getItem('dignitas_muted') === '1'; } catch (e) {}
-
-        function fadeMusicTo(target, onDone) {
-            const music = document.getElementById('menuMusic');
-            clearInterval(musicFadeTimer);
-            musicFadeTimer = setInterval(() => {
-                const step = 0.05;
-                const next = music.volume + Math.sign(target - music.volume) * step;
-                if (Math.abs(target - music.volume) <= step) {
-                    music.volume = target;
-                    clearInterval(musicFadeTimer);
-                    if (onDone) onDone();
-                } else {
-                    music.volume = Math.min(1, Math.max(0, next));
-                }
-            }, 60);
-        }
-
-        // Avvia o ferma la musica in base alla schermata attiva
-        function updateMenuMusic(screenId) {
-            if (screenId) currentAudioScreen = screenId;
-            const music = document.getElementById('menuMusic');
-            const shouldPlay = MENU_MUSIC_SCREENS.includes(currentAudioScreen);
-
-            if (shouldPlay && music.paused) {
-                music.volume = 0;
-                music.play().then(() => fadeMusicTo(gameOptions.musicVolume)).catch(() => {
-                    // Il browser blocca l'audio finché l'utente non interagisce con la pagina
-                });
-            } else if (!shouldPlay && !music.paused) {
-                fadeMusicTo(0, () => { music.pause(); music.currentTime = 0; });
-            }
-        }
-
-        // Riproduce un effetto sonoro rispettando il silenziamento globale
-        function playSfx(src, volume = 0.7) {
-            if (soundMuted) return;
-            const sfx = new Audio(src);
-            sfx.volume = Math.min(1, volume * gameOptions.sfxVolume);
-            sfx.play().catch(() => {});
-        }
-
-        // Suoni propri del nemico in combattimento (campi sfxAttack, sfxHit, sfxDeath del bestiario).
-        // Restituisce false se lo slot è vuoto, così chi chiama può usare il suono generato.
-        function playEnemySfx(slot) {
-            const src = activeEnemy && activeEnemy[slot];
-            if (!src) return false;
-            playSfx(src, 0.9);
-            return true;
-        }
-
-        // Suoni dei colpi generati con Web Audio (nessun file audio necessario):
-        // 'armor' = clangore metallico, 'hit' = colpo sordo sugli HP di un eroe, 'enemy' = colpo sul nemico
-        let sfxCtx = null;
-        function synthSfx(kind) {
-            if (soundMuted || !gameOptions.sfxVolume) return;
-            try { sfxCtx = sfxCtx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
-            const ctx = sfxCtx;
-            if (ctx.state === 'suspended') ctx.resume();
-            const t = ctx.currentTime;
-            const out = ctx.createGain();
-            out.gain.value = 0.5 * gameOptions.sfxVolume;
-            out.connect(ctx.destination);
-
-            // Tono breve con inviluppo che si spegne: base per i suoni leggeri (passaggio del mouse, dadi)
-            const tone = (type, from, to, start, dur, peak, target = out) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(from, t + start);
-                osc.frequency.exponentialRampToValueAtTime(to, t + start + dur);
-                gain.gain.setValueAtTime(0.0001, t + start);
-                gain.gain.exponentialRampToValueAtTime(peak, t + start + 0.008);
-                gain.gain.exponentialRampToValueAtTime(0.0001, t + start + dur);
-                osc.connect(gain).connect(target);
-                osc.start(t + start);
-                osc.stop(t + start + dur + 0.02);
-            };
-            // Colpetto di rumore filtrato (legno/osso che batte)
-            const tick = (start, freq, peak) => {
-                const len = Math.floor(ctx.sampleRate * 0.03);
-                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-                const d = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
-                const src = ctx.createBufferSource();
-                src.buffer = buf;
-                const band = ctx.createBiquadFilter();
-                band.type = 'bandpass';
-                band.frequency.value = freq;
-                band.Q.value = 2.5;
-                const g = ctx.createGain();
-                g.gain.value = peak;
-                src.connect(band).connect(g).connect(out);
-                src.start(t + start);
-            };
-
-            if (kind === 'hover') {
-                // Leggero "tic" metallico al passaggio del mouse sui pulsanti
-                tone('sine', 1900, 1500, 0, 0.05, 0.05);
-                return;
-            }
-            if (kind === 'dice') {
-                // Dadi che rotolano: colpetti irregolari per circa mezzo secondo
-                let at = 0;
-                for (let i = 0; i < 8; i++) {
-                    tick(at, 1800 + Math.random() * 1600, 0.35 + Math.random() * 0.3);
-                    at += 0.04 + Math.random() * 0.04;
-                }
-                return;
-            }
-            if (kind === 'flip') {
-                // Carta che si gira: fruscio breve che sale di tono
-                const len = Math.floor(ctx.sampleRate * 0.16);
-                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-                const d = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / len);
-                const src = ctx.createBufferSource();
-                src.buffer = buf;
-                const band = ctx.createBiquadFilter();
-                band.type = 'bandpass';
-                band.Q.value = 1.2;
-                band.frequency.setValueAtTime(900, t);
-                band.frequency.exponentialRampToValueAtTime(3200, t + 0.16);
-                const g = ctx.createGain();
-                g.gain.value = 0.5;
-                src.connect(band).connect(g).connect(out);
-                src.start(t);
-                return;
-            }
-            if (kind === 'dice-land') {
-                tick(0, 1200, 0.6);
-                return;
-            }
-            if (kind === 'six') {
-                // 6 naturale: accordo luminoso ascendente
-                tick(0, 1200, 0.6);
-                [660, 880, 1320].forEach((f, i) => tone('triangle', f, f, 0.03 + i * 0.07, 0.45, 0.16));
-                return;
-            }
-            if (kind === 'one') {
-                // 1 naturale: nota grave che scende
-                tick(0, 900, 0.6);
-                const low = ctx.createBiquadFilter();
-                low.type = 'lowpass';
-                low.frequency.value = 900;
-                low.connect(out);
-                tone('sawtooth', 220, 95, 0.03, 0.45, 0.2, low);
-                return;
-            }
-
-            if (kind === 'chain') {
-                // Tintinnio di catene: colpetti metallici acuti, sempre più deboli
-                [0, 0.05, 0.1, 0.17, 0.25, 0.34].forEach((s, i) => tick(s, 2600 + Math.random() * 1800, 0.35 / (1 + i * 0.5)));
-                return;
-            }
-
-            if (kind === 'armor') {
-                // Toni acuti non armonici che si spengono in fretta, come metallo colpito
-                [880, 1370, 2120].forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.18 / (i + 1), t);
-                    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-                    osc.connect(gain).connect(out);
-                    osc.start(t);
-                    osc.stop(t + 0.4);
-                });
-                return;
-            }
-
-            // Colpo sordo: breve rumore filtrato più un tonfo grave che scende di tono
-            const low = kind === 'enemy' ? 90 : 130;
-            const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.15), ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-            const noise = ctx.createBufferSource();
-            noise.buffer = buffer;
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.value = kind === 'enemy' ? 900 : 600;
-            const noiseGain = ctx.createGain();
-            noiseGain.gain.value = 0.6;
-            noise.connect(filter).connect(noiseGain).connect(out);
-            noise.start(t);
-
-            const thud = ctx.createOscillator();
-            const thudGain = ctx.createGain();
-            thud.type = 'sine';
-            thud.frequency.setValueAtTime(low, t);
-            thud.frequency.exponentialRampToValueAtTime(45, t + 0.2);
-            thudGain.gain.setValueAtTime(0.7, t);
-            thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-            thud.connect(thudGain).connect(out);
-            thud.start(t);
-            thud.stop(t + 0.3);
-        }
-
-        function diceOutcomeSfx(value) {
-            synthSfx(value === 6 ? 'six' : value === 1 ? 'one' : 'dice-land');
-        }
-
-        // Suono leggero al passaggio del mouse su pulsanti e schede (una volta per elemento, non sui disattivati)
-        let lastHoverTarget = null;
-        let lastHoverTime = 0;
-        document.addEventListener('mouseover', e => {
-            const target = e.target.closest(CLICKABLE_SELECTOR);
-            if (target === lastHoverTarget) return;
-            lastHoverTarget = target;
-            if (!target || target.disabled) return;
-            const now = performance.now();
-            if (now - lastHoverTime < 45) return;
-            lastHoverTime = now;
-            synthSfx('hover');
-        });
-
-        // Suono di clic su ogni pulsante e scheda cliccabile, in tutte le schermate
-        const CLICK_SFX = 'audio/click.ogg';
-        const CLICKABLE_SELECTOR = 'button, [role="button"], .campaign-card, .armory-btn';
-        const clickSfxPreload = new Audio(CLICK_SFX);
-        clickSfxPreload.preload = 'auto';
-
-        document.addEventListener('click', e => {
-            const target = e.target.closest(CLICKABLE_SELECTOR);
-            if (!target || target.disabled) return;
-            playSfx(CLICK_SFX, 0.8);
-        }, true);
-
-        function applySoundState() {
-            // Il video dei menu resta sempre muto
-            document.querySelectorAll('audio, video:not(#menuVideo)').forEach(media => { media.muted = soundMuted; });
-        }
-
-        // Il silenziamento si imposta dalla finestra Opzioni
-        function setSoundMuted(muted) {
-            soundMuted = muted;
-            try { localStorage.setItem('dignitas_muted', soundMuted ? '1' : '0'); } catch (e) {}
-            applySoundState();
-            updateMenuMusic();
-        }
-
-        // I browser avviano l'audio solo dopo la prima interazione dell'utente
-        function unlockAudioOnce() {
-            updateMenuMusic();
-            document.removeEventListener('pointerdown', unlockAudioOnce);
-            document.removeEventListener('keydown', unlockAudioOnce);
-        }
-        document.addEventListener('pointerdown', unlockAudioOnce);
-        document.addEventListener('keydown', unlockAudioOnce);
-
-        window.addEventListener('DOMContentLoaded', () => {
-            applySoundState();
-            updateMenuMusic('screenStart');
-        });
-
         function setCounter(el, value) {
             const prev = el.dataset.value != null ? Number(el.dataset.value) : null;
             el.dataset.value = value;
@@ -804,35 +360,35 @@ function breakRelic(relicName) {
         }
 
         function updatePartyStatusBars() {
-            party.forEach(refreshScaledBonuses);
+            stato.party.forEach(refreshScaledBonuses);
             const container = document.getElementById('partyStatusBarContent');
-            animateCoinCounter(partyCoins);
+            animateCoinCounter(stato.partyCoins);
 
-            setCounter(document.getElementById('topBarRelics'), unlockedRelics.length);
-            document.getElementById('topBarRelicsWrap').dataset.tip = unlockedRelics.length > 0
-                ? `Reliquie||${unlockedRelics.map(r => `<b style="color:var(--relic-color)">${r.name}</b>: ${r.desc}`).join('<br>')}`
+            setCounter(document.getElementById('topBarRelics'), stato.unlockedRelics.length);
+            document.getElementById('topBarRelicsWrap').dataset.tip = stato.unlockedRelics.length > 0
+                ? `Reliquie||${stato.unlockedRelics.map(r => `<b style="color:var(--relic-color)">${r.name}</b>: ${r.desc}`).join('<br>')}`
                 : 'Reliquie||Nessuna reliquia ottenuta.';
 
-            setCounter(document.getElementById('topBarCurses'), activeCurses.length);
-            document.getElementById('topBarCursesWrap').dataset.tip = activeCurses.length > 0
-                ? `Maledizioni||${activeCurses.join('<br>')}`
+            setCounter(document.getElementById('topBarCurses'), stato.activeCurses.length);
+            document.getElementById('topBarCursesWrap').dataset.tip = stato.activeCurses.length > 0
+                ? `Maledizioni||${stato.activeCurses.join('<br>')}`
                 : 'Maledizioni||Nessuna maledizione attiva.';
 
-            document.body.classList.toggle('no-party', party.length === 0);
+            document.body.classList.toggle('no-party', stato.party.length === 0);
 
-            if (party.length === 0) {
+            if (stato.party.length === 0) {
                 container.innerHTML = `<div class="console-empty">Nessun eroe reclutato</div>`;
                 return;
             }
 
-            container.innerHTML = party.map(heroCardHtml).join('');
+            container.innerHTML = stato.party.map(heroCardHtml).join('');
             animateBars(container);
             fxDiffHeroes();
             renderTurnBar();
         }
 
         window.useConsumableFromTopbar = function(heroName, itemIdx) {
-            let hero = party.find(p => p.name === heroName);
+            let hero = stato.party.find(p => p.name === heroName);
             if(!hero) return;
             let item = hero.items[itemIdx];
             if(!item || !item.type || !item.type.startsWith('consumable')) return;
@@ -840,7 +396,7 @@ function breakRelic(relicName) {
             openModal(
                 item.name,
                 `<p>${item.desc}</p><p>A quale membro della spedizione vuoi applicarlo?</p>`,
-                party.map(p => ({
+                stato.party.map(p => ({
                     label: `${p.name} (HP ${p.hp}/${p.maxHp})`,
                     disabled: p.hp <= 0,
                     onClick: () => useConsumable(hero.name, itemIdx, p.name)
@@ -851,12 +407,12 @@ function breakRelic(relicName) {
 
         function startPartyCreation() {
             showScreen('screenParty');
-            party = [];
-            partyCoins = 0;
+            stato.party = [];
+            stato.partyCoins = 0;
             displayedCoins = 0;
-            unlockedRelics = [];
-            activeCurses = [];
-            expeditionStats = newExpeditionStats();
+            stato.unlockedRelics = [];
+            stato.activeCurses = [];
+            stato.expeditionStats = newExpeditionStats();
             document.getElementById('partyConfigArea').classList.remove('hidden');
             document.getElementById('heroCreationArea').classList.add('hidden');
             document.getElementById('abilityArea').classList.add('hidden');
@@ -877,7 +433,7 @@ function breakRelic(relicName) {
 
         function loadHeroGridOptions() {
             const gridContainer = document.getElementById('heroGridButtons');
-            const availableHeroes = campaignHeroes.filter(h => !party.some(p => p.name === h.name));
+            const availableHeroes = campaignHeroes.filter(h => !stato.party.some(p => p.name === h.name));
 
             gridContainer.innerHTML = availableHeroes.map(h => `
                 <button class="armory-btn" onclick="selectHeroCard('${h.name}')">
@@ -987,323 +543,17 @@ function breakRelic(relicName) {
         }
 
         function nextHero() {
-            party.push(activeHeroForCreation);
+            stato.party.push(activeHeroForCreation);
             updatePartyStatusBars();
             document.getElementById('armoryArea').classList.add('hidden');
             document.getElementById('btnProceedHero').classList.add('hidden');
 
-            if(party.length < partySize) {
+            if(stato.party.length < partySize) {
                 document.getElementById('heroCreationArea').classList.remove('hidden');
                 loadHeroGridOptions();
             } else {
                 showScreen('screenCampaignIntro');
             }
-        }
-
-        function startMap() {
-            showScreen('screenMap');
-            renderStsMap();
-            setTimeout(() => {
-                const wrapper = document.getElementById('stsMapWrapper');
-                const token = document.getElementById('partyToken');
-                // Centra la vista sul segnalino della compagnia (o sul fondo della mappa all'inizio)
-                const maxScroll = wrapper.scrollHeight - wrapper.clientHeight;
-                const target = Math.max(0, Math.min(maxScroll, token
-                    ? parseFloat(token.style.top) - wrapper.clientHeight * 0.6
-                    : maxScroll));
-                if (!animationsEnabled()) { wrapper.scrollTop = target; return; }
-                // Alla prima apertura la vista parte dalla meta in cima e scende fino alla compagnia;
-                // poi scivola dal basso fino al segnalino. Alla fine i nodi raggiungibili si illuminano.
-                const start = token ? Math.min(maxScroll, target + 220) : 0;
-                panMapView(wrapper, start, target, token ? 700 : 1800, wakeAvailableNodes);
-            }, 50);
-        }
-
-        let mapPanFrame = null;
-
-        function panMapView(wrapper, from, to, duration, onDone) {
-            cancelAnimationFrame(mapPanFrame);
-            wrapper.scrollTop = from;
-            const t0 = performance.now();
-            // Se il giocatore scorre o clicca, lo scorrimento automatico si ferma
-            const stop = () => {
-                cancelAnimationFrame(mapPanFrame);
-                ['wheel', 'pointerdown', 'touchstart'].forEach(ev => wrapper.removeEventListener(ev, stop));
-                if (onDone) onDone();
-                onDone = null;
-            };
-            ['wheel', 'pointerdown', 'touchstart'].forEach(ev => wrapper.addEventListener(ev, stop, { passive: true }));
-            const step = now => {
-                const t = Math.min(1, (now - t0) / duration);
-                const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-                wrapper.scrollTop = from + (to - from) * ease;
-                if (t < 1) mapPanFrame = requestAnimationFrame(step);
-                else stop();
-            };
-            mapPanFrame = requestAnimationFrame(step);
-        }
-
-        // I nodi raggiungibili si accendono uno dopo l'altro, da sinistra a destra
-        function wakeAvailableNodes() {
-            const nodes = Array.from(document.querySelectorAll('#stsMapNodesContainer .sts-node.available'))
-                .sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
-            nodes.forEach((el, i) => {
-                el.style.setProperty('--wake-delay', `${i * 160}ms`);
-                el.classList.add('node-wake');
-                el.addEventListener('animationend', e => {
-                    if (e.animationName === 'node-wake') el.classList.remove('node-wake');
-                });
-            });
-        }
-
-        function renderStsMap() {
-            const nodesContainer = document.getElementById('stsMapNodesContainer');
-            const svgContainer = document.getElementById('stsMapSvg');
-            Array.from(nodesContainer.children).forEach(child => { if(child.id !== 'stsMapSvg') child.remove(); });
-
-            let maxLevel = Math.max(...stsMapNodes.map(n => n.level), 1);
-            const totalLevels = maxLevel + 1;
-            const containerHeight = Math.max(900, totalLevels * 175);
-            nodesContainer.style.height = `${containerHeight}px`;
-            svgContainer.style.height = `${containerHeight}px`;
-            svgContainer.setAttribute("viewBox", `0 0 800 ${containerHeight}`);
-
-            const stepY = (containerHeight - 140) / maxLevel;
-
-            const currentActiveNode = stsMapNodes.find(n => n.active);
-            const currentLevel = currentActiveNode ? currentActiveNode.level : (stsMapNodes.filter(n => n.done).length > 0 ? Math.max(...stsMapNodes.filter(n => n.done).map(n => n.level)) + 1 : 0);
-
-            let svgLinesHtml = '';
-            stsMapNodes.forEach(node => {
-                node.next.forEach(nextId => {
-                    const targetNode = stsMapNodes.find(n => n.id === nextId);
-                    if(targetNode) {
-                        const y1 = containerHeight - (node.level * stepY + 70);
-                        const y2 = containerHeight - (targetNode.level * stepY + 70);
-
-                        let pathClass = "";
-                        if (targetNode.active && node.done) pathClass = "path-open";
-                        else if (targetNode.active) pathClass = "path-next";
-                        else if (node.done && targetNode.done) pathClass = "path-taken";
-                        else if (node.done) pathClass = "path-closed";
-                        else if (targetNode.level < currentLevel) pathClass = "path-closed";
-
-                        svgLinesHtml += `<line class="${pathClass}" data-from="${node.id}" data-to="${targetNode.id}" x1="${node.x}" y1="${y1}" x2="${targetNode.x}" y2="${y2}" />`;
-                    }
-                });
-            });
-            svgContainer.innerHTML = svgLinesHtml;
-            renderMapLegend();
-
-            stsMapNodes.forEach(node => {
-                let statusClass = "upcoming";
-                if (node.done) {
-                    statusClass = "completed";
-                } else if (node.active) {
-                    statusClass = "available";
-                } else if (node.level < currentLevel && !node.done) {
-                    statusClass = "excluded";
-                }
-
-                const nodeEl = document.createElement('div');
-                nodeEl.className = `sts-node node-${node.type} ${statusClass}`;
-                nodeEl.dataset.nodeId = node.id;
-                nodeEl.style.left = `${node.x}px`;
-                nodeEl.style.top = `${containerHeight - (node.level * stepY + 70)}px`;
-                const isBoss = node.level === maxLevel || node.type === 'captain';
-                if (isBoss) {
-                    nodeEl.setAttribute('data-boss', 'true');
-                    nodeEl.classList.add('node-goal');
-                }
-
-                nodeEl.innerHTML = svgIcon(isBoss ? 'crown' : (NODE_ICON[node.type] || 'question'));
-                if(node.active && !node.done) {
-                    nodeEl.onclick = () => selectStsNode(node.id);
-                }
-                nodesContainer.appendChild(nodeEl);
-            });
-
-            renderPartyToken(nodesContainer, containerHeight, stepY);
-            renderExpeditionProgress(maxLevel);
-        }
-
-        /* ---------- Segnalino della compagnia sulla mappa ---------- */
-        let lastPartyTokenPos = null;
-
-        function renderPartyToken(nodesContainer, containerHeight, stepY) {
-            const doneNodes = stsMapNodes.filter(n => n.done);
-            if (doneNodes.length === 0) {
-                // Prima del primo nodo il segnalino non si vede: entrerà dal fondo della mappa
-                const firstLevel = stsMapNodes.filter(n => n.level === 0);
-                const avgX = firstLevel.reduce((s, n) => s + n.x, 0) / Math.max(1, firstLevel.length);
-                lastPartyTokenPos = { x: avgX, y: containerHeight + 60, nodes: stsMapNodes };
-                return;
-            }
-            const last = doneNodes.reduce((a, b) => (b.level > a.level ? b : a));
-            const pos = { x: last.x, y: containerHeight - (last.level * stepY + 70) };
-
-            const token = createPartyToken();
-            const from = lastPartyTokenPos && lastPartyTokenPos.nodes === stsMapNodes ? lastPartyTokenPos : null;
-            const moves = from && (from.x !== pos.x || from.y !== pos.y) && animationsEnabled();
-            const start = moves ? from : pos;
-            token.style.left = `${start.x}px`;
-            token.style.top = `${start.y}px`;
-            nodesContainer.appendChild(token);
-
-            if (moves) {
-                token.classList.add('moving');
-                void token.offsetWidth;
-                token.style.left = `${pos.x}px`;
-                token.style.top = `${pos.y}px`;
-                setTimeout(() => token.classList.remove('moving'), 950);
-            }
-            lastPartyTokenPos = { x: pos.x, y: pos.y, nodes: stsMapNodes };
-        }
-
-        function createPartyToken() {
-            const token = document.createElement('div');
-            token.id = 'partyToken';
-            token.className = 'party-token';
-            token.innerHTML = `<svg viewBox="0 0 64 72" aria-hidden="true">
-                <path d="M32 3 L60 12 V34 C60 52 47 64 32 69 C17 64 4 52 4 34 V12 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
-                <path d="M32 10 L54 17 V34 C54 48 44 58 32 62 C20 58 10 48 10 34 V17 Z" fill="url(#gradRed)" stroke="#000"/>
-                <text x="32" y="46" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="28" fill="url(#gradGold)" stroke="#000" stroke-width="1">D</text>
-            </svg>`;
-            token.dataset.tip = 'La Compagnia||Posizione attuale della spedizione.';
-            return token;
-        }
-
-        // Percorso animato: dopo il clic su un nodo il segnalino percorre il collegamento fino a lì
-        // (la strada si illumina d'oro), poi parte il titolo dell'evento. Restituisce la durata in ms.
-        const PARTY_TRAVEL_MS = 900;
-        function travelPartyTokenTo(node) {
-            const container = document.getElementById('stsMapNodesContainer');
-            const nodeEl = container && container.querySelector(`.sts-node[data-node-id="${node.id}"]`);
-            if (!nodeEl || !animationsEnabled()) return 0;
-            const target = { x: node.x, y: parseFloat(nodeEl.style.top) };
-
-            let token = document.getElementById('partyToken');
-            if (!token) {
-                // Primo nodo: il segnalino entra dal fondo della mappa
-                const start = lastPartyTokenPos || { x: target.x, y: target.y + 200 };
-                token = createPartyToken();
-                token.style.left = `${start.x}px`;
-                token.style.top = `${start.y}px`;
-                container.appendChild(token);
-            }
-
-            const fromNode = stsMapNodes.filter(n => n.done).reduce((a, b) => (!a || b.level > a.level ? b : a), null);
-            const line = fromNode && document.querySelector(`#stsMapSvg line[data-from="${fromNode.id}"][data-to="${node.id}"]`);
-            if (line) line.classList.add('path-walking');
-            nodeEl.classList.add('node-arriving');
-
-            const wrapper = document.getElementById('stsMapWrapper');
-            if (wrapper && wrapper.scrollTo) wrapper.scrollTo({ top: target.y - wrapper.clientHeight * 0.6, behavior: 'smooth' });
-
-            token.classList.add('moving');
-            void token.offsetWidth;
-            token.style.left = `${target.x}px`;
-            token.style.top = `${target.y}px`;
-            setTimeout(() => token.classList.remove('moving'), PARTY_TRAVEL_MS + 50);
-            // Al ritorno sulla mappa il segnalino è già sul nodo: niente seconda animazione
-            lastPartyTokenPos = { x: target.x, y: target.y, nodes: stsMapNodes };
-            synthSfx('flip');
-            return PARTY_TRAVEL_MS;
-        }
-
-        /* ---------- Titolo dell'evento prima di entrare nel nodo ---------- */
-        let nodeBannerBusy = false;
-
-        function nodeBannerInfo(node) {
-            const maxLevel = Math.max(...stsMapNodes.map(n => n.level));
-            const isBoss = node.level === maxLevel || node.type === 'captain';
-            let kind = NODE_LABEL[node.type] || 'Evento';
-            let title = kind;
-            if ((node.type === 'combat' || node.type === 'elite') && enemies[node.enemy]) title = enemies[node.enemy].name;
-            else if (node.type === 'challenge' && challengesData[node.challengeId]) title = challengesData[node.challengeId].title;
-            if (isBoss) kind = node.type === 'challenge' ? 'Prova Finale' : 'Scontro Finale';
-            // Sottotitolo come gli annunci di zona di WoW; il livello solo se il titolo del nodo non lo dice già
-            const levelText = `Livello ${node.level + 1} di ${maxLevel + 1}`;
-            const sub = node.title ? (/livello/i.test(node.title) ? node.title : `${node.title} — ${levelText}`) : levelText;
-            return { kind, title, sub, icon: isBoss ? 'crown' : (NODE_ICON[node.type] || 'question'), isBoss };
-        }
-
-        function selectStsNode(id) {
-            if (nodeBannerBusy) return;
-            const node = stsMapNodes.find(n => n.id === id);
-            if (!node) return;
-            if (!animationsEnabled()) { enterStsNode(id); return; }
-
-            nodeBannerBusy = true;
-            const travel = travelPartyTokenTo(node);
-            setTimeout(() => showNodeBanner(node, id), travel);
-        }
-
-        function showNodeBanner(node, id) {
-            const info = nodeBannerInfo(node);
-            const banner = document.createElement('div');
-            banner.className = `event-banner ${info.isBoss ? 'boss' : ''}`;
-            banner.innerHTML = `
-                <div class="event-banner-inner">
-                    <div class="event-banner-icon">${svgIcon(info.icon)}</div>
-                    <div class="event-banner-kind">${info.kind}</div>
-                    <div class="event-banner-title">${info.title}</div>
-                    <div class="event-banner-sub">${info.sub}</div>
-                </div>`;
-            document.body.appendChild(banner);
-
-            // La schermata cambia sotto il titolo, poi il titolo sfuma
-            setTimeout(() => enterStsNode(id), 1000);
-            setTimeout(() => { banner.remove(); nodeBannerBusy = false; }, 1500);
-        }
-
-        function enterStsNode(id) {
-            currentNodeId = id;
-            const node = stsMapNodes.find(n => n.id === id);
-
-            if(node.type === 'combat' || node.type === 'elite') {
-                if(node.image) document.getElementById('combatImg').src = node.image;
-                startCombat(node.enemy);
-            }
-            else if(node.type === 'challenge') {
-                if(node.image) document.getElementById('challengeImg').src = node.image;
-                startChallenge(node.challengeId);
-            }
-            else if(node.type === 'rest') {
-                if(node.image) document.getElementById('restImg').src = node.image;
-                startRest(node.restId);
-            }
-            else if(node.type === 'merchant') {
-                if(node.image) document.getElementById('merchantImg').src = node.image;
-                startMerchant(node.merchantId);
-            }
-            else if(node.type === 'treasure') {
-                if(node.image) document.getElementById('treasureImg').src = node.image;
-                startTreasure(node.treasureId);
-            }
-            else if(node.type === 'captain') {
-                startCaptainFinale();
-            }
-        }
-
-        function advanceNode() {
-            const currentNode = stsMapNodes.find(n => n.id === currentNodeId);
-            if(currentNode) {
-                currentNode.done = true;
-                currentNode.active = false;
-                stsMapNodes.forEach(n => { if(n.level === currentNode.level && n.active) n.active = false; });
-
-                if(currentNode.next.length === 0) {
-                    showScreen('screenVictory');
-                    return;
-                }
-
-                currentNode.next.forEach(nextId => {
-                    const nextNode = stsMapNodes.find(n => n.id === nextId);
-                    if(nextNode) nextNode.active = true;
-                });
-            }
-            startMap();
         }
 
         /* ---------- Oggetti che scalano con Fede o Intelligenza ----------
@@ -1383,12 +633,12 @@ function breakRelic(relicName) {
         }
 
         window.useConsumable = function(heroName, itemIdx, targetName = null) {
-            let hero = party.find(p => p.name === heroName);
+            let hero = stato.party.find(p => p.name === heroName);
             if(!hero) return false;
             let item = hero.items[itemIdx];
             if(!item || !item.type || !item.type.startsWith('consumable')) return false;
 
-            let target = targetName ? party.find(p => p.name === targetName) : hero;
+            let target = targetName ? stato.party.find(p => p.name === targetName) : hero;
             if(!target || target.hp <= 0) {
                 uiError("Bersaglio non valido o non disponibile");
                 return false;
@@ -1421,7 +671,7 @@ function breakRelic(relicName) {
         // Favore di Valgoren: 1 HP a un altro eroe vivo e ferito, scelto a caso. Restituisce l'eroe curato.
         function valgorenEcho(source) {
             if (!hasRelic("Favore di Valgoren")) return null;
-            const others = party.filter(h => h !== source && h.hp > 0 && h.hp < h.maxHp);
+            const others = stato.party.filter(h => h !== source && h.hp > 0 && h.hp < h.maxHp);
             if (!others.length) return null;
             const lucky = others[Math.floor(Math.random() * others.length)];
             lucky.hp += 1;
@@ -1482,7 +732,7 @@ function breakRelic(relicName) {
             if (item.type === 'consumable_heal') lines.push(kw(`Cura ${item.heal_val} HP`));
             if (item.type === 'consumable_full') lines.push(kw('Cura tutti gli HP'));
             (item.scaling || []).forEach(sc => {
-                const who = (hero ? [hero] : party.filter(h => h.hp > 0)).map(h => {
+                const who = (hero ? [hero] : stato.party.filter(h => h.hp > 0)).map(h => {
                     let b = Math.floor(Math.max(0, h[sc.per] || 0) / Math.max(1, sc.every || 1));
                     if (sc.max != null) b = Math.min(sc.max, b);
                     return `${esc(h.name)} +${b}`;
@@ -1517,24 +767,66 @@ function breakRelic(relicName) {
             return parts.join(', ') || 'nessun effetto sulle statistiche (per ora)';
         }
 
+        // Capienza dello zaino di ogni eroe: oltre si deve scartare un oggetto
+        const BACKPACK_SIZE = 3;
+
         function heroOptionsForItem(item) {
-            return party.filter(p => p.hp > 0).map(h => {
-                const full = h.items.length >= 3 ? ' · zaino pieno, dovrai scartare' : '';
-                return `<option value="${h.name}">${h.name} — ${itemDeltaText(item, h)}${full}</option>`;
+            return stato.party.filter(p => p.hp > 0).map(h => {
+                const full = h.items.length >= BACKPACK_SIZE ? ' · zaino pieno' : '';
+                return `<option value="${h.name}">${h.name} (zaino ${h.items.length}/${BACKPACK_SIZE}) — ${itemDeltaText(item, h)}${full}</option>`;
             }).join('');
+        }
+
+        // Riempie la scelta dell'eroe che riceve un oggetto e, sotto, la scelta di cosa scartare
+        // se il suo zaino è pieno: così lo scarto si decide subito, senza la schermata a parte.
+        function fillHeroSelectForItem(selectId, item) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = heroOptionsForItem(item);
+            let picker = document.getElementById(selectId + 'Discard');
+            if (!picker) {
+                picker = document.createElement('div');
+                picker.id = selectId + 'Discard';
+                picker.className = 'discard-picker';
+                select.insertAdjacentElement('afterend', picker);
+                select.addEventListener('change', () => renderDiscardPicker(selectId));
+            }
+            renderDiscardPicker(selectId);
+        }
+
+        function renderDiscardPicker(selectId) {
+            const picker = document.getElementById(selectId + 'Discard');
+            const hero = stato.party.find(p => p.name === document.getElementById(selectId).value);
+            const full = hero && hero.items.length >= BACKPACK_SIZE;
+            picker.classList.toggle('hidden', !full);
+            if (!full) { picker.innerHTML = ''; return; }
+            picker.innerHTML = `<label>Zaino pieno (${hero.items.length}/${BACKPACK_SIZE}): scarta
+                <select>${hero.items.map((it, idx) => `<option value="${idx}">${esc(it.name)}</option>`).join('')}
+                    <option value="">Decido dopo</option></select></label>`;
+        }
+
+        // Indice dell'oggetto da scartare scelto sotto la scelta dell'eroe (null = si sceglie dopo)
+        function chosenDiscardIdx(selectId) {
+            const picker = document.getElementById(selectId + 'Discard');
+            const select = picker && !picker.classList.contains('hidden') ? picker.querySelector('select') : null;
+            return select && select.value !== '' ? Number(select.value) : null;
         }
 
         let discardCallback = null;
         let heroNeedingDiscard = null;
 
-        function assignItemToHero(item, hero, callback) {
+        // discardIdx: oggetto dello zaino da scartare subito per fare posto (vedi fillHeroSelectForItem)
+        function assignItemToHero(item, hero, callback, discardIdx = null) {
             discover('items', item.id);
+            if (discardIdx !== null && hero.items.length >= BACKPACK_SIZE && hero.items[discardIdx]) {
+                revertItemEffects(hero.items[discardIdx], hero);
+                hero.items.splice(discardIdx, 1);
+            }
             let newItem = JSON.parse(JSON.stringify(item));
             hero.items.push(newItem);
             applyItemEffects(newItem, hero);
             updatePartyStatusBars();
 
-            if (hero.items.length > 3) {
+            if (hero.items.length > BACKPACK_SIZE) {
                 heroNeedingDiscard = hero;
                 discardCallback = callback;
                 showScreen('screenDiscard');
@@ -1568,727 +860,11 @@ function breakRelic(relicName) {
         }
 
         /* ==========================================================================
-           LOGICA COMBATTIMENTO ED ESECUZIONE ABILITA'
-           ========================================================================== */
-        let activeEnemy = null;
-        let helpBonus = 0;
-        let chosenAction = null;
-        let currentActiveHero = null;
-
-        /* ==========================================================================
-           MOTORE PURO DI RISOLUZIONE (nessun accesso al DOM)
-           Estratto dalle funzioni di combattimento/sfida/mercante/tesoro/riposo perché
-           sia l'interfaccia (con animazioni) sia js/simulator.js (senza) usino la
-           STESSA matematica: le percentuali del simulatore restano sempre vere.
-           Leggono/scrivono le stesse variabili globali di stato (party, activeEnemy,
-           helpBonus, combatRound, unlockedRelics, activeCurses, ...): chi le chiama
-           in un contesto simulato deve prima impostare quelle variabili.
-           ========================================================================== */
-
-        // Tiro di un d6: se "rolls[i]" è un numero 1-6 lo usa (tiro deciso da un telefono collegato via QR),
-        // altrimenti tira normalmente. Tutti i resolver sotto accettano "rolls" come ultimo parametro opzionale.
-        function rollD6(rolls, i) {
-            const external = rolls && rolls[i];
-            if (typeof external === 'number' && external >= 1 && external <= 6) return external;
-            return Math.floor(Math.random() * 6) + 1;
-        }
-
-        // Frammento di Yr-Drazul: +1 a tutti i tiri di dado degli eroi (combattimento, prove, contrattazione)
-        function relicDiceBonus() {
-            return hasRelic("Frammento di Yr-Drazul") ? 1 : 0;
-        }
-
-        // Bonus delle reliquie a tiro per colpire (att) e danno (dmg) in questo round di combattimento.
-        // Valgono per l'attacco E per le abilità d'attacco; "notes" finisce nel log.
-        function relicCombatBonus() {
-            const node = stsMapNodes.find(n => n.id === currentNodeId);
-            const isElite = !!node && (node.type === 'elite' || node.type === 'captain');
-            const b = { att: 0, dmg: 0, notes: [] };
-            const add = (when, name, att, dmg) => {
-                if (!when || !hasRelic(name)) return;
-                b.att += att; b.dmg += dmg;
-                b.notes.push(`${name} (${att ? `+${att} al tiro` : `+${dmg} danno`})`);
-            };
-            add(combatRound === 1, "Stendardo da battaglia", 1, 0);
-            add(combatRound === 2, "Zanna del leone bianco", 0, 2);
-            add(combatRound === 3, "Corno antico", 0, 1);
-            add(isElite, "Idolo del cacciatore", 0, 1);
-            add(isElite, "Catena di Norgrad", 1, 0);
-            const dice = relicDiceBonus();
-            if (dice) { b.att += dice; b.notes.push('Frammento di Yr-Drazul (+1 al tiro)'); }
-            return b;
-        }
-
-        // Tiro di attacco: muta enemy.hp, consuma helpBonus. Ritorna l'esito per log/DOM.
-        function resolveAttack(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const rb = relicCombatBonus();
-            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
-            helpBonus = 0;
-
-            const hit = total >= enemy.ca;
-            let dmg = 0;
-            if (hit) {
-                dmg = hero.dmg + rb.dmg;
-                enemy.hp -= dmg;
-            }
-            return { roll, total, hit, dmg, relicAttBonus: rb.att, relicNotes: rb.notes };
-        }
-
-        // Tiro di difesa: in caso di successo aggiunge 1 armatura corrente all'eroe.
-        function resolveDefend(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + (hero.def_bonus || 0) + relicDiceBonus();
-            const success = total >= enemy.att;
-            if (success) hero.current_armor += 1;
-            return { roll, total, success };
-        }
-
-        // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
-        function resolveHelp(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const total = roll + hero.str + (hero.help_bonus_val || 0) + relicDiceBonus();
-            const success = total >= enemy.att;
-            if (success) helpBonus = 1;
-            return { roll, total, success };
-        }
-
-        function resolveZenoAbility(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const rb = relicCombatBonus();
-            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
-            helpBonus = 0;
-            const hit = total >= enemy.ca;
-            const dmg = hero.dmg + (hero.fth || 0) + rb.dmg;
-            if (hit) enemy.hp -= dmg;
-            return { abId: 'zeno_colpo_benedetto', roll, total, hit, dmg, relicDmgBonus: rb.dmg, relicNotes: rb.notes };
-        }
-
-        function resolveDioforoAbility(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const intBonus = hero.int || 0;
-            const rb = relicCombatBonus();
-            const total = roll + hero.str + intBonus + helpBonus + attackMod(hero) + rb.att;
-            helpBonus = 0;
-            const hit = total >= enemy.ca;
-            const dmg = hero.dmg + rb.dmg;
-            if (hit) enemy.hp -= dmg;
-            return { abId: 'dioforo_penna', roll, total, hit, dmg, intBonus, relicNotes: rb.notes };
-        }
-
-        function resolveIcaroAbility(hero, enemy, rolls) {
-            const d1 = rollD6(rolls, 0);
-            const d2 = rollD6(rolls, 1);
-            const roll = Math.max(d1, d2);
-            const rb = relicCombatBonus();
-            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
-            helpBonus = 0;
-            const hit = total >= enemy.ca;
-            const dmg = hero.dmg + rb.dmg;
-            if (hit) enemy.hp -= dmg;
-            return { abId: 'icaro_trucchi', d1, d2, roll, total, hit, dmg, relicNotes: rb.notes };
-        }
-
-        function resolveAstarteAbility(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const rb = relicCombatBonus();
-            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
-            helpBonus = 0;
-            const hit = total >= enemy.ca;
-            const dmg = (hero.dmg + rb.dmg) * 2;
-            if (hit) enemy.hp -= dmg;
-            return { abId: 'astarte_affondo', roll, total, hit, dmg, relicNotes: rb.notes };
-        }
-
-        function resolveAscadeoAbility(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
-            const rb = relicCombatBonus();
-            const total = roll + hero.str + helpBonus + attackMod(hero) + rb.att;
-            helpBonus = 0;
-            const hit = total >= enemy.ca;
-            const dmg = hero.dmg + rb.dmg;
-            if (hit) { enemy.hp -= dmg; enemy.isStunned = true; }
-            return { abId: 'ascadeo_segnato', roll, total, hit, dmg, relicNotes: rb.notes };
-        }
-
-        // Dispaccia l'abilità attiva in combattimento in base al suo id.
-        function resolveAbility(hero, enemy, rolls) {
-            hero.abilityUsedThisCombat = true;
-            const abId = hero.chosenAbility.id;
-            if (abId === 'zeno_colpo_benedetto') return resolveZenoAbility(hero, enemy, rolls);
-            if (abId === 'dioforo_penna') return resolveDioforoAbility(hero, enemy, rolls);
-            if (abId === 'icaro_trucchi') return resolveIcaroAbility(hero, enemy, rolls);
-            if (abId === 'astarte_affondo') return resolveAstarteAbility(hero, enemy, rolls);
-            if (abId === 'ascadeo_segnato') return resolveAscadeoAbility(hero, enemy, rolls);
-            return { abId, hit: false, dmg: 0 };
-        }
-
-        // Attacco del mostro su un bersaglio: applica maledizioni/reliquie, armatura, poi HP.
-        // "events" descrive in ordine cosa è successo, per il log di combattimento.
-        function resolveMonsterAttack(enemy, target) {
-            const events = [];
-            let dmg = enemy.dmg;
-
-            if (hasCurse("Presagio di Morte")) {
-                dmg += 1;
-                events.push({ type: 'curse_bonus', text: '💀 Presagio di Morte: il colpo infligge 1 danno in più.' });
-            }
-
-            if (hasRelic("Scudo dell'Atamano") && !party.atamanoUsed) {
-                party.atamanoUsed = true;
-                dmg = 0;
-                events.push({ type: 'atamano', text: "🛡️ Lo Scudo dell'Atamano assorbe completamente il primo colpo del combattimento!" });
-            }
-
-            if (target.current_armor > 0 && dmg > 0) {
-                if (target.current_armor >= dmg) {
-                    target.current_armor -= dmg;
-                    events.push({ type: 'armor_full', text: "L'armatura assorbe interamente il colpo!" });
-                    dmg = 0;
-                } else {
-                    dmg -= target.current_armor;
-                    target.current_armor = 0;
-                    events.push({ type: 'armor_partial', remaining: dmg, text: `L'armatura si infrange. I restanti ${dmg} colpiscono gli HP!` });
-                }
-            }
-
-            let hpDamage = 0;
-            let targetDied = false;
-            if (dmg > 0) {
-                if (target.hp - dmg <= 0 && hasRelic("Marchio di Jag Antar")) {
-                    target.hp = 1;
-                    breakRelic("Marchio di Jag Antar");
-                    events.push({ type: 'marchio', text: `✨ Il Marchio di Jag Antar si infrange, salvando ${target.name} da morte certa!` });
-                } else {
-                    hpDamage = dmg;
-                    target.hp = Math.max(0, target.hp - dmg);
-                    targetDied = target.hp <= 0;
-                    events.push({ type: 'hp_damage', amount: dmg, text: `${target.name} subisce ${dmg} danni agli HP!` });
-                }
-            }
-
-            return { events, hpDamage, targetDied };
-        }
-
-        function startCombat(enemyKey) {
-    showScreen('screenCombat');
-    activeEnemy = JSON.parse(JSON.stringify(enemies[enemyKey]));
-    discover('enemies', enemyKey);
-    activeEnemy.isStunned = false;
-    
-    // Reliquia: Occhio del corvo
-    if (hasRelic("Occhio del corvo")) activeEnemy.att = Math.max(1, activeEnemy.att - 1);
-    
-    // Flag per Scudo dell'Atamano
-    party.atamanoUsed = false;
-
-    helpBonus = 0;
-
-            document.getElementById('combatDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(activeEnemy.desc)}`;
-
-            party.forEach(h => {
-                if(h.hp > 0) {
-                    h.current_armor = h.base_armor;
-                    h.abilityUsedThisCombat = false;
-                } else {
-                    h.current_armor = 0;
-                }
-            });
-            fxResyncHeroes();
-            combatRound = 0;
-            document.getElementById('combatLootBtn').classList.remove('btn-attention');
-
-            document.getElementById('combatLog').innerHTML = `Combatti contro ${activeEnemy.name}! (Armature e Abilità ripristinate)<br>`;
-            startHeroesTurnCycle();
-        }
-
-        function logRelicNotes(res) {
-            if (res && res.relicNotes && res.relicNotes.length) logCombat(`💎 Reliquie: ${res.relicNotes.join(', ')}`);
-        }
-
-        function logCombat(text) {
-            const log = document.getElementById('combatLog');
-            log.innerHTML += text + "<br>";
-            log.scrollTop = log.scrollHeight;
-        }
-
-        function updateEnemyInfoUI() {
-            let hpPercent = clampPct(activeEnemy.hp, activeEnemy.maxHp);
-            let stunBadge = activeEnemy.isStunned ? `<span class="stun-badge">Stordito</span>` : '';
-
-            document.getElementById('enemyInfo').innerHTML = `
-                <div class="enemy-head">
-                    <div class="icon-frame enemy-emblem">${svgIcon('skull')}</div>
-                    <div class="enemy-main">
-                        <div class="enemy-name">${activeEnemy.name}${stunBadge}</div>
-                        <div class="hp-bar-container big" id="enemyHpBar">
-                            ${barGhostHtml(`enemy:${activeEnemy.name}`, hpPercent, Math.max(0, activeEnemy.hp))}
-                            <div class="hp-bar-fill ${hpClass(hpPercent)}" style="width: ${hpPercent}%;"></div>
-                            <div class="hp-bar-preview hidden"></div>
-                            <div class="hp-bar-text">${Math.max(0, activeEnemy.hp)} / ${activeEnemy.maxHp}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="enemy-stats">
-                    <span data-tip="Classe Armatura||Il totale di Forza + d6 necessario per colpire.">${svgIcon('shield')} CA <b>${activeEnemy.ca}</b></span>
-                    <span data-tip="Attacco||Il totale necessario per difendersi o aiutare.">${svgIcon('sword')} Att <b>${activeEnemy.att}</b></span>
-                    <span data-tip="Danno||Danni inflitti a ogni attacco del nemico.">${svgIcon('drop')} Dmg <b>${activeEnemy.dmg}</b></span>
-                </div>
-            `;
-            fxDiffEnemy();
-            animateBars(document.getElementById('enemyInfo'));
-        }
-
-        // 11. Passando su "Attacca" o sull'abilità, la parte di vita che il colpo toglierebbe lampeggia
-        function expectedHitDamage(hero, action) {
-            if (!hero || !activeEnemy) return 0;
-            let dmg = hero.dmg + relicCombatBonus().dmg;
-            if (action === 'ability' && hero.chosenAbility) {
-                if (hero.chosenAbility.id === 'zeno_colpo_benedetto') dmg += hero.fth || 0;
-                if (hero.chosenAbility.id === 'astarte_affondo') dmg *= 2;
-            }
-            return Math.max(0, dmg);
-        }
-
-        function showHitPreview(action) {
-            const bar = document.getElementById('enemyHpBar');
-            if (!bar || !activeEnemy || activeEnemy.hp <= 0 || !currentActiveHero) return;
-            const dmg = Math.min(activeEnemy.hp, expectedHitDamage(currentActiveHero, action));
-            const preview = bar.querySelector('.hp-bar-preview');
-            if (!preview || dmg <= 0) return;
-            preview.style.left = `${clampPct(activeEnemy.hp - dmg, activeEnemy.maxHp)}%`;
-            preview.style.width = `${clampPct(dmg, activeEnemy.maxHp)}%`;
-            preview.classList.remove('hidden');
-        }
-
-        function hideHitPreview() {
-            const preview = document.querySelector('#enemyHpBar .hp-bar-preview');
-            if (preview) preview.classList.add('hidden');
-        }
-
-        document.addEventListener('mouseover', e => {
-            const btn = e.target.closest && e.target.closest('#cmdAttack, #btnCombatAbility');
-            if (!btn || btn.disabled) return;
-            showHitPreview(btn.id === 'cmdAttack' ? 'attack' : 'ability');
-        });
-        document.addEventListener('mouseout', e => {
-            const btn = e.target.closest && e.target.closest('#cmdAttack, #btnCombatAbility');
-            if (btn && !btn.contains(e.relatedTarget)) hideHitPreview();
-        });
-
-        function startHeroesTurnCycle() {
-            party.forEach(h => { if(h.hp > 0) h.hasActed = false; });
-            combatRound++;
-            updateEnemyInfoUI();
-            showHeroSelectionPhase();
-        }
-
-        function showHeroSelectionPhase() {
-            document.getElementById('heroTurnSection').classList.remove('hidden');
-            document.getElementById('monsterTurnSection').classList.add('hidden');
-            document.getElementById('combatNextBtn').classList.add('hidden');
-            document.getElementById('combatLootBtn').classList.add('hidden');
-            document.getElementById('heroChoiceArea').classList.remove('hidden');
-            document.getElementById('heroActionControlArea').classList.add('hidden');
-            document.getElementById('combatItemSubmenu').classList.add('hidden');
-
-            const available = party.filter(p => p.hp > 0 && !p.hasActed);
-            if(available.length === 0) { startMonsterTurn(); return; }
-            combatPhase = 'heroes';
-            currentActiveHero = null;
-            document.getElementById('combatHeroSelect').innerHTML = available.map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
-            updatePartyStatusBars();
-        }
-
-        function confirmCombatHeroChoice() {
-            currentActiveHero = party.find(p => p.name === document.getElementById('combatHeroSelect').value);
-            document.getElementById('heroChoiceArea').classList.add('hidden');
-            document.getElementById('heroActionControlArea').classList.remove('hidden');
-            document.getElementById('combatActionButtons').classList.remove('hidden');
-            document.getElementById('combatItemSubmenu').classList.add('hidden');
-            document.getElementById('combatDiceArea').classList.add('hidden');
-
-            const rollBtn = document.getElementById('rollCombatBtn');
-            rollBtn.disabled = false;
-
-            document.getElementById('activeCombatantText').textContent = `Tocca a: ${currentActiveHero.name}`;
-            updatePartyStatusBars();
-
-            const btnAbility = document.getElementById('btnCombatAbility');
-            if (currentActiveHero.chosenAbility) {
-                btnAbility.querySelector('.cmd-ability-icon').innerHTML = abilityCmdIconHtml(currentActiveHero.chosenAbility);
-            }
-            const hasCombatAbility = currentActiveHero.chosenAbility && currentActiveHero.chosenAbility.isCombatActive;
-            const alreadyUsed = currentActiveHero.abilityUsedThisCombat;
-
-            if (hasCombatAbility && !alreadyUsed) {
-                btnAbility.disabled = false;
-                btnAbility.style.display = "";
-                btnAbility.dataset.tip = `${currentActiveHero.chosenAbility.name} [T]||${currentActiveHero.chosenAbility.desc}`;
-                btnAbility.querySelector('.cmd-ability-label').textContent = currentActiveHero.chosenAbility.name;
-                btnAbility.querySelector('.cmd-sub').textContent = '1 per scontro';
-            } else if (hasCombatAbility && alreadyUsed) {
-                btnAbility.disabled = true;
-                btnAbility.style.display = "";
-                btnAbility.querySelector('.cmd-ability-label').textContent = currentActiveHero.chosenAbility.name;
-                btnAbility.querySelector('.cmd-sub').textContent = 'Usata';
-                btnAbility.dataset.tip = `${currentActiveHero.chosenAbility.name}||Già utilizzata in questo scontro`;
-            } else {
-                btnAbility.disabled = true;
-                btnAbility.style.display = "none";
-            }
-            updateActionPreviews(currentActiveHero);
-        }
-
-        /* ---------- Anteprima dell'esito sui pulsanti azione ---------- */
-        // Modificatore fisso ai tiri per colpire: bonus (es. "Benedetti da Jag Antar") meno penalità (armature pesanti, maledizioni)
-        function attackMod(hero) {
-            return (hero.att_bonus || 0) - (hero.att_penalty || 0);
-        }
-
-        // Probabilità di ottenere almeno 'needed' con un d6, o con due d6 tenendo il migliore (twoDice) o il peggiore (worst)
-        function rollChance(needed, twoDice, worst = false) {
-            if (needed <= 1) return 1;
-            if (needed > 6) return 0;
-            const fail = (needed - 1) / 6;
-            if (worst) return (1 - fail) * (1 - fail);
-            return twoDice ? 1 - fail * fail : 1 - fail;
-        }
-
-        function chanceText(needed, twoDice, worst = false) {
-            const pct = Math.round(rollChance(needed, twoDice, worst) * 100);
-            if (needed <= 1) return { short: 'Sicuro', long: 'Riuscita garantita', pct };
-            if (needed > 6) return { short: 'Impossibile', long: 'Nessun risultato del dado basta', pct };
-            const note = worst ? ' (tieni il peggiore di due)' : (twoDice ? ' (tieni il migliore di due)' : '');
-            return { short: `${needed}+ · ${pct}%`, long: `Ti serve ${needed} o più sul dado${note}: ${pct}% di riuscita`, pct };
-        }
-
-        // Stessi calcoli usati da executeCombatHeroRoll, mostrati prima del tiro
-        function updateActionPreviews(hero) {
-            if (!hero || !activeEnemy) return;
-            const rb = relicCombatBonus();
-            const attackNeeded = activeEnemy.ca - hero.str - helpBonus - attackMod(hero) - rb.att;
-            const defendNeeded = activeEnemy.att - hero.str - (hero.def_bonus || 0) - relicDiceBonus();
-            const helpNeeded = activeEnemy.att - hero.str - (hero.help_bonus_val || 0) - relicDiceBonus();
-
-            const setPreview = (id, title, desc, needed, twoDice) => {
-                const btn = document.getElementById(id);
-                const info = chanceText(needed, twoDice);
-                btn.querySelector('.cmd-sub').textContent = info.short;
-                btn.querySelector('.cmd-sub').dataset.chance = info.pct >= 67 ? 'high' : (info.pct >= 34 ? 'mid' : 'low');
-                btn.dataset.tip = `${title}||${desc}<br><span class="tip-hint">${info.long}</span>`;
-            };
-
-            setPreview('cmdAttack', 'Attacca [Q]', `Forza + d6 contro CA ${activeEnemy.ca}. Se riesci infliggi ${expectedHitDamage(hero, 'attack')} danni.${rb.notes.length ? `<br>Reliquie: ${rb.notes.join(', ')}` : ''}`, attackNeeded, false);
-            setPreview('cmdDefend', 'Difendi [W]', `Forza + d6 contro l'attacco nemico (${activeEnemy.att}). Se riesci ottieni +1 Armatura.`, defendNeeded, false);
-            setPreview('cmdHelp', 'Aiuta [E]', `Forza + d6 contro l'attacco nemico (${activeEnemy.att}). Se riesci il prossimo attacco ottiene +1.`, helpNeeded, false);
-
-            const ability = hero.chosenAbility;
-            if (ability && ability.isCombatActive && !hero.abilityUsedThisCombat) {
-                let needed = attackNeeded;
-                if (ability.id === 'dioforo_penna') {
-                    needed = activeEnemy.ca - (hero.str + hero.int) - helpBonus - attackMod(hero) - rb.att;
-                }
-                setPreview('btnCombatAbility', `${ability.name} [T]`, ability.desc, needed, ability.id === 'icaro_trucchi');
-            }
-      }
-        function selectCombatAction(action) {
-            chosenAction = action;
-            if (action === 'use_item') {
-                let consumables = currentActiveHero.items.filter(it => it.type && it.type.startsWith('consumable'));
-                if (consumables.length === 0) {
-                    uiError("Questo eroe non ha oggetti consumabili nello zaino");
-                    return;
-                }
-                document.getElementById('combatActionButtons').classList.add('hidden');
-                document.getElementById('combatItemSubmenu').classList.remove('hidden');
-
-                document.getElementById('combatConsumableSelect').innerHTML = currentActiveHero.items
-                    .map((it, idx) => ({ it, idx }))
-                    .filter(obj => obj.it.type && obj.it.type.startsWith('consumable'))
-                    .map(obj => `<option value="${obj.idx}">${obj.it.name} (${obj.it.desc})</option>`)
-                    .join('');
-
-                document.getElementById('combatTargetSelect').innerHTML = party
-                    .filter(p => p.hp > 0)
-                    .map(p => `<option value="${p.name}">${p.name} (HP: ${p.hp}/${p.maxHp})</option>`)
-                    .join('');
-            } else {
-                document.getElementById('combatActionButtons').classList.add('hidden');
-                document.getElementById('combatDiceArea').classList.remove('hidden');
-                document.getElementById('diceCombatResult').textContent = "Tira il dado...";
-                document.getElementById('rollCombatBtn').disabled = false;
-
-                // "Trucchi del mestiere" di Icaro: due dadi visibili, si tiene il più alto
-                const twoDice = combatRollUsesTwoDice(currentActiveHero, action);
-                const dice1 = document.getElementById('diceCombat');
-                const dice2 = document.getElementById('diceCombat2');
-                dice1.classList.remove('discarded');
-                dice2.classList.remove('discarded');
-                dice2.textContent = "6";
-                dice2.classList.toggle('hidden', !twoDice);
-                document.getElementById('rollCombatBtn').textContent = twoDice ? "Tira (2D6, tieni il migliore)" : "Tira (D6)";
-            }
-        }
-
-        function combatRollUsesTwoDice(hero, action) {
-            return action === 'ability' && !!hero && !!hero.chosenAbility && hero.chosenAbility.id === 'icaro_trucchi';
-        }
-
-        function cancelCombatItemSubmenu() {
-            document.getElementById('combatItemSubmenu').classList.add('hidden');
-            document.getElementById('combatActionButtons').classList.remove('hidden');
-        }
-
-        function executeCombatUseItem() {
-            let itemIdx = parseInt(document.getElementById('combatConsumableSelect').value);
-            let targetName = document.getElementById('combatTargetSelect').value;
-
-            // Se l'oggetto non viene usato il turno resta all'eroe
-            if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
-
-            currentActiveHero.hasActed = true;
-            document.getElementById('combatItemSubmenu').classList.add('hidden');
-            document.getElementById('heroActionControlArea').classList.add('hidden');
-
-            const available = party.filter(p => p.hp > 0 && !p.hasActed);
-            if (available.length === 0) {
-                startMonsterTurn();
-            } else {
-                showHeroSelectionPhase();
-            }
-        }
-
-        // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
-        // Se assente, si tira normalmente: il comportamento locale non cambia.
-        function executeCombatHeroRoll(externalRolls) {
-            const rollBtn = document.getElementById('rollCombatBtn');
-            if (rollBtn.disabled) return;
-
-            const diceBox = document.getElementById('diceCombat');
-            const diceBox2 = document.getElementById('diceCombat2');
-            const twoDice = combatRollUsesTwoDice(currentActiveHero, chosenAction);
-            rollBtn.disabled = true;
-            diceBox.classList.add('rolling');
-            if (twoDice) diceBox2.classList.add('rolling');
-            synthSfx('dice');
-
-            let counter = 0;
-            const interval = setInterval(() => {
-                diceBox.textContent = Math.floor(Math.random() * 6) + 1;
-                if (twoDice) diceBox2.textContent = Math.floor(Math.random() * 6) + 1;
-                counter += 50;
-                if(counter >= 500) {
-                    clearInterval(interval);
-                    diceBox.classList.remove('rolling');
-                    diceBox2.classList.remove('rolling');
-
-                    const hero = currentActiveHero;
-                    const enemyHpBefore = activeEnemy.hp;
-                    const armorBefore = hero.current_armor;
-
-                    if(chosenAction === 'attack') {
-                        const res = resolveAttack(hero, activeEnemy, externalRolls);
-                        logRelicNotes(res);
-                        diceBox.textContent = res.roll;
-
-                        logCombat(`${hero.name} attacca: Tiro ${res.roll} + Forza ${hero.str}${attackMod(hero) ? ` ${attackMod(hero) > 0 ? '+' : '−'} ${Math.abs(attackMod(hero))} Mod.` : ''}${res.relicAttBonus > 0 ? ' + Reliquia' : ''} = ${res.total} (CA: ${activeEnemy.ca})`);
-
-                        if(res.hit) {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${res.dmg} danni.`;
-                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.`);
-                        } else {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
-                        }
-                    }
-                    else if(chosenAction === 'ability') {
-    const abId = hero.chosenAbility.id;
-    const res = resolveAbility(hero, activeEnemy, externalRolls);
-    logRelicNotes(res);
-
-    if (abId === 'zeno_colpo_benedetto') {
-        diceBox.textContent = res.roll;
-        logCombat(`✨ ${hero.name} infonde il colpo di fede sacra! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
-
-        if (res.hit) {
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO BENEDETTO!</span> Infliggi ${res.dmg} danni (${hero.dmg} base + ${hero.fth} Fede${res.relicDmgBonus ? ` + ${res.relicDmgBonus} reliquie` : ''})!`;
-            logCombat(`La luce divina guida la lama: infliggi ${res.dmg} danni!`);
-        } else {
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
-        }
-    }
-    else if (abId === 'dioforo_penna') {
-        diceBox.textContent = res.roll;
-        logCombat(`📜 ${hero.name} sfrutta l'intelletto! Tiro ${res.roll} + Forza ${hero.str} + Int ${res.intBonus} = ${res.total} (CA: ${activeEnemy.ca})`);
-
-        if (res.hit) {
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO A SEGNO!</span> ${res.dmg} danni.`;
-            logCombat(`Un calcolo perfetto individua il punto debole: infliggi ${res.dmg} danni!`);
-        } else {
-            document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
-        }
-    }
-    else if (abId === 'icaro_trucchi') {
-                            diceBox.textContent = res.d1;
-                            diceBox2.textContent = res.d2;
-                            (res.d2 > res.d1 ? diceBox : diceBox2).classList.add('discarded');
-                            logCombat(`✨ ${hero.name} usa Trucchi del Mestiere! Tira [${res.d1}, ${res.d2}] -> Tiene ${res.roll}. Totale: ${res.total} (CA: ${activeEnemy.ca})`);
-
-                            if (res.hit) {
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO A SEGNO!</span> ${res.dmg} danni.`;
-                            } else {
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
-                            }
-                        }
-                        else if (abId === 'astarte_affondo') {
-                            diceBox.textContent = res.roll;
-                            logCombat(`🗡️ ${hero.name} scatena Affondo Mortale! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
-
-                            if (res.hit) {
-                                fxNextEnemyHitCritical = true;
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">COLPO CRITICO!</span> Infliggi ${res.dmg} danni raddoppiati!`;
-                                logCombat(`L'affondo trafigge il nemico infliggendo ${res.dmg} danni!`);
-                            } else {
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
-                            }
-                        }
-                        else if (abId === 'ascadeo_segnato') {
-                            diceBox.textContent = res.roll;
-                            logCombat(`❄️ ${hero.name} colpisce nel nome di Hvid! Tiro ${res.roll} + Forza ${hero.str} = ${res.total} (CA: ${activeEnemy.ca})`);
-
-                            if (res.hit) {
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:#3498db;">STORDITO!</span> ${res.dmg} danni e nemico congelato per un turno.`;
-                                logCombat(`Il nemico barcolla congelato dal gelo di Hvid: salterà il prossimo attacco!`);
-                            } else {
-                                document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
-                            }
-                        }
-                    }
-                    else if(chosenAction === 'defend') {
-                        const res = resolveDefend(hero, activeEnemy, externalRolls);
-                        diceBox.textContent = res.roll;
-                        logCombat(`${hero.name} si difende: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
-                        if(res.success) {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">DIFESA RIUSCITA!</span> +1 Armatura.`;
-                            logCombat(`${hero.name} alza la guardia (+1 Armatura).`);
-                        } else {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">FALLITO.</span>`;
-                        }
-                    }
-                    else if(chosenAction === 'help') {
-                        const res = resolveHelp(hero, activeEnemy, externalRolls);
-                        diceBox.textContent = res.roll;
-                        logCombat(`${hero.name} aiuta: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
-                        if(res.success) {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">AIUTO RIUSCITO!</span> +1 al prossimo.`;
-                        } else {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">FALLITO.</span>`;
-                        }
-                    }
-
-                    diceOutcomeSfx(twoDice ? Math.max(+diceBox.textContent, +diceBox2.textContent) : +diceBox.textContent);
-
-                    const finishRoll = () => {
-                    hero.hasActed = true;
-                    updateEnemyInfoUI();
-                    updatePartyStatusBars();
-
-                    // Esiti senza variazione di HP: mancato, fallito, aiuto riuscito
-                    if ((chosenAction === 'attack' || chosenAction === 'ability') && activeEnemy.hp === enemyHpBefore) {
-                        fxFloatOn(document.getElementById('enemyInfo'), 'Mancato', 'miss');
-                    } else if (chosenAction === 'defend' && hero.current_armor === armorBefore) {
-                        fxFloatOnHero(hero, 'Fallito', 'miss');
-                    } else if (chosenAction === 'help') {
-                        const helped = document.getElementById('diceCombatResult').textContent.includes('RIUSCITO');
-                        fxFloatOnHero(hero, helped ? '+1 al prossimo' : 'Fallito', helped ? 'buff' : 'miss');
-                    }
-
-                    if(activeEnemy.hp <= 0) {
-                        logCombat(`Hai sconfitto ${activeEnemy.name}! Vittoria!`);
-                        document.getElementById('combatLootBtn').classList.remove('hidden');
-                        document.getElementById('heroActionControlArea').classList.add('hidden');
-                        return;
-                    }
-                    document.getElementById('combatNextBtn').classList.remove('hidden');
-                    };
-
-                    // Colpo a segno (attacco o abilità): prima la cinematica col ritratto, poi danni ed effetti
-                    const landed = (chosenAction === 'attack' || chosenAction === 'ability') && activeEnemy.hp < enemyHpBefore;
-                    if (landed) {
-                        playHeroStrike(hero, chosenAction === 'ability' ? hero.chosenAbility : null, finishRoll);
-                    } else {
-                        finishRoll();
-                    }
-                }
-            }, 50);
-        }
-
-        function proceedCombatPhase() {
-            document.getElementById('combatNextBtn').classList.add('hidden');
-            showHeroSelectionPhase();
-        }
-
-        function startMonsterTurn() {
-            combatPhase = 'monster';
-            currentActiveHero = null;
-            updatePartyStatusBars();
-            document.getElementById('heroTurnSection').classList.add('hidden');
-            document.getElementById('monsterTurnSection').classList.remove('hidden');
-
-            if(activeEnemy.isStunned) {
-                activeEnemy.isStunned = false;
-                document.getElementById('monsterTurnText').textContent = `${activeEnemy.name} è stordito e non può attaccare!`;
-                logCombat(`⏳ ${activeEnemy.name} si riprende dallo stordimento e salta il turno!`);
-                updateEnemyInfoUI();
-
-                document.getElementById('monsterTargetArea').classList.add('hidden');
-                document.getElementById('combatNextBtn').classList.remove('hidden');
-                document.getElementById('combatNextBtn').onclick = function() {
-                    document.getElementById('combatNextBtn').classList.add('hidden');
-                    document.getElementById('monsterTargetArea').classList.remove('hidden');
-                    document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
-                    startHeroesTurnCycle();
-                };
-                return;
-            }
-
-            document.getElementById('monsterTargetArea').classList.remove('hidden');
-            document.getElementById('monsterTurnText').textContent = `Turno di ${activeEnemy.name}!`;
-            document.getElementById('monsterTargetSelect').innerHTML = party.filter(p => p.hp > 0).map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
-        }
-
-        function executeMonsterAttack() {
-            const target = party.find(p => p.name === document.getElementById('monsterTargetSelect').value);
-            logCombat(`--- ${activeEnemy.name} attacca ${target.name}! ---`);
-            playEnemySfx('sfxAttack');
-
-            const result = resolveMonsterAttack(activeEnemy, target);
-            result.events.forEach(ev => logCombat(ev.text));
-
-            updatePartyStatusBars();
-
-            if(party.every(p => p.hp <= 0)) {
-                // La sconfitta è definitiva: il salvataggio non deve permettere di annullarla
-                deleteCurrentSave();
-                showScreen('screenDefeat');
-                return;
-            }
-
-            document.getElementById('monsterTurnSection').classList.add('hidden');
-            document.getElementById('combatNextBtn').classList.remove('hidden');
-            document.getElementById('combatNextBtn').onclick = function() {
-                document.getElementById('combatNextBtn').classList.add('hidden');
-                document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
-                startHeroesTurnCycle();
-            };
-        }
-
-        /* ==========================================================================
            GESTIONE SFIDE
            ========================================================================== */
         function startChallenge(challengeId) {
             showScreen('screenChallenge');
-            challengeState = challengesData[challengeId] || {
+            stato.challengeState = challengesData[challengeId] || {
                 title: "Sfida",
                 desc: "descrizione da scrivere",
                 ignoreText: "descrizione da scrivere",
@@ -2298,8 +874,8 @@ function breakRelic(relicName) {
                 cd: 6
             };
 
-            document.getElementById('challengeTitle').textContent = challengeState.title;
-            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(challengeState.desc)}`;
+            document.getElementById('challengeTitle').textContent = stato.challengeState.title;
+            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.desc)}`;
 
             document.getElementById('challengeStage1').classList.remove('hidden');
             document.getElementById('challengeStage2').classList.add('hidden');
@@ -2311,7 +887,7 @@ function breakRelic(relicName) {
 
         function challengeChoose(approach) {
             if(!approach) {
-                document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(challengeState.ignoreText)}`;
+                document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.ignoreText)}`;
                 document.getElementById('challengeStage1').classList.add('hidden');
                 document.getElementById('closeChallengeBtn').classList.remove('hidden');
                 return;
@@ -2319,20 +895,20 @@ function breakRelic(relicName) {
             document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> Un membro della compagnia si fa avanti per affrontare la prova.`;
             document.getElementById('challengeStage1').classList.add('hidden');
             document.getElementById('challengeStage2').classList.remove('hidden');
-            document.getElementById('challengeHeroSelect').innerHTML = party.filter(p => p.hp > 0).map(h => {
+            document.getElementById('challengeHeroSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => {
                 const mods = challengeModifiers(h);
-                return `<option value="${h.name}">${h.name} (${STAT_LABELS[challengeState.stat] || 'Stat'} ${mods.statValue}) · ${challengeChanceInfo(mods).short}</option>`;
+                return `<option value="${h.name}">${h.name} (${STAT_LABELS[stato.challengeState.stat] || 'Stat'} ${mods.statValue}) · ${challengeChanceInfo(mods).short}</option>`;
             }).join('');
         }
 
         let selectedChallengeHero = null;
         function confirmChallengeHero() {
-            selectedChallengeHero = party.filter(p => p.hp > 0).find(p => p.name === document.getElementById('challengeHeroSelect').value);
+            selectedChallengeHero = stato.party.filter(p => p.hp > 0).find(p => p.name === document.getElementById('challengeHeroSelect').value);
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('diceChallengeSection').classList.remove('hidden');
 
-            const statLabel = STAT_LABELS[challengeState.stat] || 'Statistica';
-            document.getElementById('challengeCdText').textContent = `Prova di ${statLabel} (Classe di Difficoltà: ${challengeState.cd})`;
+            const statLabel = STAT_LABELS[stato.challengeState.stat] || 'Statistica';
+            document.getElementById('challengeCdText').textContent = `Prova di ${statLabel} (Classe di Difficoltà: ${stato.challengeState.cd})`;
 
             // Probabilità di riuscita prima del tiro, con gli stessi modificatori di executeChallengeRoll
             const mods = challengeModifiers(selectedChallengeHero);
@@ -2367,8 +943,8 @@ function breakRelic(relicName) {
         // (si controlla anche l'id dell'abilità per i salvataggi privi del flag).
         // Svantaggio: maledizione "Fede Inaridita" nelle prove di Fede. Se ci sono entrambi si annullano.
         function challengeRollMode(hero) {
-            if (!hero || !challengeState) return { mode: 'single' };
-            const stat = challengeState.stat;
+            if (!hero || !stato.challengeState) return { mode: 'single' };
+            const stat = stato.challengeState.stat;
             const advantage = (stat === 'int' || stat === 'fth') &&
                 (!!hero.hasAdvantageOnIntFth || (hero.chosenAbility && hero.chosenAbility.id === 'dioforo_era_solo_una_prova'));
             const disadvantage = stat === 'fth' && hasCurse("Fede Inaridita");
@@ -2378,11 +954,10 @@ function breakRelic(relicName) {
             return { mode: 'single' };
         }
 
-        const STAT_LABELS = { int: 'Intelligenza', fth: 'Fede', str: 'Forza' };
 
         // Modificatori di una prova per l'eroe scelto, senza consumare le reliquie
         function challengeModifiers(hero) {
-            const statValue = (hero && hero[challengeState.stat]) || 0;
+            const statValue = (hero && hero[stato.challengeState.stat]) || 0;
             const relics = [];
             if (hasRelic("Anello del giuramento")) relics.push({ name: "Anello del giuramento", val: 3 });
             if (hasRelic("Sigillo runico")) relics.push({ name: "Sigillo runico", val: 2 });
@@ -2397,7 +972,7 @@ function breakRelic(relicName) {
         }
 
         function challengeChanceInfo(mods) {
-            const needed = challengeState.cd - mods.statValue - mods.relicBonus;
+            const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus;
             if (mods.safetyNet) return { short: 'Sicuro', long: 'Riuscita garantita: il Frammento di matrice trasforma un fallimento in successo', pct: 100 };
             return chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
         }
@@ -2439,8 +1014,8 @@ function breakRelic(relicName) {
             }
             if (hasRelic("Sigillo runico")) {
                 relicBonus += 2;
-                party.sigilloCharges = (party.sigilloCharges || 0) + 1;
-                const broken = party.sigilloCharges >= 2;
+                stato.party.sigilloCharges = (stato.party.sigilloCharges || 0) + 1;
+                const broken = stato.party.sigilloCharges >= 2;
                 if (broken) breakRelic("Sigillo runico");
                 events.push({ type: 'relic', text: `+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})` });
             }
@@ -2453,35 +1028,39 @@ function breakRelic(relicName) {
             let total = kept + mods.statValue + relicBonus;
             events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
 
-            if (total < challenge.cd && hasRelic("Frammento di matrice")) {
-                total = challenge.cd;
+            let success = naturalRollSuccess(kept, total, challenge.cd);
+            const natural = naturalRollNote(kept, total, challenge.cd);
+            if (natural) events.push({ type: 'natural', text: natural });
+
+            if (!success && hasRelic("Frammento di matrice")) {
+                total = Math.max(total, challenge.cd);
+                success = true;
                 breakRelic("Frammento di matrice");
                 events.push({ type: 'relic', text: 'Frammento di matrice: il fallimento diventa un successo (la reliquia si rompe)' });
             }
 
-            const success = total >= challenge.cd;
             events.push({ type: 'outcome', text: success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>' });
 
             let rewardGranted = null, punishmentApplied = null;
             if (success) {
                 if (challenge.reward) {
-                    unlockedRelics.push(challenge.reward);
+                    stato.unlockedRelics.push(challenge.reward);
                     applyEffects(challenge.reward.effects);
                     if (challenge.reward.type === 'relic') discover('relics', challenge.reward.name);
                     rewardGranted = challenge.reward;
                 }
-                expeditionStats.challengesPassed++;
+                stato.expeditionStats.challengesPassed++;
             } else {
                 if (challenge.punishment) {
-                    const cursesBefore = activeCurses.length;
+                    const cursesBefore = stato.activeCurses.length;
                     applyEffects(challenge.punishment.effects);
                     if (challenge.punishment.type === 'curse') discover('curses', challenge.punishment.name);
-                    if (activeCurses.length === cursesBefore) {
-                        activeCurses.push(`${challenge.punishment.name} (${challenge.punishment.desc})`);
+                    if (stato.activeCurses.length === cursesBefore) {
+                        stato.activeCurses.push(`${challenge.punishment.name} (${challenge.punishment.desc})`);
                     }
                     punishmentApplied = challenge.punishment;
                 }
-                expeditionStats.challengesFailed++;
+                stato.expeditionStats.challengesFailed++;
             }
 
             const isFinal = challenge.stat === 'scelta_finale' || challenge.title === "Accampamento";
@@ -2510,7 +1089,7 @@ function breakRelic(relicName) {
                 if(counter >= 500) {
                     clearInterval(interval);
 
-                    const res = resolveChallenge(selectedChallengeHero, challengeState, externalRolls);
+                    const res = resolveChallenge(selectedChallengeHero, stato.challengeState, externalRolls);
                     diceBox.textContent = res.roll;
                     diceBox.classList.remove('rolling');
 
@@ -2532,7 +1111,7 @@ function breakRelic(relicName) {
                             rewardMsg = `<br><strong style="color:var(--relic-color);">Reliquia ottenuta: ${res.rewardGranted.name} (${res.rewardGranted.desc})</strong>`;
                             showOutcomeOverlay('relic', res.rewardGranted);
                         }
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${challengeState.cd})</strong><br>${kw(challengeState.successText || 'Prova superata!')}${rewardMsg}`;
+                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.successText || 'Prova superata!')}${rewardMsg}`;
 
                         if (res.isFinal) {
                             document.getElementById('closeChallengeBtn').onclick = () => showScreen('screenVictory');
@@ -2545,7 +1124,7 @@ function breakRelic(relicName) {
                             punishmentMsg = `<br><strong style="color:var(--curse-color);">Maledizione subita: ${res.punishmentApplied.name} (${res.punishmentApplied.desc})</strong>`;
                             showOutcomeOverlay('curse', res.punishmentApplied);
                         }
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${challengeState.cd})</strong><br>${kw(challengeState.failText || 'Prova fallita!')}${punishmentMsg}`;
+                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.failText || 'Prova fallita!')}${punishmentMsg}`;
                         document.getElementById('closeChallengeBtn').onclick = advanceNode;
                     }
 
@@ -2559,7 +1138,7 @@ function breakRelic(relicName) {
         function resolveRest() {
             const healAmount = 1 + (hasRelic("Unguento dell'erborista") ? 1 : 0);
             const healed = [];
-            party.forEach(h => {
+            stato.party.forEach(h => {
                 // Un eroe caduto (0 HP) si rialza con 1 HP
                 if (h.hp <= 0) {
                     h.hp = 1;
@@ -2580,16 +1159,16 @@ function breakRelic(relicName) {
             }
 
             let geloRemoved = false;
-            const geloIdx = activeCurses.findIndex(c => c.startsWith("Gelo nelle ossa"));
+            const geloIdx = stato.activeCurses.findIndex(c => c.startsWith("Gelo nelle ossa"));
             if (geloIdx > -1) {
-                activeCurses.splice(geloIdx, 1);
-                party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
+                stato.activeCurses.splice(geloIdx, 1);
+                stato.party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
                 geloRemoved = true;
             }
 
-            if (hasRelic("Pietra del focolare") && activeCurses.length > 0) {
-                const rIdx = Math.floor(Math.random() * activeCurses.length);
-                activeCurses.splice(rIdx, 1);
+            if (hasRelic("Pietra del focolare") && stato.activeCurses.length > 0) {
+                const rIdx = Math.floor(Math.random() * stato.activeCurses.length);
+                stato.activeCurses.splice(rIdx, 1);
             }
 
             return { healAmount, healed, geloRemoved };
@@ -2615,13 +1194,13 @@ function breakRelic(relicName) {
 
         function startCaptainFinale() {
             showScreen('screenCaptain');
-            document.getElementById('captainHeroSelect').innerHTML = party.filter(p => p.hp > 0).map(h => `<option value="${h.name}">${h.name}</option>`).join('');
+            document.getElementById('captainHeroSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => `<option value="${h.name}">${h.name}</option>`).join('');
         }
 
         let captainActionType = ''; let selectedCaptainHero = null;
         function captainAction(type) {
             captainActionType = type;
-            selectedCaptainHero = party.find(p => p.name === document.getElementById('captainHeroSelect').value);
+            selectedCaptainHero = stato.party.find(p => p.name === document.getElementById('captainHeroSelect').value);
             document.getElementById('captainHeroSelect').style.display = 'none';
             document.getElementById('diceCaptainSection').classList.remove('hidden');
         }
@@ -2634,7 +1213,7 @@ function breakRelic(relicName) {
                 return { type, roll, success: null };
             }
             const statVal = type === 'faith' ? hero.fth : hero.int;
-            const success = (roll + statVal) >= 6;
+            const success = naturalRollSuccess(roll, roll + statVal, 6);
             return { type, roll, statVal, success };
         }
 
@@ -2657,9 +1236,9 @@ function breakRelic(relicName) {
                     if (res.type === 'force') {
                         document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">RAMANZINA!</span> Perdi il 50% degli HP.`;
                     } else if (res.success) {
-                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:var(--gold);">VITTORIA!</span> Meta raggiunta!`;
+                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:var(--gold);">VITTORIA!</span> Meta raggiunta!${res.roll === 6 ? ' (6 naturale)' : ''}`;
                     } else {
-                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">FALLITO!</span>`;
+                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">FALLITO!</span>${res.roll === 1 ? ' (1 naturale)' : ''}`;
                     }
                     updatePartyStatusBars();
 
@@ -2700,10 +1279,6 @@ function breakRelic(relicName) {
             return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.bag}</svg>`;
         }
 
-        function esc(str) {
-            return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
         function itemIconName(item) {
             const key = `${item.id || ''} ${item.name}`.toLowerCase();
             if (/pozione|unguento|balsamo/.test(key)) return 'potion';
@@ -2723,7 +1298,6 @@ function breakRelic(relicName) {
 
         // Rarità dell'oggetto; gli oggetti senza rarità contano come comuni
         // Rarità in stile World of Warcraft, dalla più bassa alla più alta (colori in css/wc3-base.css)
-        const RARITY_LABELS = { scarso: 'Scarso', comune: 'Comune', non_comune: 'Non comune', raro: 'Raro', epico: 'Epico', leggendario: 'Leggendario' };
         function itemRarity(item) {
             return RARITY_LABELS[item && item.rarity] ? item.rarity : 'comune';
         }
@@ -2843,141 +1417,6 @@ function breakRelic(relicName) {
             return src ? `<img class="ability-mark" src="${src}" alt="">` : '★';
         }
 
-        // Ritratti degli eroi per nome; senza ritratto si usa l'iniziale su sfondo colorato.
-        // pos = punto dell'immagine da tenere al centro, zoom = ingrandimento sul volto
-        // woundedSrc = ritratto usato quando l'eroe è ferito (vedi isHeroWounded),
-        // con la sua inquadratura woundedPos / woundedZoom
-        const HERO_PORTRAITS = {
-            'Icaro': {
-                src: 'immagini/ritratti/icaro.jpg',
-                pos: '40% 33%',
-                zoom: 1.9,
-                woundedSrc: 'immagini/ritratti/icaro_ferito.jpg',
-                woundedPos: '40% 34%',
-                woundedZoom: 1.9
-            },
-            'Astarte': {
-                src: 'immagini/ritratti/astarte.jpg',
-                pos: '51% 42%',
-                zoom: 1.9,
-                woundedSrc: 'immagini/ritratti/astarte_ferita.jpg',
-                woundedPos: '51% 38%',
-                woundedZoom: 1.6
-            },
-            'Ascadeo': {
-                src: 'immagini/ritratti/ascadeo.jpg',
-                pos: '50% 38%',
-                zoom: 2.2,
-                woundedSrc: 'immagini/ritratti/ascadeo_ferito.jpg',
-                woundedPos: '48% 40%',
-                woundedZoom: 1.8
-            },
-            'Zeno': {
-                src: 'immagini/ritratti/zeno.jpg',
-                pos: '54% 34%',
-                zoom: 1.4,
-                woundedSrc: 'immagini/ritratti/zeno_ferito.jpg',
-                woundedPos: '53% 30%',
-                woundedZoom: 1.4
-            }
-        };
-
-        // Precarica i ritratti "feriti" per evitare lo sfarfallio al cambio
-        Object.values(HERO_PORTRAITS).forEach(p => { if (p.woundedSrc) new Image().src = p.woundedSrc; });
-
-        // Ritratti indicati nei dati della campagna (campi "portrait" e "portraitWounded" dell'eroe,
-        // ad es. caricati con l'editor): valgono per gli eroi che non hanno già un ritratto qui sopra.
-        // Idea ripresa dal branch campaign-editor di Valerio.
-        function registerCampaignHeroPortraits(heroes) {
-            (heroes || []).forEach(h => {
-                if (!h.portrait || HERO_PORTRAITS[h.name]) return;
-                const pos = h.portraitPos || '50% 38%';
-                const zoom = h.portraitZoom || 1.7;
-                HERO_PORTRAITS[h.name] = { src: h.portrait, pos, zoom };
-                if (h.portraitWounded) {
-                    Object.assign(HERO_PORTRAITS[h.name], { woundedSrc: h.portraitWounded, woundedPos: pos, woundedZoom: zoom });
-                    new Image().src = h.portraitWounded;
-                }
-            });
-        }
-
-        // Un eroe è ferito quando ha metà degli HP massimi o meno (2 su 4), ma è ancora in piedi
-        function isHeroWounded(hp, maxHp) {
-            return typeof hp === 'number' && typeof maxHp === 'number' && hp > 0 && hp <= maxHp / 2;
-        }
-
-        // Ritratto ferito: usa woundedSrc se presente, altrimenti applica l'effetto grafico "ferito"
-        function heroPortraitInner(name, hp, maxHp) {
-            const p = HERO_PORTRAITS[name];
-            const wounded = isHeroWounded(hp, maxHp);
-            const woundFx = '<span class="wound-fx" aria-hidden="true"></span>';
-            if (!p) return `<span>${name.charAt(0)}</span>${wounded ? woundFx : ''}`;
-            // Con un ritratto ferito dedicato basta l'immagine; senza, si usa l'effetto grafico
-            if (wounded && p.woundedSrc) {
-                const pos = p.woundedPos || p.pos;
-                const zoom = p.woundedZoom || p.zoom;
-                return `<img class="portrait-img" src="${p.woundedSrc}" alt="${name}" style="object-position:${pos}; transform:scale(${zoom}); transform-origin:${pos};">`;
-            }
-            const imgClass = wounded ? 'portrait-img is-wounded' : 'portrait-img';
-            return `<img class="${imgClass}" src="${p.src}" alt="${name}" style="object-position:${p.pos}; transform:scale(${p.zoom}); transform-origin:${p.pos};">${wounded ? woundFx : ''}`;
-        }
-
-        // Cinematica d'attacco, solo per i colpi a segno: il ritratto dell'eroe attraversa
-        // una banda diagonale e colpisce. Con un'abilità (ability non nullo) la cinematica
-        // è più lunga e marcata: raggi, doppio taglio a X, scintille e nome dell'abilità.
-        // Senza ritratto o con animazioni disattivate si passa subito al risultato.
-        // Un click sulla cinematica la salta.
-        function playHeroStrike(hero, ability, onDone) {
-            const p = HERO_PORTRAITS[hero.name];
-            if (!p || !animationsEnabled()) { onDone(); return; }
-            const wounded = p.woundedSrc && isHeroWounded(hero.hp, hero.maxHp);
-            const src = wounded ? p.woundedSrc : p.src;
-            const pos = wounded ? (p.woundedPos || p.pos) : p.pos;
-
-            const sparks = ability
-                ? Array.from({ length: 14 }, (_, i) => `<span style="--a:${i * (360 / 14)}deg; --d:${140 + (i % 3) * 70}px;"></span>`).join('')
-                : '';
-            const overlay = document.createElement('div');
-            overlay.className = `strike-cine${ability ? ' ability' : ''}`;
-            overlay.setAttribute('aria-hidden', 'true');
-            overlay.innerHTML = `
-                ${ability ? '<div class="strike-rays"></div>' : ''}
-                <div class="strike-band">
-                    <div class="strike-lines"></div>
-                    <div class="strike-hero"><img src="${src}" alt="" style="object-position:${pos};"></div>
-                    <div class="strike-name">${esc(hero.name)}</div>
-                    ${ability ? `<div class="strike-ability"><span>Abilità</span>${esc(ability.name)}</div>` : ''}
-                </div>
-                <div class="strike-slash"></div>
-                ${ability ? '<div class="strike-slash second"></div><div class="strike-sparks">' + sparks + '</div>' : ''}
-                <div class="strike-flash"></div>`;
-            document.body.appendChild(overlay);
-
-            let finished = false;
-            const finish = () => {
-                if (finished) return;
-                finished = true;
-                clearTimeout(timer);
-                overlay.remove();
-                onDone();
-            };
-            const timer = setTimeout(finish, ability ? 1700 : 1150);
-            overlay.addEventListener('click', finish);
-        }
-
-        function heroPortraitClass(name) {
-            return HERO_PORTRAITS[name] ? 'has-portrait' : '';
-        }
-
-        const HERO_HUES = [4, 212, 38, 285, 130];
-        function heroHue(name) {
-            const idx = campaignHeroes.findIndex(b => b.name === name);
-            if (idx >= 0) return HERO_HUES[idx % HERO_HUES.length];
-            let hash = 0;
-            for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) % 360;
-            return hash;
-        }
-
         function clampPct(value, max) {
             return max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
         }
@@ -3041,7 +1480,7 @@ function breakRelic(relicName) {
             const hpPct = clampPct(h.hp, h.maxHp);
             const armorMax = Math.max(h.base_armor, h.current_armor);
             const armorPct = clampPct(h.current_armor, armorMax);
-            const slotCount = Math.max(3, h.items.length);
+            const slotCount = Math.max(BACKPACK_SIZE, h.items.length);
             let slots = '';
             for (let i = 0; i < slotCount; i++) {
                 const it = h.items[i];
@@ -3074,19 +1513,8 @@ function breakRelic(relicName) {
                         ${heroStatHtml(h, 'dmg', 'DAN', 'Danno', 'Danni inflitti con un attacco riuscito.')}
                     </div>
                     ${h.chosenAbility ? `<div class="hero-ability" data-tip="${esc(h.chosenAbility.name + "||" + (h.chosenAbility.desc || ""))}">${abilityMarkHtml(h.chosenAbility)} ${h.chosenAbility.name}</div>` : ""}
-                    <div class="hero-inventory">${slots}<span class="inv-label">Zaino</span></div>
+                    <div class="hero-inventory">${slots}<span class="inv-label ${h.items.length >= BACKPACK_SIZE ? 'full' : ''}">Zaino ${h.items.length}/${BACKPACK_SIZE}</span></div>
                 </div>`;
-        }
-
-        const NODE_ICON = { combat: 'sword', elite: 'skull', challenge: 'question', rest: 'fire', merchant: 'pouch', treasure: 'chest', captain: 'crown' };
-        const NODE_LABEL = { combat: 'Scontro', elite: 'Scontro Elite', challenge: 'Sfida', rest: 'Riposo', merchant: 'Mercante', treasure: 'Tesoro', captain: 'Meta' };
-
-        function renderMapLegend() {
-            const legend = document.getElementById('mapLegend');
-            if (legend.childElementCount > 0) return;
-            legend.innerHTML = ['combat', 'elite', 'challenge', 'treasure', 'merchant', 'rest'].map(type => `
-                <span><span class="sts-node node-${type} legend-dot">${svgIcon(NODE_ICON[type])}</span>${NODE_LABEL[type]}</span>
-            `).join('') + `<span><span class="sts-node node-goal legend-dot">${svgIcon('crown')}</span>Meta</span>`;
         }
 
         /* ---------- Finestra modale ---------- */
@@ -3172,6 +1600,12 @@ function breakRelic(relicName) {
             const cmd = document.getElementById(hotkeys[e.key.toLowerCase()]);
             if (isUsable(cmd)) { e.preventDefault(); cmd.click(); return; }
 
+            // Esc in combattimento, prima del tiro: dal dado torna alle azioni, dalle azioni alla scelta dell'eroe
+            if (e.key === 'Escape') {
+                const back = ['combatDiceBackBtn', 'combatChangeHeroBtn'].map(id => document.getElementById(id)).find(isUsable);
+                if (back) { e.preventDefault(); back.click(); return; }
+            }
+
             if (e.key === ' ' && document.activeElement.tagName !== 'BUTTON') {
                 const roll = ['rollCombatBtn', 'rollChallengeBtn', 'rollCaptainBtn']
                     .map(id => document.getElementById(id))
@@ -3246,7 +1680,7 @@ function breakRelic(relicName) {
 
         // Confronta HP e armatura degli eroi con l'aggiornamento precedente e mostra le variazioni
         function fxDiffHeroes() {
-            party.forEach(hero => {
+            stato.party.forEach(hero => {
                 const prev = fxHeroSeen.get(hero);
                 fxHeroSeen.set(hero, { hp: hero.hp, armor: hero.current_armor });
                 if (!prev) return;
@@ -3265,26 +1699,26 @@ function breakRelic(relicName) {
 
         // Registra lo stato attuale senza animazioni (es. armature ripristinate a inizio scontro)
         function fxResyncHeroes() {
-            party.forEach(hero => fxHeroSeen.set(hero, { hp: hero.hp, armor: hero.current_armor }));
+            stato.party.forEach(hero => fxHeroSeen.set(hero, { hp: hero.hp, armor: hero.current_armor }));
         }
 
         function fxDiffEnemy() {
-            if (!activeEnemy) return;
-            const prev = fxEnemySeen.get(activeEnemy);
-            fxEnemySeen.set(activeEnemy, { hp: activeEnemy.hp, stunned: activeEnemy.isStunned });
+            if (!stato.activeEnemy) return;
+            const prev = fxEnemySeen.get(stato.activeEnemy);
+            fxEnemySeen.set(stato.activeEnemy, { hp: stato.activeEnemy.hp, stunned: stato.activeEnemy.isStunned });
             const box = document.getElementById('enemyInfo');
-            if (activeEnemy.hp > 0) box.classList.remove('defeated');
+            if (stato.activeEnemy.hp > 0) box.classList.remove('defeated');
             if (!prev) return;
-            if (activeEnemy.hp <= 0 && prev.hp > 0) onEnemyDefeated(box);
-            const dHp = activeEnemy.hp - prev.hp;
+            if (stato.activeEnemy.hp <= 0 && prev.hp > 0) onEnemyDefeated(box);
+            const dHp = stato.activeEnemy.hp - prev.hp;
             if (dHp < 0) {
                 fxHit(box);
                 // Alla morte "sfxDeath" (o, se manca, "sfxHit"); altrimenti "sfxHit"; senza file il suono generato
-                const dead = activeEnemy.hp <= 0;
+                const dead = stato.activeEnemy.hp <= 0;
                 if (!(dead && playEnemySfx('sfxDeath')) && !playEnemySfx('sfxHit')) synthSfx('enemy');
                 fxFloatOn(box, `${dHp}`, fxNextEnemyHitCritical ? 'crit' : 'dmg');
             }
-            if (activeEnemy.isStunned && !prev.stunned) fxFloatOn(box, 'Stordito', 'stun', 200);
+            if (stato.activeEnemy.isStunned && !prev.stunned) fxFloatOn(box, 'Stordito', 'stun', 200);
             fxNextEnemyHitCritical = false;
         }
 
@@ -3376,10 +1810,10 @@ function breakRelic(relicName) {
             document.body.classList.toggle('no-anim', !gameOptions.animations);
             updateMenuVideo();
             document.body.style.setProperty('--text-scale', gameOptions.textSize);
-            const music = document.getElementById('menuMusic');
-            if (!music.paused) {
-                clearInterval(musicFadeTimer);
-                music.volume = gameOptions.musicVolume;
+            // Nuovo volume subito sul brano che suona (non su quello che sta sfumando)
+            if (musicActive && !musicActive.paused && !musicActive.loopOutgoing) {
+                clearInterval(musicActive.fadeTimer);
+                musicActive.volume = gameOptions.musicVolume;
             }
         }
 
@@ -3470,6 +1904,7 @@ function breakRelic(relicName) {
                     <p>Sulla mappa avanza di livello in livello: <b>scontri</b>, <b>sfide</b>, <b>tesori</b>, <b>mercanti</b> e <b>riposi</b>. Il boss attende in cima.</p>
                     <p>In combattimento ogni eroe tira un d6 e aggiunge la Forza: <b>Attacca</b> contro la CA del nemico, <b>Difendi</b> e <b>Aiuta</b> contro il suo Attacco.</p>
                     <p>Nelle sfide si tira un d6 più Intelligenza o Fede contro la Classe di Difficoltà. Superarle dà reliquie, fallirle maledizioni.</p>
+                    <p>Dado naturale: un <b>6</b> sul dado riesce sempre, un <b>1</b> fallisce sempre, qualunque siano bonus e difficoltà.</p>
                     <p>Tasti rapidi in combattimento: <span class="keycap">Q</span><span class="keycap">W</span><span class="keycap">E</span><span class="keycap">R</span><span class="keycap">T</span> azioni, <span class="keycap">Spazio</span> tira il dado.</p>
                 </div>`, [{ label: 'Chiudi', className: 'btn-proceed' }], { wide: true });
         }
@@ -3534,16 +1969,16 @@ function breakRelic(relicName) {
 
         /* ---------- Schermata del capitolo prima della mappa ---------- */
         function startExpedition() {
-            if (!animationsEnabled() || !currentCampaign) { startMap(); return; }
+            if (!animationsEnabled() || !stato.currentCampaign) { startMap(); return; }
 
             const overlay = document.createElement('div');
             overlay.className = 'chapter-overlay';
             overlay.innerHTML = `
                 <div class="chapter-content">
                     <div class="chapter-kicker">La spedizione ha inizio</div>
-                    <div class="chapter-title">${currentCampaign.title}</div>
+                    <div class="chapter-title">${stato.currentCampaign.title}</div>
                     <div class="chapter-rule"></div>
-                    <div class="chapter-sub">${currentCampaign.badge || ''}</div>
+                    <div class="chapter-sub">${stato.currentCampaign.badge || ''}</div>
                     <div class="chapter-skip">Clicca per continuare</div>
                 </div>`;
             document.body.appendChild(overlay);
@@ -3579,9 +2014,9 @@ function breakRelic(relicName) {
         function renderTurnBar() {
             const bar = document.getElementById('turnOrderBar');
             if (!bar) return;
-            if (currentScreenId !== 'screenCombat' || !activeEnemy || combatPhase === 'none') { bar.innerHTML = ''; return; }
+            if (currentScreenId !== 'screenCombat' || !stato.activeEnemy || combatPhase === 'none') { bar.innerHTML = ''; return; }
 
-            const heroChips = party.filter(h => h.hp > 0).map(h => {
+            const heroChips = stato.party.filter(h => h.hp > 0).map(h => {
                 const state = combatPhase === 'won' || h.hasActed ? 'done' : (h === currentActiveHero ? 'current' : '');
                 const note = state === 'done' ? 'Ha già agito in questo round' : (state === 'current' ? 'Sta agendo' : 'Deve ancora agire');
                 const inner = HERO_PORTRAITS[h.name] ? heroPortraitInner(h.name, h.hp, h.maxHp) : h.name.charAt(0);
@@ -3590,16 +2025,16 @@ function breakRelic(relicName) {
             const enemyState = combatPhase === 'monster' ? 'current' : (combatPhase === 'won' ? 'done' : '');
             const enemyNote = combatPhase === 'monster' ? 'Sta attaccando' : (combatPhase === 'won' ? 'Sconfitto' : 'Attacca dopo la compagnia');
             bar.innerHTML = `
-                <span class="turn-round">Round ${combatRound}</span>
+                <span class="turn-round">Round ${stato.combatRound}</span>
                 ${heroChips}
                 <span class="turn-sep">▶</span>
-                <span class="turn-chip enemy ${enemyState}" data-tip="${esc(activeEnemy.name)}||${enemyNote}">${svgIcon('skull')}</span>`;
+                <span class="turn-chip enemy ${enemyState}" data-tip="${esc(stato.activeEnemy.name)}||${enemyNote}">${svgIcon('skull')}</span>`;
         }
 
         /* ---------- 7. Nemico sconfitto ---------- */
         function onEnemyDefeated(box) {
             combatPhase = 'won';
-            expeditionStats.combatsWon++;
+            stato.expeditionStats.combatsWon++;
             box.classList.add('defeated');
             const stamp = document.createElement('div');
             stamp.className = 'victory-stamp';
@@ -3611,7 +2046,7 @@ function breakRelic(relicName) {
         /* ---------- 10. Avanzamento della spedizione ---------- */
         function renderExpeditionProgress(maxLevel) {
             const el = document.getElementById('expeditionProgress');
-            const doneLevels = stsMapNodes.filter(n => n.done).map(n => n.level);
+            const doneLevels = stato.stsMapNodes.filter(n => n.done).map(n => n.level);
             const completed = doneLevels.length ? Math.max(...doneLevels) + 1 : 0;
             const total = maxLevel + 1;
             let segments = '';
@@ -3623,42 +2058,6 @@ function breakRelic(relicName) {
                 <span class="progress-label">Livello ${Math.min(completed + 1, total)} / ${total}</span>
                 <div class="progress-track">${segments}</div>
                 <span class="progress-boss ${completed >= total ? 'reached' : ''}" data-tip="Meta finale||Livello ${total}">${svgIcon('crown')}</span>`;
-        }
-
-        /* ---------- 11. Scrigno che si apre ---------- */
-        // Restituisce dopo quanti ms lo scrigno è aperto (0 se le animazioni sono disattivate)
-        function playChestAnimation() {
-            if (!animationsEnabled()) return 0;
-            const overlay = document.createElement('div');
-            overlay.className = 'chest-overlay';
-            overlay.innerHTML = `
-                <div class="chest-stage">
-                    <div class="chest-rays"></div>
-                    <svg class="chest-svg" viewBox="0 0 220 200" aria-hidden="true">
-                        <defs>
-                            <linearGradient id="chestWood" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0" stop-color="#7a4a22"/><stop offset="1" stop-color="#2e1706"/>
-                            </linearGradient>
-                        </defs>
-                        <ellipse class="chest-glow" cx="110" cy="90" rx="72" ry="12" fill="#ffe28a"/>
-                        <rect x="30" y="88" width="160" height="82" rx="4" fill="url(#chestWood)" stroke="#000" stroke-width="3"/>
-                        <rect x="30" y="100" width="160" height="9" fill="url(#gradGold)" stroke="#000"/>
-                        <rect x="30" y="150" width="160" height="9" fill="url(#gradGold)" stroke="#000"/>
-                        <rect x="58" y="88" width="12" height="82" fill="url(#gradGold)" stroke="#000"/>
-                        <rect x="150" y="88" width="12" height="82" fill="url(#gradGold)" stroke="#000"/>
-                        <rect x="97" y="94" width="26" height="28" rx="3" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
-                        <circle cx="110" cy="106" r="4" fill="#000"/><rect x="108.5" y="106" width="3" height="9" fill="#000"/>
-                        <g class="chest-lid">
-                            <path d="M30 88 V68 Q30 44 62 44 H158 Q190 44 190 68 V88 Z" fill="url(#chestWood)" stroke="#000" stroke-width="3"/>
-                            <rect x="58" y="45" width="12" height="43" fill="url(#gradGold)" stroke="#000"/>
-                            <rect x="150" y="45" width="12" height="43" fill="url(#gradGold)" stroke="#000"/>
-                            <rect x="30" y="78" width="160" height="10" fill="url(#gradGold)" stroke="#000"/>
-                        </g>
-                    </svg>
-                </div>`;
-            document.body.appendChild(overlay);
-            setTimeout(() => overlay.remove(), 1600);
-            return 1250;
         }
 
         /* ---------- 12. Monete che volano verso il contatore ---------- */
@@ -3724,7 +2123,7 @@ function breakRelic(relicName) {
             const wrap = document.getElementById('topBarCoinsWrap');
             const gained = diff > 0 && COIN_FLY_SCREENS.includes(currentScreenId);
             const spent = diff < 0 && currentScreenId === 'screenMerchant';
-            if (gained) expeditionStats.coinsEarned += diff;
+            if (gained) stato.expeditionStats.coinsEarned += diff;
 
             if (!animationsEnabled() || (!gained && !spent)) { setCoinText(target); return; }
 
@@ -3813,12 +2212,12 @@ function breakRelic(relicName) {
 
         /* ---------- 16. Diario della compagnia ---------- */
         function openJournal() {
-            if (party.length === 0) {
+            if (stato.party.length === 0) {
                 uiError('Nessuna spedizione in corso: recluta prima la compagnia');
                 return;
             }
 
-            const heroesHtml = party.map(h => {
+            const heroesHtml = stato.party.map(h => {
                 const bonuses = [];
                 if (h.att_bonus) bonuses.push(`<span class="stat-chip"><i>ATT</i>+${h.att_bonus}</span>`);
                 if (h.att_penalty) bonuses.push(`<span class="stat-chip"><i>ATT</i>-${h.att_penalty}</span>`);
@@ -3846,30 +2245,30 @@ function breakRelic(relicName) {
                     </div>`;
             }).join('');
 
-            const relics = unlockedRelics.length
-                ? unlockedRelics.map(r => `<div class="relic"><b>${r.name}</b> — ${r.desc}</div>`).join('')
+            const relics = stato.unlockedRelics.length
+                ? stato.unlockedRelics.map(r => `<div class="relic"><b>${r.name}</b> — ${r.desc}</div>`).join('')
                 : '<span class="journal-empty">Nessuna reliquia ottenuta</span>';
-            const curses = activeCurses.length
-                ? activeCurses.map(c => `<div class="curse">${c}</div>`).join('')
+            const curses = stato.activeCurses.length
+                ? stato.activeCurses.map(c => `<div class="curse">${c}</div>`).join('')
                 : '<span class="journal-empty">Nessuna maledizione attiva</span>';
 
-            const doneLevels = stsMapNodes.filter(n => n.done).map(n => n.level);
-            const totalLevels = stsMapNodes.length ? Math.max(...stsMapNodes.map(n => n.level)) + 1 : 0;
+            const doneLevels = stato.stsMapNodes.filter(n => n.done).map(n => n.level);
+            const totalLevels = stato.stsMapNodes.length ? Math.max(...stato.stsMapNodes.map(n => n.level)) + 1 : 0;
             const stat = (value, label) => `<div class="journal-stat"><b>${value}</b><span>${label}</span></div>`;
 
-            openModal(`Diario — ${currentCampaign ? currentCampaign.title : 'Spedizione'}`, `
+            openModal(`Diario — ${stato.currentCampaign ? stato.currentCampaign.title : 'Spedizione'}`, `
                 <div class="journal-section"><h4>La Compagnia</h4><div class="journal-heroes">${heroesHtml}</div></div>
                 <div class="journal-section"><h4>Reliquie</h4><div class="journal-list">${relics}</div></div>
                 <div class="journal-section"><h4>Maledizioni</h4><div class="journal-list">${curses}</div></div>
                 <div class="journal-section"><h4>La Spedizione</h4>
                     <div class="journal-stats">
                         ${stat(`${doneLevels.length ? Math.max(...doneLevels) + 1 : 0} / ${totalLevels}`, 'Livelli superati')}
-                        ${stat(expeditionStats.combatsWon, 'Scontri vinti')}
-                        ${stat(expeditionStats.challengesPassed, 'Sfide superate')}
-                        ${stat(expeditionStats.challengesFailed, 'Sfide fallite')}
-                        ${stat(expeditionStats.coinsEarned, 'Monete raccolte')}
-                        ${stat(expeditionStats.itemsFound, 'Oggetti trovati')}
-                        ${stat(`${party.filter(h => h.hp > 0).length} / ${party.length}`, 'Eroi in piedi')}
+                        ${stat(stato.expeditionStats.combatsWon, 'Scontri vinti')}
+                        ${stat(stato.expeditionStats.challengesPassed, 'Sfide superate')}
+                        ${stat(stato.expeditionStats.challengesFailed, 'Sfide fallite')}
+                        ${stat(stato.expeditionStats.coinsEarned, 'Monete raccolte')}
+                        ${stat(stato.expeditionStats.itemsFound, 'Oggetti trovati')}
+                        ${stat(`${stato.party.filter(h => h.hp > 0).length} / ${stato.party.length}`, 'Eroi in piedi')}
                     </div>
                 </div>`,
                 [{ label: 'Chiudi', className: 'btn-proceed' }],
@@ -3885,7 +2284,6 @@ function breakRelic(relicName) {
                 [{ label: 'Torna allo scrigno', className: 'btn-proceed' }, { label: 'Prosegui comunque', className: 'btn-danger', onClick: advanceNode }]);
         }
 
-        applyOptions();
 
         /* ---------- Braci di sfondo ---------- */
         (function spawnEmbers() {
@@ -3916,4 +2314,3 @@ function breakRelic(relicName) {
             }
         })();
 
-        updatePartyStatusBars();

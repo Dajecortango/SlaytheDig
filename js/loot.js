@@ -2,7 +2,7 @@
    BOTTINO, TESORI E CARTE COPERTE
    Bottino dopo gli scontri, scrigni del tesoro, rarità pesata in base
    all'avanzamento e carte coperte da scoprire con un clic.
-   Caricato dopo js/game.js (stesso ambito globale: usa party, gameItems, LIBRERIA...).
+   Caricato dopo js/game.js (stesso ambito globale: usa stato, gameItems, LIBRERIA...).
    ========================================================================== */
 
         /* ---------- Carte coperte: merce del mercante e bottino degli scontri si scoprono con un clic ---------- */
@@ -43,8 +43,8 @@
 
         // Avanzamento nella mappa del nodo corrente: 0 al primo livello, 1 all'ultimo
         function mapProgress() {
-            const node = stsMapNodes.find(n => n.id === currentNodeId);
-            const maxLevel = Math.max(...stsMapNodes.map(n => n.level), 1);
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            const maxLevel = Math.max(...stato.stsMapNodes.map(n => n.level), 1);
             return node ? Math.min(1, node.level / maxLevel) : 0;
         }
 
@@ -88,32 +88,32 @@
 
             // Reliquia: Dente del grande lupo
             if (hasRelic("Dente del grande lupo")) {
-                let lowestHero = party.filter(h => h.hp > 0).reduce((prev, curr) => prev.hp < curr.hp ? prev : curr);
+                let lowestHero = stato.party.filter(h => h.hp > 0).reduce((prev, curr) => prev.hp < curr.hp ? prev : curr);
                 if (lowestHero && lowestHero.hp < lowestHero.maxHp) {
                     healHero(lowestHero, 1);
                 }
             }
 
-            const currentNode = stsMapNodes.find(n => n.id === currentNodeId);
+            const currentNode = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
             const isEliteCombat = currentNode && (currentNode.type === 'elite' || currentNode.type === 'captain');
             let coins = scaledCoins([3, 5, 7, 9, 12], isEliteCombat);
 
-            if (activeCurses.includes("Maledizione: -15% monete")) {
+            if (stato.activeCurses.includes("Maledizione: -15% monete")) {
                 coins = Math.floor(coins * 0.85);
             }
 
             // Abilità di Icaro "Fammi dare un'occhiata": monete extra garantite dopo ogni scontro, se è vivo.
             // L'id dell'abilità copre i salvataggi creati prima di questa versione.
-            const lootBonusHeroes = party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
+            const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
             const lootBonus = lootBonusHeroes.reduce((sum, h) => sum + (h.bonusLootCoins || 3), 0);
             coins += lootBonus;
             document.getElementById('lootCoinsBonus').textContent = lootBonus
                 ? `(di cui +${lootBonus} da ${lootBonusHeroes.map(h => h.name).join(', ')}: Fammi dare un'occhiata)` : '';
 
-            partyCoins += coins;
+            stato.partyCoins += coins;
 
             currentLootItem = pickLootItem(isEliteCombat, mapProgress());
-            expeditionStats.itemsFound++;
+            stato.expeditionStats.itemsFound++;
 
             document.getElementById('lootCoinsText').textContent = coins;
             document.getElementById('lootItemIcon').innerHTML = itemIconHtml(currentLootItem);
@@ -124,7 +124,7 @@
             lootRow.classList.add(`rar-card-${itemRarity(currentLootItem)}`);
             lootRow.dataset.tip = itemTip(currentLootItem);
             revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
-            document.getElementById('lootHeroSelect').innerHTML = heroOptionsForItem(currentLootItem);
+            fillHeroSelectForItem('lootHeroSelect', currentLootItem);
             // Il dorso lascia intuire la rarità (colori di WoW: grigio, bianco, verde, blu, viola, arancio)
             const lootBack = document.getElementById('lootCardBack');
             lootBack.classList.remove('hidden', 'card-flip-out', ...Object.keys(RARITY_LABELS).map(r => `rar-back-${r}`));
@@ -149,10 +149,10 @@
         }
 
         function confirmLootAssignment() {
-            const hero = party.find(p => p.name === document.getElementById('lootHeroSelect').value);
+            const hero = stato.party.find(p => p.name === document.getElementById('lootHeroSelect').value);
             assignItemToHero(currentLootItem, hero, () => {
                 advanceNode();
-            });
+            }, chosenDiscardIdx('lootHeroSelect'));
         }
 
         let currentTreasureItems = [];
@@ -167,7 +167,7 @@
         // Genera l'offerta di un tesoro: monete (con eventuale sconto da maledizione) + 3 oggetti a caso.
         function generateTreasureOffer() {
             let coins = scaledCoins([5, 8, 10, 15], false);
-            if (activeCurses.includes("Maledizione: -15% monete")) {
+            if (stato.activeCurses.includes("Maledizione: -15% monete")) {
                 coins = Math.floor(coins * 0.85);
             }
             const items = [];
@@ -181,20 +181,17 @@
             showScreen('screenTreasureLoot');
             const offer = generateTreasureOffer();
             const coins = offer.coins;
-            partyCoins += coins;
+            stato.partyCoins += coins;
             currentTreasureItems = offer.items;
 
             document.getElementById('treasureCoinsText').textContent = coins;
             document.getElementById('treasureAssignArea').classList.add('hidden');
             document.getElementById('btnExitTreasure').classList.remove('hidden');
 
-            // Lo scrigno si apre, poi monete e oggetti compaiono come carte
-            const chestDelay = playChestAnimation();
-            coinFlightDelay = chestDelay;
+            // Monete e oggetti compaiono come carte
             renderTreasureItemsGrid();
-            document.querySelectorAll('#treasureItemsList .armory-btn').forEach((card, i) => revealAsCard(card, chestDelay + i * 160));
+            document.querySelectorAll('#treasureItemsList .armory-btn').forEach((card, i) => revealAsCard(card, i * 160));
             updatePartyStatusBars();
-            coinFlightDelay = 0;
         }
 
         function renderTreasureItemsGrid() {
@@ -226,7 +223,7 @@
 
             document.getElementById('selectedTreasureName').textContent = selectedTreasureItem.name;
             document.getElementById('selectedTreasureDesc').innerHTML = kw(selectedTreasureItem.desc);
-            document.getElementById('treasureHeroSelect').innerHTML = heroOptionsForItem(selectedTreasureItem);
+            fillHeroSelectForItem('treasureHeroSelect', selectedTreasureItem);
         }
 
         function cancelTreasureItemSelection() {
@@ -236,12 +233,12 @@
         }
 
         function confirmTreasureAssignment() {
-            const hero = party.find(p => p.name === document.getElementById('treasureHeroSelect').value);
-            expeditionStats.itemsFound++;
+            const hero = stato.party.find(p => p.name === document.getElementById('treasureHeroSelect').value);
+            stato.expeditionStats.itemsFound++;
             assignItemToHero(selectedTreasureItem, hero, () => {
                 currentTreasureItems[selectedTreasureIndex] = null;
                 cancelTreasureItemSelection();
                 renderTreasureItemsGrid();
-            });
+            }, chosenDiscardIdx('treasureHeroSelect'));
         }
 
