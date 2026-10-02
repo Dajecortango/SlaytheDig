@@ -62,11 +62,6 @@
     <!-- Barra superiore: risorse della Compagnia -->
     <div class="party-topbar" id="partyTopBar">
         <div class="topbar-side">
-            <div class="res" id="topBarCoinsWrap" data-tip="Monete||Il tesoro della Compagnia, da spendere presso i mercanti.">
-                <span class="res-ico res-ico-img"><img src="immagini/icone/BTNChestOfGold.png" alt=""></span>
-                <span class="res-label">Monete</span>
-                <span class="res-val" id="topBarCoins">0</span>
-            </div>
             <div class="topbar-actions">
                 <button onclick="saveGame()" data-tip="Salva||Salva lo stato attuale della partita.">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>
@@ -102,6 +97,16 @@
         </div>
 
         <div class="topbar-side">
+            <div class="res" id="topBarCoinsWrap" data-tip="Monete||Il tesoro della Compagnia, da spendere presso i mercanti.">
+                <span class="res-ico res-ico-img"><img src="immagini/icone/BTNChestOfGold.png" alt=""></span>
+                <span class="res-label">Monete</span>
+                <span class="res-val" id="topBarCoins">0</span>
+            </div>
+            <div class="res" id="topBarLevelWrap" data-tip="Livello della mappa||Il livello raggiunto dalla spedizione sul totale della mappa.">
+                <span class="res-ico res-ico-img"><img src="immagini/icone/BTNSpy.png" alt=""></span>
+                <span class="res-label">Livello</span>
+                <span class="res-val" id="topBarLevel">1</span>
+            </div>
             <div class="res" id="topBarRelicsWrap" data-tip="Reliquie||Nessuna reliquia ottenuta.">
                 <span class="res-ico res-ico-img">
                     <img src="immagini/icone/BTNEnchantedGemstone.png" alt="">
@@ -292,9 +297,11 @@
             <div id="screenMap" class="hidden">
                 <h2 id="mapCampaignHeader">Mappa della Spedizione</h2>
                 <div class="expedition-progress" id="expeditionProgress"></div>
-                <div class="sts-map-wrapper" id="stsMapWrapper">
-                    <div class="sts-map-nodes" id="stsMapNodesContainer">
-                        <svg class="sts-map-svg" id="stsMapSvg"></svg>
+                <div class="map-frame">
+                    <div class="sts-map-wrapper" id="stsMapWrapper">
+                        <div class="sts-map-nodes" id="stsMapNodesContainer">
+                            <svg class="sts-map-svg" id="stsMapSvg"></svg>
+                        </div>
                     </div>
                 </div>
                 <div class="map-legend" id="mapLegend"></div>
@@ -305,9 +312,13 @@
                 <h2 id="combatTitle">Combattimento</h2>
                 <div class="event-grid-layout">
                     <div>
-                        <div class="event-left-image-box">
+                        <div class="event-left-image-box combat-stage">
                             <!-- ID immagine dinamica scontro -->
                             <img id="combatImg" src="immagini/scontro_cinghiali.jpg" alt="Scontro">
+                            <!-- Cosa farà il nemico al suo turno (updateEnemyInfoUI in js/combattimento.js) -->
+                            <div id="enemyIntent" class="enemy-intent" aria-live="polite"></div>
+                            <!-- Nome, vita e statistiche del nemico sopra l'immagine -->
+                            <div id="enemyInfo" class="enemy-box enemy-overlay"></div>
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -317,7 +328,6 @@
                                 <strong>Descrizione:</strong>
                             </div>
 
-                            <div id="enemyInfo" class="enemy-box"></div>
                             <div id="heroTurnSection">
                                 <p class="turn-label">Turno del Party</p>
                                 <div id="heroChoiceArea">
@@ -330,22 +340,22 @@
                                     <div id="combatActionButtons" class="command-card">
                                         <button id="cmdAttack" class="cmd-btn" onclick="selectCombatAction('attack')" data-tip="Attacca [Q]||Tira Forza + d6 contro la CA del nemico. Se riesci infliggi i tuoi danni.">
                                             <span class="cmd-key">Q</span>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 4.5L9 15M19.5 4.5V8M19.5 4.5H16M6.5 12.5l5 5M8.2 15.8L4.5 19.5"/></svg>
+                                            <img class="cmd-img" src="immagini/icone/BTNAttack.png" alt="">
                                             Attacca<span class="cmd-sub">Forza + d6</span>
                                         </button>
                                         <button id="cmdDefend" class="cmd-btn" onclick="selectCombatAction('defend')" data-tip="Difendi [W]||Tira Forza + d6 contro l'attacco nemico. Se riesci ottieni +1 Armatura.">
                                             <span class="cmd-key">W</span>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 7v10M8.5 11h7"/></svg>
+                                            <img class="cmd-img" src="immagini/icone/BTNDefend.png" alt="">
                                             Difendi<span class="cmd-sub">+1 Armatura</span>
                                         </button>
                                         <button id="cmdHelp" class="cmd-btn" onclick="selectCombatAction('help')" data-tip="Aiuta [E]||Tira Forza + d6 contro l'attacco nemico. Se riesci il prossimo attacco ottiene +1.">
                                             <span class="cmd-key">E</span>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4h12l-3 4 3 4H6"/></svg>
+                                            <img class="cmd-img" src="immagini/icone/BTNRallyPoint.png" alt="">
                                             Aiuta<span class="cmd-sub">+1 al prossimo</span>
                                         </button>
                                         <button id="cmdItem" class="cmd-btn" onclick="selectCombatAction('use_item')" data-tip="Usa Oggetto [R]||Usa un consumabile dello zaino su un membro della Compagnia.">
                                             <span class="cmd-key">R</span>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3h4M10.5 3v5L6 16a3 3 0 0 0 2.6 5h6.8A3 3 0 0 0 18 16l-4.5-8V3"/><path d="M8 14h8"/></svg>
+                                            <img class="cmd-img" src="immagini/icone/BTNPotionRed.png" alt="">
                                             Oggetto<span class="cmd-sub">Consumabile</span>
                                         </button>
                                         <button id="btnCombatAbility" class="cmd-btn" onclick="selectCombatAction('ability')" data-tip="Usa Abilità [T]||">
