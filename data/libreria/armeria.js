@@ -9,7 +9,7 @@ window.LIBRERIA.armeria = {
     "alabarda": { "id": "alabarda", "name": "Alabarda", "help_bonus_val": 1, "desc": "+1 Tiro Aiuto", "icon": "immagini/icone/BTNEnvenomedSpear.png" },
     "scudo": { "id": "scudo", "name": "Scudo", "def_bonus": 1, "desc": "+1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpOne.png" },
     "armatura_leggera": { "id": "armatura_leggera", "name": "Armatura leggera", "armor": 1, "desc": "+1 Punti Armatura", "icon": "immagini/icone/BTNReinforcedHides.png" },
-    "armatura_pesante": { "id": "armatura_pesante", "name": "Armatura pesante", "armor": 2, "att_penalty": 1, "desc": "+2 Punti Armatura, -1 Attacco", "icon": "immagini/icone/BTNMoonArmor.png" },
+    "armatura_pesante": { "id": "armatura_pesante", "name": "Armatura pesante", "armor": 2, "desc": "+2 Punti Armatura", "icon": "immagini/icone/BTNMoonArmor.png" },
     "libro_fede": {
         "id": "libro_fede",
         "icon": "immagini/icone/BTNSpellBookBLS.png",
@@ -34,7 +34,7 @@ window.LIBRERIA.armeria = {
     "spada_affilata": { "id": "spada_affilata", "name": "Spada affilata", "rarity": "non_comune", "str": 1, "dmg": 1, "desc": "+1 Forza, +1 Danno", "icon": "immagini/icone/BTNThoriumMelee.png" },
     "ascia_pesante": { "id": "ascia_pesante", "name": "Ascia pesante", "rarity": "non_comune", "dmg": 2, "desc": "+2 Danni", "icon": "immagini/icone/BTNOrcMeleeUpThree.png" },
     "armatura_leggera_loot": { "id": "armatura_leggera_loot", "name": "Armatura leggera", "rarity": "comune", "armor": 1, "desc": "+1 Armatura", "icon": "immagini/icone/BTNReinforcedHides.png" },
-    "armatura_pesante_loot": { "id": "armatura_pesante_loot", "name": "Armatura pesante", "rarity": "raro", "armor": 2, "att_penalty": 1, "desc": "+2 Armatura, -1 Tiro Attacco", "icon": "immagini/icone/BTNMoonArmor.png" },
+    "armatura_pesante_loot": { "id": "armatura_pesante_loot", "name": "Armatura pesante", "rarity": "raro", "armor": 2, "desc": "+2 Armatura", "icon": "immagini/icone/BTNMoonArmor.png" },
     "pozione": { "id": "pozione", "name": "Pozione di guarigione", "rarity": "raro", "type": "consumable_full", "desc": "Consumabile: Recupera 100% HP", "icon": "immagini/icone/BTNPotionRed.png" },
     "amuleto": { "id": "amuleto", "name": "Amuleto sacro", "rarity": "comune", "fth": 1, "desc": "+1 Fede", "icon": "immagini/icone/BTNAmulet.png" },
     "anello": { "id": "anello", "name": "Anello della concentrazione", "rarity": "comune", "int": 1, "desc": "+1 Intelligenza", "icon": "immagini/icone/BTNRingPurple.png" },
@@ -47,7 +47,7 @@ window.LIBRERIA.armeria = {
     "amuleto_legno_santo": {
         "id": "amuleto_legno_santo",
         "icon": "immagini/icone/BTNPeriapt1.png",
-        "name": "Amuleto di Legno Santo",
+        "name": "Amuleto di Legno Consacrato",
         "rarity": "non_comune",
         "fth": 1,
         "scaling": [
@@ -67,7 +67,7 @@ window.LIBRERIA.armeria = {
         "desc": "+1 Intelligenza; +1 Aiuto ogni 3 Intelligenza"
     },
     "balsamo_curativo": { "id": "balsamo_curativo", "name": "Balsamo Lenitivo", "rarity": "comune", "type": "consumable_heal", "heal_val": 2, "desc": "Consumabile: Cura 2 HP", "icon": "immagini/icone/BTNSnazzyPotion.png" },
-    "spada_norgrad": { "id": "spada_norgrad", "name": "Spada di Norgrad", "rarity": "raro", "str": 1, "dmg": 1, "desc": "+1 Forza, +1 Danno", "icon": "immagini/icone/BTNArcaniteMelee.png" },
+    "spada_norgrad": { "id": "spada_norgrad", "name": "Spada in Lega di Kol", "rarity": "raro", "str": 1, "dmg": 1, "desc": "+1 Forza, +1 Danno", "icon": "immagini/icone/BTNArcaniteMelee.png" },
     "alabarda_guardia": {
         "id": "alabarda_guardia",
         "icon": "immagini/icone/BTNImpalingBolt.png",
@@ -79,9 +79,9 @@ window.LIBRERIA.armeria = {
         ],
         "desc": "+1 Aiuto; +1 Forza ogni 3 Intelligenza"
     },
-    "mannaia_pesante": { "id": "mannaia_pesante", "name": "Mannaia Pesante", "rarity": "non_comune", "dmg": 2, "att_penalty": 1, "desc": "+2 Danni, -1 al tiro per Colpire", "icon": "immagini/icone/BTNOrcMeleeUpTwo.png" },
-    "scudo_ferro": { "id": "scudo_ferro", "name": "Scudo Rinforzato in Ferro", "rarity": "raro", "armor": 1, "def_bonus": 1, "desc": "+1 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpTwo.png" },
-    "corazza_scaglie": { "id": "corazza_scaglie", "name": "Corazza a Scaglie", "rarity": "raro", "armor": 2, "att_penalty": 1, "desc": "+2 Armatura, -1 al tiro per Colpire", "icon": "immagini/icone/BTNNagaArmorUp1.png" },
+    "mannaia_pesante": { "id": "mannaia_pesante", "name": "Mannaia Pesante", "rarity": "raro", "dmg": 3, "desc": "+3 Danni", "icon": "immagini/icone/BTNOrcMeleeUpTwo.png" },
+    "scudo_ferro": { "id": "scudo_ferro", "name": "Scudo Rinforzato in Ferro", "rarity": "raro", "armor": 2, "def_bonus": 1, "desc": "+2 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpTwo.png" },
+    "corazza_scaglie": { "id": "corazza_scaglie", "name": "Corazza a Scaglie", "rarity": "raro", "armor": 2, "desc": "+2 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNNagaArmorUp1.png", "def_bonus": 1 },
     "tomo_proibito": {
         "id": "tomo_proibito",
         "icon": "immagini/icone/BTNBookOfTheDead.png",
@@ -106,10 +106,10 @@ window.LIBRERIA.armeria = {
     },
     "pozione_rigenerazione": { "id": "pozione_rigenerazione", "name": "Pozione di Rigenerazione", "rarity": "raro", "type": "consumable_full", "desc": "Consumabile: Ripristina 100% HP", "icon": "immagini/icone/BTNPotionOfRestoration.png" },
     "unguento_fortificante": { "id": "unguento_fortificante", "name": "Unguento Fortificante", "rarity": "non_comune", "type": "consumable_heal", "heal_val": 3, "desc": "Consumabile: Cura 3 HP", "icon": "immagini/icone/BTNPotionGreen.png" },
-    "lama_acciaio_lunare": { "id": "lama_acciaio_lunare", "name": "Lama d'Acciaio Lunare", "rarity": "epico", "str": 2, "dmg": 1, "desc": "+2 Forza, +1 Danno", "icon": "immagini/icone/BTNFrostMourne.png" },
-    "martello_breccia": { "id": "martello_breccia", "name": "Martello della Breccia", "rarity": "epico", "dmg": 3, "att_penalty": 1, "desc": "+3 Danni, -1 al tiro per Colpire", "icon": "immagini/icone/BTNHammer.png" },
-    "gorgiera_veterano": { "id": "gorgiera_veterano", "name": "Gorgiera del Veterano", "rarity": "epico", "armor": 2, "def_bonus": 1, "desc": "+2 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNImprovedMoonArmor.png" },
-    "corazza_piastre_leone": { "id": "corazza_piastre_leone", "name": "Corazza a Piastre del Leone", "rarity": "epico", "armor": 3, "att_penalty": 1, "desc": "+3 Armatura, -1 al tiro per Colpire", "icon": "immagini/icone/BTNBladeBaneArmor.png" },
+    "lama_acciaio_lunare": { "id": "lama_acciaio_lunare", "name": "Lama d'Acciaio Lunare", "rarity": "epico", "str": 2, "dmg": 2, "desc": "+2 Forza, +2 Danno", "icon": "immagini/icone/BTNFrostMourne.png" },
+    "martello_breccia": { "id": "martello_breccia", "name": "Martello della Breccia", "rarity": "epico", "dmg": 3, "desc": "+3 Danni, +2 Armatura", "icon": "immagini/icone/BTNHammer.png", "armor": 2 },
+    "gorgiera_veterano": { "id": "gorgiera_veterano", "name": "Gorgiera del Veterano", "rarity": "epico", "armor": 3, "def_bonus": 1, "desc": "+3 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNImprovedMoonArmor.png" },
+    "corazza_piastre_leone": { "id": "corazza_piastre_leone", "name": "Corazza a Piastre del Leone", "rarity": "epico", "armor": 2, "desc": "+2 Armatura, +1 Forza, +1 Danno", "icon": "immagini/icone/BTNBladeBaneArmor.png", "dmg": 1, "str": 1 },
     "cappa_sussurri": {
         "id": "cappa_sussurri",
         "icon": "immagini/icone/BTNCloak.png",
@@ -138,7 +138,7 @@ window.LIBRERIA.armeria = {
     "ankh_pellegrino": {
         "id": "ankh_pellegrino",
         "icon": "immagini/icone/BTNAnkh.png",
-        "name": "Ankh del Pellegrino",
+        "name": "Cappuccio del Pellegrino",
         "rarity": "comune",
         "scaling": [
             { "stat": "def_bonus", "per": "fth", "every": 2 }
@@ -201,7 +201,7 @@ window.LIBRERIA.armeria = {
     "corona_martire": {
         "id": "corona_martire",
         "icon": "immagini/icone/BTNCirclet.png",
-        "name": "Corona del Martire",
+        "name": "Amuleto dei Cicli",
         "rarity": "leggendario",
         "fth": 1,
         "scaling": [

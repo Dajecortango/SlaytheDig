@@ -61,11 +61,13 @@ window.CAMPAIGNS["tutorial"] = {
         "fede8": {
             "title": "Onore ai caduti",
             "desc": "Trovate il corpo di un commilitone abbandonato.",
-            "ignoreText": "Troppo tardi, lasciate il corpo dove si trova.",
+            "ignoreText": "ormai è quasi l'alba, non avete tempo purtroppo, lasciate il corpo dove si trova.",
             "successText": "Scavate una fossa degna e placate la vostra coscienza.",
             "failText": "La paura dell'adunata vi fa desistere a metà dell'opera.",
             "stat": "fth",
-            "cd": 8
+            "cd": 8,
+            "reward": "corno_antico",
+            "punishment": "presagio_di_morte"
         },
         "scelta_finale": {
             "title": "Accampamento",
@@ -98,16 +100,16 @@ window.CAMPAIGNS["tutorial"] = {
         { "id": 8, "level": 3, "x": 500, "type": "rest", "restId": 1, "title": "Livello 4 - Riposo 1", "icon": "⛺", "done": false, "active": false, "next": [11, 12], "image": "immagini/riposo_accampamento.jpg" },
         { "id": 9, "level": 3, "x": 620, "type": "treasure", "treasureId": 2, "title": "Livello 4 - Tesoro 2", "icon": "💎", "done": false, "active": false, "next": [12], "image": "immagini/tesoro_fiume.jpg" },
         { "id": 10, "level": 4, "x": 250, "type": "rest", "restId": 2, "title": "Livello 5 - Riposo 2", "icon": "⛺", "done": false, "active": false, "next": [13], "image": "immagini/riposo_accampamento.jpg" },
-        { "id": 11, "level": 4, "x": 400, "type": "challenge", "challengeId": "fede7_2", "title": "Livello 5 - Sfida 3", "icon": "❓", "done": false, "active": false, "next": [13, 14], "image": "immagini/lamenti_nebbia.jpg" },
+        { "id": 11, "level": 4, "x": 400, "type": "challenge", "challengeId": "fede7_2", "title": "Livello 5 - Sfida 3", "icon": "❓", "done": false, "active": false, "next": [13, 14], "image": "immagini/sacerdote_nebbia.jfif" },
         { "id": 12, "level": 4, "x": 550, "type": "combat", "enemy": "banditi", "title": "Livello 5 - Scontro 4", "icon": "⚔️", "done": false, "active": false, "next": [14, 15] },
         { "id": 13, "level": 5, "x": 260, "type": "elite", "enemy": "sergente", "title": "Livello 6 - Scontro Elite 1", "icon": "👹", "done": false, "active": false, "next": [16] },
         { "id": 14, "level": 5, "x": 400, "type": "treasure", "treasureId": 3, "title": "Livello 6 - Tesoro 3", "icon": "💎", "done": false, "active": false, "next": [17, 18], "image": "immagini/tesoro_cadavere.jpg" },
         { "id": 15, "level": 5, "x": 540, "type": "challenge", "challengeId": "intel8", "title": "Livello 6 - Sfida 4", "icon": "❓", "done": false, "active": false, "next": [19, 18], "image": "immagini/ricordi_marcia.jpg" },
         { "id": 16, "level": 6, "x": 180, "type": "merchant", "merchantId": 3, "title": "Livello 7 - Mercante 3", "icon": "🪙", "done": false, "active": false, "next": [20], "image": "immagini/mercante_viandante.jpg" },
-        { "id": 17, "level": 6, "x": 340, "type": "challenge", "challengeId": "fede8", "title": "Livello 7 - Sfida 5", "icon": "❓", "done": false, "active": false, "next": [20], "image": "immagini/onore_caduti.jpg" },
+        { "id": 17, "level": 6, "x": 340, "type": "challenge", "challengeId": "fede8", "title": "Livello 7 - Sfida 5", "icon": "❓", "done": false, "active": false, "next": [20], "image": "immagini/dignitas_caduto.jfif" },
         { "id": 18, "level": 6, "x": 500, "type": "combat", "enemy": "profanatori", "title": "Livello 7 - Scontro 5", "icon": "🗡️", "done": false, "active": false, "next": [20] },
         { "id": 19, "level": 6, "x": 620, "type": "merchant", "merchantId": 4, "title": "Livello 7 - Mercante 4", "icon": "🪙", "done": false, "active": false, "next": [20], "image": "immagini/mercante_viandante.jpg" },
         { "id": 20, "level": 7, "x": 400, "type": "rest", "restId": 3, "title": "Livello 8 - Riposo 3", "icon": "⛺", "done": false, "active": false, "next": [21], "image": "immagini/riposo_accampamento.jpg" },
-        { "id": 21, "level": 8, "x": 400, "type": "challenge", "challengeId": "scelta_finale", "title": "Livello 9 - Meta", "icon": "👑", "done": false, "active": false, "next": [], "image": "immagini/accampamento_arrivo.jpg" }
+        { "id": 21, "level": 8, "x": 400, "type": "elite", "title": "Livello 9 - Meta", "icon": "👹", "done": false, "active": false, "next": [], "image": "", "enemy": "capitano_esploratori" }
     ]
 };
