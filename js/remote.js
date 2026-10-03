@@ -148,7 +148,7 @@
     let currentActionRequestId = null;
 
     function requestRemoteAction(hero) {
-        const canUseAbility = !!(hero.chosenAbility && hero.chosenAbility.isCombatActive && !hero.abilityUsedThisCombat);
+        const canUseAbility = typeof abilityUsable === 'function' ? abilityUsable(hero).ok : !!(hero.chosenAbility && hero.chosenAbility.isCombatActive && !hero.abilityUsedThisCombat);
         const consumables = (hero.items || [])
             .map((it, idx) => (it.type && it.type.startsWith('consumable')) ? { index: idx, name: it.name, desc: it.desc } : null)
             .filter(Boolean);

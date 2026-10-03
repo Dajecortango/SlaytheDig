@@ -23,7 +23,7 @@ const SIM_MAX_COMBAT_ROUNDS = 30;  // sicurezza anti-stallo in combattimento
 
 /* ---------- Helper condivisi tra profili ---------- */
 function hasUsableAbility(hero) {
-    return !!(hero.chosenAbility && hero.chosenAbility.isCombatActive && !hero.abilityUsedThisCombat);
+    return abilityUsable(hero).ok;  // stesse condizioni del gioco (es. Dente per dente solo dopo essere stati colpiti)
 }
 
 function simAliveMaxBy(members, fn) {
@@ -395,6 +395,8 @@ function simRunCombat(enemyData, profile, runCtx) {
     stato.party.forEach(h => {
         if (h.hp > 0) { h.current_armor = h.base_armor; h.abilityUsedThisCombat = false; }
         else h.current_armor = 0;
+        delete h.lastHitRound;
+        delete h.lastHitDamage;
     });
 
     let rounds = 0;

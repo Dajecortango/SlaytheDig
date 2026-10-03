@@ -183,5 +183,36 @@ window.LIBRERIA.abilita = {
             "useText": "📜 {eroe} sfrutta l'intelletto!",
             "hitText": "Un calcolo perfetto individua il punto debole: infliggi {danni} danni!"
         }
+    },
+    "libertas_in_furor": {
+        "id": "libertas_in_furor",
+        "name": "Libertas in furor",
+        "desc": "Passiva: se l'eroe è il primo ad agire nel round, il suo attacco o la sua abilità infliggono 1 danno in più",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "firstActorDmgBonus",
+                "val": 1
+            }
+        ],
+        "icon": "immagini/icone/BTNBloodLust.png"
+    },
+    "dente_per_dente": {
+        "id": "dente_per_dente",
+        "name": "Dente per dente",
+        "desc": "Attiva (1 volta per scontro): solo se il nemico ha colpito l'eroe nel suo ultimo turno. Colpisce sempre (come un 6) e infligge il danno dell'eroe più i danni subiti in quel colpo, armatura persa compresa",
+        "isCombatActive": true,
+        "actionName": "Dente per dente (colpo sicuro, + danni subiti)",
+        "icon": "immagini/icone/BTNAdvancedUnholyStrength.png",
+        "combat": {
+            "dice": 1,
+            "autoHit": true,
+            "requiresHitLastTurn": true,
+            "damageTakenBonus": true,
+            "useText": "🩸 {eroe} restituisce il colpo: dente per dente!",
+            "hitLabel": "DENTE PER DENTE!",
+            "hitText": "Il dolore diventa forza: infliggi {danni} danni!"
+        }
     }
 };
