@@ -73,20 +73,29 @@
             return b;
         }
 
+        // Passiva "Libertas in furor" (hero_set firstActorDmgBonus): +danno se l'eroe è il primo ad agire nel round.
+        // È il primo se nessun altro eroe vivo ha già agito (anche usare un oggetto conta come agire).
+        function firstActorBonus(hero) {
+            if (!hero || !hero.firstActorDmgBonus) return 0;
+            const first = stato.party.every(h => h === hero || h.hp <= 0 || !h.hasActed);
+            return first ? hero.firstActorDmgBonus : 0;
+        }
+
         // Tiro di attacco: muta enemy.hp, consuma helpBonus. Ritorna l'esito per log/DOM.
         function resolveAttack(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const rb = relicCombatBonus();
+            const first = firstActorBonus(hero);
             const total = roll + hero.str + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
 
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             let dmg = 0;
             if (hit) {
-                dmg = hero.dmg + rb.dmg;
+                dmg = hero.dmg + rb.dmg + first;
                 enemy.hp -= dmg;
             }
-            return { roll, total, hit, dmg, relicAttBonus: rb.att, relicNotes: rb.notes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
+            return { roll, total, hit, dmg, firstBonus: first, relicAttBonus: rb.att, relicNotes: rb.notes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
 
         // Tiro di difesa: in caso di successo aggiunge 1 armatura corrente all'eroe.
@@ -114,6 +123,9 @@
         //   damageMult: moltiplicatore del danno (es. 2 = danno raddoppiato)
         //   stun: se colpisce, il nemico salta il suo prossimo attacco
         //   critical: il colpo a segno mostra i numeri del critico
+        //   autoHit: colpisce sempre, senza tiro (vale come un 6 naturale)
+        //   requiresHitLastTurn: si può usare solo se il nemico ha colpito l'eroe nel suo ultimo turno
+        //   damageTakenBonus: aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)
         //   useText / hitLabel / hitText: testi per il diario e il risultato ({eroe}, {danni})
         // I salvataggi vecchi possono avere l'abilità senza "combat": si prende dalla libreria.
         function abilityCombat(ability) {
@@ -125,9 +137,26 @@
             return stat ? (hero[stat] || 0) : 0;
         }
 
+        // Danni subiti dall'eroe nell'ultimo attacco del nemico, se è avvenuto subito prima di questo round
+        // (resolveMonsterAttack scrive lastHitRound e lastHitDamage; HP e armatura persi contano entrambi)
+        function heroHitLastTurn(hero) {
+            return hero.lastHitRound === stato.combatRound - 1 && (hero.lastHitDamage || 0) > 0 ? hero.lastHitDamage : 0;
+        }
+
+        // L'abilità attiva si può usare adesso? Ritorna { ok, reason } (reason per il tooltip del comando)
+        function abilityUsable(hero) {
+            const ability = hero && hero.chosenAbility;
+            if (!ability || !ability.isCombatActive) return { ok: false, reason: 'Nessuna abilità attiva' };
+            if (hero.abilityUsedThisCombat) return { ok: false, reason: 'Già utilizzata in questo scontro' };
+            const c = abilityCombat(ability) || {};
+            if (c.requiresHitLastTurn && !heroHitLastTurn(hero)) return { ok: false, reason: 'Si può usare solo dopo essere stati colpiti dal nemico nel suo ultimo turno' };
+            return { ok: true, reason: '' };
+        }
+
         // Danno di un colpo a segno dell'abilità (stesso calcolo per il tiro vero e per le anteprime)
         function abilityHitDamage(hero, c, relicDmg) {
-            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + relicDmg) * (c.damageMult || 1);
+            const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
+            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + taken + firstActorBonus(hero) + relicDmg) * (c.damageMult || 1);
         }
 
         // Risolve l'abilità attiva in combattimento: muta enemy.hp (e isStunned), consuma helpBonus.
@@ -137,19 +166,28 @@
             const c = abilityCombat(hero.chosenAbility);
             if (!c) return { abId, hit: false, dmg: 0, noEffect: true, relicNotes: [] };
 
-            const dice = c.dice === 2 ? [rollD6(rolls, 0), rollD6(rolls, 1)] : [rollD6(rolls, 0)];
-            const roll = Math.max(...dice);
             const rb = relicCombatBonus();
             const attStat = abilityStatBonus(hero, c.attackStat);
+            const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
+            const firstBonus = firstActorBonus(hero);
+            const dmg = abilityHitDamage(hero, c, rb.dmg);
+            // Colpo automatico: niente tiro, vale come un 6 naturale (il bonus di Aiuta resta per il prossimo)
+            if (c.autoHit) {
+                enemy.hp -= dmg;
+                if (c.stun) enemy.isStunned = true;
+                return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg, attStat, taken, firstBonus, naturalNote: null,
+                    dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
+            }
+            const dice = c.dice === 2 ? [rollD6(rolls, 0), rollD6(rolls, 1)] : [rollD6(rolls, 0)];
+            const roll = Math.max(...dice);
             const total = roll + hero.str + attStat + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
             const hit = naturalRollSuccess(roll, total, enemy.ca);
-            const dmg = abilityHitDamage(hero, c, rb.dmg);
             if (hit) {
                 enemy.hp -= dmg;
                 if (c.stun) enemy.isStunned = true;
             }
-            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, hit, dmg, attStat, naturalNote: naturalRollNote(roll, total, enemy.ca),
+            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, hit, dmg, attStat, taken, firstBonus, naturalNote: naturalRollNote(roll, total, enemy.ca),
                 dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
         }
 
@@ -158,6 +196,8 @@
         function resolveMonsterAttack(enemy, target) {
             const events = [];
             let dmg = enemy.dmg;
+            const armorBefore = target.current_armor;
+            const hpBefore = target.hp;
 
             if (hasCurse("Presagio di Morte")) {
                 dmg += 1;
@@ -197,6 +237,10 @@
                 }
             }
 
+            // Per "Dente per dente": quanto ha perso l'eroe in questo colpo (armatura + HP) e in quale round
+            target.lastHitDamage = Math.max(0, armorBefore - target.current_armor) + Math.max(0, hpBefore - target.hp);
+            target.lastHitRound = stato.combatRound;
+
             return { events, hpDamage, targetDied };
         }
 
@@ -223,6 +267,8 @@
                 } else {
                     h.current_armor = 0;
                 }
+                delete h.lastHitRound;
+                delete h.lastHitDamage;
             });
             fxResyncHeroes();
             stato.combatRound = 0;
@@ -290,7 +336,7 @@
         // 11. Passando su "Attacca" o sull'abilità, la parte di vita che il colpo toglierebbe lampeggia
         function expectedHitDamage(hero, action) {
             if (!hero || !stato.activeEnemy) return 0;
-            let dmg = hero.dmg + relicCombatBonus().dmg;
+            let dmg = hero.dmg + relicCombatBonus().dmg + firstActorBonus(hero);
             const c = action === 'ability' ? abilityCombat(hero.chosenAbility) : null;
             if (c) dmg = abilityHitDamage(hero, c, relicCombatBonus().dmg);
             return Math.max(0, dmg);
@@ -367,8 +413,16 @@
             }
             const hasCombatAbility = currentActiveHero.chosenAbility && currentActiveHero.chosenAbility.isCombatActive;
             const alreadyUsed = currentActiveHero.abilityUsedThisCombat;
+            const usable = abilityUsable(currentActiveHero);
 
-            if (hasCombatAbility && !alreadyUsed) {
+            if (hasCombatAbility && !alreadyUsed && !usable.ok) {
+                // Condizione non soddisfatta (es. Dente per dente senza essere stati colpiti)
+                btnAbility.disabled = true;
+                btnAbility.style.display = "";
+                btnAbility.querySelector('.cmd-ability-label').textContent = currentActiveHero.chosenAbility.name;
+                btnAbility.querySelector('.cmd-sub').textContent = 'Non ora';
+                btnAbility.dataset.tip = `${currentActiveHero.chosenAbility.name}||${currentActiveHero.chosenAbility.desc}<br><span class="tip-hint">${usable.reason}</span>`;
+            } else if (hasCombatAbility && !alreadyUsed) {
                 btnAbility.disabled = false;
                 btnAbility.style.display = "";
                 btnAbility.dataset.tip = `${currentActiveHero.chosenAbility.name} [T]||${currentActiveHero.chosenAbility.desc}`;
@@ -429,13 +483,24 @@
             setPreview('cmdHelp', 'Aiuta [E]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci il prossimo attacco ottiene +1.`, helpNeeded, false);
 
             const ability = hero.chosenAbility;
-            if (ability && ability.isCombatActive && !hero.abilityUsedThisCombat) {
+            if (ability && abilityUsable(hero).ok) {
                 const c = abilityCombat(ability) || {};
-                const needed = attackNeeded - abilityStatBonus(hero, c.attackStat);
-                setPreview('btnCombatAbility', `${ability.name} [T]`, ability.desc, needed, c.dice === 2);
+                if (c.autoHit) {
+                    const btn = document.getElementById('btnCombatAbility');
+                    btn.querySelector('.cmd-sub').textContent = 'Sicuro · 100%';
+                    btn.querySelector('.cmd-sub').dataset.chance = 'high';
+                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Colpisce sempre: infligge ${expectedHitDamage(hero, 'ability')} danni.</span>`;
+                } else {
+                    const needed = attackNeeded - abilityStatBonus(hero, c.attackStat);
+                    setPreview('btnCombatAbility', `${ability.name} [T]`, ability.desc, needed, c.dice === 2);
+                }
             }
       }
         function selectCombatAction(action) {
+            if (action === 'ability' && !abilityUsable(currentActiveHero).ok) {
+                uiError(abilityUsable(currentActiveHero).reason);
+                return;
+            }
             chosenAction = action;
             if (action === 'use_item') {
                 let consumables = currentActiveHero.items.filter(it => it.type && it.type.startsWith('consumable'));
@@ -478,7 +543,7 @@
 
         function combatRollUsesTwoDice(hero, action) {
             const c = action === 'ability' && hero ? abilityCombat(hero.chosenAbility) : null;
-            return !!c && c.dice === 2;
+            return !!c && c.dice === 2 && !c.autoHit;
         }
 
         // Prima di tirare si può tornare indietro: dal dado alla scelta dell'azione...
@@ -563,7 +628,7 @@
 
                         if(res.hit) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${res.dmg} danni.`;
-                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.`);
+                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.${res.firstBonus ? ` (Libertas in furor: +${res.firstBonus}, primo ad agire)` : ''}`);
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
                         }
@@ -588,12 +653,15 @@
                             }
                             const diceText = res.dice.length === 2 ? `Tira [${res.d1}, ${res.d2}] e tiene ${res.roll}` : `Tiro ${res.roll}`;
                             const bonusText = c.attackStat ? ` + ${STAT_LABELS[c.attackStat] || c.attackStat} ${res.attStat}` : '';
-                            logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} ${diceText} + Forza ${hero.str}${bonusText} = ${res.total} (CA: ${stato.activeEnemy.ca})`);
+                            if (res.autoHit) logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} Colpo automatico (vale come un 6).`);
+                            else logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} ${diceText} + Forza ${hero.str}${bonusText} = ${res.total} (CA: ${stato.activeEnemy.ca})`);
 
                             if (res.hit) {
                                 if (c.critical) fxNextEnemyHitCritical = true;
                                 const extra = [];
                                 if (c.damageStat) extra.push(`+${res.dmgStat} ${STAT_LABELS[c.damageStat] || c.damageStat}`);
+                                if (c.damageTakenBonus) extra.push(`+${res.taken} danni subiti`);
+                                if (res.firstBonus) extra.push(`+${res.firstBonus} primo ad agire`);
                                 if ((c.damageMult || 1) > 1) extra.push(`x${c.damageMult}`);
                                 if (c.stun) extra.push('nemico stordito per un turno');
                                 document.getElementById('diceCombatResult').innerHTML =

@@ -49,7 +49,7 @@ Tutti i tiri degli eroi (combattimento, abilità, sfide, capitano, contrattazion
 
 ### Meccaniche legate a nomi e id
 
-Molte reliquie e maledizioni sono riconosciute dal nome esatto: `hasRelic("...")` e `hasCurse("...")` (le maledizioni sono testi "Nome (descrizione)"). Le abilità attive (`isCombatActive`) agiscono con il campo `combat` della libreria Abilità, interpretato da `resolveAbility` in `js/combattimento.js`: `dice` (1, o 2 tenendo il migliore), `attackStat` / `damageStat` (statistica aggiunta al tiro o al danno), `damageMult`, `stun`, `critical`, testi `useText` / `hitLabel` / `hitText` con `{eroe}` e `{danni}`. Si creano dall'editor senza codice; un salvataggio senza `combat` lo prende dalla libreria (`abilityCombat`). Una meccanica davvero nuova richiede codice nel motore (e un campo in `ABILITY_FIELDS` di `js/editor.js`), non solo dati.
+Molte reliquie e maledizioni sono riconosciute dal nome esatto: `hasRelic("...")` e `hasCurse("...")` (le maledizioni sono testi "Nome (descrizione)"). Le abilità attive (`isCombatActive`) agiscono con il campo `combat` della libreria Abilità, interpretato da `resolveAbility` in `js/combattimento.js`: `dice` (1, o 2 tenendo il migliore), `attackStat` / `damageStat` (statistica aggiunta al tiro o al danno), `damageMult`, `stun`, `critical`, `autoHit` (colpisce sempre, vale come un 6), `requiresHitLastTurn` (solo se il nemico ha colpito l'eroe nel suo ultimo turno: `lastHitRound` / `lastHitDamage` scritti da `resolveMonsterAttack`), `damageTakenBonus` (+ danni subiti in quel colpo, armatura compresa), testi `useText` / `hitLabel` / `hitText` con `{eroe}` e `{danni}`. Si creano dall'editor senza codice; un salvataggio senza `combat` lo prende dalla libreria (`abilityCombat`). Se un'attiva si può usare adesso lo decide `abilityUsable(hero)`, usata da gioco, simulatore e telefono. Una meccanica davvero nuova richiede codice nel motore (e un campo in `ABILITY_FIELDS` di `js/editor.js`), non solo dati.
 
 ### Stato e salvataggi
 
@@ -57,7 +57,7 @@ Lo stato della partita è un solo oggetto `stato` in `js/game.js`: `currentCampa
 
 ### Editor
 
-Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database `dignitas_editor`, store `kv`). "Salva nel progetto" usa la File System Access API (Edge/Chrome) per scrivere `data/campagne/<id>.js`, i file di `data/libreria/` modificati (schede Bestiario, Armeria, Reliquie, Eroi, Abilità, Maledizioni), le immagini caricate e i tag `<script>` di una campagna nuova; altrimenti "Scarica .zip". `index.html?prova=<id>` carica la campagna di prova.
+Bozza, cartella del progetto e "Prova nel gioco" passano per IndexedDB (database `dignitas_editor`, store `kv`). "Salva nel progetto" usa la File System Access API (Edge/Chrome) e scrive solo nella cartella da cui è aperto l'editor (`openedFolderName()`: se quella ricordata ha un altro nome la dimentica e la richiede) per scrivere `data/campagne/<id>.js`, i file di `data/libreria/` modificati (schede Bestiario, Armeria, Reliquie, Eroi, Abilità, Maledizioni), le immagini caricate e i tag `<script>` di una campagna nuova; altrimenti "Scarica .zip". `index.html?prova=<id>` carica la campagna di prova.
 
 ### Convenzioni dell'interfaccia
 

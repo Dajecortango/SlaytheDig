@@ -83,6 +83,9 @@ const ABILITY_FIELDS = [
       help: 'Vuoto = normale, 2 = danno raddoppiato' },
     { k: 'combat.stun', label: 'Se colpisce, stordisce il nemico (salta il suo prossimo attacco)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { k: 'combat.critical', label: 'Il colpo a segno mostra i numeri del critico', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.autoHit', label: 'Colpisce sempre, senza tiro (vale come un 6)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.requiresHitLastTurn', label: 'Usabile solo se il nemico ha colpito l\'eroe nel suo ultimo turno', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.damageTakenBonus', label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
       help: '{eroe} = nome dell\'eroe. Es. "✨ {eroe} infonde il colpo di fede sacra!"' },
     { k: 'combat.hitLabel', label: 'Scritta del colpo a segno', omitEmpty: true, showIf: isActive, help: 'Es. COLPO CRITICO! (vuoto = COLPO A SEGNO!)' },
@@ -501,10 +504,26 @@ function download(blob, name) {
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-/* Scrittura diretta nel progetto (Edge/Chrome). La cartella scelta viene ricordata. */
+/* Scrittura diretta nel progetto (Edge/Chrome). La cartella scelta viene ricordata, ma deve essere
+   quella da cui è aperto l'editor: se è un'altra copia del progetto (per esempio una cartella estratta
+   da uno .zip) la si dimentica e si chiede di nuovo, così non si salva nella copia sbagliata. */
+
+// Nome della cartella da cui è aperto editor.html (solo con file://; con un server non si può sapere)
+function openedFolderName() {
+    if (location.protocol !== 'file:') return null;
+    const parts = decodeURIComponent(location.pathname).split('/').filter(Boolean);
+    return parts.length >= 2 ? parts[parts.length - 2] : null;
+}
+
 async function projectDir(ask) {
+    const expected = openedFolderName();
     let handle = null;
     try { handle = await kvGet('projectDir'); } catch (e) {}
+    if (handle && expected && handle.name !== expected) {
+        await kvDel('projectDir');
+        if (ask) alert(`La cartella ricordata per i salvataggi è «${handle.name}», ma l'editor è aperto da «${expected}».\n\nScegli la cartella «${expected}»: i file verranno aggiornati lì.`);
+        handle = null;
+    }
     if (handle) {
         let perm = await handle.queryPermission({ mode: 'readwrite' });
         if (perm !== 'granted' && ask) perm = await handle.requestPermission({ mode: 'readwrite' });
@@ -521,6 +540,10 @@ async function projectDir(ask) {
         await handle.getFileHandle('editor.html');
     } catch (e) {
         alert('Scegli la cartella principale del progetto, quella che contiene index.html ed editor.html.');
+        return null;
+    }
+    if (expected && handle.name !== expected &&
+        !confirm(`Hai scelto «${handle.name}», ma l'editor è aperto da «${expected}».\n\nSalvare comunque in «${handle.name}»? (Annulla per non salvare)`)) {
         return null;
     }
     await kvSet('projectDir', handle);
@@ -597,7 +620,7 @@ async function saveToProject() {
         if (await ensureScriptTag(root, 'editor.html', 'js/libreria.js')) added.push('editor.html');
         const libs = [...libDirty];
         afterSave();
-        alert(`Salvati ${files.length} file:\n${files.map(([p]) => '• ' + p).join('\n')}` +
+        alert(`Salvati ${files.length} file nella cartella «${root.name}»:\n${files.map(([p]) => '• ' + p).join('\n')}` +
             (libs.length ? `\n\nLibreria aggiornata (${libs.join(', ')}): vale per tutte le campagne.` : '') +
             (added.length ? `\n\nCampagna nuova: aggiunta a ${added.join(' e ')}; ricarica l'editor per vederla nell'elenco.` : ''));
     } catch (err) {
