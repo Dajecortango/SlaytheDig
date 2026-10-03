@@ -23,3 +23,6 @@ tools/browser-profile/
 
 # Chiave API di Gemini per tools/genera_immagini.mjs
 tools/chiave_gemini.txt
+
+# Chiave API di Pollinations per tools/genera_immagini.mjs
+tools/chiave_pollinations.txt

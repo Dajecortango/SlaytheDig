@@ -126,7 +126,7 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-frame {
     padding: 12px 16px 18px;
     border: 22px solid transparent;
-    border-image: var(--frame) 26 / 22px stretch;
+    border-image: var(--frame) var(--frame-slice) / 22px stretch;
     background:
         var(--noise-fine),
         radial-gradient(ellipse at 50% 0%, rgba(110, 80, 40, 0.28), transparent 60%),
