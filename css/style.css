@@ -52,40 +52,51 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 18px;
-            background: var(--noise-fine), linear-gradient(#3b352f, #1f1b18 55%, #121010);
+            padding: 0 18px 4px;
+            /* Pietra scura come la barra in alto di WC3, luce che scende dall'alto */
+            background:
+                var(--noise-fine),
+                linear-gradient(rgba(255, 230, 170, 0.07), transparent 40%),
+                linear-gradient(rgba(28, 24, 20, 0.62), rgba(8, 7, 6, 0.86)),
+                var(--tex-stone) center / 220px;
             box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.08),
-                inset 0 -2px 0 #3a2806,
-                inset 0 -4px 0 #e2b951,
-                inset 0 -5px 0 #6b4a12,
-                inset 0 -6px 0 #000,
-                0 8px 20px rgba(0, 0, 0, 0.85);
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -14px 18px rgba(0, 0, 0, 0.55),
+                0 10px 22px rgba(0, 0, 0, 0.85);
+        }
+        /* Profilo d'oro con le borchie lungo il bordo inferiore */
+        .party-topbar::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            bottom: -5px;
+            height: 9px;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 50%, #f3dc9a 0 1.2px, #8a6424 2px, #24180a 2.7px, transparent 3.2px) 7px 50% / 34px 9px repeat-x,
+                linear-gradient(#e9cf8a, #b8904a 30%, #7a5626 62%, #33230e);
+            box-shadow: 0 -1px 0 #000, 0 1px 0 #000, 0 4px 8px rgba(0, 0, 0, 0.85);
         }
 
+        /* Targa d'oro al centro (immagini/ui/targa_barra_web.png, generata): tagliata in 9 parti,
+           così i riccioli agli angoli e la punta in basso restano proporzionati */
         .topbar-plate {
             position: absolute;
-            left: 50%; top: 0;
+            left: 50%; top: -2px;
             transform: translateX(-50%);
-            width: 300px;
-            height: calc(var(--top-h) + 16px);
-            background: linear-gradient(#fff0b0, #c9982f 40%, #6b4a12);
-            clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
-            filter: drop-shadow(0 6px 8px rgba(0,0,0,.8));
+            z-index: 1;
+            width: 340px;
+            height: calc(var(--top-h) + 30px);
+            border-style: solid;
+            border-width: 12px 29px 36px;
+            border-image: url('../immagini/ui/targa_barra_web.png') 45 110 136 fill / 12px 29px 36px stretch;
+            filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.85));
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            padding-bottom: 6px;
         }
-        .topbar-plate::before {
-            content: '';
-            position: absolute;
-            inset: 0 4px 4px;
-            background: var(--noise-fine), linear-gradient(#3b352f, #1a1714);
-            clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
-        }
-        .topbar-plate > * { position: relative; z-index: 1; }
+        .topbar-plate > * { position: relative; z-index: 1; margin-bottom: -14px; }
         .brand-crest { width: 30px; height: 34px; }
         .brand-name {
             font-family: var(--font-title);
@@ -100,14 +111,19 @@
 
         .topbar-side { display: flex; gap: 10px; align-items: center; }
         .topbar-actions { display: flex; gap: 6px; }
+        /* Pulsanti e caselle delle risorse con la stessa cornice d'oro dei bottoni del menu */
         .topbar-actions button {
             display: flex;
             align-items: center;
             gap: 5px;
             margin: 0;
-            padding: 5px 10px;
+            padding: 2px 8px;
             font-size: 0.68rem;
-            background: var(--noise-fine), linear-gradient(#3b342d, #1c1815 55%, #110f0d);
+            border: 5px solid transparent;
+            border-image: url('../immagini/ui/bottone_menu.png') 25 / 5px stretch;
+            border-radius: 0;
+            background: var(--noise-fine), linear-gradient(#4a2a1a, #26140c 55%, #160b07) padding-box;
+            --btn-depth: 3px;
         }
         .topbar-actions svg { width: 15px; height: 15px; }
 
@@ -116,10 +132,11 @@
             align-items: center;
             gap: 7px;
             min-width: 92px;
-            padding: 4px 14px 4px 6px;
-            background: rgba(0, 0, 0, 0.55);
-            border: 1px solid #000;
-            box-shadow: inset 0 2px 6px #000, 0 1px 0 rgba(255, 255, 255, 0.07);
+            padding: 1px 12px 1px 3px;
+            border: 5px solid transparent;
+            border-image: url('../immagini/ui/bottone_menu.png') 25 / 5px stretch;
+            background: linear-gradient(rgba(12, 10, 8, 0.92), rgba(30, 24, 18, 0.92)) padding-box;
+            box-shadow: inset 0 2px 6px #000;
             cursor: default;
             max-width: 260px;
         }
@@ -401,7 +418,7 @@
             padding: 14px 30px 24px;
             text-align: center;
             border: 22px solid transparent;
-            border-image: var(--frame) 26 / 22px stretch;
+            border-image: var(--frame) var(--frame-slice) / 22px stretch;
             background:
                 var(--noise-fine),
                 radial-gradient(ellipse at 50% 0%, rgba(110, 80, 40, 0.28), transparent 60%),
@@ -443,7 +460,8 @@
         /* ---------- Menu in stile Warcraft III ----------
            Schermata iniziale e scelta campagna: scena a tutto schermo con pioggia e lampi,
            logo in alto a sinistra, pannelli appesi a catene con pulsanti incassati. */
-        :root { --chain: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='%234a3208'/><stop offset='.45' stop-color='%23e2b951'/><stop offset='1' stop-color='%233a2806'/></linearGradient></defs><ellipse cx='11' cy='8' rx='7.5' ry='9' fill='none' stroke='%23000' stroke-width='6'/><ellipse cx='11' cy='8' rx='7.5' ry='9' fill='none' stroke='url(%23g)' stroke-width='3.6'/><rect x='8' y='13' width='6' height='18' rx='3' fill='url(%23g)' stroke='%23000' stroke-width='1.2'/></svg>"); }
+        /* Catena: modulo ritagliato da immagini/ui/catena.png (generata), si ripete in verticale */
+        :root { --chain: url('../immagini/ui/catena_modulo.png'); }
 
         .embers { z-index: 1; }
 
@@ -576,7 +594,7 @@
             position: relative;
             padding: 8px 12px 10px;
             border: 22px solid transparent;
-            border-image: var(--frame) 26 / 22px stretch;
+            border-image: var(--frame) var(--frame-slice) / 22px stretch;
             background: var(--noise-fine), linear-gradient(rgba(29, 25, 22, 0.94), rgba(12, 10, 9, 0.96));
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 120, 30, 0.06);
         }
@@ -603,7 +621,7 @@
             filter: drop-shadow(0 1px 1px #000);
         }
         .wc-slot:has(> .hidden) { display: none; }
-        .wc-menu-btn { flex: 1; margin: 0 0 6px; padding: 11px 16px; font-size: 0.95rem; letter-spacing: 0.12em; }
+        .wc-menu-btn { flex: 1; margin: 0 0 6px; padding: 5px 12px; font-size: 0.95rem; letter-spacing: 0.12em; }
         .wc-slot { padding-bottom: 3px; }
 
         .menu-version {
@@ -725,7 +743,7 @@
             cursor: pointer;
             text-align: center;
             border: 18px solid transparent;
-            border-image: var(--frame) 26 / 18px stretch;
+            border-image: var(--frame) var(--frame-slice) / 18px stretch;
             background:
                 var(--noise-fine),
                 radial-gradient(ellipse at 50% 0%, rgba(200, 60, 30, 0.35), transparent 65%),
@@ -1412,7 +1430,7 @@
             padding: 12px 22px 18px;
             text-align: center;
             border: 22px solid transparent;
-            border-image: var(--frame) 26 / 22px stretch;
+            border-image: var(--frame) var(--frame-slice) / 22px stretch;
             background: var(--noise-fine), linear-gradient(rgba(28, 23, 20, 0.86), rgba(12, 10, 9, 0.93)), var(--tex-stone);
             box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9);
             position: relative;
@@ -1480,8 +1498,7 @@
             body { --top-h: 46px; --console-h: 160px; }
             .container { border-width: 14px; border-image-width: 14px; padding: 10px 14px 18px; }
             .container h2 { font-size: 1.1rem; gap: 8px; }
-            .topbar-plate { width: 150px; }
-            .brand-name { display: none; }
+            .topbar-plate { display: none; }
             .res-label { display: none; }
             .topbar-actions span { display: none; }
             .res { padding: 3px 8px 3px 4px; max-width: 120px; }
@@ -2016,7 +2033,12 @@
 
         @media (max-width: 1500px) {
             .topbar-actions button span { display: none; }
-            .topbar-actions button { padding: 6px 9px; }
+            .topbar-actions button { padding: 2px 7px; }
+        }
+        /* Schermi stretti: la targa centrale tiene solo lo stemma, per non coprire le risorse */
+        @media (max-width: 1100px) {
+            .topbar-plate { width: 120px; }
+            .brand-name { display: none; }
         }
 
         /* ---------- Schermata del capitolo ---------- */
@@ -2665,17 +2687,16 @@
             filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 4px rgba(255, 190, 80, 0.12));
             will-change: transform;
         }
-        /* Anelli che agganciano le catene al pannello */
+        /* Piastre con l'anello che agganciano le catene al pannello (immagini/ui/gancio_catena_piccolo.png, generata) */
         .wc-chains span::after {
             content: '';
             position: absolute;
-            bottom: -4px;
-            width: 14px;
-            height: 10px;
-            left: 4px;
-            border-radius: 50% 50% 3px 3px;
-            background: linear-gradient(#fff0b0, #c9982f 45%, #4a3208);
-            box-shadow: 0 0 0 1px #000, 0 2px 3px rgba(0, 0, 0, 0.8);
+            bottom: -14px;
+            width: 30px;
+            height: 30px;
+            left: -4px;
+            background: url('../immagini/ui/gancio_catena_piccolo.png') center / contain no-repeat;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
         }
         .wc-chains span { position: relative; }
 
