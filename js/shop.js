@@ -71,6 +71,12 @@
         const HAGGLE_DISCOUNT = 0.25;   // successo: -25% su tutta la merce
         const HAGGLE_PENALTY = 2;       // fallimento: +2 monete su ogni articolo
         let merchantHaggle = null;      // null = non ancora tentata, 'ok' = riuscita, 'fail' = fallita
+        let merchantRerolled = false;   // la merce si rinnova una sola volta per mercante
+
+        // Rinnovo possibile una sola volta e solo prima di aver comprato qualcosa (un articolo comprato diventa null)
+        function merchantBoughtSomething() {
+            return merchantItemsWithPrices.some(entry => !entry);
+        }
 
         // Classe di difficoltà: 6 al primo livello, 10 all'ultimo
         function haggleCd() {
@@ -109,6 +115,7 @@
     document.getElementById('btnExitMerchant').classList.remove('hidden');
 
     merchantHaggle = null;
+    merchantRerolled = false;
     showMerchantTab('buy');
     stockMerchant();
 
@@ -144,8 +151,12 @@
         // Pulsanti "Rinnova la merce" e "Contratta" con lo stato della contrattazione
         function renderMerchantTools() {
             const reroll = document.getElementById('btnMerchantReroll');
-            reroll.disabled = stato.partyCoins < MERCHANT_REROLL_COST;
-            reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} monete e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via).`;
+            const rerollBlock = merchantRerolled ? 'Hai già rinnovato la merce di questo mercante.'
+                : merchantBoughtSomething() ? 'Non si può più rinnovare: hai già comprato qualcosa.'
+                : stato.partyCoins < MERCHANT_REROLL_COST ? 'Non hai abbastanza monete.' : '';
+            reroll.disabled = !!rerollBlock;
+            reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} monete e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via). ` +
+                `Una sola volta per mercante, e solo prima di comprare.${rerollBlock ? ' ' + rerollBlock : ''}`;
             const haggle = document.getElementById('btnMerchantHaggle');
             haggle.disabled = merchantHaggle !== null || !stato.party.some(h => h.hp > 0);
             haggle.dataset.tip = `Contratta||Una prova di Intelligenza (CD ${haggleCd()}, cresce andando avanti nella spedizione). ` +
@@ -158,7 +169,8 @@
         }
 
         function rerollMerchantStock() {
-            if (stato.partyCoins < MERCHANT_REROLL_COST) return;
+            if (merchantRerolled || merchantBoughtSomething() || stato.partyCoins < MERCHANT_REROLL_COST) return;
+            merchantRerolled = true;
             stato.partyCoins -= MERCHANT_REROLL_COST;
             stockMerchant();
             synthSfx('flip');
