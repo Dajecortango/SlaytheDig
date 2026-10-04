@@ -28,7 +28,9 @@
                     desc: it.desc,
                     rarity: typeof itemRarity === 'function' ? itemRarity(it) : null,
                     icon: typeof itemImageSrc === 'function' ? (itemImageSrc(it) || null) : null,
-                    consumable: !!(it.type && it.type.startsWith('consumable'))
+                    consumable: !!(it.type && it.type.startsWith('consumable')),
+                    combatOnly: typeof isCombatConsumable === 'function' && isCombatConsumable(it),
+                    qty: it.qty || 1
                 })),
                 chosenAbility: h.chosenAbility ? h.chosenAbility.name : null,
                 abilityDesc: h.chosenAbility ? (h.chosenAbility.desc || '') : ''
@@ -173,16 +175,7 @@
     function applyRemoteItemUse(itemIdx, targetName) {
         if (!currentActiveHero || typeof useConsumable !== 'function') return;
         if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
-        currentActiveHero.hasActed = true;
-
-        const itemSubmenu = document.getElementById('combatItemSubmenu');
-        const controlArea = document.getElementById('heroActionControlArea');
-        if (itemSubmenu) itemSubmenu.classList.add('hidden');
-        if (controlArea) controlArea.classList.add('hidden');
-
-        const available = (typeof stato.party !== 'undefined' ? stato.party : []).filter(p => p.hp > 0 && !p.hasActed);
-        if (available.length === 0 && typeof startMonsterTurn === 'function') startMonsterTurn();
-        else if (typeof showHeroSelectionPhase === 'function') showHeroSelectionPhase();
+        finishCombatItemTurn();
     }
 
     function handleRemoteActionChosen(data) {

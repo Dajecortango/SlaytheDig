@@ -102,14 +102,26 @@ const ABILITY_FIELDS = [
 ];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
+// Statistiche di un potenziamento temporaneo (le stesse di BUFF_STATS in js/game.js)
+const BUFF_STATS_EDITOR = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
+    def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito, non scade)' };
 const ITEM_FIELDS = [
     { k: 'name', label: 'Nome' },
     { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
       help: 'Solo icone classiche di Warcraft III (non Reforged). Vuoto = icona generica del tipo di oggetto' },
     { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ...Object.entries(RARITY_LABELS).map(([k, label]) => [k, `${label} (${RARITY_COLORS[k]})`])] },
     { k: 'type', label: 'Tipo', type: 'select', omitEmpty: true,
-      options: () => [['', 'Equipaggiamento'], ['consumable_heal', 'Consumabile: cura'], ['consumable_full', 'Consumabile: cura completa']] },
+      options: () => [['', 'Equipaggiamento'], ['consumable_heal', 'Consumabile: cura'], ['consumable_full', 'Consumabile: cura completa'],
+          ['consumable_damage', 'Consumabile: danno al nemico (solo in combattimento)'], ['consumable_buff', 'Consumabile: potenziamento temporaneo (solo in combattimento)']] },
     { k: 'heal_val', label: 'HP curati', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_heal' },
+    { k: 'dmg_val', label: 'Danni al nemico', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_damage' },
+    { k: 'buff_stat', label: 'Statistica potenziata', type: 'select', showIf: it => it.type === 'consumable_buff',
+      options: () => Object.entries(BUFF_STATS_EDITOR) },
+    { k: 'buff_val', label: 'Bonus', type: 'number', showIf: it => it.type === 'consumable_buff' },
+    { k: 'buff_rounds', label: 'Durata in round', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_buff' && it.buff_stat !== 'current_armor',
+      help: 'Vuoto o 0 = per tutto lo scontro. 1 = solo il round in cui lo usi' },
+    { k: 'def_armor', label: 'Armatura in più con Difendi (scudi)', type: 'number', omitEmpty: true, showIf: it => !(it.type || '').startsWith('consumable'),
+      help: 'Un tiro di difesa riuscito dà 1 Armatura più questo valore' },
     { k: 'str', label: 'Forza', type: 'number', omitEmpty: true },
     { k: 'dmg', label: 'Danno', type: 'number', omitEmpty: true },
     { k: 'armor', label: 'Armatura', type: 'number', omitEmpty: true },
@@ -1733,7 +1745,7 @@ function validateCampaign() {
         if (it.scaling != null) {
             if (!Array.isArray(it.scaling)) add('error', `Armeria <b>${k}</b>: "scaling" deve essere un elenco`, 'armeria', k);
             else it.scaling.forEach(sc => {
-                if (!['str', 'dmg', 'armor', 'def_bonus', 'help_bonus_val'].includes(sc.stat)) add('error', `Armeria <b>${k}</b>: scaling con "stat" non valida (${esc(sc.stat)})`, 'armeria', k);
+                if (!['str', 'dmg', 'armor', 'def_bonus', 'def_armor', 'help_bonus_val'].includes(sc.stat)) add('error', `Armeria <b>${k}</b>: scaling con "stat" non valida (${esc(sc.stat)})`, 'armeria', k);
                 if (!['fth', 'int'].includes(sc.per)) add('error', `Armeria <b>${k}</b>: scaling con "per" non valido (${esc(sc.per)}): usa fth o int`, 'armeria', k);
                 if (!(sc.every >= 1)) add('error', `Armeria <b>${k}</b>: scaling con "every" mancante o minore di 1`, 'armeria', k);
             });

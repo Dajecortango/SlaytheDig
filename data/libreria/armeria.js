@@ -7,7 +7,7 @@ window.LIBRERIA.armeria = {
     "spada": { "id": "spada", "name": "Spada", "str": 1, "desc": "+1 Forza", "icon": "immagini/icone/BTNSteelMelee.png" },
     "ascia": { "id": "ascia", "name": "Ascia", "dmg": 1, "desc": "+1 Danno", "icon": "immagini/icone/BTNOrcMeleeUpOne.png" },
     "alabarda": { "id": "alabarda", "name": "Alabarda", "help_bonus_val": 1, "desc": "+1 Tiro Aiuto", "icon": "immagini/icone/BTNEnvenomedSpear.png" },
-    "scudo": { "id": "scudo", "name": "Scudo", "def_bonus": 1, "desc": "+1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpOne.png" },
+    "scudo": { "id": "scudo", "name": "Scudo", "def_armor": 1, "desc": "+1 Armatura con Difendi", "icon": "immagini/icone/BTNHumanArmorUpOne.png" },
     "armatura_leggera": { "id": "armatura_leggera", "name": "Armatura leggera", "armor": 1, "desc": "+1 Punti Armatura", "icon": "immagini/icone/BTNReinforcedHides.png" },
     "armatura_pesante": { "id": "armatura_pesante", "name": "Armatura pesante", "armor": 2, "desc": "+2 Punti Armatura", "icon": "immagini/icone/BTNMoonArmor.png" },
     "libro_fede": {
@@ -38,11 +38,11 @@ window.LIBRERIA.armeria = {
     "pozione": { "id": "pozione", "name": "Pozione di guarigione", "rarity": "raro", "type": "consumable_full", "desc": "Consumabile: Recupera 100% HP", "icon": "immagini/icone/BTNPotionRed.png" },
     "amuleto": { "id": "amuleto", "name": "Amuleto sacro", "rarity": "comune", "fth": 1, "desc": "+1 Fede", "icon": "immagini/icone/BTNAmulet.png" },
     "anello": { "id": "anello", "name": "Anello della concentrazione", "rarity": "comune", "int": 1, "desc": "+1 Intelligenza", "icon": "immagini/icone/BTNRingPurple.png" },
-    "scudo_pesante": { "id": "scudo_pesante", "name": "Scudo pesante", "rarity": "non_comune", "armor": 1, "def_bonus": 1, "desc": "+1 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNShieldOfHonor.png" },
+    "scudo_pesante": { "id": "scudo_pesante", "name": "Scudo pesante", "rarity": "non_comune", "def_armor": 1, "def_bonus": 1, "desc": "+1 Armatura con Difendi, +1 Tiro Difesa", "icon": "immagini/icone/BTNShieldOfHonor.png" },
     "pugnale_rapido": { "id": "pugnale_rapido", "name": "Pugnale Rapido", "rarity": "comune", "str": 1, "desc": "+1 Forza", "icon": "immagini/icone/BTNDaggerOfEscape.png" },
     "ascia_taglialegna": { "id": "ascia_taglialegna", "name": "Ascia da Taglialegna", "rarity": "scarso", "dmg": 1, "desc": "+1 Danno", "icon": "immagini/icone/BTNSturdyWarAxe.png" },
     "bastone_rinforzato": { "id": "bastone_rinforzato", "name": "Bastone Rinforzato", "rarity": "scarso", "help_bonus_val": 1, "desc": "+1 Tiro Aiuto", "icon": "immagini/icone/BTNAncestralStaff.png" },
-    "scudo_legno": { "id": "scudo_legno", "name": "Scudo Tondo di Legno", "rarity": "scarso", "def_bonus": 1, "desc": "+1 Tiro Difesa", "icon": "immagini/icone/BTNSteelArmor.png" },
+    "scudo_legno": { "id": "scudo_legno", "name": "Scudo Tondo di Legno", "rarity": "scarso", "def_armor": 1, "desc": "+1 Armatura con Difendi", "icon": "immagini/icone/BTNSteelArmor.png" },
     "corazza_cuoio": { "id": "corazza_cuoio", "name": "Corazza di Cuoio Bollito", "rarity": "scarso", "armor": 1, "desc": "+1 Armatura", "icon": "immagini/icone/BTNLeatherUpgradeOne.png" },
     "amuleto_legno_santo": {
         "id": "amuleto_legno_santo",
@@ -80,7 +80,7 @@ window.LIBRERIA.armeria = {
         "desc": "+1 Aiuto; +1 Forza ogni 3 Intelligenza"
     },
     "mannaia_pesante": { "id": "mannaia_pesante", "name": "Mannaia Pesante", "rarity": "raro", "dmg": 3, "desc": "+3 Danni", "icon": "immagini/icone/BTNOrcMeleeUpTwo.png" },
-    "scudo_ferro": { "id": "scudo_ferro", "name": "Scudo Rinforzato in Ferro", "rarity": "raro", "armor": 2, "def_bonus": 1, "desc": "+2 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpTwo.png" },
+    "scudo_ferro": { "id": "scudo_ferro", "name": "Scudo Rinforzato in Ferro", "rarity": "raro", "def_armor": 2, "def_bonus": 1, "desc": "+2 Armatura con Difendi, +1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpTwo.png" },
     "corazza_scaglie": { "id": "corazza_scaglie", "name": "Corazza a Scaglie", "rarity": "raro", "armor": 2, "desc": "+2 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNNagaArmorUp1.png", "def_bonus": 1 },
     "tomo_proibito": {
         "id": "tomo_proibito",
@@ -135,6 +135,14 @@ window.LIBRERIA.armeria = {
         "desc": "+2 Fede; +1 Forza ogni 2 Fede"
     },
     "elisir_sangue_vivo": { "id": "elisir_sangue_vivo", "name": "Elisir di Sangue Vivo", "rarity": "epico", "type": "consumable_full", "desc": "Consumabile: Ripristina tutti gli HP", "icon": "immagini/icone/BTNPotionOfVampirism.png" },
+    "olio_bollente": { "id": "olio_bollente", "name": "Fiala di Olio Bollente", "rarity": "comune", "type": "consumable_damage", "dmg_val": 1, "desc": "Consumabile: 1 danno al nemico", "icon": "immagini/icone/BTNLiquidFire.png" },
+    "bomba_acido": { "id": "bomba_acido", "name": "Bomba d'Acido", "rarity": "raro", "type": "consumable_damage", "dmg_val": 2, "desc": "Consumabile: 2 danni al nemico", "icon": "immagini/icone/BTNAcidBomb.png" },
+    "polvere_nera": { "id": "polvere_nera", "name": "Sacchetto di Polvere Nera", "rarity": "epico", "type": "consumable_damage", "dmg_val": 3, "desc": "Consumabile: 3 danni al nemico", "icon": "immagini/icone/BTNFireRocks.png" },
+    "grappa_soldato": { "id": "grappa_soldato", "name": "Grappa del Soldato", "rarity": "comune", "type": "consumable_buff", "buff_stat": "str", "buff_val": 1, "buff_rounds": 1, "desc": "Consumabile: +1 Forza per 1 round", "icon": "immagini/icone/BTNDrunkenDodge.png" },
+    "infuso_corteccia": { "id": "infuso_corteccia", "name": "Infuso di Corteccia", "rarity": "non_comune", "type": "consumable_buff", "buff_stat": "current_armor", "buff_val": 2, "desc": "Consumabile: +2 Armatura subito", "icon": "immagini/icone/BTNScrollOfProtection.png" },
+    "olio_da_lama": { "id": "olio_da_lama", "name": "Olio da Lama", "rarity": "non_comune", "type": "consumable_buff", "buff_stat": "dmg", "buff_val": 1, "buff_rounds": 3, "desc": "Consumabile: +1 Danno per 3 round", "icon": "immagini/icone/BTNOrbOfFire.png" },
+    "pozione_pelle_pietra": { "id": "pozione_pelle_pietra", "name": "Pozione di Pelle di Pietra", "rarity": "raro", "type": "consumable_buff", "buff_stat": "def_armor", "buff_val": 1, "desc": "Consumabile: +1 Armatura con Difendi per tutto lo scontro", "icon": "immagini/icone/BTNPotionOfDivinity.png" },
+    "elisir_berserker": { "id": "elisir_berserker", "name": "Elisir del Berserker", "rarity": "epico", "type": "consumable_buff", "buff_stat": "str", "buff_val": 2, "desc": "Consumabile: +2 Forza per tutto lo scontro", "icon": "immagini/icone/BTNBerserk.png" },
     "ankh_pellegrino": {
         "id": "ankh_pellegrino",
         "icon": "immagini/icone/BTNAnkh.png",
@@ -213,4 +221,4 @@ window.LIBRERIA.armeria = {
 };
 
 // Bottino delle campagne con "lootItems": null
-window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante"];
+window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "polvere_nera", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker"];

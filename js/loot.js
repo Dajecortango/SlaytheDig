@@ -84,10 +84,11 @@
         }
 
         function triggerLoot() {
+            expireTempBuffs(true);  // fine dello scontro: via tutti i potenziamenti temporanei
             showScreen('screenLoot');
 
             // Reliquia: Dente del grande lupo
-            if (hasRelic("Dente del grande lupo")) {
+            if (hasRelic('dente_del_grande_lupo')) {
                 let lowestHero = stato.party.filter(h => h.hp > 0).reduce((prev, curr) => prev.hp < curr.hp ? prev : curr);
                 if (lowestHero && lowestHero.hp < lowestHero.maxHp) {
                     healHero(lowestHero, 1);
@@ -98,14 +99,14 @@
             const isEliteCombat = currentNode && (currentNode.type === 'elite' || currentNode.type === 'captain');
             let coins = scaledCoins([3, 5, 7, 9, 12], isEliteCombat);
 
-            if (stato.activeCurses.includes("Maledizione: -15% monete")) {
+            if (hasCurse('15_ricompensa_monete')) {
                 coins = Math.floor(coins * 0.85);
             }
 
             // Abilità di Icaro "Fammi dare un'occhiata": monete extra garantite dopo ogni scontro, se è vivo.
             // L'id dell'abilità copre i salvataggi creati prima di questa versione.
-            const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
-            const lootBonus = lootBonusHeroes.reduce((sum, h) => sum + (h.bonusLootCoins || 3), 0);
+            const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && h.bonusLootCoins);
+            const lootBonus = lootBonusHeroes.reduce((sum, h) => sum + h.bonusLootCoins, 0);
             coins += lootBonus;
             document.getElementById('lootCoinsBonus').textContent = lootBonus
                 ? `(di cui +${lootBonus} da ${lootBonusHeroes.map(h => h.name).join(', ')}: Fammi dare un'occhiata)` : '';
@@ -167,7 +168,7 @@
         // Genera l'offerta di un tesoro: monete (con eventuale sconto da maledizione) + 3 oggetti a caso.
         function generateTreasureOffer() {
             let coins = scaledCoins([5, 8, 10, 15], false);
-            if (stato.activeCurses.includes("Maledizione: -15% monete")) {
+            if (hasCurse('15_ricompensa_monete')) {
                 coins = Math.floor(coins * 0.85);
             }
             const items = [];

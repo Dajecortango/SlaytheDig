@@ -291,7 +291,7 @@ window.LIBRERIA.bestiario = {
     },
     "mastino_bokgar": {
         "name": "Mastino di Bokgar",
-        "image": "immagini/bestiario/mastino_bogkar.jpg",
+        "image": "immagini/bestiario/mastino_bokgar.jpg",
         "hp": 14,
         "maxHp": 14,
         "att": 7,

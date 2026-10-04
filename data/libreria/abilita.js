@@ -201,13 +201,12 @@ window.LIBRERIA.abilita = {
     "dente_per_dente": {
         "id": "dente_per_dente",
         "name": "Dente per dente",
-        "desc": "Attiva (1 volta per scontro): solo se il nemico ha colpito l'eroe nel suo ultimo turno. Colpisce sempre (come un 6) e infligge il danno dell'eroe più i danni subiti in quel colpo, armatura persa compresa",
+        "desc": "Attiva (1 volta per scontro): solo se il nemico ha colpito l'eroe nel suo ultimo turno. Attacca con il normale tiro per colpire e, se colpisce, infligge il danno dell'eroe più i danni subiti in quel colpo, armatura persa compresa",
         "isCombatActive": true,
-        "actionName": "Dente per dente (colpo sicuro, + danni subiti)",
+        "actionName": "Dente per dente (+ danni subiti)",
         "icon": "immagini/icone/BTNAdvancedUnholyStrength.png",
         "combat": {
             "dice": 1,
-            "autoHit": true,
             "requiresHitLastTurn": true,
             "damageTakenBonus": true,
             "useText": "🩸 {eroe} restituisce il colpo: dente per dente!",

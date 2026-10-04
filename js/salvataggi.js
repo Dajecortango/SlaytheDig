@@ -14,12 +14,13 @@
         let currentSaveSlot = null;  // slot della partita in corso (per sovrascriverlo e cancellarlo alla sconfitta)
 
         /* ---------- Formato e migrazioni ----------
-           Versione 2: { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
-           currentNodeId, party, partyFlags, partyCoins, unlockedRelics: [{ name, desc }], activeCurses, expeditionStats } }.
+           Versione 3: { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
+           currentNodeId, party, partyFlags, partyCoins, unlockedRelics: [{ id, name, desc }],
+           activeCurses: [{ id, text }], expeditionStats } }.
            I nodi tengono solo lo stato: il contenuto viene dalla campagna attuale.
            Per cambiare il formato: alza SAVE_VERSION e aggiungi in SAVE_MIGRATIONS la funzione
            che porta un salvataggio dalla versione precedente a quella nuova. */
-        const SAVE_VERSION = 2;
+        const SAVE_VERSION = 3;
         const SAVE_MIGRATIONS = {
             // Versione 1 (senza "version"): campi della partita sparsi al primo livello, nodi completi
             1: old => ({
@@ -36,7 +37,30 @@
                     activeCurses: old.activeCurses || [],
                     expeditionStats: old.expeditionStats || {}
                 }
-            })
+            }),
+            // Versione 2 -> 3: reliquie e maledizioni con l'id della libreria; le passive degli eroi
+            // scrivono sempre il loro segnale (prima il motore controllava anche l'id dell'abilità)
+            2: old => {
+                const s = old.stato;
+                const relicLib = Object.entries(LIBRERIA.reliquie || {});
+                const curseLib = Object.entries(LIBRERIA.maledizioni || {});
+                const relics = (s.unlockedRelics || []).map(r => {
+                    const found = relicLib.find(([, lr]) => lr.name === r.name);
+                    return { id: found ? found[0] : idFromName(r.name), name: r.name, desc: r.desc };
+                });
+                const curses = (s.activeCurses || []).map(text => {
+                    if (typeof text !== 'string') return text;
+                    const found = curseLib.find(([, c]) => text.startsWith(c.name) ||
+                        (c.effects || []).some(e => e.effect === 'add_curse' && e.text === text));
+                    return { id: found ? found[0] : idFromName(text.split(' (')[0]), text };
+                });
+                (s.party || []).forEach(h => {
+                    const ab = h.chosenAbility && (LIBRERIA.abilita || {})[h.chosenAbility.id];
+                    if (!ab || ab.isCombatActive) return;
+                    (ab.effects || []).forEach(e => { if (e.effect === 'hero_set' && h[e.stat] === undefined) h[e.stat] = e.val; });
+                });
+                return { ...old, version: 3, stato: { ...s, unlockedRelics: relics, activeCurses: curses } };
+            }
         };
 
         // Porta un salvataggio di qualunque versione al formato attuale (null se non è un salvataggio valido)
@@ -74,7 +98,7 @@
                     // Segnali delle reliquie appesi all'elenco degli eroi (JSON.stringify non li salverebbe)
                     partyFlags: { atamanoUsed: !!stato.party.atamanoUsed, sigilloCharges: stato.party.sigilloCharges || 0 },
                     partyCoins: stato.partyCoins,
-                    unlockedRelics: stato.unlockedRelics.map(r => ({ name: r.name, desc: r.desc })),
+                    unlockedRelics: stato.unlockedRelics.map(r => ({ id: r.id, name: r.name, desc: r.desc })),
                     activeCurses: stato.activeCurses,
                     expeditionStats: stato.expeditionStats
                 }
@@ -235,6 +259,8 @@
                 campaignArmory = stato.currentCampaign.initialArmory || [];
 
                 stato.party = s.party;
+                // Salvataggio fatto durante uno scontro: si tolgono i potenziamenti temporanei rimasti
+                expireTempBuffs(true);
                 const flags = s.partyFlags || {};
                 if (flags.atamanoUsed) stato.party.atamanoUsed = true;
                 if (flags.sigilloCharges) stato.party.sigilloCharges = flags.sigilloCharges;
@@ -254,8 +280,9 @@
                     }
                 });
 
+                // Ricollegate alla libreria per id (il contenuto aggiornato, l'id resta quello salvato)
                 stato.unlockedRelics = (s.unlockedRelics || []).map(savedRelic =>
-                    Object.values(LIBRERIA.reliquie).find(r => r.name === savedRelic.name) || savedRelic);
+                    LIBRERIA.reliquie[savedRelic.id] ? { ...LIBRERIA.reliquie[savedRelic.id], id: savedRelic.id } : savedRelic);
 
                 document.getElementById('mapCampaignHeader').textContent = `Mappa: ${stato.currentCampaign.title}`;
                 updatePartyStatusBars();
