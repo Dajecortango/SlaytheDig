@@ -57,10 +57,10 @@
                 basePrice = Math.round(basePrice * merchantProgressMultiplier());
 
                 // Applica gli sconti delle reliquie
-                if (hasRelic("Moneta di fredlos")) basePrice = Math.floor(basePrice * 0.5);
-                if (hasRelic("Lasciapassare mercantile")) basePrice = Math.max(1, basePrice - 3);
+                if (hasRelic('moneta_di_fredlos')) basePrice = Math.floor(basePrice * 0.5);
+                if (hasRelic('lasciapassare_mercantile')) basePrice = Math.max(1, basePrice - 3);
                 // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
-                if (hasCurse("Rancore del Mercante")) basePrice += 2;
+                if (hasCurse('rancore_del_mercante')) basePrice += 2;
 
                 return { item, price: basePrice, revealed: false };
             });
@@ -96,8 +96,8 @@
 
         // Stesse regole delle prove: vantaggio di Dioforo con l'Intelligenza (Fede Inaridita qui non conta: si contratta solo con l'Intelligenza)
         function haggleRollMode(hero, stat) {
-            const advantage = !!hero.hasAdvantageOnIntFth || (hero.chosenAbility && hero.chosenAbility.id === 'dioforo_era_solo_una_prova');
-            const disadvantage = stat === 'fth' && hasCurse("Fede Inaridita");
+            const advantage = !!hero.hasAdvantageOnIntFth;
+            const disadvantage = stat === 'fth' && hasCurse('fede_inaridita');
             if (advantage && !disadvantage) return 'best';
             if (disadvantage && !advantage) return 'worst';
             return 'single';
@@ -282,7 +282,7 @@
                 <button class="armory-btn rar-card-${itemRarity(item)}" onclick="trySellItem('${esc(hero.name)}', ${idx})" data-tip="${esc(itemTip(item, hero))}">
                     ${itemIconHtml(item)}
                     <span class="tile-text">
-                        <strong>${item.name}</strong>
+                        <strong>${item.name}${(item.qty || 1) > 1 ? ` x${item.qty}` : ''}</strong>
                         <span class="tile-sub">${kw(item.desc)}</span>
                         <span class="tile-tag">${esc(hero.name)}</span>
                     </span>
@@ -297,10 +297,11 @@
             if (!item) return;
             const price = itemSellPrice(item);
             openModal('Vendere l\'oggetto?',
-                `<p>Vendi <b>${item.name}</b> di ${esc(hero.name)} per <b style="color:var(--wc-yellow)">${price}</b> monete?</p>`,
+                `<p>Vendi ${(item.qty || 1) > 1 ? 'una copia di ' : ''}<b>${item.name}</b> di ${esc(hero.name)} per <b style="color:var(--wc-yellow)">${price}</b> monete?</p>`,
                 [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Vendi', className: 'btn-danger', onClick: () => {
-                    revertItemEffects(item, hero);
-                    hero.items.splice(idx, 1);
+                    // Di una pila di consumabili se ne vende una copia alla volta
+                    if ((item.qty || 1) > 1) item.qty -= 1;
+                    else { revertItemEffects(item, hero); hero.items.splice(idx, 1); }
                     stato.partyCoins += price;
                     updatePartyStatusBars();
                     renderMerchantSellList();

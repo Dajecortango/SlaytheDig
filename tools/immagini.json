@@ -58,7 +58,7 @@
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/mastino_bogkar.jpg",
+      "file": "immagini/bestiario/mastino_bokgar.jpg",
       "stile": "scena",
       "prompt": "Gaunt dark nocturnal beasts with glassy dead eyes, the Hounds of Bokgar, slipping out of crumbling ruins at dusk, unnatural silence, fog clinging to the stones."
     },
@@ -70,7 +70,7 @@
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/sfida.jpg",
+      "file": "immagini/carro_rovesciato.jpg",
       "stile": "scena",
       "prompt": "An overturned heavy merchant wagon lying on its side on a mountain trail, broken wheel spokes, crates balanced precariously, snapped ropes, no people."
     },
@@ -284,24 +284,6 @@
       "modello": "gptimage",
       "trasparente": true,
       "prompt": "A wide empty rectangular menu button: bevelled dark stone face framed by a thick ornate burnished gold metal border with small rivets in the corners, flat empty centre for text, straight edges, symmetrical, filling the whole width of the image."
-    },
-    {
-      "gruppo": "ui",
-      "file": "immagini/ui/cornice_pannello.png",
-      "stile": "elemento_ui",
-      "formato": "1:1",
-      "modello": "gptimage",
-      "trasparente": true,
-      "prompt": "A square ornate window frame border: thick burnished gold and dark iron metal edges with knotwork engraving and a decorative lion-head ornament in each corner, the whole inner area completely empty and transparent, symmetrical, straight edges reaching the image borders."
-    },
-    {
-      "gruppo": "ui",
-      "file": "immagini/ui/targa_titolo.png",
-      "stile": "elemento_ui",
-      "formato": "3:2",
-      "modello": "gptimage",
-      "trasparente": true,
-      "prompt": "A wide ornate title plaque: dark carved stone slab with a gold metal border, curled gold filigree wings on the left and right ends, a small dark red gem at the top centre, empty centre for a title, symmetrical."
     },
     {
       "gruppo": "ui",

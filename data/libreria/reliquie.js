@@ -1,6 +1,6 @@
 // Reliquie: ricompense delle sfide, condivise dalle campagne.
 // Le sfide le richiamano per id nel campo "reward". Molte reliquie hanno un effetto
-// gestito per nome in js/game.js (hasRelic): rinominarle ne cambia il comportamento.
+// scritto nel codice e riconosciuto per id (hasRelic('id')): il nome si può cambiare, la chiave no.
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.reliquie = {
@@ -55,5 +55,11 @@ window.LIBRERIA.reliquie = {
         "effects": [
             { "effect": "party_stat", "stat": "fth", "val": 1 }
         ]
-    }
+    },
+    "stendardo_da_battaglia": { "type": "relic", "name": "Stendardo da battaglia", "desc": "+1 al tiro per colpire nel primo round di ogni scontro" },
+    "zanna_del_leone_bianco": { "type": "relic", "name": "Zanna del leone bianco", "desc": "+2 danni nel secondo round di ogni scontro" },
+    "catena_di_norgrad": { "type": "relic", "name": "Catena di Norgrad", "desc": "+1 al tiro per colpire contro nemici elite e il capitano" },
+    "scudo_dell_atamano": { "type": "relic", "name": "Scudo dell'Atamano", "desc": "Il primo colpo del nemico in ogni scontro viene assorbito del tutto" },
+    "moneta_di_fredlos": { "type": "relic", "name": "Moneta di Fredlos", "desc": "I mercanti fanno pagare la metà" },
+    "unguento_dell_erborista": { "type": "relic", "name": "Unguento dell'erborista", "desc": "Al riposo ogni eroe recupera 1 HP in più" }
 };

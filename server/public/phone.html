@@ -164,12 +164,13 @@
             const rows = items.map((it, idx) => {
                 const rar = it.rarity || 'comune';
                 const icon = it.icon ? `<img class="bag-icon rar-${rar}" src="/${it.icon}" alt="">` : `<span class="bag-icon rar-${rar}"></span>`;
-                const useBtn = it.consumable
+                // Danni e potenziamenti si usano solo nel turno di combattimento ("Usa oggetto")
+                const useBtn = it.consumable && !it.combatOnly
                     ? `<button class="use-btn" onclick="startBagUse(${idx})" ${state.inCombat || hero.hp <= 0 ? 'disabled' : ''}>Usa</button>` : '';
                 const target = bagUseIndex === idx
                     ? `<div class="use-target">${alive.map((a, ai) => `<button onclick="useBagItem(${idx}, ${ai})">${a.name} (${a.hp}/${a.maxHp})</button>`).join('')}<button onclick="cancelBagUse()">Annulla</button></div>`
                     : '';
-                return `<div class="bag-item rar-${rar}">${icon}<div class="bag-text"><b>${it.name}</b><small>${it.desc || ''}</small>${target}</div>${useBtn}</div>`;
+                return `<div class="bag-item rar-${rar}">${icon}<div class="bag-text"><b>${it.name}${(it.qty || 1) > 1 ? ` x${it.qty}` : ''}</b><small>${it.desc || ''}</small>${target}</div>${useBtn}</div>`;
             }).join('');
             const note = state.inCombat ? 'In combattimento le pozioni si usano nel tuo turno ("Usa oggetto").' : bagMessage;
             return `<div class="bag-title">Zaino</div>${rows}${note ? `<div class="bag-note">${note}</div>` : ''}`;

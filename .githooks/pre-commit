@@ -1,0 +1,29 @@
+#!/bin/sh
+# Controllo prima di ogni commit: sintassi di tutti i file JavaScript e test automatici.
+# Attivo con: git config core.hooksPath .githooks   (una volta per ogni copia del progetto)
+# Per saltarlo in un caso eccezionale: git commit --no-verify
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "pre-commit: Node.js non trovato, controllo saltato."
+    exit 0
+fi
+
+errori=0
+for f in js/*.js data/libreria/*.js data/campagne/*.js tools/*.mjs tests/*.js server/*.js; do
+    [ -f "$f" ] || continue
+    if ! node --check "$f" 2>/dev/null; then
+        echo "pre-commit: errore di sintassi in $f"
+        node --check "$f"
+        errori=1
+    fi
+done
+[ $errori -eq 0 ] || { echo "pre-commit: commit bloccato (sintassi)."; exit 1; }
+
+if ! node tests/run.js > .git/ultimo-test.txt 2>&1; then
+    cat .git/ultimo-test.txt
+    echo "pre-commit: commit bloccato, ci sono test falliti (vedi sopra)."
+    exit 1
+fi
+echo "pre-commit: sintassi e test ok ($(tail -1 .git/ultimo-test.txt))."

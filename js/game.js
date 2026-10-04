@@ -45,17 +45,30 @@
         // Stato della presentazione: schermata attiva, fase del combattimento
         let currentScreenId = 'screenStart';
         let combatPhase = 'none';
-	function hasRelic(relicName) {
-    return stato.unlockedRelics.some(r => r.name === relicName);
+// Reliquie e maledizioni si riconoscono per id (la chiave nella libreria), non per nome:
+// così si possono rinominare dall'editor senza rompere il loro effetto.
+// Id ricavato da un nome, per gli elementi scritti dentro una campagna o i salvataggi vecchi
+// ("Scudo dell'Atamano" -> "scudo_dell_atamano", come le chiavi della libreria).
+function idFromName(name) {
+    return String(name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
 
-// Le maledizioni sono salvate come testo "Nome (descrizione)": si riconoscono dal nome iniziale
-function hasCurse(curseName) {
-    return stato.activeCurses.some(c => c.startsWith(curseName));
+function hasRelic(relicId) {
+    return stato.unlockedRelics.some(r => r.id === relicId);
 }
 
-function breakRelic(relicName) {
-    const idx = stato.unlockedRelics.findIndex(r => r.name === relicName);
+// Le maledizioni sono { id, text }: "text" è la riga mostrata al giocatore ("Nome (descrizione)")
+function hasCurse(curseId) {
+    return stato.activeCurses.some(c => c.id === curseId);
+}
+
+function curseText(curse) {
+    return typeof curse === 'string' ? curse : curse.text;
+}
+
+function breakRelic(relicId) {
+    const idx = stato.unlockedRelics.findIndex(r => r.id === relicId);
     if (idx > -1) {
         stato.unlockedRelics.splice(idx, 1);
         updatePartyStatusBars();
@@ -74,7 +87,7 @@ function breakRelic(relicName) {
                     case 'party_max_hp': stato.party.forEach(h => { h.maxHp += e.val; h.hp += e.val; }); break;
                     case 'party_damage': stato.party.forEach(h => { h.hp = Math.max(1, h.hp - e.val); }); break;
                     case 'coins': stato.partyCoins = Math.max(0, stato.partyCoins + e.val); break;
-                    case 'add_curse': stato.activeCurses.push(e.text); break;
+                    case 'add_curse': stato.activeCurses.push({ id: e.id || idFromName(e.text), text: e.text }); break;
                     default: console.warn('Effetto sconosciuto:', e);
                 }
             });
@@ -295,7 +308,7 @@ function breakRelic(relicName) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '1.1';
+        const GAME_VERSION = '1.2';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
@@ -373,7 +386,7 @@ function breakRelic(relicName) {
 
             setCounter(document.getElementById('topBarCurses'), stato.activeCurses.length);
             document.getElementById('topBarCursesWrap').dataset.tip = stato.activeCurses.length > 0
-                ? `Maledizioni||${stato.activeCurses.join('<br>')}`
+                ? `Maledizioni||${stato.activeCurses.map(curseText).join('<br>')}`
                 : 'Maledizioni||Nessuna maledizione attiva.';
 
             document.body.classList.toggle('no-party', stato.party.length === 0);
@@ -394,6 +407,12 @@ function breakRelic(relicName) {
             if(!hero) return;
             let item = hero.items[itemIdx];
             if(!item || !item.type || !item.type.startsWith('consumable')) return;
+            if (isCombatConsumable(item)) {
+                uiError(currentScreenId === 'screenCombat'
+                    ? `${item.name} si usa con il comando Oggetto, nel turno dell'eroe`
+                    : `${item.name} si usa solo in combattimento`);
+                return;
+            }
 
             openModal(
                 item.name,
@@ -564,7 +583,7 @@ function breakRelic(relicName) {
            armor, def_bonus o help_bonus_val; "per" è fth o int (mai le stesse: niente circoli).
            Il bonus si ricalcola quando cambiano Fede o Intelligenza (oggetti, reliquie, maledizioni):
            hero.scaledBonus ricorda quanto è già stato aggiunto, così si applica solo la differenza. */
-        const SCALING_TARGETS = ['str', 'dmg', 'armor', 'def_bonus', 'help_bonus_val'];
+        const SCALING_TARGETS = ['str', 'dmg', 'armor', 'def_bonus', 'def_armor', 'help_bonus_val'];
 
         function scaledItemBonuses(hero) {
             const out = {};
@@ -595,7 +614,7 @@ function breakRelic(relicName) {
         }
 
         // Testo per l'interfaccia, es. "+1 Danno ogni 2 Fede"
-        const SCALING_LABELS = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_bonus: 'Difesa', help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza' };
+        const SCALING_LABELS = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_bonus: 'Difesa', def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza' };
         function scalingText(item) {
             return (item.scaling || []).map(sc => `+1 ${SCALING_LABELS[sc.stat]} ogni ${sc.every} ${SCALING_LABELS[sc.per]}${sc.max != null ? ` (max +${sc.max})` : ''}`).join(', ');
         }
@@ -609,6 +628,7 @@ function breakRelic(relicName) {
             }
             if(item.att_penalty) hero.att_penalty += item.att_penalty;
             if(item.def_bonus) hero.def_bonus += item.def_bonus;
+            if(item.def_armor) hero.def_armor = (hero.def_armor || 0) + item.def_armor;
             if(item.help_bonus_val) hero.help_bonus_val += item.help_bonus_val;
             if(item.fth) hero.fth += item.fth;
             if(item.int) hero.int += item.int;
@@ -625,6 +645,7 @@ function breakRelic(relicName) {
             }
             if(item.att_penalty) hero.att_penalty -= item.att_penalty;
             if(item.def_bonus) hero.def_bonus -= item.def_bonus;
+            if(item.def_armor) hero.def_armor = (hero.def_armor || 0) - item.def_armor;
             if(item.help_bonus_val) hero.help_bonus_val -= item.help_bonus_val;
             if(item.fth) hero.fth -= item.fth;
             if(item.int) hero.int -= item.int;
@@ -634,11 +655,97 @@ function breakRelic(relicName) {
             else refreshScaledBonuses(hero);
         }
 
+        /* ---------- Consumabili ----------
+           consumable_heal (heal_val) e consumable_full curano un eroe, anche fuori dal combattimento.
+           consumable_damage (dmg_val) colpisce il nemico; consumable_buff (buff_stat, buff_val,
+           buff_rounds) potenzia un eroe per alcuni round (0 o vuoto = tutto lo scontro): questi due
+           si usano solo in combattimento, con il comando Oggetto. Nello zaino un consumabile può
+           stare in pila con un altro uguale (campo "qty", al massimo CONSUMABLE_STACK copie). */
+        const CONSUMABLE_STACK = 2;
+        const isCombatConsumable = item => item && (item.type === 'consumable_damage' || item.type === 'consumable_buff');
+        // Statistiche che un potenziamento può alzare (etichette per tooltip, editor e diario)
+        const BUFF_STATS = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
+            def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito)' };
+
+        // Toglie una copia del consumabile: la pila scende di uno, l'ultima copia libera lo slot
+        function consumeOne(hero, itemIdx) {
+            const item = hero.items[itemIdx];
+            if ((item.qty || 1) > 1) item.qty -= 1;
+            else hero.items.splice(itemIdx, 1);
+        }
+
+        // Pila dello stesso consumabile con posto libero nello zaino dell'eroe (o undefined)
+        function stackableSlot(hero, item) {
+            if (!item.type || !item.type.startsWith('consumable')) return undefined;
+            return hero.items.find(it => it.id === item.id && it.type === item.type && (it.qty || 1) < CONSUMABLE_STACK);
+        }
+
+        // Potenziamento temporaneo: alza subito la statistica e la riporta indietro alla scadenza
+        // (expiresAfterRound; Infinity = fine dello scontro). L'armatura data subito non si toglie.
+        function applyTempBuff(hero, item) {
+            const val = item.buff_val || 0;
+            hero[item.buff_stat] = (hero[item.buff_stat] || 0) + val;
+            if (item.buff_stat === 'current_armor') return;
+            const rounds = item.buff_rounds || 0;
+            (hero.tempBuffs = hero.tempBuffs || []).push({ stat: item.buff_stat, val, name: item.name, icon: item.icon || '',
+                expiresAfterRound: rounds > 0 ? stato.combatRound + rounds - 1 : Infinity });
+        }
+
+        // Toglie i potenziamenti scaduti (all = true: tutti, a fine scontro o caricando una partita)
+        function expireTempBuffs(all = false) {
+            const expired = [];
+            stato.party.forEach(h => {
+                if (!h.tempBuffs || !h.tempBuffs.length) return;
+                h.tempBuffs = h.tempBuffs.filter(b => {
+                    if (!all && b.expiresAfterRound >= stato.combatRound) return true;
+                    h[b.stat] = (h[b.stat] || 0) - b.val;
+                    expired.push({ hero: h, buff: b });
+                    return false;
+                });
+            });
+            return expired;
+        }
+
+        // Icone dei potenziamenti attivi sulla carta dell'eroe, come i buff sopra le unità di WC3:
+        // il numero è quanti round restano (compreso quello in corso), ∞ = fino a fine scontro
+        function heroBuffsHtml(h) {
+            if (!h.tempBuffs || !h.tempBuffs.length || h.hp <= 0) return '';
+            return `<div class="hero-buffs">${h.tempBuffs.map(b => {
+                const left = b.expiresAfterRound === Infinity ? '∞' : Math.max(1, b.expiresAfterRound - stato.combatRound + 1);
+                const when = left === '∞' ? 'fino alla fine dello scontro' : (left === 1 ? 'ultimo round' : `ancora ${left} round`);
+                const tip = `${b.name}||+${b.val} ${BUFF_STATS[b.stat] || b.stat}, ${when}`;
+                const img = b.icon ? `<img src="${esc(b.icon)}" alt="">` : '';
+                return `<span class="hero-buff" data-tip="${esc(tip)}">${img}<b>${left}</b></span>`;
+            }).join('')}</div>`;
+        }
+
+        // Testo della durata di un potenziamento (per tooltip e diario)
+        function buffDurationText(item) {
+            const r = item.buff_rounds || 0;
+            return r > 0 ? (r === 1 ? 'per 1 round' : `per ${r} round`) : 'per tutto lo scontro';
+        }
+
         window.useConsumable = function(heroName, itemIdx, targetName = null) {
             let hero = stato.party.find(p => p.name === heroName);
             if(!hero) return false;
             let item = hero.items[itemIdx];
             if(!item || !item.type || !item.type.startsWith('consumable')) return false;
+
+            if (isCombatConsumable(item)) {
+                const enemy = stato.activeEnemy;
+                if (currentScreenId !== 'screenCombat' || !enemy || enemy.hp <= 0) {
+                    uiError(`${item.name} si usa solo in combattimento`);
+                    return false;
+                }
+                if (item.type === 'consumable_damage') {
+                    const dmg = item.dmg_val || 0;
+                    enemy.hp -= dmg;
+                    consumeOne(hero, itemIdx);
+                    updatePartyStatusBars();
+                    logCombat(`💥 ${hero.name} usa ${item.name}: ${dmg} ${dmg === 1 ? 'danno' : 'danni'} a ${enemy.name}!`);
+                    return true;
+                }
+            }
 
             let target = targetName ? stato.party.find(p => p.name === targetName) : hero;
             if(!target || target.hp <= 0) {
@@ -648,15 +755,16 @@ function breakRelic(relicName) {
 
             if(item.type === 'consumable_heal') {
                 healHero(target, item.heal_val);
-                hero.items.splice(itemIdx, 1);
-                updatePartyStatusBars();
-                triggerConsumableFeedback(hero, target, item);
             } else if(item.type === 'consumable_full') {
                 healHero(target, Infinity);
-                hero.items.splice(itemIdx, 1);
-                updatePartyStatusBars();
-                triggerConsumableFeedback(hero, target, item);
+            } else if(item.type === 'consumable_buff') {
+                applyTempBuff(target, item);
+            } else {
+                return false;  // tipo sconosciuto: l'oggetto resta nello zaino
             }
+            consumeOne(hero, itemIdx);
+            updatePartyStatusBars();
+            triggerConsumableFeedback(hero, target, item);
             return true;
         };
 
@@ -672,7 +780,7 @@ function breakRelic(relicName) {
 
         // Favore di Valgoren: 1 HP a un altro eroe vivo e ferito, scelto a caso. Restituisce l'eroe curato.
         function valgorenEcho(source) {
-            if (!hasRelic("Favore di Valgoren")) return null;
+            if (!hasRelic('favore_di_valgoren')) return null;
             const others = stato.party.filter(h => h !== source && h.hp > 0 && h.hp < h.maxHp);
             if (!others.length) return null;
             const lucky = others[Math.floor(Math.random() * others.length)];
@@ -724,7 +832,7 @@ function breakRelic(relicName) {
         }
 
         /* ---------- 22. Tooltip ricco degli oggetti ---------- */
-        const ITEM_TIP_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
+        const ITEM_TIP_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_armor', 'Armatura con Difendi'], ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
         function itemTip(item, hero) {
             const rarity = itemRarity(item);
             const title = `<span class="tip-rar tip-rar-${rarity}">${esc(item.name)}</span>`;
@@ -733,6 +841,10 @@ function breakRelic(relicName) {
             if (item.att_penalty) lines.push(`<span class="kw kw-curse">-${item.att_penalty} al tiro per colpire</span>`);
             if (item.type === 'consumable_heal') lines.push(kw(`Cura ${item.heal_val} HP`));
             if (item.type === 'consumable_full') lines.push(kw('Cura tutti gli HP'));
+            if (item.type === 'consumable_damage') lines.push(kw(`Infligge ${item.dmg_val || 0} danni al nemico`));
+            if (item.type === 'consumable_buff') lines.push(kw(`+${item.buff_val || 0} ${BUFF_STATS[item.buff_stat] || item.buff_stat}${item.buff_stat === 'current_armor' ? '' : ' ' + buffDurationText(item)}`));
+            if (isCombatConsumable(item)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
+            if ((item.qty || 1) > 1) lines.push(`<span class="tip-hint">${item.qty} copie in questo slot</span>`);
             (item.scaling || []).forEach(sc => {
                 const who = (hero ? [hero] : stato.party.filter(h => h.hp > 0)).map(h => {
                     let b = Math.floor(Math.max(0, h[sc.per] || 0) / Math.max(1, sc.every || 1));
@@ -753,13 +865,17 @@ function breakRelic(relicName) {
             { key: 'fth', label: 'Fede', get: h => h.fth },
             { key: 'int', label: 'Intelligenza', get: h => h.int },
             { key: 'def_bonus', label: 'Difesa', get: h => h.def_bonus || 0 },
+            { key: 'def_armor', label: 'Armatura con Difendi', get: h => 1 + (h.def_armor || 0) },
             { key: 'help_bonus_val', label: 'Aiuto', get: h => h.help_bonus_val || 0 },
             { key: 'att_penalty', label: 'Attacco', get: h => attackMod(h), sign: -1 }
         ];
 
         // Es. "Forza 3→4, Danno 1→2": come cambierebbe l'eroe equipaggiando l'oggetto
         function itemDeltaText(item, hero) {
-            if (item.type && item.type.startsWith('consumable')) return 'consumabile nello zaino';
+            if (item.type && item.type.startsWith('consumable')) {
+                const pila = stackableSlot(hero, item);
+                return pila ? `si aggiunge alla pila (${(pila.qty || 1) + 1}/${CONSUMABLE_STACK})` : 'consumabile nello zaino';
+            }
             const after = JSON.parse(JSON.stringify(hero));
             const copy = JSON.parse(JSON.stringify(item));
             after.items.push(copy);
@@ -774,7 +890,7 @@ function breakRelic(relicName) {
 
         function heroOptionsForItem(item) {
             return stato.party.filter(p => p.hp > 0).map(h => {
-                const full = h.items.length >= BACKPACK_SIZE ? ' · zaino pieno' : '';
+                const full = h.items.length >= BACKPACK_SIZE && !stackableSlot(h, item) ? ' · zaino pieno' : '';
                 return `<option value="${h.name}">${h.name} (zaino ${h.items.length}/${BACKPACK_SIZE}) — ${itemDeltaText(item, h)}${full}</option>`;
             }).join('');
         }
@@ -792,13 +908,16 @@ function breakRelic(relicName) {
                 select.insertAdjacentElement('afterend', picker);
                 select.addEventListener('change', () => renderDiscardPicker(selectId));
             }
+            picker.dataset.itemId = item.id || '';
+            picker.dataset.itemType = item.type || '';
             renderDiscardPicker(selectId);
         }
 
         function renderDiscardPicker(selectId) {
             const picker = document.getElementById(selectId + 'Discard');
             const hero = stato.party.find(p => p.name === document.getElementById(selectId).value);
-            const full = hero && hero.items.length >= BACKPACK_SIZE;
+            const incoming = { id: picker.dataset.itemId, type: picker.dataset.itemType };
+            const full = hero && hero.items.length >= BACKPACK_SIZE && !stackableSlot(hero, incoming);
             picker.classList.toggle('hidden', !full);
             if (!full) { picker.innerHTML = ''; return; }
             picker.innerHTML = `<label>Zaino pieno (${hero.items.length}/${BACKPACK_SIZE}): scarta
@@ -819,6 +938,14 @@ function breakRelic(relicName) {
         // discardIdx: oggetto dello zaino da scartare subito per fare posto (vedi fillHeroSelectForItem)
         function assignItemToHero(item, hero, callback, discardIdx = null) {
             discover('items', item.id);
+            // Consumabile uguale a uno già nello zaino con posto nella pila: nessuno slot in più
+            const pila = stackableSlot(hero, item);
+            if (pila) {
+                pila.qty = (pila.qty || 1) + 1;
+                updatePartyStatusBars();
+                callback();
+                return;
+            }
             if (discardIdx !== null && hero.items.length >= BACKPACK_SIZE && hero.items[discardIdx]) {
                 revertItemEffects(hero.items[discardIdx], hero);
                 hero.items.splice(discardIdx, 1);
@@ -942,14 +1069,13 @@ function breakRelic(relicName) {
 
         // Come si tira in una prova: 'best' (vantaggio), 'worst' (svantaggio) o 'single'.
         // Vantaggio: abilità di Dioforo "Era solo una prova!" nelle prove di Intelligenza e Fede
-        // (si controlla anche l'id dell'abilità per i salvataggi privi del flag).
         // Svantaggio: maledizione "Fede Inaridita" nelle prove di Fede. Se ci sono entrambi si annullano.
         function challengeRollMode(hero) {
             if (!hero || !stato.challengeState) return { mode: 'single' };
             const stat = stato.challengeState.stat;
             const advantage = (stat === 'int' || stat === 'fth') &&
-                (!!hero.hasAdvantageOnIntFth || (hero.chosenAbility && hero.chosenAbility.id === 'dioforo_era_solo_una_prova'));
-            const disadvantage = stat === 'fth' && hasCurse("Fede Inaridita");
+                !!hero.hasAdvantageOnIntFth;
+            const disadvantage = stat === 'fth' && hasCurse('fede_inaridita');
             if (advantage && disadvantage) return { mode: 'single', note: 'Era solo una prova! e Fede Inaridita si annullano: un solo dado' };
             if (advantage) return { mode: 'best', note: `Era solo una prova! ${hero.name} tira due dadi e tiene il più alto`, source: 'Era solo una prova!' };
             if (disadvantage) return { mode: 'worst', note: 'Fede Inaridita: si tirano due dadi e si tiene il più basso', source: 'Fede Inaridita' };
@@ -961,15 +1087,15 @@ function breakRelic(relicName) {
         function challengeModifiers(hero) {
             const statValue = (hero && hero[stato.challengeState.stat]) || 0;
             const relics = [];
-            if (hasRelic("Anello del giuramento")) relics.push({ name: "Anello del giuramento", val: 3 });
-            if (hasRelic("Sigillo runico")) relics.push({ name: "Sigillo runico", val: 2 });
+            if (hasRelic('anello_del_giuramento')) relics.push({ name: "Anello del giuramento", val: 3 });
+            if (hasRelic('sigillo_runico')) relics.push({ name: "Sigillo runico", val: 2 });
             if (relicDiceBonus()) relics.push({ name: "Frammento di Yr-Drazul", val: 1 });
             return {
                 statValue,
                 relics,
                 relicBonus: relics.reduce((sum, r) => sum + r.val, 0),
                 rollMode: challengeRollMode(hero).mode,
-                safetyNet: hasRelic("Frammento di matrice")
+                safetyNet: hasRelic('frammento_di_matrice')
             };
         }
 
@@ -1009,16 +1135,16 @@ function breakRelic(relicName) {
             events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
 
             let relicBonus = 0;
-            if (hasRelic("Anello del giuramento")) {
+            if (hasRelic('anello_del_giuramento')) {
                 relicBonus += 3;
-                breakRelic("Anello del giuramento");
+                breakRelic('anello_del_giuramento');
                 events.push({ type: 'relic', text: '+3 Anello del giuramento (la reliquia si rompe)' });
             }
-            if (hasRelic("Sigillo runico")) {
+            if (hasRelic('sigillo_runico')) {
                 relicBonus += 2;
                 stato.party.sigilloCharges = (stato.party.sigilloCharges || 0) + 1;
                 const broken = stato.party.sigilloCharges >= 2;
-                if (broken) breakRelic("Sigillo runico");
+                if (broken) breakRelic('sigillo_runico');
                 events.push({ type: 'relic', text: `+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})` });
             }
 
@@ -1034,10 +1160,10 @@ function breakRelic(relicName) {
             const natural = naturalRollNote(kept, total, challenge.cd);
             if (natural) events.push({ type: 'natural', text: natural });
 
-            if (!success && hasRelic("Frammento di matrice")) {
+            if (!success && hasRelic('frammento_di_matrice')) {
                 total = Math.max(total, challenge.cd);
                 success = true;
-                breakRelic("Frammento di matrice");
+                breakRelic('frammento_di_matrice');
                 events.push({ type: 'relic', text: 'Frammento di matrice: il fallimento diventa un successo (la reliquia si rompe)' });
             }
 
@@ -1046,7 +1172,10 @@ function breakRelic(relicName) {
             let rewardGranted = null, punishmentApplied = null;
             if (success) {
                 if (challenge.reward) {
-                    stato.unlockedRelics.push(challenge.reward);
+                    // Solo le reliquie restano nell'elenco: i premi immediati (es. monete) agiscono e basta
+                    if (challenge.reward.type === 'relic') {
+                        stato.unlockedRelics.push({ ...challenge.reward, id: challenge.reward.id || idFromName(challenge.reward.name) });
+                    }
                     applyEffects(challenge.reward.effects);
                     if (challenge.reward.type === 'relic') discover('relics', challenge.reward.name);
                     rewardGranted = challenge.reward;
@@ -1057,8 +1186,11 @@ function breakRelic(relicName) {
                     const cursesBefore = stato.activeCurses.length;
                     applyEffects(challenge.punishment.effects);
                     if (challenge.punishment.type === 'curse') discover('curses', challenge.punishment.name);
+                    const curseId = challenge.punishment.id || idFromName(challenge.punishment.name);
+                    // Le maledizioni aggiunte dagli effetti prendono l'id della maledizione della libreria
+                    stato.activeCurses.slice(cursesBefore).forEach(c => { c.id = curseId; });
                     if (stato.activeCurses.length === cursesBefore) {
-                        stato.activeCurses.push(`${challenge.punishment.name} (${challenge.punishment.desc})`);
+                        stato.activeCurses.push({ id: curseId, text: `${challenge.punishment.name} (${challenge.punishment.desc})` });
                     }
                     punishmentApplied = challenge.punishment;
                 }
@@ -1138,7 +1270,7 @@ function breakRelic(relicName) {
 
         // Risolve un riposo: cura party, rimuove Gelo nelle ossa e (a caso) 1 maledizione con Pietra del focolare.
         function resolveRest() {
-            const healAmount = 1 + (hasRelic("Unguento dell'erborista") ? 1 : 0);
+            const healAmount = 1 + (hasRelic('unguento_dell_erborista') ? 1 : 0);
             const healed = [];
             stato.party.forEach(h => {
                 // Un eroe caduto (0 HP) si rialza con 1 HP
@@ -1161,14 +1293,14 @@ function breakRelic(relicName) {
             }
 
             let geloRemoved = false;
-            const geloIdx = stato.activeCurses.findIndex(c => c.startsWith("Gelo nelle ossa"));
+            const geloIdx = stato.activeCurses.findIndex(c => c.id === 'gelo_nelle_ossa');
             if (geloIdx > -1) {
                 stato.activeCurses.splice(geloIdx, 1);
                 stato.party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
                 geloRemoved = true;
             }
 
-            if (hasRelic("Pietra del focolare") && stato.activeCurses.length > 0) {
+            if (hasRelic('pietra_del_focolare') && stato.activeCurses.length > 0) {
                 const rIdx = Math.floor(Math.random() * stato.activeCurses.length);
                 stato.activeCurses.splice(rIdx, 1);
             }
@@ -1437,11 +1569,12 @@ function breakRelic(relicName) {
                 const usable = it.type && it.type.startsWith('consumable');
                 const tip = itemTip(it, h) + (usable ? '<br><span class="tip-hint">Clicca per usare</span>' : '');
                 const hasImage = !!itemImageSrc(it);
-                slots += `<div class="inv-slot ic-${itemCategory(it)} rar-${itemRarity(it)} ${usable ? 'usable' : ''} ${hasImage ? 'has-img' : ''}" data-tip="${esc(tip)}" ${usable ? `onclick="useConsumableFromTopbar('${h.name}', ${i})"` : ''}>${itemIconInner(it)}</div>`;
+                slots += `<div class="inv-slot ic-${itemCategory(it)} rar-${itemRarity(it)} ${usable ? 'usable' : ''} ${hasImage ? 'has-img' : ''}" data-tip="${esc(tip)}" ${usable ? `onclick="useConsumableFromTopbar('${h.name}', ${i})"` : ''}>${itemIconInner(it)}${(it.qty || 1) > 1 ? `<span class="inv-qty">x${it.qty}</span>` : ''}</div>`;
             }
 
             return `
                 <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)}" data-hero="${esc(h.name)}">
+                    ${heroBuffsHtml(h)}
                     <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</div>
                     <div class="hero-bars">
                         <div class="hero-card-name" title="${esc(h.name)}">${h.name}</div>
@@ -2173,9 +2306,10 @@ function breakRelic(relicName) {
                 if (h.att_bonus) bonuses.push(`<span class="stat-chip"><i>ATT</i>+${h.att_bonus}</span>`);
                 if (h.att_penalty) bonuses.push(`<span class="stat-chip"><i>ATT</i>-${h.att_penalty}</span>`);
                 if (h.def_bonus) bonuses.push(`<span class="stat-chip"><i>DIF</i>+${h.def_bonus}</span>`);
+                if (h.def_armor) bonuses.push(`<span class="stat-chip"><i>SCUDO</i>+${h.def_armor}</span>`);
                 if (h.help_bonus_val) bonuses.push(`<span class="stat-chip"><i>AIUTO</i>+${h.help_bonus_val}</span>`);
                 const items = h.items.length
-                    ? h.items.map(it => `<div class="journal-item">${itemIconHtml(it)}<span><b>${it.name}</b> — ${it.desc}</span></div>`).join('')
+                    ? h.items.map(it => `<div class="journal-item">${itemIconHtml(it)}<span><b>${it.name}</b>${(it.qty || 1) > 1 ? ` x${it.qty}` : ''} — ${it.desc}</span></div>`).join('')
                     : '<span class="journal-empty">Zaino vuoto</span>';
                 return `
                     <div class="journal-hero ${h.hp <= 0 ? 'dead' : ''}">
@@ -2200,7 +2334,7 @@ function breakRelic(relicName) {
                 ? stato.unlockedRelics.map(r => `<div class="relic"><b>${r.name}</b> — ${r.desc}</div>`).join('')
                 : '<span class="journal-empty">Nessuna reliquia ottenuta</span>';
             const curses = stato.activeCurses.length
-                ? stato.activeCurses.map(c => `<div class="curse">${c}</div>`).join('')
+                ? stato.activeCurses.map(c => `<div class="curse">${curseText(c)}</div>`).join('')
                 : '<span class="journal-empty">Nessuna maledizione attiva</span>';
 
             const doneLevels = stato.stsMapNodes.filter(n => n.done).map(n => n.level);

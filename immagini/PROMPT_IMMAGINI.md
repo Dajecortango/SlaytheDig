@@ -36,14 +36,14 @@ Prompt negativo (se il generatore lo accetta): `cartoon, anime, bright colors, c
 
 | File | Soggetto |
 |---|---|
-| `immagini/bestiario/mastino_bogkar.jpg` | Gaunt dark nocturnal beasts with glassy dead eyes, the Hounds of Bokgar, slipping out of crumbling ruins at dusk, unnatural silence, fog clinging to the stones. |
+| `immagini/bestiario/mastino_bokgar.jpg` | Gaunt dark nocturnal beasts with glassy dead eyes, the Hounds of Bokgar, slipping out of crumbling ruins at dusk, unnatural silence, fog clinging to the stones. |
 | `immagini/bestiario/boia_rinnegati.jpg` | A colossal executioner in a blackened stained leather apron, face hidden by a rough hemp hood, a heavy raw-steel cleaver on his shoulder, gallows and renegade camp behind him. |
 
 ### Sfide
 
 | File | Soggetto |
 |---|---|
-| `immagini/sfida.jpg` | An overturned heavy merchant wagon lying on its side on a mountain trail, broken wheel spokes, crates balanced precariously, snapped ropes, no people. |
+| `immagini/carro_rovesciato.jpg` | An overturned heavy merchant wagon lying on its side on a mountain trail, broken wheel spokes, crates balanced precariously, snapped ropes, no people. |
 | `immagini/guerriero_morto_neve.jpg` | The frozen body of a knight sitting at the foot of a monumental fir tree, half buried in fresh snow and pine needles, frost on his chainmail, serene face, a sword held in his gauntlets. |
 | `immagini/pietra_miliare.jpg` | An ancient grey limestone boundary stone at an overgrown crossroads choked with brambles and nettles, eroded carvings and yellow lichen, two paths splitting into the mist. |
 | `immagini/pellegrino.jpg` | An old pilgrim in rough worn wool sitting on a smooth stone at the edge of the trail, weathered face, swollen ankles, calm solemn eyes, walking staff, empty road behind. |

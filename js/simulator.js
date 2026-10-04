@@ -63,6 +63,8 @@ function simChooseDiscard(hero) {
 // Assegna un oggetto a un eroe; se lo zaino supera 3 oggetti, scarta quello di minor valore (uguale per tutti i profili).
 function simAssignItem(item, hero) {
     if (!hero) return;
+    const pila = stackableSlot(hero, item);  // consumabile uguale con posto nella pila: nessuno slot in più
+    if (pila) { pila.qty = (pila.qty || 1) + 1; return; }
     const newItem = JSON.parse(JSON.stringify(item));
     hero.items.push(newItem);
     applyItemEffects(newItem, hero);
@@ -79,7 +81,8 @@ function simUseConsumable(hero, itemIdx, target) {
     if (!item || !item.type || !item.type.startsWith('consumable')) return false;
     if (item.type === 'consumable_heal') healHero(target, item.heal_val);
     else if (item.type === 'consumable_full') healHero(target, Infinity);
-    hero.items.splice(itemIdx, 1);
+    else return false;  // danno e potenziamenti: il simulatore non li usa (restano nello zaino)
+    consumeOne(hero, itemIdx);
     return true;
 }
 
@@ -352,13 +355,13 @@ function simResolveVictoryLoot(profile, runCtx) {
     const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
     const isElite = !!(node && (node.type === 'elite' || node.type === 'captain'));
     let coins = scaledCoins([3, 5, 7, 9, 12], isElite);
-    if (stato.activeCurses.includes("Maledizione: -15% monete")) coins = Math.floor(coins * 0.85);
+    if (hasCurse('15_ricompensa_monete')) coins = Math.floor(coins * 0.85);
 
-    const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && (h.bonusLootCoins || (h.chosenAbility && h.chosenAbility.id === 'icaro_oro')));
-    coins += lootBonusHeroes.reduce((sum, h) => sum + (h.bonusLootCoins || 3), 0);
+    const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && h.bonusLootCoins);
+    coins += lootBonusHeroes.reduce((sum, h) => sum + h.bonusLootCoins, 0);
     stato.partyCoins += coins;
 
-    if (hasRelic("Dente del grande lupo")) {
+    if (hasRelic('dente_del_grande_lupo')) {
         const lowest = simAliveMinBy(stato.party, h => h.hp);
         if (lowest && lowest.hp < lowest.maxHp) healHero(lowest, 1);
     }
@@ -412,13 +415,12 @@ function simRunCombat(enemyData, profile, runCtx) {
             if (hero.hp <= 0 || hero.hasActed) continue;
 
             // Uso proattivo di un consumabile sul membro più ferito, secondo la soglia del profilo
-            const consumableIdx = hero.items.findIndex(it => it.type && it.type.startsWith('consumable'));
+            const consumableIdx = hero.items.findIndex(it => it.type === 'consumable_heal' || it.type === 'consumable_full');
             if (consumableIdx > -1) {
                 const weakest = simAliveMinBy(stato.party, h => h.hp / h.maxHp);
+                // Come nel gioco: usare un oggetto non consuma l'azione, l'eroe poi agisce lo stesso
                 if (weakest && (weakest.hp / weakest.maxHp) <= profile.consumableThreshold) {
                     simUseConsumable(hero, consumableIdx, weakest);
-                    hero.hasActed = true;
-                    continue;
                 }
             }
 

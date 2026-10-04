@@ -72,11 +72,11 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
 
     Object.values(camp.challenges || {}).forEach(ch => {
         if (typeof ch.reward === 'string') {
-            if (lib.reliquie[ch.reward]) ch.reward = copy(lib.reliquie[ch.reward]);
+            if (lib.reliquie[ch.reward]) ch.reward = { id: ch.reward, ...copy(lib.reliquie[ch.reward]) };
             else { missing('reliquia', ch.reward); ch.reward = null; }
         }
         if (typeof ch.punishment === 'string') {
-            if (lib.maledizioni[ch.punishment]) ch.punishment = copy(lib.maledizioni[ch.punishment]);
+            if (lib.maledizioni[ch.punishment]) ch.punishment = { id: ch.punishment, ...copy(lib.maledizioni[ch.punishment]) };
             else { missing('maledizione', ch.punishment); ch.punishment = null; }
         }
     });

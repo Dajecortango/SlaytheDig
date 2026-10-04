@@ -49,7 +49,7 @@
 
         // Frammento di Yr-Drazul: +1 a tutti i tiri di dado degli eroi (combattimento, prove, contrattazione)
         function relicDiceBonus() {
-            return hasRelic("Frammento di Yr-Drazul") ? 1 : 0;
+            return hasRelic('frammento_di_yr_drazul') ? 1 : 0;
         }
 
         // Bonus delle reliquie a tiro per colpire (att) e danno (dmg) in questo round di combattimento.
@@ -59,7 +59,7 @@
             const isElite = !!node && (node.type === 'elite' || node.type === 'captain');
             const b = { att: 0, dmg: 0, notes: [] };
             const add = (when, name, att, dmg) => {
-                if (!when || !hasRelic(name)) return;
+                if (!when || !hasRelic(idFromName(name))) return;
                 b.att += att; b.dmg += dmg;
                 b.notes.push(`${name} (${att ? `+${att} al tiro` : `+${dmg} danno`})`);
             };
@@ -74,7 +74,7 @@
         }
 
         // Passiva "Libertas in furor" (hero_set firstActorDmgBonus): +danno se l'eroe è il primo ad agire nel round.
-        // È il primo se nessun altro eroe vivo ha già agito (anche usare un oggetto conta come agire).
+        // È il primo se nessun altro eroe vivo ha già agito (usare un oggetto non conta: non consuma l'azione).
         function firstActorBonus(hero) {
             if (!hero || !hero.firstActorDmgBonus) return 0;
             const first = stato.party.every(h => h === hero || h.hp <= 0 || !h.hasActed);
@@ -98,13 +98,20 @@
             return { roll, total, hit, dmg, firstBonus: first, relicAttBonus: rb.att, relicNotes: rb.notes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
 
-        // Tiro di difesa: in caso di successo aggiunge 1 armatura corrente all'eroe.
+        // Armatura che un tiro di difesa riuscito dà all'eroe: 1, più quella degli scudi (def_armor)
+        function defendArmorGain(hero) {
+            return 1 + Math.max(0, hero.def_armor || 0);
+        }
+
+        // Tiro di difesa: in caso di successo aggiunge armatura corrente all'eroe (vedi defendArmorGain).
+        // Gli scudi più forti danno anche def_bonus, che si somma al tiro.
         function resolveDefend(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const total = roll + hero.str + (hero.def_bonus || 0) + relicDiceBonus();
             const success = naturalRollSuccess(roll, total, enemy.att);
-            if (success) hero.current_armor += 1;
-            return { roll, total, success, naturalNote: naturalRollNote(roll, total, enemy.att) };
+            const gained = success ? defendArmorGain(hero) : 0;
+            hero.current_armor += gained;
+            return { roll, total, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att) };
         }
 
         // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
@@ -199,12 +206,12 @@
             const armorBefore = target.current_armor;
             const hpBefore = target.hp;
 
-            if (hasCurse("Presagio di Morte")) {
+            if (hasCurse('presagio_di_morte')) {
                 dmg += 1;
                 events.push({ type: 'curse_bonus', text: '💀 Presagio di Morte: il colpo infligge 1 danno in più.' });
             }
 
-            if (hasRelic("Scudo dell'Atamano") && !stato.party.atamanoUsed) {
+            if (hasRelic('scudo_dell_atamano') && !stato.party.atamanoUsed) {
                 stato.party.atamanoUsed = true;
                 dmg = 0;
                 events.push({ type: 'atamano', text: "🛡️ Lo Scudo dell'Atamano assorbe completamente il primo colpo del combattimento!" });
@@ -225,9 +232,9 @@
             let hpDamage = 0;
             let targetDied = false;
             if (dmg > 0) {
-                if (target.hp - dmg <= 0 && hasRelic("Marchio di Jag Antar")) {
+                if (target.hp - dmg <= 0 && hasRelic('marchio_di_jag_antar')) {
                     target.hp = 1;
-                    breakRelic("Marchio di Jag Antar");
+                    breakRelic('marchio_di_jag_antar');
                     events.push({ type: 'marchio', text: `✨ Il Marchio di Jag Antar si infrange, salvando ${target.name} da morte certa!` });
                 } else {
                     hpDamage = dmg;
@@ -251,7 +258,7 @@
     stato.activeEnemy.isStunned = false;
     
     // Reliquia: Occhio del corvo
-    if (hasRelic("Occhio del corvo")) stato.activeEnemy.att = Math.max(1, stato.activeEnemy.att - 1);
+    if (hasRelic('occhio_del_corvo')) stato.activeEnemy.att = Math.max(1, stato.activeEnemy.att - 1);
     
     // Flag per Scudo dell'Atamano
     stato.party.atamanoUsed = false;
@@ -260,6 +267,7 @@
 
             document.getElementById('combatDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.activeEnemy.desc)}`;
 
+            expireTempBuffs(true);  // per sicurezza: nessun potenziamento rimasto da uno scontro precedente
             stato.party.forEach(h => {
                 if(h.hp > 0) {
                     h.current_armor = h.base_armor;
@@ -327,7 +335,7 @@
                 return `<span class="intent-icon stunned">${svgIcon('skull')}</span>
                     <span class="intent-text"><small>Intenzione</small><span>Stordito: salta il prossimo attacco</span></span>`;
             }
-            const dmg = enemy.dmg + (hasCurse("Presagio di Morte") ? 1 : 0);
+            const dmg = enemy.dmg + (hasCurse('presagio_di_morte') ? 1 : 0);
             return `<span class="intent-icon">${svgIcon('sword')}</span>
                 <span class="intent-text"><small>Intenzione</small><span>Attaccherà per <b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b></span>
                 <em>Difendi e Aiuta devono superare ${enemy.att}</em></span>`;
@@ -371,6 +379,7 @@
         function startHeroesTurnCycle() {
             stato.party.forEach(h => { if(h.hp > 0) h.hasActed = false; });
             stato.combatRound++;
+            expireTempBuffs().forEach(({ hero, buff }) => logCombat(`⌛ Finisce l'effetto di ${buff.name} su ${hero.name}.`));
             updateEnemyInfoUI();
             showHeroSelectionPhase();
         }
@@ -479,7 +488,7 @@
             };
 
             setPreview('cmdAttack', 'Attacca [Q]', `Forza + d6 contro CA ${stato.activeEnemy.ca}. Se riesci infliggi ${expectedHitDamage(hero, 'attack')} danni.${rb.notes.length ? `<br>Reliquie: ${rb.notes.join(', ')}` : ''}`, attackNeeded, false);
-            setPreview('cmdDefend', 'Difendi [W]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci ottieni +1 Armatura.`, defendNeeded, false);
+            setPreview('cmdDefend', 'Difendi [W]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci ottieni +${defendArmorGain(hero)} Armatura${hero.def_armor ? ' (scudo compreso)' : ''}.`, defendNeeded, false);
             setPreview('cmdHelp', 'Aiuta [E]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci il prossimo attacco ottiene +1.`, helpNeeded, false);
 
             const ability = hero.chosenAbility;
@@ -514,13 +523,12 @@
                 document.getElementById('combatConsumableSelect').innerHTML = currentActiveHero.items
                     .map((it, idx) => ({ it, idx }))
                     .filter(obj => obj.it.type && obj.it.type.startsWith('consumable'))
-                    .map(obj => `<option value="${obj.idx}">${obj.it.name} (${obj.it.desc})</option>`)
+                    .map(obj => `<option value="${obj.idx}">${obj.it.name}${(obj.it.qty || 1) > 1 ? ` x${obj.it.qty}` : ''} (${obj.it.desc})</option>`)
                     .join('');
 
-                document.getElementById('combatTargetSelect').innerHTML = stato.party
-                    .filter(p => p.hp > 0)
-                    .map(p => `<option value="${p.name}">${p.name} (HP: ${p.hp}/${p.maxHp})</option>`)
-                    .join('');
+                const consumableSelect = document.getElementById('combatConsumableSelect');
+                consumableSelect.onchange = refreshCombatItemTargets;
+                refreshCombatItemTargets();
             } else {
                 document.getElementById('combatActionButtons').classList.add('hidden');
                 document.getElementById('combatDiceArea').classList.remove('hidden');
@@ -563,6 +571,38 @@
             showHeroSelectionPhase();
         }
 
+        // Bersaglio del consumabile scelto: il nemico per quelli da danno, un eroe vivo per gli altri
+        function refreshCombatItemTargets() {
+            const item = currentActiveHero && currentActiveHero.items[parseInt(document.getElementById('combatConsumableSelect').value)];
+            const select = document.getElementById('combatTargetSelect');
+            if (item && item.type === 'consumable_damage') {
+                select.innerHTML = `<option value="">${esc(stato.activeEnemy.name)} (nemico, HP: ${stato.activeEnemy.hp})</option>`;
+                return;
+            }
+            select.innerHTML = stato.party
+                .filter(p => p.hp > 0)
+                .map(p => `<option value="${p.name}">${p.name} (HP: ${p.hp}/${p.maxHp})</option>`)
+                .join('');
+        }
+
+        // Dopo un consumabile usato in combattimento (dal menu o dal telefono). Usare un oggetto
+        // NON consuma l'azione: l'eroe torna alla scelta dei comandi e può ancora attaccare,
+        // difendere, aiutare o usare un altro oggetto. Se un consumabile da danno ha abbattuto
+        // il nemico si passa alla vittoria.
+        function finishCombatItemTurn() {
+            document.getElementById('combatItemSubmenu').classList.add('hidden');
+            updateEnemyInfoUI();
+            updatePartyStatusBars();
+            if (stato.activeEnemy.hp <= 0) {
+                document.getElementById('heroActionControlArea').classList.add('hidden');
+                logCombat(`Hai sconfitto ${stato.activeEnemy.name}! Vittoria!`);
+                document.getElementById('combatLootBtn').classList.remove('hidden');
+                return;
+            }
+            // Ridisegna comandi e anteprime per lo stesso eroe (e chiede di nuovo l'azione al telefono)
+            confirmCombatHeroChoice();
+        }
+
         function cancelCombatItemSubmenu() {
             document.getElementById('combatItemSubmenu').classList.add('hidden');
             document.getElementById('combatActionButtons').classList.remove('hidden');
@@ -574,17 +614,7 @@
 
             // Se l'oggetto non viene usato il turno resta all'eroe
             if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
-
-            currentActiveHero.hasActed = true;
-            document.getElementById('combatItemSubmenu').classList.add('hidden');
-            document.getElementById('heroActionControlArea').classList.add('hidden');
-
-            const available = stato.party.filter(p => p.hp > 0 && !p.hasActed);
-            if (available.length === 0) {
-                startMonsterTurn();
-            } else {
-                showHeroSelectionPhase();
-            }
+            finishCombatItemTurn();
         }
 
         // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
@@ -678,8 +708,8 @@
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} si difende: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
                         if(res.success) {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">DIFESA RIUSCITA!</span> +1 Armatura.`;
-                            logCombat(`${hero.name} alza la guardia (+1 Armatura).`);
+                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">DIFESA RIUSCITA!</span> +${res.gained} Armatura.`;
+                            logCombat(`${hero.name} alza la guardia (+${res.gained} Armatura${res.gained > 1 ? ', scudo compreso' : ''}).`);
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">FALLITO.</span>`;
                         }

@@ -7,9 +7,33 @@
    (l'avvio vero e proprio è in js/avvio.js, caricato per ultimo).
    ========================================================================== */
 
+        // Mentre il giocatore guarda la mappa si caricano immagini e suoni dei nodi raggiungibili,
+        // così la scena dello scontro o della sfida compare subito, senza apparire a scatti.
+        const preloadedAssets = new Set();
+        function preloadAvailableNodes() {
+            stato.stsMapNodes.filter(n => n.active && !n.done).forEach(n => {
+                const enemy = n.enemy && enemies[n.enemy];
+                [n.image, enemy && enemy.image].filter(Boolean).forEach(src => {
+                    if (preloadedAssets.has(src)) return;
+                    preloadedAssets.add(src);
+                    new Image().src = src;
+                });
+                if (!enemy) return;
+                ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(slot => {
+                    const src = enemy[slot];
+                    if (!src || preloadedAssets.has(src)) return;
+                    preloadedAssets.add(src);
+                    const audio = new Audio();
+                    audio.preload = 'auto';
+                    audio.src = src;
+                });
+            });
+        }
+
         function startMap() {
             showScreen('screenMap');
             renderStsMap();
+            preloadAvailableNodes();
             setTimeout(() => {
                 const wrapper = document.getElementById('stsMapWrapper');
                 const token = document.getElementById('partyToken');
