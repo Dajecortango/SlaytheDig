@@ -12,7 +12,7 @@ window.CAMPAIGNS["tutorial"] = {
     "coverImage": "immagini/inizio_campagna.jpg",
     "introText": "Aprite gli occhi. Il soffitto è di roccia irregolare, umida e gocciolante. Una luce fioca filtra dall'esterno, accompagnata dal rumore di un martellare persistente di un fabbro dentro il tuo cranio. Hai un sapore di birra torbida in bocca. Intorno a te, sparsi sul pavimento di pietra, ci sono i tuoi familiari, chi sta abbracciando un barile vuoto urlando frasi sconnesse su chissà quale cugina, chi ha il gambesone infilato al contrario e non riesce a toglierlo... Fuori dalla grotta c'è solo nebbia e il ringhio lontano di qualcosa che speri vivamente non siano lupi affamati.",
     "heroes": ["curio_dignitas", "prometeo_dignitas", "temistocle_dignitas", "caino_dignitas", "ottavio_dignitas"],
-    "initialArmory": ["spada", "ascia", "alabarda", "scudo", "armatura_leggera", "armatura_pesante", "libro_fede", "tomo_conoscenza", "unguento"],
+    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {
         "fede7": {
             "title": "Un piccolo santuario",
@@ -100,7 +100,7 @@ window.CAMPAIGNS["tutorial"] = {
         { "id": 8, "level": 3, "x": 500, "type": "rest", "restId": 1, "title": "Livello 4 - Riposo 1", "icon": "⛺", "done": false, "active": false, "next": [11, 12], "image": "immagini/riposo_accampamento.jpg" },
         { "id": 9, "level": 3, "x": 620, "type": "treasure", "treasureId": 2, "title": "Livello 4 - Tesoro 2", "icon": "💎", "done": false, "active": false, "next": [12], "image": "immagini/tesoro_fiume.jpg" },
         { "id": 10, "level": 4, "x": 250, "type": "rest", "restId": 2, "title": "Livello 5 - Riposo 2", "icon": "⛺", "done": false, "active": false, "next": [13], "image": "immagini/riposo_accampamento.jpg" },
-        { "id": 11, "level": 4, "x": 400, "type": "challenge", "challengeId": "fede7_2", "title": "Livello 5 - Sfida 3", "icon": "❓", "done": false, "active": false, "next": [13, 14], "image": "immagini/sacerdote_nebbia.jfif" },
+        { "id": 11, "level": 4, "x": 400, "type": "challenge", "challengeId": "fede7_2", "title": "Livello 5 - Sfida 3", "icon": "❓", "done": false, "active": false, "next": [13, 14], "image": "immagini/lamenti_nebbia.jpg" },
         { "id": 12, "level": 4, "x": 550, "type": "combat", "enemy": "banditi", "title": "Livello 5 - Scontro 4", "icon": "⚔️", "done": false, "active": false, "next": [14, 15] },
         { "id": 13, "level": 5, "x": 260, "type": "elite", "enemy": "sergente", "title": "Livello 6 - Scontro Elite 1", "icon": "👹", "done": false, "active": false, "next": [16] },
         { "id": 14, "level": 5, "x": 400, "type": "treasure", "treasureId": 3, "title": "Livello 6 - Tesoro 3", "icon": "💎", "done": false, "active": false, "next": [17, 18], "image": "immagini/tesoro_cadavere.jpg" },
