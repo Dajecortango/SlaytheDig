@@ -1,0 +1,2 @@
+# Gli script dei hook devono avere fine riga LF anche su Windows (sh non legge il CRLF)
+.githooks/* text eol=lf
