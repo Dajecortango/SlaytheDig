@@ -23,7 +23,8 @@ const EFFECT_TYPES = {
     party_max_hp: ['val'],
     party_damage: ['val'],
     coins: ['val'],
-    add_curse: ['text']
+    add_curse: ['text'],
+    hero_item: ['item', 'val']   // dà all'eroe "val" copie dell'oggetto con id "item" dell'armeria
 };
 
 // Ritratti degli eroi: inquadratura predefinita, soglia del ritratto da ferito,

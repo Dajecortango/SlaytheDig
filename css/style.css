@@ -338,6 +338,14 @@
         .inv-slot svg { width: 20px; height: 20px; }
         .inv-slot.empty { background: var(--tex-slot) center / cover, #0a0807; box-shadow: inset 0 0 0 1px #2a2014, inset 0 2px 6px #000; filter: brightness(0.8); }
         .inv-slot.usable { cursor: pointer; animation: autocast 2.2s linear infinite; }
+        /* Statistiche dei dadi nel Diario (diceStatsHtml in js/game.js) */
+        .dice-stats { display: flex; gap: 10px; align-items: flex-end; height: 110px; padding: 6px 4px 0; }
+        .dice-bar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+        .dice-bar-fill { width: 70%; min-height: 2px; background: linear-gradient(#f0cf73, #8a6418); box-shadow: 0 0 0 1px #000; }
+        .dice-bar b { font-family: var(--font-numbers); color: var(--wc-yellow); }
+        .dice-bar small { color: var(--text-dim); font-size: 0.72rem; }
+        .dice-stats-note { margin-top: 6px; color: var(--text-dim); font-size: 0.8rem; text-align: center; }
+
         /* Potenziamenti attivi sulla carta dell'eroe (heroBuffsHtml in js/game.js) */
         .hero-buffs { position: absolute; top: 4px; right: 30px; display: flex; gap: 4px; z-index: 4; }  /* a destra resta il posto del pulsante QR */
         .hero-buff {
@@ -2907,3 +2915,13 @@
             #screenCombat .event-grid-layout { grid-template-columns: 1fr; }
             .event-left-image-box.combat-stage { height: 360px; }
         }
+
+/* Fasi dei nemici: tacche delle soglie sulla barra, schema attuale, annuncio a schermo */
+.hp-phase-tick { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; background: #ffd25a; box-shadow: 0 0 0 1px #000, 0 0 6px rgba(255, 190, 60, 0.9); z-index: 2; pointer-events: none; }
+.hp-phase-tick.done { background: #5a4a2a; box-shadow: 0 0 0 1px #000; }
+.phase-badge { background: linear-gradient(#8a1a10, #4a0805); border-color: #ff7a4a; }
+.hero-buff.debuff { box-shadow: 0 0 0 1px #000, 0 0 0 2px #a8231a, 0 0 6px rgba(220, 60, 40, 0.7); animation: none; }
+.phase-banner { position: fixed; inset: 0; z-index: 2600; display: grid; place-items: center; pointer-events: none; animation: phase-banner 2.6s ease forwards; }
+.phase-banner-text { max-width: 70vw; padding: 18px 34px; font-family: var(--font-title); font-size: 1.6rem; font-weight: 900; text-align: center; color: #ffd9a8; text-shadow: 0 2px 0 #000, 0 0 18px rgba(255, 90, 30, 0.9); background: radial-gradient(ellipse at center, rgba(70, 8, 4, 0.92), rgba(20, 2, 1, 0.6) 70%, transparent); }
+@keyframes phase-banner { 0% { opacity: 0; transform: scale(1.15); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+body.no-anim .phase-banner { animation: none; }

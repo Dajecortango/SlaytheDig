@@ -87,4 +87,89 @@ module.exports = (t, carica) => {
         g.resolveMonsterAttack({ dmg: 1 }, eroe);
         t.uguale(2, eroe.hp);
     });
+
+    t.test('abilità 7: probabilità della somma esatta (7 = 6 su 36)', () => {
+        t.uguale(6 / 36, g.exactSumChance(7));
+        t.uguale(1 / 36, g.exactSumChance(12));
+    });
+
+    t.test('abilità 7: con 3 + 4 un nemico normale è sconfitto, con 3 + 3 non succede niente', () => {
+        const eroe = { name: 'S', str: 2, dmg: 1, hp: 4, chosenAbility: abilita('sette') };
+        const stato = g.eval('stato');
+        prepara([eroe]);
+        stato.stsMapNodes = [{ id: 1, level: 0, type: 'combat' }, { id: 2, level: 5, type: 'captain' }];
+        stato.currentNodeId = 1;
+        const nemico = { hp: 15, maxHp: 15 };
+        const mancato = g.resolveAbility(eroe, nemico, [3, 3]);
+        t.ok(!mancato.hit); t.uguale(15, nemico.hp);
+        eroe.abilityUsedThisCombat = false;
+        const r = g.resolveAbility(eroe, nemico, [3, 4]);
+        t.ok(r.hit && !r.eliteHalf); t.uguale(0, nemico.hp); t.uguale(15, r.dmg);
+    });
+
+    t.test('abilità 7: un elite o il boss finale scende a metà vita (e non viene curato se è già sotto)', () => {
+        const eroe = { name: 'S', str: 2, dmg: 1, hp: 4, chosenAbility: abilita('sette') };
+        const stato = g.eval('stato');
+        prepara([eroe]);
+        stato.stsMapNodes = [{ id: 1, level: 2, type: 'elite' }, { id: 2, level: 9, type: 'combat' }];
+        stato.currentNodeId = 1;
+        const elite = { hp: 16, maxHp: 16 };
+        const r = g.resolveAbility(eroe, elite, [6, 1]);
+        t.ok(r.eliteHalf); t.uguale(8, elite.hp);
+        stato.currentNodeId = 2;  // ultimo livello della mappa = boss finale
+        const boss = { hp: 5, maxHp: 18 };
+        eroe.abilityUsedThisCombat = false;
+        g.resolveAbility(eroe, boss, [2, 5]);
+        t.uguale(5, boss.hp, 'già sotto la metà: resta uguale');
+    });
+
+    t.test('Va bene, prendo lo scudo: +4 Armatura senza tiro, una volta per scontro', () => {
+        const eroe = { name: 'S', str: 2, dmg: 1, hp: 4, current_armor: 1, chosenAbility: abilita('va_bene_prendo_lo_scudo') };
+        prepara([eroe]);
+        g.eval('stato').helpBonus = 1;
+        t.ok(g.abilityIsInstant(eroe), 'si risolve senza dadi');
+        const r = g.resolveAbility(eroe, { hp: 10, ca: 7 });
+        t.ok(r.instant); t.uguale(4, r.gained);
+        t.uguale(5, eroe.current_armor);
+        t.uguale(1, g.eval('stato').helpBonus, 'il bonus di Aiuta resta');
+        t.ok(!g.abilityUsable(eroe).ok, 'già usata in questo scontro');
+    });
+
+    t.test('Orgoglio di mamma: +2 al tiro e +1 al danno', () => {
+        const eroe = { name: 'M', str: 2, dmg: 1, hp: 4, att_penalty: 0, chosenAbility: abilita('orgoglio_di_mamma') };
+        prepara([eroe]);
+        const nemico = { hp: 10, ca: 8 };
+        const r = g.resolveAbility(eroe, nemico, [4]);
+        t.uguale(4 + 2 + 2, r.total, 'tiro 4 + Forza 2 + 2');
+        t.ok(r.hit, '8 contro CA 8 colpisce');
+        t.uguale(2, r.dmg, 'danno 1 + 1');
+        t.uguale(8, nemico.hp);
+    });
+
+    t.test('Neanche un graffio: senza armatura, con 5+ il colpo è ignorato; con 4 no; con armatura non si tira', () => {
+        const casuale = Math.random;
+        const conDado = (faccia, fn) => { Math.random = () => (faccia - 1) / 6 + 0.01; try { return fn(); } finally { Math.random = casuale; } };
+        const eroe = { name: 'G', hp: 4, maxHp: 4, current_armor: 0 };
+        g.applyEffects(abilita('neanche_un_graffio').effects, eroe);
+        prepara([eroe]);
+        const schivato = conDado(5, () => g.resolveMonsterAttack({ dmg: 3 }, eroe));
+        t.uguale(4, eroe.hp, 'con 5 nessun danno');
+        t.ok(schivato.events.some(e => e.type === 'dodge'));
+        conDado(4, () => g.resolveMonsterAttack({ dmg: 3 }, eroe));
+        t.uguale(1, eroe.hp, 'con 4 il colpo passa');
+        eroe.hp = 4; eroe.current_armor = 1;
+        const r = conDado(6, () => g.resolveMonsterAttack({ dmg: 3 }, eroe));
+        t.ok(!r.events.some(e => e.type === 'dodge' || e.type === 'dodge_fail'), 'con armatura non si tira');
+        t.uguale(2, eroe.hp);
+    });
+
+    t.test('ogni dado degli eroi viene contato nelle statistiche della spedizione', () => {
+        const stato = g.eval('stato');
+        stato.expeditionStats = g.eval('newExpeditionStats()');
+        [1, 6, 6, 3].forEach(v => g.rollD6([v], 0));
+        t.uguale([1, 0, 1, 0, 0, 2], stato.expeditionStats.diceRolls);
+        delete stato.expeditionStats.diceRolls;   // salvataggio vecchio senza il campo
+        g.rollD6([2], 0);
+        t.uguale([0, 1, 0, 0, 0, 0], stato.expeditionStats.diceRolls);
+    });
 };

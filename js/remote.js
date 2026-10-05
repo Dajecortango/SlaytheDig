@@ -257,6 +257,7 @@
         const originalSelectCombatAction = selectCombatAction;
         selectCombatAction = function (action) {
             const result = originalSelectCombatAction.apply(this, arguments);
+            if (result === 'instant') return result;  // abilità senza tiro: nessun dado da chiedere al telefono
             if (currentActiveHero && (action === 'attack' || action === 'defend' || action === 'help' || action === 'ability')) {
                 const diceCount = (typeof combatRollUsesTwoDice === 'function' && combatRollUsesTwoDice(currentActiveHero, action)) ? 2 : 1;
                 const labels = { attack: 'Attacca', defend: 'Difendi', help: 'Aiuta', ability: 'Abilità' };

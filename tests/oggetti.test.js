@@ -133,4 +133,16 @@ module.exports = (t, carica) => {
         t.ok(!g.simUseConsumable(a, 0, a));
         t.uguale(1, a.items.length);
     });
+
+    t.test('effetto hero_item (Morte fiammeggiante): 2 Polvere Nera in una pila; 3 copie fanno 2 + 1', () => {
+        const a = eroe(); prepara([a]);
+        g.applyEffects(g.LIBRERIA.abilita.morte_fiammeggiante.effects, a);
+        t.uguale(1, a.items.length); t.uguale('cristallo_flammaurea', a.items[0].id); t.uguale(2, a.items[0].qty);
+        const b = eroe({ name: 'B' }); prepara([b]);
+        g.applyEffects([{ effect: 'hero_item', item: 'cristallo_flammaurea', val: 3 }], b);
+        t.uguale([2, 1], b.items.map(it => it.qty || 1));
+        const c = eroe({ name: 'C' }); prepara([c]);
+        g.applyEffects([{ effect: 'hero_item', item: 'spada', val: 1 }], c);
+        t.uguale(3, c.str, 'un oggetto da equipaggiare applica le sue statistiche');
+    });
 };

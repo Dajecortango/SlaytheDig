@@ -54,11 +54,7 @@
                         (c.effects || []).some(e => e.effect === 'add_curse' && e.text === text));
                     return { id: found ? found[0] : idFromName(text.split(' (')[0]), text };
                 });
-                (s.party || []).forEach(h => {
-                    const ab = h.chosenAbility && (LIBRERIA.abilita || {})[h.chosenAbility.id];
-                    if (!ab || ab.isCombatActive) return;
-                    (ab.effects || []).forEach(e => { if (e.effect === 'hero_set' && h[e.stat] === undefined) h[e.stat] = e.val; });
-                });
+                (s.party || []).forEach(restorePassiveFlags);
                 return { ...old, version: 3, stato: { ...s, unlockedRelics: relics, activeCurses: curses } };
             }
         };
@@ -103,6 +99,19 @@
                     expeditionStats: stato.expeditionStats
                 }
             };
+        }
+
+        // Le passive agiscono con i segnali scritti sull'eroe (hero_set: bonusLootCoins, hasAdvantageOnIntFth...).
+        // Un salvataggio può non averli: abilità salvata senza id prima della libreria Abilità, o passiva
+        // aggiunta dopo. Al caricamento si rimettono quelli che mancano (mai quelli già presenti).
+        function restorePassiveFlags(hero) {
+            const ab = hero && hero.chosenAbility;
+            if (!ab || ab.isCombatActive) return;
+            const lib = LIBRERIA.abilita || {};
+            const full = lib[ab.id] || Object.values(lib).find(a => a.name === ab.name) || ab;
+            (full.effects || ab.effects || []).forEach(e => {
+                if (e.effect === 'hero_set' && hero[e.stat] === undefined) hero[e.stat] = e.val;
+            });
         }
 
         function migrateOldSave() {
@@ -277,6 +286,7 @@
                         const heroAbList = campaignAbilities[hero.name] || [];
                         const fullAb = heroAbList.find(a => a.name === hero.chosenAbility.name || a.id === hero.chosenAbility.id);
                         if (fullAb) hero.chosenAbility = fullAb;
+                        restorePassiveFlags(hero);
                     }
                 });
 

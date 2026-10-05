@@ -48,23 +48,47 @@
             return node ? Math.min(1, node.level / maxLevel) : 0;
         }
 
-        // Probabilità (in %) per rarità: le alte salgono andando avanti e negli scontri elite
-        function lootRarityWeights(isElite, progress) {
-            const lerp = (a, b) => a + (b - a) * progress;
-            return isElite
-                ? { scarso: 0, comune: lerp(18, 4), non_comune: lerp(30, 14), raro: lerp(34, 35), epico: lerp(15, 32), leggendario: lerp(3, 15) }
-                : { scarso: lerp(18, 4), comune: lerp(45, 20), non_comune: lerp(24, 26), raro: lerp(10, 30), epico: lerp(3, 15), leggendario: lerp(0, 5) };
+        /* ---------- Rarità del bottino degli scontri ----------
+           Scontri normali: probabilità (in %) secondo il livello della mappa (1 = primo livello).
+           Scontri elite: secondo quanti elite il party ha già sconfitto in questa spedizione.
+           Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity). */
+        const LOOT_BY_LEVEL = [
+            { upTo: 2, weights: { comune: 70, non_comune: 30 } },
+            { upTo: 5, weights: { comune: 35, non_comune: 50, raro: 15 } },
+            { upTo: 8, weights: { comune: 20, non_comune: 45, raro: 30, epico: 5 } },
+            { upTo: 11, weights: { raro: 45, epico: 50, leggendario: 5 } },
+            { upTo: Infinity, weights: { raro: 40, epico: 50, leggendario: 10 } }
+        ];
+        const LOOT_BY_ELITE = [
+            { raro: 80, epico: 20 },                      // primo elite sconfitto
+            { raro: 70, epico: 30 },                      // secondo
+            { raro: 30, epico: 50, leggendario: 20 }      // dal terzo in poi
+        ];
+
+        // Livello del nodo corrente come lo vede il giocatore (1 = primo livello della mappa)
+        function currentMapLevel() {
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            return node ? node.level + 1 : 1;
+        }
+
+        function lootRarityWeights(isElite) {
+            if (isElite) {
+                const done = (stato.expeditionStats && stato.expeditionStats.elitesWon) || 0;
+                return LOOT_BY_ELITE[Math.min(done, LOOT_BY_ELITE.length - 1)];
+            }
+            const level = currentMapLevel();
+            return LOOT_BY_LEVEL.find(row => level <= row.upTo).weights;
         }
 
         // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
-        function pickLootItem(isElite, progress) {
-            return pickByRarity(gameItems, lootRarityWeights(isElite, progress));
+        function pickLootItem(isElite) {
+            return pickByRarity(gameItems, lootRarityWeights(isElite));
         }
 
         // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti), poi un oggetto a caso di quella rarità
         function pickByRarity(pool, weights) {
             if (pool.length === 0) return null;
-            const available = Object.keys(weights).filter(r => pool.some(i => itemRarity(i) === r));
+            const available = Object.keys(weights).filter(r => weights[r] > 0 && pool.some(i => itemRarity(i) === r));
             if (available.length === 0) return pool[Math.floor(Math.random() * pool.length)];
             const total = available.reduce((sum, r) => sum + weights[r], 0);
             let pick = Math.random() * total;
@@ -113,8 +137,20 @@
 
             stato.partyCoins += coins;
 
-            currentLootItem = pickLootItem(isEliteCombat, mapProgress());
+            currentLootItem = pickLootItem(isEliteCombat);
             stato.expeditionStats.itemsFound++;
+
+            // Gli elite lasciano anche una reliquia che il party non ha ancora
+            let eliteRelic = null;
+            if (isEliteCombat) {
+                stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
+                const relicId = pickUnownedRelicId();
+                if (relicId) eliteRelic = grantRelic(relicId);
+            }
+            if (eliteRelic) {
+                document.getElementById('lootCoinsBonus').textContent += ` · Reliquia: ${eliteRelic.name}`;
+                setTimeout(() => showOutcomeOverlay('relic', eliteRelic), 400);
+            }
 
             document.getElementById('lootCoinsText').textContent = coins;
             document.getElementById('lootItemIcon').innerHTML = itemIconHtml(currentLootItem);

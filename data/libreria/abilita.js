@@ -198,6 +198,119 @@ window.LIBRERIA.abilita = {
         ],
         "icon": "immagini/icone/BTNBloodLust.png"
     },
+    "sette": {
+        "id": "sette",
+        "name": "7",
+        "desc": "Attiva (1 volta per scontro): tira due dadi; se la somma è esattamente 7 il nemico è sconfitto all'istante. Un elite o il boss finale scende invece a metà dei suoi HP",
+        "isCombatActive": true,
+        "actionName": "7 (due dadi, somma 7)",
+        "icon": "immagini/abilita/sette.png",
+        "combat": {
+            "dice": 2,
+            "sumTarget": 7,
+            "useText": "🎲 {eroe} sfida la sorte: serve un 7!",
+            "hitLabel": "SETTE!",
+            "hitText": "La sorte sorride a {eroe}: {danni} danni in un colpo solo!"
+        }
+    },
+    "inganno_drago_verde": {
+        "id": "inganno_drago_verde",
+        "name": "Inganno del drago verde",
+        "desc": "Passiva: finché l'eroe è vivo, i mercanti fanno il 20% di sconto sulla merce (non sul costo di \"Rinnova la merce\")",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "merchantDiscount",
+                "val": 0.2
+            }
+        ],
+        "icon": "immagini/icone/BTNGreenDragon.png"
+    },
+    "factotum": {
+        "id": "factotum",
+        "name": "Factotum",
+        "desc": "Passiva: ogni 2 punti di Forza guadagnati oltre a quelli iniziali dà +1 Intelligenza; ogni 2 di Intelligenza guadagnata +1 Fede; ogni 2 di Fede guadagnata +1 Forza",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "factotum",
+                "val": 2
+            }
+        ],
+        "icon": "immagini/icone/BTNStatUp.png"
+    },
+    "va_bene_prendo_lo_scudo": {
+        "id": "va_bene_prendo_lo_scudo",
+        "name": "Va bene, prendo lo scudo",
+        "desc": "Attiva (1 volta per scontro): senza tirare il dado l'eroe ottiene subito 4 punti Armatura. Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Va bene, prendo lo scudo (+4 Armatura)",
+        "icon": "immagini/icone/BTNThoriumArmor.png",
+        "combat": {
+            "dice": 1,
+            "armorGain": 4,
+            "useText": "🛡️ {eroe} sbuffa: \"Va bene, prendo lo scudo\"."
+        }
+    },
+    "orgoglio_di_mamma": {
+        "id": "orgoglio_di_mamma",
+        "name": "Orgoglio di mamma",
+        "desc": "Attiva (1 volta per scontro): attacca con +2 al tiro per colpire e, se colpisce, +1 al danno",
+        "isCombatActive": true,
+        "actionName": "Orgoglio di mamma (+2 a colpire, +1 danno)",
+        "icon": "immagini/abilita/orgoglio_di_mamma.webp",
+        "combat": {
+            "dice": 1,
+            "attackBonus": 2,
+            "damageBonus": 1,
+            "useText": "💪 {eroe} pensa a mamma e ci mette tutto l'orgoglio!",
+            "hitText": "Mamma sarebbe fiera: infliggi {danni} danni!"
+        }
+    },
+    "neanche_un_graffio": {
+        "id": "neanche_un_graffio",
+        "name": "Neanche un graffio",
+        "desc": "Passiva: quando il nemico colpisce l'eroe e l'eroe non ha armatura, tira un dado: con 5 o più ignora il danno",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "dodgeNoArmor",
+                "val": 5
+            }
+        ],
+        "icon": "immagini/icone/BTNEvasion.png"
+    },
+    "morte_fiammeggiante": {
+        "id": "morte_fiammeggiante",
+        "name": "Morte fiammeggiante",
+        "desc": "Passiva: scelta all'inizio dell'avventura, mette nello zaino dell'eroe 2 Cristalli di Flammaurea (3 danni al nemico ciascuno)",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_item",
+                "item": "cristallo_flammaurea",
+                "val": 2
+            }
+        ],
+        "icon": "immagini/icone/BTNIncinerate.png"
+    },
+    "mano_veloce": {
+        "id": "mano_veloce",
+        "name": "La mano è più veloce dell'occhio",
+        "desc": "Passiva: finché l'eroe è vivo, il primo oggetto preso da ogni mercante è gratis, perché lo ruba (il medico si paga)",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "freeFirstMerchantItem",
+                "val": true
+            }
+        ],
+        "icon": "immagini/icone/BTNPillage.png"
+    },
     "dente_per_dente": {
         "id": "dente_per_dente",
         "name": "Dente per dente",

@@ -6,9 +6,9 @@ window.LIBRERIA.bestiario = {
     "cinghiali": {
         "name": "Cinghiali",
         "image": "immagini/bestiario/scontro_cinghiali.jpg",
-        "hp": 5,
-        "maxHp": 5,
-        "att": 4,
+        "hp": 7,
+        "maxHp": 7,
+        "att": 5,
         "dmg": 1,
         "ca": 6,
         "desc": "Un fruscio improvviso squarcia il silenzio della nebbia mattutina. Sagome scure e massicce emergono dal grigiore: cinghiali con zanne ricurve terrificanti.",
@@ -19,11 +19,11 @@ window.LIBRERIA.bestiario = {
     "disertori_affamati": {
         "name": "Disertori",
         "image": "immagini/bestiario/disertori.jpg",
-        "hp": 6,
-        "maxHp": 6,
-        "att": 6,
+        "hp": 8,
+        "maxHp": 8,
+        "att": 7,
         "dmg": 1,
-        "ca": 6,
+        "ca": 7,
         "desc": "Dalla cortina di nebbia spuntano soldati: disertori affamati e disperati, armati di lance e spade. Vi squadrano con odio.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
@@ -32,11 +32,11 @@ window.LIBRERIA.bestiario = {
     "lupi": {
         "name": "Lupi",
         "image": "immagini/bestiario/lupi_inverno.jpg",
-        "hp": 5,
-        "maxHp": 5,
-        "att": 4,
+        "hp": 7,
+        "maxHp": 7,
+        "att": 6,
         "dmg": 2,
-        "ca": 6,
+        "ca": 7,
         "desc": "Dalle carcasse emergono fauci sbavate: un branco di lupi affamati si aggira tra i cadaveri in cerca di prede.",
         "sfxAttack": "audio/nemici/lupo_attacco.ogg",
         "sfxHit": "audio/nemici/lupo_colpito.ogg",
@@ -45,8 +45,8 @@ window.LIBRERIA.bestiario = {
     "banditi": {
         "name": "Banditi",
         "image": "immagini/bestiario/banditi.jpg",
-        "hp": 6,
-        "maxHp": 6,
+        "hp": 10,
+        "maxHp": 10,
         "att": 7,
         "dmg": 2,
         "ca": 7,
@@ -57,10 +57,10 @@ window.LIBRERIA.bestiario = {
     },
     "profanatori": {
         "name": "Profanatori",
-        "image": "immagini/bestiario/scontro_profanatori.jpg",
-        "hp": 6,
-        "maxHp": 6,
-        "att": 4,
+        "image": "immagini/bestiario/profanatori.jpg",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
         "dmg": 2,
         "ca": 7,
         "desc": "Uomini armati di ascia e pala cercano tombe da depredare. Nessuno può profanare un caduto del Leone.",
@@ -71,9 +71,9 @@ window.LIBRERIA.bestiario = {
     "sergente": {
         "name": "Sergente",
         "image": "immagini/bestiario/scontro_sergente.jpg",
-        "hp": 8,
-        "maxHp": 8,
-        "att": 6,
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
         "dmg": 3,
         "ca": 8,
         "desc": "Una truppa regolare sopravvissuta, guidata da un sergente con corazza insanguinata. Si sfoderano le armi.",
@@ -82,14 +82,14 @@ window.LIBRERIA.bestiario = {
         "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "banditi_strada": {
-        "name": "Banditi della strada",
+        "name": "Banditi Kin dei campi",
         "image": "immagini/bestiario/banditi.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Dalle ombre di un terrapieno sbucano figure coperte da mantelli lisi e logorati dalla polvere e dalla pioggia. Impugnano spade scheggiate e clave ferrate, con i volti seminascosti da cappucci sudici. Ti sbarrano la strada con sorrisi mefistofelici, affamati di bottino e indifferenti alla vita umana; per loro la vostra spedizione è solo l'ennesima facile preda da spolpare nel fango del sentiero.",
+        "desc": "Avete abbandonato da qualche ora il Cammino di Piotr, la lunga strada che congiunge Aebeltoff a Kallekot, e vi siete avventurati per i campi della Valle del Krogg, in direzione di Enisov, villaggio alle pendici dei Picchi del Tramonto. Dalle ombre delle magre coltivazioni invernali, emerge un gruppo di figure sporche e lacere, che parlano una lingua che non conoscete. Probabilmente sono immigrati Kin che si sono dati al banditaggio. Le loro intenzioni, però, sono chiare: fare di voi la loro preda.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
@@ -102,7 +102,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Hanno occupato una strettoia naturale della via, sbarrandola con assi di legno chiodate e spuntoni. Indossano pezzi di armature rubate e spaiate, ostentando un'autorità fasulla ma armata fino ai denti. Ti guardano dall'alto in basso con arroganza, stringendo balestre e picche sporche di sangue, pronti a esigere un tributo nel sangue se rifiutate di cedere ogni vostro avere.",
+        "desc": "Alle porte di Enisov, il piccolo villaggio di contadini ai piedi dei Picchi del Tramonto, un gruppo di guardie presidia uno dei sentieri principali. Ad uno sguardo più attento, gli uomini sembrano indossare le tuniche azzurre e bianche, con il simbolo della testa di un cane, del Clan Seachtuir di Aebeltoff. Sembrerebbero normali guardie, ma il loro aspetto logoro e l'arroganza con cui vi chiedono degli Scudi per passare vi fa capire che sono dei semplici briganti che piagano la tranquilla vita degli abitanti di Enisov.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
@@ -114,28 +114,28 @@ window.LIBRERIA.bestiario = {
         "maxHp": 10,
         "att": 7,
         "dmg": 1,
-        "ca": 8,
-        "desc": "Un ringhio profondo e gutturale rompe il silenzio della boscaglia. Dalla boscaglia emergono occhi gialli e famelici, fauci sbavate e pelo fitto irto di brina. È un branco di lupi invernali, grossi e spietati, guidati dal freddo e dalla fame disperata. Circondano il gruppo con movimenti fluidi e coordinati, studiando le vostre posture alla ricerca di un momento di distrazione per azzannare alla gola.",
+        "ca": 7,
+        "desc": "Fra le rocce dei Picchi del Tramonto, si ode un ringhio profondo e gutturale. Intenti a salire su un sentiero particolarmente franoso, la strada vi viene sbarrata da un branco di lupi grossi e spietati, spinti alla caccia dal freddo e dalla fame. Vi circondano in una situazione che per loro è vantaggiosa, ed ancora una volta siete di fronte ad una seria minaccia per la vostra vita.",
         "sfxAttack": "audio/nemici/lupo_attacco.ogg",
         "sfxHit": "audio/nemici/lupo_colpito.ogg",
         "sfxDeath": "audio/nemici/lupo_morte.ogg"
     },
     "disertori": {
-        "name": "Banda di disertori",
+        "name": "Banda di disertori Kin",
         "image": "immagini/bestiario/disertori.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 8,
         "dmg": 2,
         "ca": 8,
-        "desc": "Soldati sbandati di un esercito ormai dissolto, con le divise lacerate e prive di insegne, ridotte a stracci sudici. Hanno lo sguardo perso, segnato dalla paranoia e dalla disperazione della guerra perduta. Armati di lance arrugginite e cortelli da campo, vi squadrano con un misto di terrore e rabbia cieca: non hanno più nulla da perdere e sono disposti a tutto pur di sottrarvi le provviste e gli abiti di dosso.",
+        "desc": "Soldati sbandati ed emigrati dell'esercito di resistenza di Foscoclivo, questi uomini si danno al brigantaggio nella Valle del Krogg. Alcuni abitano le caverne sui Picchi del Tramonto, ed è proprio nei pressi di uno di questi rifugi che venite sorpresi da questi Kin. Armati di lance e coltelli, hanno uno sguardo vuoto e segnato dalla paranoia più totale. Non hanno più nulla da perdere.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "predoni": {
         "name": "Predoni",
-        "image": "immagini/bestiario/predoni.jpg",
+        "image": "immagini/bestiario/scontro_profanatori.jfif",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -154,7 +154,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 6,
-        "desc": "Segugi da guerra e mastini abbandonati dagli eserciti in rotta, ridotti a carcasse pelle e ossa dalla fame. Riuniti in una muta famelica, si muovono bassi tra le felci secche, coordinandosi con latrati strozzati prima di scattare verso le caviglie della compagnia.",
+        "desc": "Dai campi emerge una muta famelica di cani da caccia, che non sembrano rispondere a nessun comando. Probabilmente si tratta di cani da caccia abbandonati dal loro padrone, magari un Lungobarbo partito per la Guerra di Primavera e mai più tornato. Ora, però, per sopravvivenza, puntano a voi come nuovo pasto della giornata.",
         "sfxAttack": "",
         "sfxHit": "",
         "sfxDeath": ""
@@ -167,7 +167,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Figuri viscidi armati di coltellacci e zappe da scavo, sorpresi a spogliare le carcasse lungo il ciglio del sentiero. Vedendovi arrivare, non esitano a brandire i ferri sporchi di terra e ruggine per mettere a tacere eventuali testimoni e allargare il proprio bottino.",
+        "desc": "Un gruppo mal assortito di banditi e disperati, armati alla buona, viene sorpreso da voi mentre sta spogliando alcuni cadaveri, presumibilmente di mercanti allontanatisi dal Cammino. Minacciati dalla vostra presenza, vi puntano contro i coltelli, pronti a dare battaglia.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
@@ -180,59 +180,59 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Un enorme maschio solitario, reso nervoso e feroce dalla scarsità di cibo prima dell'inverno. Svegliato dal passaggio dei vostri passi, si solleva a tutta altezza tra i massi abbattendo gli artigli con rugli furibondi per difendere la sua gola.",
+        "desc": "Un orso, un solitario esemplare maschio, vi si para dinanzi non appena prendete una svolta che vi fa evitare un passo franato. La fiera, pronta al suo letargo, è particolarmente nervosa. Si alza sulle zampe posteriori, facendo sfoggio della sua grandezza mentre è in procinto di attaccarvi.",
         "sfxAttack": "",
         "sfxHit": "",
         "sfxDeath": ""
     },
     "balestrieri_disertori": {
-        "name": "Balestrieri disertori",
+        "name": "Arcieri disertori",
         "image": "immagini/bestiario/disertori.jpg",
         "hp": 11,
         "maxHp": 11,
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Tiratori scelti fuggiti dai ranghi dell'esercito regolare, appostati dietro muretti a secco e rocce sporgenti. Con le balestre cariche e dardi con punta a foglia, aprono il fuoco senza preavviso, pronti a bersagliarvi dalla distanza.",
+        "desc": "Un gruppo di banditi muniti di archi, con indosso le tuniche logore con i colori del Clan Heymaey di Svalbard, vi punta da sopra un crinale, sfruttando il terreno elevato. Imbracciate le armi: non sembrano proprio dell'idea di parlamentare.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "cinghiali_pietraie": {
-        "name": "Cinghiali delle pietraie",
+        "name": "Cinghiali delle pendici",
         "image": "immagini/bestiario/scontro_cinghiali.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Una coppia di cinghiali massicci e aggressivi, con la pelle indurita da anni di pascolo tra le rocce taglienti. Sentendosi messi all'angolo nel canalone cieco, abbassano le zanne affilate e caricano a testa bassa senza curarsi delle vostre armi.",
+        "desc": "Una coppia di cinghiali, nascosti fra gli alberi alle pendici dei Picchi del Tramonto, vi sbuca davanti. Minacciosi, abbassano le zanne e iniziano a caricarvi a testa bassa.",
         "sfxAttack": "audio/nemici/cinghiale_attacco.ogg",
         "sfxHit": "audio/nemici/cinghiale_colpito.ogg",
         "sfxDeath": "audio/nemici/cinghiale_morte.ogg"
     },
     "picchieri_sbandati": {
-        "name": "Picchieri Disertori",
+        "name": "Picchieri disertori",
         "image": "immagini/bestiario/picchieri_sbandati.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Una linea di fanti contadini un tempo arruolati a forza, ora rimasti senza paga né comando. Serrano i ranghi piantando a terra lunghe aste scheggiate, formando una barriera di punte acuminata e pericolosa per chiunque tenti di avvicinarsi frontalmente.",
+        "desc": "Picchieri del Clan Heymaey, a lungo disertori dopo la Guerra dei Quaranta Giorni, vi sbarrano la strada. La vista dei colori che voi indossate sembra far dilatare loro le pupille, come se riconoscessero in voi un nemico atavico.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "esploratori_predoni": {
-        "name": "Esploratori predoni",
+        "name": "Esploratori Kin",
         "image": "immagini/bestiario/esploratori_predoni.jpg",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "L'avanguardia agile delle bande montane. Armati di archi corti e corte sciabole, si muovono silenziosi tra i dirupi per saggiare la resistenza della vostra carovana con colpi rapidi e ritirate repentine.",
+        "desc": "L'avanguardia agile delle bande Kin che infestano le grotte dei Picchi del Tramonto. Si muovono silenziosi fra i valichi e le rupi, osservando le proprie prede e saggiandone le resistenze con attacchi repentini e fughe tattiche.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
@@ -251,7 +251,7 @@ window.LIBRERIA.bestiario = {
         "sfxDeath": "audio/nemici/umano_morte.ogg"
     },
     "cani_corsi": {
-        "name": "Branco di cani corsi feroci",
+        "name": "Branco di cani feroci",
         "image": "immagini/bestiario/cani_corsi.jpg",
         "hp": 12,
         "maxHp": 12,
@@ -264,14 +264,14 @@ window.LIBRERIA.bestiario = {
         "sfxDeath": ""
     },
     "capitano_predoni": {
-        "name": "Capitano dei predoni",
+        "name": "Capitano dei predoni Kin",
         "image": "immagini/bestiario/capitano_predoni.jpg",
-        "hp": 13,
-        "maxHp": 13,
+        "hp": 10,
+        "maxHp": 10,
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Una figura imponente e massiccia avvolta in una pesante corazza di cuoio bollito e metallo nero. Impugna un'ascia bipenne intrisa di vecchia ruggine e sangue secco, emanando un'aura di brutale autorità sui suoi sottoposti. Ti fissa con un ghigno sprezzante, gli occhi freddi di un veterano della violenza che ha ridotto la predazione a mestiere: per superarlo dovrete spezzare la sua furia inarrestabile.",
+        "desc": "Lungo i sentieri dei Picchi del Tramonto, vi si para dinanzi una figura imponente. Avvolto in una corazza di cuoio bollito e di metallo scuro, l'uomo parla una lingua a voi sconosciuta, che reputate essere la lingua Kin. Vi fissa con ghigno sprezzante: probabilmente l'uomo è un disertore di Foscoclivo, che utilizza le sue capacità belliche per scopi molto meno nobili, e la sua autorità per radunare attorno a sé altri Kin o furfanti che non vogliono integrarsi con il Nord. Con i colori che portate addosso, avete attirato la sua attenzione da qualche giorno: non vi farà semplicemente passare.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
@@ -285,6 +285,9 @@ window.LIBRERIA.bestiario = {
         "dmg": 2,
         "ca": 8,
         "desc": "Un possente fruscio tra i rami spezzati anticipa l'arrivo di una mole mastodontica: un colosso ricoperto di fitto pelo bruno, con la corporatura massiccia di un toro e la testa armata di zanne ricurve simili a spade. Il Tremabosco Striato fiuta l'aria con il muso ricurvo, raspando furioso il terreno con zampe possenti mentre si raccoglie per una carica devastante. La foresta ammutolisce al suo cospetto.",
+        "fasi": [
+            { "soglia": 50, "testo": "Il Tremabosco va su tutte le furie: travolgerà chiunque gli stia davanti!", "schema": "travolge" }
+        ],
         "sfxAttack": "",
         "sfxHit": "",
         "sfxDeath": ""
@@ -298,19 +301,25 @@ window.LIBRERIA.bestiario = {
         "dmg": 3,
         "ca": 8,
         "desc": "Dall'oscurità delle rovine emergono sagome scure e fameliche, avvolte da un silenzio innaturale. I Mastini di Bokgar, antichi parassiti notturni sopravvissuti per secoli in cavità dimenticate, avanzano con movimenti furtivi e uno sguardo vitreo privo di paura. Le loro fauci digrignano in attesa di spolpare la carne viva, mentre il loro corpo tradisce il terrore viscerale per la luce, che li rende ancora più aggressivi e disperati.",
+        "fasi": [
+            { "soglia": 50, "testo": "Il Mastino fiuta il sangue: punta il più debole!", "schema": "predatore" }
+        ],
         "sfxAttack": "",
         "sfxHit": "",
         "sfxDeath": ""
     },
     "boia_rinnegati": {
-        "name": "Boia dei Rinnegati",
+        "name": "Boia rinnegato degli Heymaey",
         "image": "immagini/bestiario/boia_rinnegati.jpg",
         "hp": 16,
         "maxHp": 16,
         "att": 7,
         "dmg": 3,
         "ca": 8,
-        "desc": "Un colosso umano avvolto in un grembiule di cuoio annerito e macchiato, con il volto celato da un cappuccio di canapa grezza. Poggia sulle spalle una pesante mannaia d'acciaio grezzo, usata tanto per tagliare legna quanto per punire disertori e viandanti. Attorno a lui regna un silenzio sinistro: è la retroguardia spietata delle bande montane, abituato a finire i feriti con fredda brutalità.",
+        "desc": "Un colosso umano avvolto in un grembiule di cuoio annerito e macchiato, con il volto celato da un cappuccio di canapa grezza, reca i colori dello scomparso Clan Heymaey. Poggia sulle spalle una pesante mannaia d'acciaio grezzo, usata tanto per tagliare legna quanto per punire sventurati viandanti. Attorno a lui regna un silenzio sinistro: è la retroguardia spietata delle bande montane, abituato a finire i feriti con fredda brutalità.",
+        "fasi": [
+            { "soglia": 50, "testo": "Il Boia va in furia: la mannaia cerca il più debole!", "schema": "predatore", "bonusDanno": 1 }
+        ],
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
         "sfxDeath": "audio/nemici/umano_morte.ogg"
@@ -318,24 +327,113 @@ window.LIBRERIA.bestiario = {
     "hungrabarn": {
         "name": "Hungrabarn",
         "image": "immagini/bestiario/hungrabarn.jpg",
-        "hp": 18,
-        "maxHp": 18,
+        "hp": 22,
+        "maxHp": 22,
         "att": 7,
         "dmg": 3,
         "ca": 9,
         "desc": "Dall'ombra più profonda della sala emerge una sagoma colossale, un relitto vivente di una razza che il mondo credeva estinta. L'Hungrabarn si erge in tutta la sua spaventosa imponenza, raggiungendo altezze titaniche, con membra possenti e uno sguardo affamato che brama carne umana. Tra le sue mani artigliate e ai suoi piedi si calpestano teschi e ossa accumulate nei secoli, mentre un ruggito primordiale e sordo scuote le rovine. La fine della spedizione si misura adesso contro questo incubo di carne e pietra.",
+        "fasi": [
+            { "soglia": 66, "testo": "L'Hungrabarn affonda gli artigli nel terreno: si prepara a travolgervi!", "schema": "carica" },
+            {
+                "soglia": 33,
+                "testo": "Il ruggito primordiale scuote le rovine!",
+                "schema": "furia",
+                "ruggito": { "malus": 1, "fedeMin": 4 }
+            }
+        ],
         "sfxAttack": "",
         "sfxHit": "",
         "sfxDeath": ""
     },
     "capitano_esploratori": {
         "name": "Capitano degli Esploratori",
-        "hp": 14,
-        "maxHp": 14,
+        "hp": 16,
+        "maxHp": 16,
         "att": 8,
         "dmg": 3,
-        "ca": 9,
+        "ca": 8,
         "desc": "Mentre vi avvicinate all'accampamento della famiglia sentite dei rumori provenire dalla piccola boscaglia che si sviluppa su un lato della collina, ad uno sguardo più attento notate il riflesso dei raggi di sole che colpiscono il metallo di una lama. Un gruppo di esploratori guidati da un Noviano in armatura è appostato spiando i nostri movimenti, Non possono tornare indietro dal Signore del Ponte.",
         "image": "immagini/bestiario/capitano_esploratori.jfif"
+    },
+    "ragno_nero_imperiale": {
+        "name": "Ragno Nero Imperiale",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Vi infilate in un pertugio fra le pareti di roccia, in cui riuscite a passare soltanto spalla a spalla. Man mano che avanzate, sentite qualcosa di appiccicoso sui vestiti. Quando realizzate che si tratta di una ragnatela fine come la seta e dura come l'acciaio, è troppo tardi per tornare indietro: sopra di voi si staglia l'irsuta figura di un Ragno Nero Imperiale, della grandezza di un cerbiatto. La fiera fa scattare i cheliceri, pronta ad attaccarvi.",
+        "fasi": [
+            { "soglia": 50, "testo": "Il Ragno Nero Imperiale si scaglia furioso: le sue zampe falciano chiunque gli stia accanto!", "schema": "travolge" }
+        ],
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
+    },
+    "cenofori_slavine": {
+        "name": "Cenofori delle Slavine",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Mentre attraversate un passo, notate strani movimenti sulle pendici. Inizialmente non ci fate caso, ma quando aguzzate lo sguardo notate degli esseri simili a lucertole ma bianchi come la neve. Li riconoscete, sono Cenofori delle Slavine, delle fiere innocue, che abitano i picchi innevati. La preoccupazione sale quando tre o quattro di loro, particolarmente grossi, sembrano guardare verso di voi. Mentre camminate, sentite cedere della neve lungo le pendici. È la tattica di caccia dei Cenofori: provocare slavine per poi attaccare le proprie prede.",
+        "fasi": [
+            { "soglia": 50, "testo": "I Cenofori fiutano il sangue: puntano il più debole!", "schema": "predatore" }
+        ],
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
+    },
+    "vitghen_rinnegati": {
+        "name": "Vitghen rinnegati",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Dai massi dei sentieri dei Picchi del Tramonto, emergono dei Vitghen armati di tutto punto. Agili e letali, portano con onore il marchio che li contrassegna come ripudiati dai propri clan di appartenenza. Rukvar, Seachtuir, Drummond ed altri clan figurano fra questi. Si muovono rapidamente fra le insenature, i massi e le pareti di roccia, pronti a difendere il loro covo. Portano addosso segni di battaglia, probabilmente sono in lotta per il territorio con i briganti Kin.",
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
+    },
+    "cantori_fiamma": {
+        "name": "Cantore della Fiamma rinnegato",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Dinanzi a voi si presenta un membro dei Cantori della Fiamma, gli artigiani sacri di Aebeltoff, munito di vesti logore e che inneggia a movimenti del cielo e a forge impossibili. Assieme a lui, due manovali lo spalleggiano, come cultisti di quel culto privo di senno. Sono pronti alla battaglia, nel nome di non si sa quale Asi a cui facciano riferimento.",
+        "sfxAttack": "audio/nemici/umano_attacco.ogg",
+        "sfxHit": "audio/nemici/umano_colpito.ogg",
+        "sfxDeath": "audio/nemici/umano_morte.ogg"
+    },
+    "tremabosco_striato": {
+        "name": "Tremabosco Striato",
+        "image": "immagini/bestiario/tremabosco.jpg",
+        "hp": 22,
+        "maxHp": 22,
+        "att": 7,
+        "dmg": 3,
+        "ca": 9,
+        "desc": "Vi sembra di essere partiti da anni, ma siete soltanto all'inizio della vostra scalata dei Picchi del Tramonto. Vi sembra quasi impossibile essere riusciti a trovare una piccola foresta fra i valichi. Eppure, eccola dinanzi a voi. La attraversate, per continuare il vostro cammino, quando un possente fruscio tra i rami spezzati anticipa l'arrivo di una mole mastodontica: un colosso ricoperto di fitto pelo bruno, con la corporatura massiccia e la testa dotata di zanne ricurve taglienti come lame. Il Tremabosco Striato fiuta l'aria con il muso ricurvo, raspando furiosamente il terreno. La foresta ammutolisce al suo cospetto.",
+        "fasi": [
+            { "soglia": 66, "testo": "Il Tremabosco Striato raspa furiosamente il terreno: si prepara a travolgervi!", "schema": "carica" },
+            {
+                "soglia": 33,
+                "testo": "Il ruggito primordiale scuote la foresta!",
+                "schema": "furia",
+                "ruggito": { "malus": 1, "fedeMin": 4 }
+            }
+        ],
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": ""
     }
 };

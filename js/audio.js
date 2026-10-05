@@ -16,6 +16,15 @@
         const COMBAT_THEMES = ['audio/temi/combat_theme_1.ogg', 'audio/temi/combat_theme_2.ogg', 'audio/temi/combat_theme_3.ogg'];
         // Tema degli scontri elite: sempre lo stesso, non fa avanzare la rotazione degli scontri normali
         const ELITE_THEME = 'audio/temi/elite_theme_1.ogg';
+        // Tema dei riposi (schermata del riposo)
+        const REST_THEME = 'audio/temi/rest_theme.ogg';
+        // Tema delle prove (schermata della sfida)
+        const CHALLENGE_THEME = 'audio/temi/challenge_theme.ogg';
+        // Tema della mappa (scelta dei nodi): tornando sulla mappa riprende dal punto in cui era rimasto
+        const MAP_THEME = 'audio/temi/map_theme.ogg';
+        // Brani che riprendono da dove erano stati interrotti invece di ripartire da capo
+        const RESUMABLE_THEMES = [MAP_THEME];
+        const musicResumeAt = {};  // brano -> secondi a cui era arrivato quando è stato interrotto
         let combatThemeSrc = null; // tema dello scontro in corso, null = nessuna musica
         let soundMuted = false;
         try { soundMuted = localStorage.getItem('dignitas_muted') === '1'; } catch (e) {}
@@ -46,13 +55,16 @@
             }, 40);
         }
 
-        // Fa partire un lettore da capo con il brano "src", salendo da zero
-        function startMusicDeck(deck, src, duration) {
+        // Fa partire un lettore con il brano "src" dal secondo "startAt" (0 = da capo), salendo da zero
+        function startMusicDeck(deck, src, duration, startAt = 0) {
             setupMusicDeck(deck);
             clearInterval(deck.fadeTimer);
             deck.loopOutgoing = false;
             if (deck.getAttribute('src') !== src) deck.src = src;
-            try { deck.currentTime = 0; } catch (e) {}
+            const seek = () => { try { deck.currentTime = startAt; } catch (e) {} };
+            // Con un brano appena caricato la posizione si può impostare solo quando se ne conosce la durata
+            if (startAt > 0 && deck.readyState < 1) deck.addEventListener('loadedmetadata', seek, { once: true });
+            else seek();
             deck.volume = 0;
             deck.play().then(() => fadeMusicTo(deck, gameOptions.musicVolume, duration)).catch(() => {
                 // Il browser blocca l'audio finché l'utente non interagisce con la pagina: riprova unlockAudioOnce
@@ -88,6 +100,11 @@
             const decks = musicDecks();
             // Un lettore che suona già questo brano (anche mentre sfuma) viene tenuto e riportato su
             const keep = src ? decks.find(d => !d.paused && !d.loopOutgoing && d.getAttribute('src') === src) : null;
+            // Un brano che riprende (es. la mappa) ricorda dove era arrivato prima di sfumare via
+            decks.forEach(d => {
+                const dSrc = d.getAttribute('src');
+                if (d !== keep && d === musicActive && !d.paused && RESUMABLE_THEMES.includes(dSrc)) musicResumeAt[dSrc] = d.currentTime;
+            });
             decks.forEach(d => { if (d !== keep && !(d.loopOutgoing && d.getAttribute('src') === src)) stopMusicDeck(d, MUSIC_FADE_OUT); });
             if (!src) { musicActive = null; return; }
             if (keep) {
@@ -97,14 +114,22 @@
             }
             const deck = decks.find(d => d.paused) || decks.find(d => d !== musicActive);
             musicActive = deck;
-            startMusicDeck(deck, src, MUSIC_FADE_IN);
+            // Ripresa dal punto lasciato, salvo che manchi così poco alla fine da ricominciare comunque da capo
+            let startAt = musicResumeAt[src] || 0;
+            delete musicResumeAt[src];
+            const length = deck.getAttribute('src') === src && isFinite(deck.duration) ? deck.duration : Infinity;
+            if (length - startAt <= MUSIC_LOOP_CROSSFADE / 1000 + 1) startAt = 0;
+            startMusicDeck(deck, src, MUSIC_FADE_IN, startAt);
         }
 
-        // Brano della schermata attiva: tema dei menu, tema dello scontro in corso oppure silenzio
+        // Brano della schermata attiva: tema dei menu, tema dello scontro in corso, tema del riposo, tema delle prove, tema della mappa oppure silenzio
         function updateMenuMusic(screenId) {
             if (screenId) currentAudioScreen = screenId;
             if (MENU_MUSIC_SCREENS.includes(currentAudioScreen)) setMusic(MENU_THEME);
             else if (currentAudioScreen === 'screenCombat') setMusic(combatThemeSrc);
+            else if (currentAudioScreen === 'screenRest') setMusic(REST_THEME);
+            else if (currentAudioScreen === 'screenChallenge') setMusic(CHALLENGE_THEME);
+            else if (currentAudioScreen === 'screenMap') setMusic(MAP_THEME);
             else setMusic(null);
         }
 

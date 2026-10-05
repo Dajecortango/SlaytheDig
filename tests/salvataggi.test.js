@@ -47,4 +47,16 @@ module.exports = (t, carica) => {
     t.test('un salvataggio di una versione futura viene rifiutato', () => {
         t.uguale(null, g.migrateSave({ version: 99, campaignId: 'tutorial', stato: { party: [] } }));
     });
+
+    t.test('al caricamento le passive riprendono il loro segnale anche se il salvataggio non lo ha (abilità senza id)', () => {
+        const icaro = { name: 'Icaro', hp: 4, chosenAbility: { name: 'Fammi dare un’occhiata', desc: 'vecchia' } };
+        g.restorePassiveFlags(icaro);
+        t.uguale(3, icaro.bonusLootCoins);
+        const giaImpostato = { name: 'Icaro', bonusLootCoins: 5, chosenAbility: { id: 'icaro_oro' } };
+        g.restorePassiveFlags(giaImpostato);
+        t.uguale(5, giaImpostato.bonusLootCoins, 'un valore già presente non si tocca');
+        const attiva = { name: 'X', chosenAbility: { id: 'icaro_trucchi', isCombatActive: true } };
+        g.restorePassiveFlags(attiva);
+        t.ok(attiva.bonusLootCoins === undefined);
+    });
 };
