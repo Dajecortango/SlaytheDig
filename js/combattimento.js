@@ -26,10 +26,13 @@
 
         // Tiro di un d6: se "rolls[i]" è un numero 1-6 lo usa (tiro deciso da un telefono collegato via QR),
         // altrimenti tira normalmente. Tutti i resolver sotto accettano "rolls" come ultimo parametro opzionale.
+        // Ogni dado degli eroi viene contato in expeditionStats.diceRolls (statistiche nel Diario).
         function rollD6(rolls, i) {
             const external = rolls && rolls[i];
-            if (typeof external === 'number' && external >= 1 && external <= 6) return external;
-            return Math.floor(Math.random() * 6) + 1;
+            const value = (typeof external === 'number' && external >= 1 && external <= 6) ? external : Math.floor(Math.random() * 6) + 1;
+            const st = stato.expeditionStats;
+            if (st) (st.diceRolls = st.diceRolls || [0, 0, 0, 0, 0, 0])[value - 1]++;
+            return value;
         }
 
         // Regola del dado naturale per tutti i tiri degli eroi: un 6 sul dado (quello tenuto, con due dadi)
@@ -127,12 +130,16 @@
         // libreria Abilità (data/libreria/abilita.js), così le attive nuove si creano dall'editor:
         //   dice: 1 o 2 (con 2 si tiene il dado migliore)
         //   attackStat / damageStat: statistica dell'eroe aggiunta al tiro per colpire / al danno
+        //   attackBonus / damageBonus: bonus fisso al tiro per colpire / al danno (es. 2 e 1)
         //   damageMult: moltiplicatore del danno (es. 2 = danno raddoppiato)
         //   stun: se colpisce, il nemico salta il suo prossimo attacco
         //   critical: il colpo a segno mostra i numeri del critico
         //   autoHit: colpisce sempre, senza tiro (vale come un 6 naturale)
         //   requiresHitLastTurn: si può usare solo se il nemico ha colpito l'eroe nel suo ultimo turno
         //   damageTakenBonus: aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)
+        //   armorGain: niente tiro; l'eroe ottiene subito questa armatura (usa comunque la sua azione)
+        //   sumTarget: tira due dadi; se la somma è esattamente questo numero il nemico è sconfitto
+        //     (elite e boss scendono a metà della vita massima). Niente Forza, bonus o reliquie.
         //   useText / hitLabel / hitText: testi per il diario e il risultato ({eroe}, {danni})
         // I salvataggi vecchi possono avere l'abilità senza "combat": si prende dalla libreria.
         function abilityCombat(ability) {
@@ -163,7 +170,28 @@
         // Danno di un colpo a segno dell'abilità (stesso calcolo per il tiro vero e per le anteprime)
         function abilityHitDamage(hero, c, relicDmg) {
             const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
-            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + taken + firstActorBonus(hero) + relicDmg) * (c.damageMult || 1);
+            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + firstActorBonus(hero) + relicDmg) * (c.damageMult || 1);
+        }
+
+        // Elite o boss: nodo elite o capitano, oppure lo scontro dell'ultimo livello della mappa
+        function currentEnemyIsEliteOrBoss() {
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            if (!node) return false;
+            const maxLevel = Math.max(...stato.stsMapNodes.map(n => n.level));
+            return node.type === 'elite' || node.type === 'captain' || node.level === maxLevel;
+        }
+
+        // Probabilità che due dadi diano esattamente "target" come somma (7 = 6 casi su 36)
+        function exactSumChance(target) {
+            let ways = 0;
+            for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) if (a + b === target) ways++;
+            return ways / 36;
+        }
+
+        // Abilità senza tiro di dado (es. armorGain): si risolve appena scelta, senza il pannello dei dadi
+        function abilityIsInstant(hero) {
+            const c = hero && abilityCombat(hero.chosenAbility);
+            return !!(c && c.armorGain);
         }
 
         // Risolve l'abilità attiva in combattimento: muta enemy.hp (e isStunned), consuma helpBonus.
@@ -173,6 +201,22 @@
             const c = abilityCombat(hero.chosenAbility);
             if (!c) return { abId, hit: false, dmg: 0, noEffect: true, relicNotes: [] };
 
+            // Armatura immediata: nessun tiro, il bonus di Aiuta resta per il prossimo
+            if (c.armorGain) {
+                hero.current_armor += c.armorGain;
+                return { abId, instant: true, gained: c.armorGain, hit: false, dmg: 0, relicNotes: [] };
+            }
+            // Somma esatta (es. "7"): conta solo la somma dei due dadi, il bonus di Aiuta resta per il prossimo
+            if (c.sumTarget) {
+                const dice = [rollD6(rolls, 0), rollD6(rolls, 1)];
+                const sum = dice[0] + dice[1];
+                const hit = sum === c.sumTarget;
+                const eliteHalf = hit && currentEnemyIsEliteOrBoss();
+                const before = enemy.hp;
+                if (hit) enemy.hp = eliteHalf ? Math.min(enemy.hp, Math.ceil(enemy.maxHp / 2)) : 0;
+                return { abId, sumRoll: true, dice, d1: dice[0], d2: dice[1], roll: sum, total: sum, hit, eliteHalf,
+                    dmg: Math.max(0, before - enemy.hp), naturalNote: null, relicNotes: [] };
+            }
             const rb = relicCombatBonus();
             const attStat = abilityStatBonus(hero, c.attackStat);
             const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
@@ -187,7 +231,7 @@
             }
             const dice = c.dice === 2 ? [rollD6(rolls, 0), rollD6(rolls, 1)] : [rollD6(rolls, 0)];
             const roll = Math.max(...dice);
-            const total = roll + hero.str + attStat + stato.helpBonus + attackMod(hero) + rb.att;
+            const total = roll + hero.str + attStat + (c.attackBonus || 0) + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             if (hit) {
@@ -200,21 +244,35 @@
 
         // Attacco del mostro su un bersaglio: applica maledizioni/reliquie, armatura, poi HP.
         // "events" descrive in ordine cosa è successo, per il log di combattimento.
-        function resolveMonsterAttack(enemy, target) {
+        // opts.dmg: danno diverso da quello del nemico; opts.splash: colpo di contorno (travolgimento agli
+        // eroi accanto): niente Presagio di Morte né Scudo dell'Atamano, che valgono solo per il colpo vero
+        function resolveMonsterAttack(enemy, target, opts = {}) {
             const events = [];
-            let dmg = enemy.dmg;
+            let dmg = opts.dmg != null ? opts.dmg : enemy.dmg;
             const armorBefore = target.current_armor;
             const hpBefore = target.hp;
 
-            if (hasCurse('presagio_di_morte')) {
+            if (!opts.splash && hasCurse('presagio_di_morte')) {
                 dmg += 1;
                 events.push({ type: 'curse_bonus', text: '💀 Presagio di Morte: il colpo infligge 1 danno in più.' });
             }
 
-            if (hasRelic('scudo_dell_atamano') && !stato.party.atamanoUsed) {
+            if (!opts.splash && hasRelic('scudo_dell_atamano') && !stato.party.atamanoUsed) {
                 stato.party.atamanoUsed = true;
                 dmg = 0;
                 events.push({ type: 'atamano', text: "🛡️ Lo Scudo dell'Atamano assorbe completamente il primo colpo del combattimento!" });
+            }
+
+            // Passiva "Neanche un graffio" (hero_set dodgeNoArmor: N): colpito senza armatura,
+            // l'eroe tira un d6 e con N o più ignora del tutto il colpo
+            if (dmg > 0 && target.current_armor <= 0 && target.dodgeNoArmor) {
+                const dodgeRoll = rollD6(null, 0);
+                if (dodgeRoll >= target.dodgeNoArmor) {
+                    events.push({ type: 'dodge', roll: dodgeRoll, text: `🍃 Neanche un graffio! ${target.name} tira ${dodgeRoll} (serve ${target.dodgeNoArmor}+) ed evita il colpo.` });
+                    dmg = 0;
+                } else {
+                    events.push({ type: 'dodge_fail', roll: dodgeRoll, text: `${target.name} prova a schivare: ${dodgeRoll} (serve ${target.dodgeNoArmor}+), non basta.` });
+                }
             }
 
             if (target.current_armor > 0 && dmg > 0) {
@@ -249,6 +307,124 @@
             target.lastHitRound = stato.combatRound;
 
             return { events, hpDamage, targetDied };
+        }
+
+        /* ---------- Fasi dei nemici (elite e boss) ----------
+           Nel bestiario: "fasi": [{ soglia, testo, schema, reazione, bonusDanno, ruggito }].
+           soglia: % di vita; la prima volta che il nemico scende a quel valore o sotto, la fase scatta
+             (una volta sola; se un colpo ne supera più d'una scattano tutte, in ordine).
+           schema (da quel momento): "carica" (travolge il bersaglio e fa 1 danno agli eroi accanto:
+             subito al primo turno dopo la soglia, poi un turno raspa il terreno e quello dopo travolge), "travolge" (travolge
+             a ogni turno, senza pause), "predatore" (attacca da solo l'eroe con meno
+             HP + armatura), "furia" (+1 danno a ogni suo turno).
+           reazione (al suo turno successivo, al posto dell'attacco normale, contro l'eroe che ha fatto
+             scattare la soglia): "contrattacco" (un colpo), "colpo_area" (un colpo più 1 danno agli eroi accanto).
+           bonusDanno: + al danno del nemico. ruggito: { malus, fedeMin }: -malus al tiro per colpire
+             nel prossimo turno degli eroi, per chi ha Fede sotto fedeMin. */
+        const ENEMY_SCHEMES = {
+            carica: 'Carica: un turno raspa il terreno, il successivo travolge il bersaglio e fa 1 danno agli eroi accanto',
+            travolge: 'Travolge a ogni turno: colpo pieno al bersaglio e 1 danno agli eroi accanto',
+            predatore: "Predatore: sceglie da solo l'eroe con meno HP + armatura",
+            furia: '+1 danno a ogni suo turno'
+        };
+        const ENEMY_REACTIONS = {
+            contrattacco: "al suo turno colpisce l'eroe che lo ha ferito",
+            colpo_area: "al suo turno colpisce l'eroe che lo ha ferito e fa 1 danno agli eroi accanto"
+        };
+
+        // Eroi vivi accanto al bersaglio nell'ordine della compagnia (travolgimento e colpo ad area)
+        function heroesNextTo(target) {
+            const idx = stato.party.indexOf(target);
+            return [stato.party[idx - 1], stato.party[idx + 1]].filter(h => h && h.hp > 0);
+        }
+
+        // Bersaglio dello schema "predatore": l'eroe vivo con meno HP + armatura (a parità, il primo)
+        function predatorTarget() {
+            const alive = stato.party.filter(h => h.hp > 0);
+            return alive.reduce((best, h) => (!best || h.hp + h.current_armor < best.hp + best.current_armor) ? h : best, null);
+        }
+
+        // Colpo con travolgimento: il bersaglio subisce il colpo intero, gli eroi accanto 1 danno
+        function monsterStrikeWithSplash(enemy, target) {
+            const events = resolveMonsterAttack(enemy, target).events;
+            heroesNextTo(target).forEach(n => {
+                events.push({ type: 'splash', text: `Travolto anche ${n.name}!` });
+                events.push(...resolveMonsterAttack(enemy, n, { dmg: 1, splash: true }).events);
+            });
+            return events;
+        }
+
+        // Bersaglio della reazione preparata (l'eroe che ha fatto scattare la soglia; se è caduto, nessuno)
+        function reactionTarget(enemy) {
+            const r = enemy.reazionePronta;
+            const hero = r && stato.party.find(h => h.name === r.bersaglio && h.hp > 0);
+            return hero || null;
+        }
+
+        // Controlla le soglie dopo un colpo dell'eroe "attacker". Applica le fasi scattate e ritorna gli eventi
+        // (type 'phase' con il testo della fase, poi le informazioni) per diario e interfaccia.
+        // La reazione non colpisce adesso: resta pronta per il turno del nemico (enemy.reazionePronta).
+        function checkEnemyPhases(enemy, attacker) {
+            const events = [];
+            const fasi = enemy.fasi || [];
+            if (!fasi.length || enemy.hp <= 0) return events;
+            enemy.fasiFatte = enemy.fasiFatte || [];
+            fasi.forEach((f, i) => {
+                if (enemy.fasiFatte.includes(i) || enemy.hp <= 0) return;
+                if (enemy.hp > Math.floor(enemy.maxHp * f.soglia / 100)) return;
+                enemy.fasiFatte.push(i);
+                events.push({ type: 'phase', text: f.testo || `${enemy.name} cambia atteggiamento!` });
+                if (f.bonusDanno) { enemy.dmg += f.bonusDanno; events.push({ type: 'phase_info', text: `${enemy.name}: +${f.bonusDanno} danno.` }); }
+                // la carica della fase è già pronta: al primo turno del nemico travolge subito, poi alterna
+                if (f.schema) { enemy.schema = f.schema; enemy.charging = f.schema === 'carica'; events.push({ type: 'phase_info', text: `Nuovo schema d'attacco: ${ENEMY_SCHEMES[f.schema] || f.schema}.` }); }
+                if (f.ruggito) {
+                    stato.party.filter(h => h.hp > 0).forEach(h => {
+                        if ((h.fth || 0) >= (f.ruggito.fedeMin || 99)) { events.push({ type: 'phase_info', text: `${h.name} resiste al ruggito grazie alla Fede.` }); return; }
+                        scheduleTempBuff(h, { stat: 'att_bonus', val: -(f.ruggito.malus || 1), name: 'Ruggito primordiale', rounds: 1 });
+                        events.push({ type: 'phase_info', text: `${h.name} è scosso: -${f.ruggito.malus || 1} al tiro per colpire nel prossimo turno.` });
+                    });
+                }
+                if (f.reazione && attacker && attacker.hp > 0) {
+                    enemy.reazionePronta = { tipo: f.reazione, bersaglio: attacker.name };
+                    events.push({ type: 'phase_info', text: `Al suo turno ${enemy.name} si scaglierà contro ${attacker.name}!` });
+                }
+            });
+            return events;
+        }
+
+        // Turno del nemico secondo il suo schema. chosenTarget = bersaglio scelto dal giocatore (o dal simulatore).
+        // Ritorna { events, attacked, target }. "attacked" è falso nel turno in cui carica.
+        function resolveEnemyTurn(enemy, chosenTarget) {
+            const events = [];
+            if (enemy.schema === 'furia') {
+                enemy.dmg += 1;
+                events.push({ type: 'fury', text: `${enemy.name} è sempre più furioso: ora fa ${enemy.dmg} danni.` });
+            }
+            if (enemy.schema === 'carica' && !enemy.charging) {
+                enemy.charging = true;
+                events.push({ type: 'charge', text: `${enemy.name} raspa il terreno: al prossimo turno travolgerà la compagnia!` });
+                return { events, attacked: false, target: null };
+            }
+            // Reazione preparata alla soglia: al posto dell'attacco normale, contro chi l'ha fatta scattare
+            const reazione = enemy.reazionePronta;
+            if (reazione) {
+                enemy.reazionePronta = null;
+                const bersaglio = stato.party.find(h => h.name === reazione.bersaglio && h.hp > 0);
+                if (bersaglio) {
+                    events.push({ type: 'reaction', text: `${enemy.name} si scaglia contro ${bersaglio.name}!` });
+                    events.push(...(reazione.tipo === 'colpo_area' ? monsterStrikeWithSplash(enemy, bersaglio) : resolveMonsterAttack(enemy, bersaglio).events));
+                    return { events, attacked: true, target: bersaglio };
+                }
+            }
+            const target = enemy.schema === 'predatore' ? predatorTarget() : chosenTarget;
+            if (!target) return { events, attacked: false, target: null };
+            if (enemy.schema === 'carica' || enemy.schema === 'travolge') {
+                enemy.charging = false;
+                events.push(...monsterStrikeWithSplash(enemy, target));
+            } else {
+                events.push(...resolveMonsterAttack(enemy, target).events);
+            }
+            return { events, attacked: true, target };
         }
 
         function startCombat(enemyKey) {
@@ -308,11 +484,12 @@
                 <div class="enemy-head">
                     <div class="icon-frame enemy-emblem">${svgIcon('skull')}</div>
                     <div class="enemy-main">
-                        <div class="enemy-name">${stato.activeEnemy.name}${stunBadge}</div>
+                        <div class="enemy-name" data-tip="${esc(enemyPhasesTip(stato.activeEnemy))}">${stato.activeEnemy.name}${stunBadge}${stato.activeEnemy.schema ? `<span class="stun-badge phase-badge">${esc({ carica: 'Carica', travolge: 'Travolge', predatore: 'Predatore', furia: 'Furia' }[stato.activeEnemy.schema] || stato.activeEnemy.schema)}</span>` : ''}</div>
                         <div class="hp-bar-container big" id="enemyHpBar">
                             ${barGhostHtml(`enemy:${stato.activeEnemy.name}`, hpPercent, Math.max(0, stato.activeEnemy.hp))}
                             <div class="hp-bar-fill ${hpClass(hpPercent)}" style="width: ${hpPercent}%;"></div>
                             <div class="hp-bar-preview hidden"></div>
+                            ${enemyPhaseTicksHtml(stato.activeEnemy)}
                             <div class="hp-bar-text">${Math.max(0, stato.activeEnemy.hp)} / ${stato.activeEnemy.maxHp}</div>
                         </div>
                     </div>
@@ -328,16 +505,49 @@
             animateBars(document.getElementById('enemyInfo'));
         }
 
-        // Intenzione del nemico: cosa farà al suo turno (il bersaglio lo sceglie comunque il giocatore)
+        // Tacche delle soglie sulla barra della vita: piene finché la fase non è scattata
+        function enemyPhaseTicksHtml(enemy) {
+            return (enemy.fasi || []).map((f, i) => `<span class="hp-phase-tick ${(enemy.fasiFatte || []).includes(i) ? 'done' : ''}" style="left:${f.soglia}%"></span>`).join('');
+        }
+
+        // Tooltip del nome del nemico: schema attuale e fasi (fatte e da venire)
+        function enemyPhasesTip(enemy) {
+            const lines = [];
+            if (enemy.schema) lines.push(`<b>Ora:</b> ${ENEMY_SCHEMES[enemy.schema] || enemy.schema}`);
+            (enemy.fasi || []).forEach((f, i) => {
+                const fatta = (enemy.fasiFatte || []).includes(i);
+                const parti = [];
+                if (f.reazione) parti.push(ENEMY_REACTIONS[f.reazione] || f.reazione);
+                if (f.bonusDanno) parti.push(`+${f.bonusDanno} danno`);
+                if (f.schema) parti.push(ENEMY_SCHEMES[f.schema] || f.schema);
+                if (f.ruggito) parti.push(`ruggito: -${f.ruggito.malus || 1} al tiro nel turno dopo (non per chi ha Fede ${f.ruggito.fedeMin}+)`);
+                lines.push(`${fatta ? '✓' : '◆'} Al ${f.soglia}% di vita: ${parti.join('; ')}`);
+            });
+            return `${enemy.name}||${lines.length ? lines.join('<br>') : 'Nessuna fase particolare.'}`;
+        }
+
+        // Intenzione del nemico: cosa farà al suo turno (secondo il suo schema d'attacco)
         function enemyIntentHtml(enemy) {
             if (!enemy || enemy.hp <= 0) return '';
             if (enemy.isStunned) {
                 return `<span class="intent-icon stunned">${svgIcon('skull')}</span>
                     <span class="intent-text"><small>Intenzione</small><span>Stordito: salta il prossimo attacco</span></span>`;
             }
-            const dmg = enemy.dmg + (hasCurse('presagio_di_morte') ? 1 : 0);
-            return `<span class="intent-icon">${svgIcon('sword')}</span>
-                <span class="intent-text"><small>Intenzione</small><span>Attaccherà per <b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b></span>
+            const dmg = enemy.dmg + (hasCurse('presagio_di_morte') ? 1 : 0) + (enemy.schema === 'furia' ? 1 : 0);
+            const danni = `<b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b>`;
+            let cosa = `Attaccherà per ${danni}`;
+            const vendetta = reactionTarget(enemy);
+            if (vendetta) cosa = `Si scaglierà contro <b>${esc(vendetta.name)}</b> per ${danni}${enemy.reazionePronta.tipo === 'colpo_area' ? ' e farà 1 danno agli eroi accanto' : ''}`;
+            else if (enemy.schema === 'carica') cosa = enemy.charging
+                ? `Travolgerà il bersaglio per ${danni} e farà 1 danno agli eroi accanto`
+                : 'Raspa il terreno: questo turno non attacca, il prossimo travolgerà';
+            else if (enemy.schema === 'travolge') cosa = `Travolgerà il bersaglio per ${danni} e farà 1 danno agli eroi accanto`;
+            else if (enemy.schema === 'predatore') {
+                const preda = predatorTarget();
+                cosa = `Punta ${preda ? `<b>${esc(preda.name)}</b>` : 'il più debole'} (meno HP + armatura) per ${danni}`;
+            } else if (enemy.schema === 'furia') cosa = `In furia: attaccherà per ${danni} (+1 a ogni turno)`;
+            return `<span class="intent-icon ${enemy.schema === 'carica' && !enemy.charging ? 'stunned' : ''}">${svgIcon('sword')}</span>
+                <span class="intent-text"><small>Intenzione</small><span>${cosa}</span>
                 <em>Difendi e Aiuta devono superare ${enemy.att}</em></span>`;
         }
 
@@ -380,6 +590,7 @@
             stato.party.forEach(h => { if(h.hp > 0) h.hasActed = false; });
             stato.combatRound++;
             expireTempBuffs().forEach(({ hero, buff }) => logCombat(`⌛ Finisce l'effetto di ${buff.name} su ${hero.name}.`));
+            applyPendingBuffs();
             updateEnemyInfoUI();
             showHeroSelectionPhase();
         }
@@ -494,13 +705,24 @@
             const ability = hero.chosenAbility;
             if (ability && abilityUsable(hero).ok) {
                 const c = abilityCombat(ability) || {};
-                if (c.autoHit) {
+                if (c.armorGain) {
+                    const btn = document.getElementById('btnCombatAbility');
+                    btn.querySelector('.cmd-sub').textContent = `Sicuro · +${c.armorGain} Arm.`;
+                    btn.querySelector('.cmd-sub').dataset.chance = 'high';
+                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Nessun tiro: +${c.armorGain} Armatura subito. Usa l'azione dell'eroe.</span>`;
+                } else if (c.sumTarget) {
+                    const pct = Math.round(exactSumChance(c.sumTarget) * 100);
+                    const btn = document.getElementById('btnCombatAbility');
+                    btn.querySelector('.cmd-sub').textContent = `Somma ${c.sumTarget} · ${pct}%`;
+                    btn.querySelector('.cmd-sub').dataset.chance = pct >= 67 ? 'high' : (pct >= 34 ? 'mid' : 'low');
+                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Due dadi: serve una somma esattamente ${c.sumTarget} (${pct}%). ${currentEnemyIsEliteOrBoss() ? 'Questo nemico è un elite o un boss: scende a metà vita.' : 'Questo nemico verrebbe sconfitto.'}</span>`;
+                } else if (c.autoHit) {
                     const btn = document.getElementById('btnCombatAbility');
                     btn.querySelector('.cmd-sub').textContent = 'Sicuro · 100%';
                     btn.querySelector('.cmd-sub').dataset.chance = 'high';
                     btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Colpisce sempre: infligge ${expectedHitDamage(hero, 'ability')} danni.</span>`;
                 } else {
-                    const needed = attackNeeded - abilityStatBonus(hero, c.attackStat);
+                    const needed = attackNeeded - abilityStatBonus(hero, c.attackStat) - (c.attackBonus || 0);
                     setPreview('btnCombatAbility', `${ability.name} [T]`, ability.desc, needed, c.dice === 2);
                 }
             }
@@ -509,6 +731,10 @@
             if (action === 'ability' && !abilityUsable(currentActiveHero).ok) {
                 uiError(abilityUsable(currentActiveHero).reason);
                 return;
+            }
+            if (action === 'ability' && abilityIsInstant(currentActiveHero)) {
+                useInstantAbility();
+                return 'instant';
             }
             chosenAction = action;
             if (action === 'use_item') {
@@ -551,7 +777,7 @@
 
         function combatRollUsesTwoDice(hero, action) {
             const c = action === 'ability' && hero ? abilityCombat(hero.chosenAbility) : null;
-            return !!c && c.dice === 2 && !c.autoHit;
+            return !!c && ((c.dice === 2 && !c.autoHit) || !!c.sumTarget);
         }
 
         // Prima di tirare si può tornare indietro: dal dado alla scelta dell'azione...
@@ -569,6 +795,52 @@
             if (document.getElementById('rollCombatBtn').disabled || !currentActiveHero) return;
             chosenAction = null;
             showHeroSelectionPhase();
+        }
+
+        // Fasi del nemico dopo un colpo: diario, annuncio a schermo, barre aggiornate.
+        // Ritorna true se la reazione del nemico ha sconfitto tutta la compagnia (partita persa).
+        function handleEnemyPhasesUI(attacker) {
+            const events = checkEnemyPhases(stato.activeEnemy, attacker);
+            if (!events.length) return false;
+            events.forEach(ev => logCombat(ev.type === 'phase' ? `🔥 <b>${ev.text}</b>` : ev.text));
+            events.filter(ev => ev.type === 'phase').forEach(ev => showPhaseBanner(ev.text));
+            if (events.some(ev => ev.type !== 'phase' && ev.type !== 'phase_info')) playEnemySfx('sfxAttack');
+            updateEnemyInfoUI();
+            updatePartyStatusBars();
+            if (stato.party.every(p => p.hp <= 0)) {
+                deleteCurrentSave();
+                showScreen('screenDefeat');
+                return true;
+            }
+            return false;
+        }
+
+        // Annuncio grande a schermo quando il nemico cambia fase
+        function showPhaseBanner(text) {
+            const banner = document.createElement('div');
+            banner.className = 'phase-banner';
+            banner.innerHTML = `<div class="phase-banner-text">${esc(text)}</div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 2600);
+        }
+
+        // Abilità senza tiro (armorGain): effetto immediato, poi il turno dell'eroe finisce come dopo un tiro
+        function useInstantAbility() {
+            const hero = currentActiveHero;
+            const ability = hero.chosenAbility;
+            const c = abilityCombat(ability) || {};
+            const res = resolveAbility(hero, stato.activeEnemy);
+            const fill = text => String(text).replace(/\{eroe\}/g, hero.name);
+            logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} +${res.gained} Armatura.`);
+            chosenAction = null;
+            hero.hasActed = true;
+            document.getElementById('combatActionButtons').classList.add('hidden');
+            document.getElementById('combatChangeHeroBtn').classList.add('hidden');
+            document.getElementById('heroActionControlArea').classList.add('hidden');
+            updateEnemyInfoUI();
+            updatePartyStatusBars();
+            fxFloatOnHero(hero, `+${res.gained} Armatura`, 'buff');
+            document.getElementById('combatNextBtn').classList.remove('hidden');
         }
 
         // Bersaglio del consumabile scelto: il nemico per quelli da danno, un eroe vivo per gli altri
@@ -599,6 +871,7 @@
                 document.getElementById('combatLootBtn').classList.remove('hidden');
                 return;
             }
+            if (handleEnemyPhasesUI(currentActiveHero)) return;
             // Ridisegna comandi e anteprime per lo stesso eroe (e chiede di nuovo l'azione al telefono)
             confirmCombatHeroChoice();
         }
@@ -675,22 +948,27 @@
                             logCombat(`${hero.name} usa ${ability.name}, ma l'abilità non ha effetti in combattimento.`);
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">NESSUN EFFETTO</span>`;
                         } else {
-                            // Con due dadi si mostrano entrambi e si scurisce quello scartato
+                            // Con due dadi si mostrano entrambi e si scurisce quello scartato (con la somma contano entrambi)
                             diceBox.textContent = res.d1;
-                            if (res.dice.length === 2) {
+                            if (res.dice.length === 2 && !res.sumRoll) {
                                 diceBox2.textContent = res.d2;
                                 (res.d2 > res.d1 ? diceBox : diceBox2).classList.add('discarded');
                             }
                             const diceText = res.dice.length === 2 ? `Tira [${res.d1}, ${res.d2}] e tiene ${res.roll}` : `Tiro ${res.roll}`;
-                            const bonusText = c.attackStat ? ` + ${STAT_LABELS[c.attackStat] || c.attackStat} ${res.attStat}` : '';
-                            if (res.autoHit) logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} Colpo automatico (vale come un 6).`);
+                            const bonusText = (c.attackStat ? ` + ${STAT_LABELS[c.attackStat] || c.attackStat} ${res.attStat}` : '') + (c.attackBonus ? ` + ${c.attackBonus} ${ability.name}` : '');
+                            if (res.sumRoll) {
+                                diceBox2.textContent = res.d2;
+                                logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} Dadi [${res.d1}, ${res.d2}] = ${res.roll} (serve esattamente ${c.sumTarget})`);
+                            } else if (res.autoHit) logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} Colpo automatico (vale come un 6).`);
                             else logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} ${diceText} + Forza ${hero.str}${bonusText} = ${res.total} (CA: ${stato.activeEnemy.ca})`);
 
                             if (res.hit) {
                                 if (c.critical) fxNextEnemyHitCritical = true;
                                 const extra = [];
                                 if (c.damageStat) extra.push(`+${res.dmgStat} ${STAT_LABELS[c.damageStat] || c.damageStat}`);
+                                if (c.damageBonus) extra.push(`+${c.damageBonus} ${ability.name}`);
                                 if (c.damageTakenBonus) extra.push(`+${res.taken} danni subiti`);
+                                if (res.sumRoll) extra.push(res.eliteHalf ? 'elite o boss: scende a metà vita' : 'nemico sconfitto');
                                 if (res.firstBonus) extra.push(`+${res.firstBonus} primo ad agire`);
                                 if ((c.damageMult || 1) > 1) extra.push(`x${c.damageMult}`);
                                 if (c.stun) extra.push('nemico stordito per un turno');
@@ -749,6 +1027,7 @@
                         document.getElementById('heroActionControlArea').classList.add('hidden');
                         return;
                     }
+                    if (handleEnemyPhasesUI(hero)) return;  // la reazione ha sconfitto la compagnia
                     document.getElementById('combatNextBtn').classList.remove('hidden');
                     };
 
@@ -777,6 +1056,7 @@
 
             if(stato.activeEnemy.isStunned) {
                 stato.activeEnemy.isStunned = false;
+                stato.activeEnemy.charging = false;  // lo stordimento interrompe anche una carica
                 document.getElementById('monsterTurnText').textContent = `${stato.activeEnemy.name} è stordito e non può attaccare!`;
                 logCombat(`⏳ ${stato.activeEnemy.name} si riprende dallo stordimento e salta il turno!`);
                 updateEnemyInfoUI();
@@ -792,9 +1072,36 @@
                 return;
             }
 
+            const enemy = stato.activeEnemy;
+            // Schema "carica", turno di preparazione: niente bersaglio da scegliere, si passa oltre
+            if (enemy.schema === 'carica' && !enemy.charging) {
+                const res = resolveEnemyTurn(enemy, null);
+                res.events.forEach(ev => logCombat(ev.text));
+                document.getElementById('monsterTurnText').textContent = `${enemy.name} raspa il terreno: il prossimo turno travolgerà!`;
+                updateEnemyInfoUI();
+                document.getElementById('monsterTargetArea').classList.add('hidden');
+                document.getElementById('combatNextBtn').classList.remove('hidden');
+                document.getElementById('combatNextBtn').onclick = function() {
+                    document.getElementById('combatNextBtn').classList.add('hidden');
+                    document.getElementById('monsterTargetArea').classList.remove('hidden');
+                    document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
+                    startHeroesTurnCycle();
+                };
+                return;
+            }
+
             document.getElementById('monsterTargetArea').classList.remove('hidden');
-            document.getElementById('monsterTurnText').textContent = `Turno di ${stato.activeEnemy.name}!`;
-            document.getElementById('monsterTargetSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
+            document.getElementById('monsterTurnText').textContent = `Turno di ${enemy.name}!`;
+            const select = document.getElementById('monsterTargetSelect');
+            // Schema "predatore": il bersaglio lo sceglie il nemico (l'eroe con meno HP + armatura)
+            // Reazione della fase: il bersaglio è l'eroe che l'ha fatta scattare
+            const vendetta = reactionTarget(enemy);
+            const preda = vendetta || (enemy.schema === 'predatore' ? predatorTarget() : null);
+            const candidati = preda ? [preda] : stato.party.filter(p => p.hp > 0);
+            select.innerHTML = candidati.map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
+            select.disabled = !!preda;
+            if (vendetta) document.getElementById('monsterTurnText').textContent = `${enemy.name} si scaglia contro ${vendetta.name}!`;
+            else if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, il più debole!`;
         }
 
         function executeMonsterAttack() {
@@ -802,8 +1109,10 @@
             logCombat(`--- ${stato.activeEnemy.name} attacca ${target.name}! ---`);
             playEnemySfx('sfxAttack');
 
-            const result = resolveMonsterAttack(stato.activeEnemy, target);
+            const result = resolveEnemyTurn(stato.activeEnemy, target);
             result.events.forEach(ev => logCombat(ev.text));
+            document.getElementById('monsterTargetSelect').disabled = false;
+            updateEnemyInfoUI();
 
             updatePartyStatusBars();
 

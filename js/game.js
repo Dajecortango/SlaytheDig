@@ -26,7 +26,7 @@
         //   party: eroi, partyCoins: monete, unlockedRelics / activeCurses: reliquie e maledizioni
         //   expeditionStats: statistiche della spedizione (anche la rotazione dei temi musicali)
         //   challengeState: sfida in corso; activeEnemy, helpBonus, combatRound: scontro in corso
-        const newExpeditionStats = () => ({ combatsWon: 0, challengesPassed: 0, challengesFailed: 0, coinsEarned: 0, itemsFound: 0, combatThemes: 0 });
+        const newExpeditionStats = () => ({ combatsWon: 0, challengesPassed: 0, challengesFailed: 0, coinsEarned: 0, itemsFound: 0, combatThemes: 0, elitesWon: 0, diceRolls: [0, 0, 0, 0, 0, 0] });
         const stato = {
             currentCampaign: null,
             stsMapNodes: [],
@@ -67,6 +67,23 @@ function curseText(curse) {
     return typeof curse === 'string' ? curse : curse.text;
 }
 
+// Dà al party la reliquia della libreria con questo id (bottino degli elite, mercante)
+function grantRelic(relicId) {
+    const relic = LIBRERIA.reliquie[relicId];
+    if (!relic || hasRelic(relicId)) return null;
+    const owned = { ...relic, id: relicId };
+    stato.unlockedRelics.push(owned);
+    applyEffects(relic.effects);
+    discover('relics', relic.name);
+    return owned;
+}
+
+// Una reliquia a caso fra quelle della libreria che il party non ha ancora (null se le ha tutte)
+function pickUnownedRelicId() {
+    const ids = Object.keys(LIBRERIA.reliquie || {}).filter(id => !hasRelic(id));
+    return ids.length ? ids[Math.floor(Math.random() * ids.length)] : null;
+}
+
 function breakRelic(relicId) {
     const idx = stato.unlockedRelics.findIndex(r => r.id === relicId);
     if (idx > -1) {
@@ -74,6 +91,24 @@ function breakRelic(relicId) {
         updatePartyStatusBars();
     }
 }
+
+        // Effetto hero_item: mette nello zaino dell'eroe "count" copie di un oggetto dell'armeria
+        // (i consumabili uguali in pile da CONSUMABLE_STACK). Non conta come l'oggetto iniziale scelto.
+        function giveHeroItem(hero, itemId, count) {
+            const base = (LIBRERIA.armeria || {})[itemId];
+            if (!base) { console.warn('hero_item: oggetto sconosciuto', itemId); return; }
+            const consumable = (base.type || '').startsWith('consumable');
+            let left = count;
+            while (left > 0) {
+                const copy = JSON.parse(JSON.stringify(base));
+                const n = consumable ? Math.min(left, CONSUMABLE_STACK) : 1;
+                if (n > 1) copy.qty = n;
+                hero.items.push(copy);
+                if (!consumable) applyItemEffects(copy, hero);
+                left -= n;
+            }
+            discover('items', itemId);
+        }
 
         // Interprete degli effetti descritti nei dati delle campagne (campo "effects").
         // Gli effetti "hero_*" agiscono sull'eroe passato, gli altri sull'intera compagnia.
@@ -88,6 +123,7 @@ function breakRelic(relicId) {
                     case 'party_damage': stato.party.forEach(h => { h.hp = Math.max(1, h.hp - e.val); }); break;
                     case 'coins': stato.partyCoins = Math.max(0, stato.partyCoins + e.val); break;
                     case 'add_curse': stato.activeCurses.push({ id: e.id || idFromName(e.text), text: e.text }); break;
+                    case 'hero_item': if (hero) giveHeroItem(hero, e.item, e.val || 1); break;
                     default: console.warn('Effetto sconosciuto:', e);
                 }
             });
@@ -308,7 +344,7 @@ function breakRelic(relicId) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '1.2';
+        const GAME_VERSION = '1.3';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
@@ -402,392 +438,6 @@ function breakRelic(relicId) {
             renderTurnBar();
         }
 
-        window.useConsumableFromTopbar = function(heroName, itemIdx) {
-            let hero = stato.party.find(p => p.name === heroName);
-            if(!hero) return;
-            let item = hero.items[itemIdx];
-            if(!item || !item.type || !item.type.startsWith('consumable')) return;
-            if (isCombatConsumable(item)) {
-                uiError(currentScreenId === 'screenCombat'
-                    ? `${item.name} si usa con il comando Oggetto, nel turno dell'eroe`
-                    : `${item.name} si usa solo in combattimento`);
-                return;
-            }
-
-            openModal(
-                item.name,
-                `<p>${item.desc}</p><p>A quale membro della spedizione vuoi applicarlo?</p>`,
-                stato.party.map(p => ({
-                    label: `${p.name} (HP ${p.hp}/${p.maxHp})`,
-                    disabled: p.hp <= 0,
-                    onClick: () => useConsumable(hero.name, itemIdx, p.name)
-                })).concat([{ label: 'Annulla', className: 'btn-danger' }])
-            );
-        };
-
-
-        function startPartyCreation() {
-            showScreen('screenParty');
-            stato.party = [];
-            stato.partyCoins = 0;
-            displayedCoins = 0;
-            stato.unlockedRelics = [];
-            stato.activeCurses = [];
-            stato.expeditionStats = newExpeditionStats();
-            document.getElementById('partyConfigArea').classList.remove('hidden');
-            document.getElementById('heroCreationArea').classList.add('hidden');
-            document.getElementById('abilityArea').classList.add('hidden');
-            document.getElementById('armoryArea').classList.remove('hidden');
-            document.getElementById('armoryArea').classList.add('hidden');
-            document.getElementById('btnProceedHero').classList.add('hidden');
-            updatePartyStatusBars();
-        }
-
-        function confirmPartySize() {
-            partySize = parseInt(document.getElementById('partySizeSelect').value);
-            document.getElementById('partyConfigArea').classList.add('hidden');
-            document.getElementById('heroCreationArea').classList.remove('hidden');
-            document.getElementById('partyHeaderTitle').textContent = "Reclutamento Eroi";
-            document.getElementById('partyNarrativeBox').innerHTML = `<strong>Descrizione:</strong> Scegli i membri che comporranno la squadra e assegna loro le abilità e l'armeria iniziale.`;
-            loadHeroGridOptions();
-        }
-
-        function loadHeroGridOptions() {
-            const gridContainer = document.getElementById('heroGridButtons');
-            const availableHeroes = campaignHeroes.filter(h => !stato.party.some(p => p.name === h.name));
-
-            gridContainer.innerHTML = availableHeroes.map(h => `
-                <button class="armory-btn" onclick="selectHeroCard('${h.name}')">
-                    <span class="hero-portrait small ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name)}</span>
-                    <span class="tile-text">
-                        <strong>${h.name}</strong>
-                        <span class="tile-sub stat-chips">
-                            <span class="stat-chip"><i>FOR</i>${h.str}</span>
-                            <span class="stat-chip"><i>INT</i>${h.int}</span>
-                            <span class="stat-chip"><i>FED</i>${h.fth}</span>
-                            <span class="stat-chip"><i>HP</i>${h.maxHp}</span>
-                        </span>
-                    </span>
-                </button>
-            `).join('');
-        }
-
-        let activeHeroForCreation = null;
-        function selectHeroCard(heroName) {
-            activeHeroForCreation = JSON.parse(JSON.stringify(campaignHeroes.find(h => h.name === heroName)));
-            document.getElementById('heroCreationArea').classList.add('hidden');
-
-            const heroAbilities = campaignAbilities[heroName] || [];
-            if(heroAbilities.length > 0) {
-                document.getElementById('abilityArea').classList.remove('hidden');
-                document.getElementById('abilityButtons').innerHTML = heroAbilities.map((ab, idx) => `
-                    <button class="armory-btn" onclick="selectAbility(${idx})" style="width:100%; margin:5px 0;">
-                        ${abilityIconHtml(ab)}
-                        <span class="tile-text">
-                            <strong>${ab.name}</strong>
-                            ${ab.desc ? `<span class="tile-sub">${ab.desc}</span>` : ''}
-                        </span>
-                    </button>
-                `).join('');
-            } else {
-                document.getElementById('armoryArea').classList.remove('hidden');
-                document.getElementById('btnProceedHero').classList.remove('hidden');
-                loadArmoryOptions();
-            }
-        }
-
-        function selectAbility(idx) {
-            const chosen = campaignAbilities[activeHeroForCreation.name][idx];
-            activeHeroForCreation.chosenAbility = chosen;
-
-            if(chosen.type === 'passive_stat') {
-                if(chosen.stat === 'str') activeHeroForCreation.str += chosen.val;
-                else if(chosen.stat === 'int') activeHeroForCreation.int += chosen.val;
-                else if(chosen.stat === 'fth') activeHeroForCreation.fth += chosen.val;
-                else if(chosen.stat === 'hp') { activeHeroForCreation.maxHp += chosen.val; activeHeroForCreation.hp += chosen.val; }
-            }
-            else if(chosen.effects) {
-                applyEffects(chosen.effects, activeHeroForCreation);
-            }
-
-            document.getElementById('abilityArea').classList.add('hidden');
-            document.getElementById('armoryArea').classList.remove('hidden');
-            document.getElementById('btnProceedHero').classList.remove('hidden');
-            loadArmoryOptions();
-        }
-
-        function loadArmoryOptions() {
-            const hasItem = activeHeroForCreation.items.length > 0;
-            document.getElementById('inventoryCountText').textContent = hasItem ?
-                `Oggetto scelto: ${activeHeroForCreation.items[0].name} (Clicca di nuovo per deselezionare)` : `Seleziona 1 oggetto iniziale (Max 1):`;
-
-            document.getElementById('btnProceedHero').disabled = !hasItem;
-
-            document.getElementById('armoryButtons').innerHTML = campaignArmory.map((item, idx) => {
-                const isSelected = hasItem && activeHeroForCreation.items[0].name === item.name;
-                return `
-                    <button class="armory-btn ${isSelected ? 'selected' : ''}" onclick="togglePickItem(${idx})">
-                        ${itemIconHtml(item)}
-                        <span class="tile-text">
-                            <strong>${item.name}</strong>
-                            <span class="tile-sub">${item.desc}</span>
-                            ${isSelected ? '<span class="tile-tag">Selezionato</span>' : ''}
-                        </span>
-                    </button>
-                `;
-            }).join('');
-        }
-
-        function togglePickItem(idx) {
-            const item = campaignArmory[idx];
-            const hasItem = activeHeroForCreation.items.length > 0;
-
-            if (hasItem) {
-                if (activeHeroForCreation.items[0].name === item.name) {
-                    revertItemEffects(activeHeroForCreation.items[0], activeHeroForCreation);
-                    activeHeroForCreation.items = [];
-                } else {
-                    revertItemEffects(activeHeroForCreation.items[0], activeHeroForCreation);
-                    activeHeroForCreation.items = [];
-                    let newItem = JSON.parse(JSON.stringify(item));
-                    activeHeroForCreation.items.push(newItem);
-                    applyItemEffects(newItem, activeHeroForCreation);
-                    discover('items', newItem.id);
-                }
-            } else {
-                let newItem = JSON.parse(JSON.stringify(item));
-                activeHeroForCreation.items.push(newItem);
-                applyItemEffects(newItem, activeHeroForCreation);
-                discover('items', newItem.id);
-            }
-            loadArmoryOptions();
-        }
-
-        function nextHero() {
-            stato.party.push(activeHeroForCreation);
-            updatePartyStatusBars();
-            document.getElementById('armoryArea').classList.add('hidden');
-            document.getElementById('btnProceedHero').classList.add('hidden');
-
-            if(stato.party.length < partySize) {
-                document.getElementById('heroCreationArea').classList.remove('hidden');
-                loadHeroGridOptions();
-            } else {
-                showScreen('screenCampaignIntro');
-            }
-        }
-
-        /* ---------- Oggetti che scalano con Fede o Intelligenza ----------
-           Campo "scaling" dell'oggetto: [{ "stat": "dmg", "per": "fth", "every": 2, "max": 3 }]
-           = +1 Danno ogni 2 punti di Fede dell'eroe (al massimo +3). "stat" può essere str, dmg,
-           armor, def_bonus o help_bonus_val; "per" è fth o int (mai le stesse: niente circoli).
-           Il bonus si ricalcola quando cambiano Fede o Intelligenza (oggetti, reliquie, maledizioni):
-           hero.scaledBonus ricorda quanto è già stato aggiunto, così si applica solo la differenza. */
-        const SCALING_TARGETS = ['str', 'dmg', 'armor', 'def_bonus', 'def_armor', 'help_bonus_val'];
-
-        function scaledItemBonuses(hero) {
-            const out = {};
-            (hero.items || []).forEach(it => (it.scaling || []).forEach(sc => {
-                if (!SCALING_TARGETS.includes(sc.stat) || !['fth', 'int'].includes(sc.per)) return;
-                let bonus = Math.floor(Math.max(0, hero[sc.per] || 0) / Math.max(1, sc.every || 1));
-                if (sc.max != null) bonus = Math.min(sc.max, bonus);
-                out[sc.stat] = (out[sc.stat] || 0) + bonus;
-            }));
-            return out;
-        }
-
-        function refreshScaledBonuses(hero) {
-            if (!hero) return;
-            const now = scaledItemBonuses(hero);
-            const prev = hero.scaledBonus || {};
-            SCALING_TARGETS.forEach(k => {
-                const diff = (now[k] || 0) - (prev[k] || 0);
-                if (!diff) return;
-                if (k === 'armor') {
-                    hero.base_armor += diff;
-                    if (hero.hp > 0) hero.current_armor = Math.max(0, hero.current_armor + diff);
-                } else {
-                    hero[k] = (hero[k] || 0) + diff;
-                }
-            });
-            hero.scaledBonus = now;
-        }
-
-        // Testo per l'interfaccia, es. "+1 Danno ogni 2 Fede"
-        const SCALING_LABELS = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_bonus: 'Difesa', def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza' };
-        function scalingText(item) {
-            return (item.scaling || []).map(sc => `+1 ${SCALING_LABELS[sc.stat]} ogni ${sc.every} ${SCALING_LABELS[sc.per]}${sc.max != null ? ` (max +${sc.max})` : ''}`).join(', ');
-        }
-
-        function applyItemEffects(item, hero) {
-            if(item.str) hero.str += item.str;
-            if(item.dmg) hero.dmg += item.dmg;
-            if(item.armor) {
-                hero.base_armor += item.armor;
-                if (hero.hp > 0) hero.current_armor += item.armor;
-            }
-            if(item.att_penalty) hero.att_penalty += item.att_penalty;
-            if(item.def_bonus) hero.def_bonus += item.def_bonus;
-            if(item.def_armor) hero.def_armor = (hero.def_armor || 0) + item.def_armor;
-            if(item.help_bonus_val) hero.help_bonus_val += item.help_bonus_val;
-            if(item.fth) hero.fth += item.fth;
-            if(item.int) hero.int += item.int;
-            // L'oggetto è già nello zaino: ricalcola i bonus in scala (anche degli altri oggetti, se cambia Fede o Int)
-            refreshScaledBonuses(hero);
-        }
-
-        function revertItemEffects(item, hero) {
-            if(item.str) hero.str -= item.str;
-            if(item.dmg) hero.dmg -= item.dmg;
-            if(item.armor) {
-                hero.base_armor -= item.armor;
-                hero.current_armor = Math.max(0, hero.current_armor - item.armor);
-            }
-            if(item.att_penalty) hero.att_penalty -= item.att_penalty;
-            if(item.def_bonus) hero.def_bonus -= item.def_bonus;
-            if(item.def_armor) hero.def_armor = (hero.def_armor || 0) - item.def_armor;
-            if(item.help_bonus_val) hero.help_bonus_val -= item.help_bonus_val;
-            if(item.fth) hero.fth -= item.fth;
-            if(item.int) hero.int -= item.int;
-            // Ricalcola i bonus in scala come se l'oggetto fosse già fuori dallo zaino
-            const idx = (hero.items || []).indexOf(item);
-            if (idx >= 0) { hero.items.splice(idx, 1); refreshScaledBonuses(hero); hero.items.splice(idx, 0, item); }
-            else refreshScaledBonuses(hero);
-        }
-
-        /* ---------- Consumabili ----------
-           consumable_heal (heal_val) e consumable_full curano un eroe, anche fuori dal combattimento.
-           consumable_damage (dmg_val) colpisce il nemico; consumable_buff (buff_stat, buff_val,
-           buff_rounds) potenzia un eroe per alcuni round (0 o vuoto = tutto lo scontro): questi due
-           si usano solo in combattimento, con il comando Oggetto. Nello zaino un consumabile può
-           stare in pila con un altro uguale (campo "qty", al massimo CONSUMABLE_STACK copie). */
-        const CONSUMABLE_STACK = 2;
-        const isCombatConsumable = item => item && (item.type === 'consumable_damage' || item.type === 'consumable_buff');
-        // Statistiche che un potenziamento può alzare (etichette per tooltip, editor e diario)
-        const BUFF_STATS = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
-            def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito)' };
-
-        // Toglie una copia del consumabile: la pila scende di uno, l'ultima copia libera lo slot
-        function consumeOne(hero, itemIdx) {
-            const item = hero.items[itemIdx];
-            if ((item.qty || 1) > 1) item.qty -= 1;
-            else hero.items.splice(itemIdx, 1);
-        }
-
-        // Pila dello stesso consumabile con posto libero nello zaino dell'eroe (o undefined)
-        function stackableSlot(hero, item) {
-            if (!item.type || !item.type.startsWith('consumable')) return undefined;
-            return hero.items.find(it => it.id === item.id && it.type === item.type && (it.qty || 1) < CONSUMABLE_STACK);
-        }
-
-        // Potenziamento temporaneo: alza subito la statistica e la riporta indietro alla scadenza
-        // (expiresAfterRound; Infinity = fine dello scontro). L'armatura data subito non si toglie.
-        function applyTempBuff(hero, item) {
-            const val = item.buff_val || 0;
-            hero[item.buff_stat] = (hero[item.buff_stat] || 0) + val;
-            if (item.buff_stat === 'current_armor') return;
-            const rounds = item.buff_rounds || 0;
-            (hero.tempBuffs = hero.tempBuffs || []).push({ stat: item.buff_stat, val, name: item.name, icon: item.icon || '',
-                expiresAfterRound: rounds > 0 ? stato.combatRound + rounds - 1 : Infinity });
-        }
-
-        // Toglie i potenziamenti scaduti (all = true: tutti, a fine scontro o caricando una partita)
-        function expireTempBuffs(all = false) {
-            const expired = [];
-            stato.party.forEach(h => {
-                if (!h.tempBuffs || !h.tempBuffs.length) return;
-                h.tempBuffs = h.tempBuffs.filter(b => {
-                    if (!all && b.expiresAfterRound >= stato.combatRound) return true;
-                    h[b.stat] = (h[b.stat] || 0) - b.val;
-                    expired.push({ hero: h, buff: b });
-                    return false;
-                });
-            });
-            return expired;
-        }
-
-        // Icone dei potenziamenti attivi sulla carta dell'eroe, come i buff sopra le unità di WC3:
-        // il numero è quanti round restano (compreso quello in corso), ∞ = fino a fine scontro
-        function heroBuffsHtml(h) {
-            if (!h.tempBuffs || !h.tempBuffs.length || h.hp <= 0) return '';
-            return `<div class="hero-buffs">${h.tempBuffs.map(b => {
-                const left = b.expiresAfterRound === Infinity ? '∞' : Math.max(1, b.expiresAfterRound - stato.combatRound + 1);
-                const when = left === '∞' ? 'fino alla fine dello scontro' : (left === 1 ? 'ultimo round' : `ancora ${left} round`);
-                const tip = `${b.name}||+${b.val} ${BUFF_STATS[b.stat] || b.stat}, ${when}`;
-                const img = b.icon ? `<img src="${esc(b.icon)}" alt="">` : '';
-                return `<span class="hero-buff" data-tip="${esc(tip)}">${img}<b>${left}</b></span>`;
-            }).join('')}</div>`;
-        }
-
-        // Testo della durata di un potenziamento (per tooltip e diario)
-        function buffDurationText(item) {
-            const r = item.buff_rounds || 0;
-            return r > 0 ? (r === 1 ? 'per 1 round' : `per ${r} round`) : 'per tutto lo scontro';
-        }
-
-        window.useConsumable = function(heroName, itemIdx, targetName = null) {
-            let hero = stato.party.find(p => p.name === heroName);
-            if(!hero) return false;
-            let item = hero.items[itemIdx];
-            if(!item || !item.type || !item.type.startsWith('consumable')) return false;
-
-            if (isCombatConsumable(item)) {
-                const enemy = stato.activeEnemy;
-                if (currentScreenId !== 'screenCombat' || !enemy || enemy.hp <= 0) {
-                    uiError(`${item.name} si usa solo in combattimento`);
-                    return false;
-                }
-                if (item.type === 'consumable_damage') {
-                    const dmg = item.dmg_val || 0;
-                    enemy.hp -= dmg;
-                    consumeOne(hero, itemIdx);
-                    updatePartyStatusBars();
-                    logCombat(`💥 ${hero.name} usa ${item.name}: ${dmg} ${dmg === 1 ? 'danno' : 'danni'} a ${enemy.name}!`);
-                    return true;
-                }
-            }
-
-            let target = targetName ? stato.party.find(p => p.name === targetName) : hero;
-            if(!target || target.hp <= 0) {
-                uiError("Bersaglio non valido o non disponibile");
-                return false;
-            }
-
-            if(item.type === 'consumable_heal') {
-                healHero(target, item.heal_val);
-            } else if(item.type === 'consumable_full') {
-                healHero(target, Infinity);
-            } else if(item.type === 'consumable_buff') {
-                applyTempBuff(target, item);
-            } else {
-                return false;  // tipo sconosciuto: l'oggetto resta nello zaino
-            }
-            consumeOne(hero, itemIdx);
-            updatePartyStatusBars();
-            triggerConsumableFeedback(hero, target, item);
-            return true;
-        };
-
-        // Cura un eroe di "amount" HP (Infinity = tutti) e restituisce quanti ne ha recuperati.
-        // Con il Favore di Valgoren ogni cura riuscita fa recuperare 1 HP a un altro eroe a caso.
-        function healHero(target, amount) {
-            const before = target.hp;
-            target.hp = Math.min(target.maxHp, target.hp + amount);
-            const gained = target.hp - before;
-            if (gained > 0) valgorenEcho(target);
-            return gained;
-        }
-
-        // Favore di Valgoren: 1 HP a un altro eroe vivo e ferito, scelto a caso. Restituisce l'eroe curato.
-        function valgorenEcho(source) {
-            if (!hasRelic('favore_di_valgoren')) return null;
-            const others = stato.party.filter(h => h !== source && h.hp > 0 && h.hp < h.maxHp);
-            if (!others.length) return null;
-            const lucky = others[Math.floor(Math.random() * others.length)];
-            lucky.hp += 1;
-            return lucky;
-        }
-
         /* ---------- Messaggi a schermo in stile WoW ----------
            uiError: rosso (azione non possibile), uiMessage: giallo (avviso). Al massimo 3 righe. */
         function uiMessage(text, kind = 'info') {
@@ -829,559 +479,6 @@ function breakRelic(relicId) {
         const KEYWORD_RE = new RegExp(`\\b(${Object.keys(KEYWORD_CLASS).join('|')})\\b`, 'gi');
         function kw(text) {
             return esc(text == null ? '' : String(text)).replace(KEYWORD_RE, w => `<span class="kw kw-${KEYWORD_CLASS[w.toLowerCase()]}">${w}</span>`);
-        }
-
-        /* ---------- 22. Tooltip ricco degli oggetti ---------- */
-        const ITEM_TIP_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_armor', 'Armatura con Difendi'], ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
-        function itemTip(item, hero) {
-            const rarity = itemRarity(item);
-            const title = `<span class="tip-rar tip-rar-${rarity}">${esc(item.name)}</span>`;
-            const lines = [`<span class="tip-rar-label tip-rar-${rarity}">${RARITY_LABELS[rarity] || ''}${item.type && item.type.startsWith('consumable') ? ' · consumabile' : ''}</span>`];
-            ITEM_TIP_LINES.forEach(([k, label]) => { if (item[k]) lines.push(kw(`${item[k] > 0 ? '+' : ''}${item[k]} ${label}`)); });
-            if (item.att_penalty) lines.push(`<span class="kw kw-curse">-${item.att_penalty} al tiro per colpire</span>`);
-            if (item.type === 'consumable_heal') lines.push(kw(`Cura ${item.heal_val} HP`));
-            if (item.type === 'consumable_full') lines.push(kw('Cura tutti gli HP'));
-            if (item.type === 'consumable_damage') lines.push(kw(`Infligge ${item.dmg_val || 0} danni al nemico`));
-            if (item.type === 'consumable_buff') lines.push(kw(`+${item.buff_val || 0} ${BUFF_STATS[item.buff_stat] || item.buff_stat}${item.buff_stat === 'current_armor' ? '' : ' ' + buffDurationText(item)}`));
-            if (isCombatConsumable(item)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
-            if ((item.qty || 1) > 1) lines.push(`<span class="tip-hint">${item.qty} copie in questo slot</span>`);
-            (item.scaling || []).forEach(sc => {
-                const who = (hero ? [hero] : stato.party.filter(h => h.hp > 0)).map(h => {
-                    let b = Math.floor(Math.max(0, h[sc.per] || 0) / Math.max(1, sc.every || 1));
-                    if (sc.max != null) b = Math.min(sc.max, b);
-                    return `${esc(h.name)} +${b}`;
-                }).join(', ');
-                lines.push(kw(`+1 ${SCALING_LABELS[sc.stat]} ogni ${sc.every} ${SCALING_LABELS[sc.per]}${sc.max != null ? ` (max +${sc.max})` : ''}`) + (who ? `<br><span class="tip-hint">ora: ${who}</span>` : ''));
-            });
-            if (item.desc) lines.push(`<span class="tip-desc">${kw(item.desc)}</span>`);
-            return `${title}||${lines.join('<br>')}`;
-        }
-
-        // Statistiche che un oggetto modifica, con l'etichetta mostrata nell'anteprima
-        const ITEM_STAT_PREVIEW = [
-            { key: 'str', label: 'Forza', get: h => h.str },
-            { key: 'dmg', label: 'Danno', get: h => h.dmg },
-            { key: 'armor', label: 'Armatura', get: h => h.base_armor },
-            { key: 'fth', label: 'Fede', get: h => h.fth },
-            { key: 'int', label: 'Intelligenza', get: h => h.int },
-            { key: 'def_bonus', label: 'Difesa', get: h => h.def_bonus || 0 },
-            { key: 'def_armor', label: 'Armatura con Difendi', get: h => 1 + (h.def_armor || 0) },
-            { key: 'help_bonus_val', label: 'Aiuto', get: h => h.help_bonus_val || 0 },
-            { key: 'att_penalty', label: 'Attacco', get: h => attackMod(h), sign: -1 }
-        ];
-
-        // Es. "Forza 3→4, Danno 1→2": come cambierebbe l'eroe equipaggiando l'oggetto
-        function itemDeltaText(item, hero) {
-            if (item.type && item.type.startsWith('consumable')) {
-                const pila = stackableSlot(hero, item);
-                return pila ? `si aggiunge alla pila (${(pila.qty || 1) + 1}/${CONSUMABLE_STACK})` : 'consumabile nello zaino';
-            }
-            const after = JSON.parse(JSON.stringify(hero));
-            const copy = JSON.parse(JSON.stringify(item));
-            after.items.push(copy);
-            applyItemEffects(copy, after);
-            const parts = ITEM_STAT_PREVIEW.filter(st => st.get(after) !== st.get(hero))
-                .map(st => `${st.label} ${st.get(hero)}→${st.get(after)}`);
-            return parts.join(', ') || 'nessun effetto sulle statistiche (per ora)';
-        }
-
-        // Capienza dello zaino di ogni eroe: oltre si deve scartare un oggetto
-        const BACKPACK_SIZE = 3;
-
-        function heroOptionsForItem(item) {
-            return stato.party.filter(p => p.hp > 0).map(h => {
-                const full = h.items.length >= BACKPACK_SIZE && !stackableSlot(h, item) ? ' · zaino pieno' : '';
-                return `<option value="${h.name}">${h.name} (zaino ${h.items.length}/${BACKPACK_SIZE}) — ${itemDeltaText(item, h)}${full}</option>`;
-            }).join('');
-        }
-
-        // Riempie la scelta dell'eroe che riceve un oggetto e, sotto, la scelta di cosa scartare
-        // se il suo zaino è pieno: così lo scarto si decide subito, senza la schermata a parte.
-        function fillHeroSelectForItem(selectId, item) {
-            const select = document.getElementById(selectId);
-            select.innerHTML = heroOptionsForItem(item);
-            let picker = document.getElementById(selectId + 'Discard');
-            if (!picker) {
-                picker = document.createElement('div');
-                picker.id = selectId + 'Discard';
-                picker.className = 'discard-picker';
-                select.insertAdjacentElement('afterend', picker);
-                select.addEventListener('change', () => renderDiscardPicker(selectId));
-            }
-            picker.dataset.itemId = item.id || '';
-            picker.dataset.itemType = item.type || '';
-            renderDiscardPicker(selectId);
-        }
-
-        function renderDiscardPicker(selectId) {
-            const picker = document.getElementById(selectId + 'Discard');
-            const hero = stato.party.find(p => p.name === document.getElementById(selectId).value);
-            const incoming = { id: picker.dataset.itemId, type: picker.dataset.itemType };
-            const full = hero && hero.items.length >= BACKPACK_SIZE && !stackableSlot(hero, incoming);
-            picker.classList.toggle('hidden', !full);
-            if (!full) { picker.innerHTML = ''; return; }
-            picker.innerHTML = `<label>Zaino pieno (${hero.items.length}/${BACKPACK_SIZE}): scarta
-                <select>${hero.items.map((it, idx) => `<option value="${idx}">${esc(it.name)}</option>`).join('')}
-                    <option value="">Decido dopo</option></select></label>`;
-        }
-
-        // Indice dell'oggetto da scartare scelto sotto la scelta dell'eroe (null = si sceglie dopo)
-        function chosenDiscardIdx(selectId) {
-            const picker = document.getElementById(selectId + 'Discard');
-            const select = picker && !picker.classList.contains('hidden') ? picker.querySelector('select') : null;
-            return select && select.value !== '' ? Number(select.value) : null;
-        }
-
-        let discardCallback = null;
-        let heroNeedingDiscard = null;
-
-        // discardIdx: oggetto dello zaino da scartare subito per fare posto (vedi fillHeroSelectForItem)
-        function assignItemToHero(item, hero, callback, discardIdx = null) {
-            discover('items', item.id);
-            // Consumabile uguale a uno già nello zaino con posto nella pila: nessuno slot in più
-            const pila = stackableSlot(hero, item);
-            if (pila) {
-                pila.qty = (pila.qty || 1) + 1;
-                updatePartyStatusBars();
-                callback();
-                return;
-            }
-            if (discardIdx !== null && hero.items.length >= BACKPACK_SIZE && hero.items[discardIdx]) {
-                revertItemEffects(hero.items[discardIdx], hero);
-                hero.items.splice(discardIdx, 1);
-            }
-            let newItem = JSON.parse(JSON.stringify(item));
-            hero.items.push(newItem);
-            applyItemEffects(newItem, hero);
-            updatePartyStatusBars();
-
-            if (hero.items.length > BACKPACK_SIZE) {
-                heroNeedingDiscard = hero;
-                discardCallback = callback;
-                showScreen('screenDiscard');
-                renderDiscardScreen();
-            } else {
-                callback();
-            }
-        }
-
-        function renderDiscardScreen() {
-            document.getElementById('discardHeroName').textContent = heroNeedingDiscard.name;
-            document.getElementById('discardItemsList').innerHTML = heroNeedingDiscard.items.map((it, idx) => `
-                <button class="armory-btn" onclick="executeDiscard(${idx})">
-                    ${itemIconHtml(it)}
-                    <span class="tile-text">
-                        <strong>${it.name}</strong>
-                        <span class="tile-sub">${it.desc}</span>
-                        <span class="tile-tag danger">Scarta</span>
-                    </span>
-                </button>
-            `).join('');
-        }
-
-        function executeDiscard(idx) {
-            // (dopo la rimozione updatePartyStatusBars ricalcola i bonus in scala)
-            const itemToRemove = heroNeedingDiscard.items[idx];
-            revertItemEffects(itemToRemove, heroNeedingDiscard);
-            heroNeedingDiscard.items.splice(idx, 1);
-            updatePartyStatusBars();
-            discardCallback();
-        }
-
-        /* ==========================================================================
-           GESTIONE SFIDE
-           ========================================================================== */
-        function startChallenge(challengeId) {
-            showScreen('screenChallenge');
-            stato.challengeState = challengesData[challengeId] || {
-                title: "Sfida",
-                desc: "descrizione da scrivere",
-                ignoreText: "descrizione da scrivere",
-                successText: "descrizione da scrivere",
-                failText: "descrizione da scrivere",
-                stat: "str",
-                cd: 6
-            };
-
-            document.getElementById('challengeTitle').textContent = stato.challengeState.title;
-            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.desc)}`;
-
-            document.getElementById('challengeStage1').classList.remove('hidden');
-            document.getElementById('challengeStage2').classList.add('hidden');
-            document.getElementById('diceChallengeSection').classList.add('hidden');
-            document.getElementById('closeChallengeBtn').classList.add('hidden');
-
-            document.getElementById('closeChallengeBtn').onclick = advanceNode;
-        }
-
-        function challengeChoose(approach) {
-            if(!approach) {
-                document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.ignoreText)}`;
-                document.getElementById('challengeStage1').classList.add('hidden');
-                document.getElementById('closeChallengeBtn').classList.remove('hidden');
-                return;
-            }
-            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> Un membro della compagnia si fa avanti per affrontare la prova.`;
-            document.getElementById('challengeStage1').classList.add('hidden');
-            document.getElementById('challengeStage2').classList.remove('hidden');
-            document.getElementById('challengeHeroSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => {
-                const mods = challengeModifiers(h);
-                return `<option value="${h.name}">${h.name} (${STAT_LABELS[stato.challengeState.stat] || 'Stat'} ${mods.statValue}) · ${challengeChanceInfo(mods).short}</option>`;
-            }).join('');
-        }
-
-        let selectedChallengeHero = null;
-        function confirmChallengeHero() {
-            selectedChallengeHero = stato.party.filter(p => p.hp > 0).find(p => p.name === document.getElementById('challengeHeroSelect').value);
-            document.getElementById('challengeStage2').classList.add('hidden');
-            document.getElementById('diceChallengeSection').classList.remove('hidden');
-
-            const statLabel = STAT_LABELS[stato.challengeState.stat] || 'Statistica';
-            document.getElementById('challengeCdText').textContent = `Prova di ${statLabel} (Classe di Difficoltà: ${stato.challengeState.cd})`;
-
-            // Probabilità di riuscita prima del tiro, con gli stessi modificatori di executeChallengeRoll
-            const mods = challengeModifiers(selectedChallengeHero);
-            const info = challengeChanceInfo(mods);
-            const chanceEl = document.getElementById('challengeChance');
-            chanceEl.textContent = info.long;
-            chanceEl.dataset.chance = info.pct >= 67 ? 'high' : (info.pct >= 34 ? 'mid' : 'low');
-
-            const log = document.getElementById('challengeLog');
-            log.innerHTML = '';
-            log.classList.add('hidden');
-            document.getElementById('rollChallengeBtn').disabled = false;
-            document.getElementById('diceChallenge').textContent = "6";
-
-            // Con vantaggio o svantaggio si mostrano due dadi già prima del tiro
-            const rollMode = challengeRollMode(selectedChallengeHero);
-            const twoDice = rollMode.mode !== 'single';
-            const dice2 = document.getElementById('diceChallenge2');
-            dice2.textContent = "6";
-            dice2.classList.toggle('hidden', !twoDice);
-            document.getElementById('diceChallenge').classList.remove('discarded');
-            dice2.classList.remove('discarded');
-            const note = document.getElementById('diceChallengeNote');
-            note.textContent = rollMode.note || '';
-            note.classList.toggle('hidden', !rollMode.note);
-            document.getElementById('rollChallengeBtn').textContent =
-                rollMode.mode === 'best' ? "Tira (2D6, tieni il migliore)" : (rollMode.mode === 'worst' ? "Tira (2D6, tieni il peggiore)" : "Tira (D6)");
-        }
-
-        // Come si tira in una prova: 'best' (vantaggio), 'worst' (svantaggio) o 'single'.
-        // Vantaggio: abilità di Dioforo "Era solo una prova!" nelle prove di Intelligenza e Fede
-        // Svantaggio: maledizione "Fede Inaridita" nelle prove di Fede. Se ci sono entrambi si annullano.
-        function challengeRollMode(hero) {
-            if (!hero || !stato.challengeState) return { mode: 'single' };
-            const stat = stato.challengeState.stat;
-            const advantage = (stat === 'int' || stat === 'fth') &&
-                !!hero.hasAdvantageOnIntFth;
-            const disadvantage = stat === 'fth' && hasCurse('fede_inaridita');
-            if (advantage && disadvantage) return { mode: 'single', note: 'Era solo una prova! e Fede Inaridita si annullano: un solo dado' };
-            if (advantage) return { mode: 'best', note: `Era solo una prova! ${hero.name} tira due dadi e tiene il più alto`, source: 'Era solo una prova!' };
-            if (disadvantage) return { mode: 'worst', note: 'Fede Inaridita: si tirano due dadi e si tiene il più basso', source: 'Fede Inaridita' };
-            return { mode: 'single' };
-        }
-
-
-        // Modificatori di una prova per l'eroe scelto, senza consumare le reliquie
-        function challengeModifiers(hero) {
-            const statValue = (hero && hero[stato.challengeState.stat]) || 0;
-            const relics = [];
-            if (hasRelic('anello_del_giuramento')) relics.push({ name: "Anello del giuramento", val: 3 });
-            if (hasRelic('sigillo_runico')) relics.push({ name: "Sigillo runico", val: 2 });
-            if (relicDiceBonus()) relics.push({ name: "Frammento di Yr-Drazul", val: 1 });
-            return {
-                statValue,
-                relics,
-                relicBonus: relics.reduce((sum, r) => sum + r.val, 0),
-                rollMode: challengeRollMode(hero).mode,
-                safetyNet: hasRelic('frammento_di_matrice')
-            };
-        }
-
-        function challengeChanceInfo(mods) {
-            const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus;
-            if (mods.safetyNet) return { short: 'Sicuro', long: 'Riuscita garantita: il Frammento di matrice trasforma un fallimento in successo', pct: 100 };
-            return chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
-        }
-
-        function addChallengeLog(text) {
-            const log = document.getElementById('challengeLog');
-            log.classList.remove('hidden');
-            log.innerHTML += `<div>${text}</div>`;
-            log.scrollTop = log.scrollHeight;
-        }
-
-        // Risolve una prova: tiro (con vantaggio/svantaggio), reliquie, ricompensa/punizione.
-        // Muta unlockedRelics/activeCurses/expeditionStats. "events" sono le righe di log in ordine.
-        function resolveChallenge(hero, challenge, rolls) {
-            const events = [];
-            const rollMode = challengeRollMode(hero);
-            const twoDice = rollMode.mode !== 'single';
-            const roll = rollD6(rolls, 0);
-            let roll2 = null, kept = roll;
-
-            if (twoDice) {
-                roll2 = rollD6(rolls, 1);
-                const best = rollMode.mode === 'best';
-                kept = best ? Math.max(roll, roll2) : Math.min(roll, roll2);
-                events.push({ type: 'roll2', text: `🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})` });
-            } else {
-                events.push({ type: 'roll', text: `🎲 Dado: <b>${roll}</b>` });
-            }
-
-            const mods = challengeModifiers(hero);
-            const statLabel = STAT_LABELS[challenge.stat] || 'Statistica';
-            events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
-
-            let relicBonus = 0;
-            if (hasRelic('anello_del_giuramento')) {
-                relicBonus += 3;
-                breakRelic('anello_del_giuramento');
-                events.push({ type: 'relic', text: '+3 Anello del giuramento (la reliquia si rompe)' });
-            }
-            if (hasRelic('sigillo_runico')) {
-                relicBonus += 2;
-                stato.party.sigilloCharges = (stato.party.sigilloCharges || 0) + 1;
-                const broken = stato.party.sigilloCharges >= 2;
-                if (broken) breakRelic('sigillo_runico');
-                events.push({ type: 'relic', text: `+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})` });
-            }
-
-            if (relicDiceBonus()) {
-                relicBonus += 1;
-                events.push({ type: 'relic', text: '+1 Frammento di Yr-Drazul' });
-            }
-
-            let total = kept + mods.statValue + relicBonus;
-            events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
-
-            let success = naturalRollSuccess(kept, total, challenge.cd);
-            const natural = naturalRollNote(kept, total, challenge.cd);
-            if (natural) events.push({ type: 'natural', text: natural });
-
-            if (!success && hasRelic('frammento_di_matrice')) {
-                total = Math.max(total, challenge.cd);
-                success = true;
-                breakRelic('frammento_di_matrice');
-                events.push({ type: 'relic', text: 'Frammento di matrice: il fallimento diventa un successo (la reliquia si rompe)' });
-            }
-
-            events.push({ type: 'outcome', text: success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>' });
-
-            let rewardGranted = null, punishmentApplied = null;
-            if (success) {
-                if (challenge.reward) {
-                    // Solo le reliquie restano nell'elenco: i premi immediati (es. monete) agiscono e basta
-                    if (challenge.reward.type === 'relic') {
-                        stato.unlockedRelics.push({ ...challenge.reward, id: challenge.reward.id || idFromName(challenge.reward.name) });
-                    }
-                    applyEffects(challenge.reward.effects);
-                    if (challenge.reward.type === 'relic') discover('relics', challenge.reward.name);
-                    rewardGranted = challenge.reward;
-                }
-                stato.expeditionStats.challengesPassed++;
-            } else {
-                if (challenge.punishment) {
-                    const cursesBefore = stato.activeCurses.length;
-                    applyEffects(challenge.punishment.effects);
-                    if (challenge.punishment.type === 'curse') discover('curses', challenge.punishment.name);
-                    const curseId = challenge.punishment.id || idFromName(challenge.punishment.name);
-                    // Le maledizioni aggiunte dagli effetti prendono l'id della maledizione della libreria
-                    stato.activeCurses.slice(cursesBefore).forEach(c => { c.id = curseId; });
-                    if (stato.activeCurses.length === cursesBefore) {
-                        stato.activeCurses.push({ id: curseId, text: `${challenge.punishment.name} (${challenge.punishment.desc})` });
-                    }
-                    punishmentApplied = challenge.punishment;
-                }
-                stato.expeditionStats.challengesFailed++;
-            }
-
-            const isFinal = challenge.stat === 'scelta_finale' || challenge.title === "Accampamento";
-
-            return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rewardGranted, punishmentApplied, isFinal, events };
-        }
-
-        // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
-        function executeChallengeRoll(externalRolls) {
-            const rollBtn = document.getElementById('rollChallengeBtn');
-            if (rollBtn.disabled) return;
-
-            const diceBox = document.getElementById('diceChallenge');
-            const diceBox2 = document.getElementById('diceChallenge2');
-            const rollMode = challengeRollMode(selectedChallengeHero);
-            const twoDice = rollMode.mode !== 'single';
-            rollBtn.disabled = true; diceBox.classList.add('rolling');
-            if (twoDice) diceBox2.classList.add('rolling');
-            synthSfx('dice');
-
-            let counter = 0;
-            const interval = setInterval(() => {
-                diceBox.textContent = Math.floor(Math.random() * 6) + 1;
-                if (twoDice) diceBox2.textContent = Math.floor(Math.random() * 6) + 1;
-                counter += 50;
-                if(counter >= 500) {
-                    clearInterval(interval);
-
-                    const res = resolveChallenge(selectedChallengeHero, stato.challengeState, externalRolls);
-                    diceBox.textContent = res.roll;
-                    diceBox.classList.remove('rolling');
-
-                    if (res.twoDice) {
-                        diceBox2.textContent = res.roll2;
-                        diceBox2.classList.remove('rolling');
-                        const secondKept = res.rollMode.mode === 'best' ? res.roll2 > res.roll : res.roll2 < res.roll;
-                        (secondKept ? diceBox : diceBox2).classList.add('discarded');
-                        document.getElementById('diceChallengeNote').textContent =
-                            `${res.rollMode.source}: dadi [${res.roll}, ${res.roll2}], tiene ${res.kept}`;
-                    }
-
-                    diceOutcomeSfx(res.kept);
-                    res.events.forEach(ev => addChallengeLog(ev.text));
-
-                    if(res.success) {
-                        let rewardMsg = "";
-                        if (res.rewardGranted) {
-                            rewardMsg = `<br><strong style="color:var(--relic-color);">Reliquia ottenuta: ${res.rewardGranted.name} (${res.rewardGranted.desc})</strong>`;
-                            showOutcomeOverlay('relic', res.rewardGranted);
-                        }
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.successText || 'Prova superata!')}${rewardMsg}`;
-
-                        if (res.isFinal) {
-                            document.getElementById('closeChallengeBtn').onclick = () => showScreen('screenVictory');
-                        } else {
-                            document.getElementById('closeChallengeBtn').onclick = advanceNode;
-                        }
-                    } else {
-                        let punishmentMsg = "";
-                        if (res.punishmentApplied) {
-                            punishmentMsg = `<br><strong style="color:var(--curse-color);">Maledizione subita: ${res.punishmentApplied.name} (${res.punishmentApplied.desc})</strong>`;
-                            showOutcomeOverlay('curse', res.punishmentApplied);
-                        }
-                        document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.failText || 'Prova fallita!')}${punishmentMsg}`;
-                        document.getElementById('closeChallengeBtn').onclick = advanceNode;
-                    }
-
-                    updatePartyStatusBars();
-                    document.getElementById('closeChallengeBtn').classList.remove('hidden');
-                }
-            }, 50);
-        }
-
-        // Risolve un riposo: cura party, rimuove Gelo nelle ossa e (a caso) 1 maledizione con Pietra del focolare.
-        function resolveRest() {
-            const healAmount = 1 + (hasRelic('unguento_dell_erborista') ? 1 : 0);
-            const healed = [];
-            stato.party.forEach(h => {
-                // Un eroe caduto (0 HP) si rialza con 1 HP
-                if (h.hp <= 0) {
-                    h.hp = 1;
-                    healed.push({ name: h.name, gained: 1, hp: h.hp, maxHp: h.maxHp, revived: true });
-                    return;
-                }
-                const before = h.hp;
-                h.hp = Math.min(h.maxHp, h.hp + healAmount);
-                healed.push({ name: h.name, gained: h.hp - before, hp: h.hp, maxHp: h.maxHp });
-            });
-
-            // Favore di Valgoren: il riposo è una cura, quindi 1 HP in più a un eroe ancora ferito
-            const healedSomeone = healed.some(h => h.gained > 0);
-            const valgoren = healedSomeone ? valgorenEcho(null) : null;
-            if (valgoren) {
-                const line = healed.find(h => h.name === valgoren.name);
-                if (line) { line.gained += 1; line.hp = valgoren.hp; line.valgoren = true; }
-            }
-
-            let geloRemoved = false;
-            const geloIdx = stato.activeCurses.findIndex(c => c.id === 'gelo_nelle_ossa');
-            if (geloIdx > -1) {
-                stato.activeCurses.splice(geloIdx, 1);
-                stato.party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
-                geloRemoved = true;
-            }
-
-            if (hasRelic('pietra_del_focolare') && stato.activeCurses.length > 0) {
-                const rIdx = Math.floor(Math.random() * stato.activeCurses.length);
-                stato.activeCurses.splice(rIdx, 1);
-            }
-
-            return { healAmount, healed, geloRemoved };
-        }
-
-        function startRest(restId) {
-            showScreen('screenRest');
-            const restDesc = restsData[restId] || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
-            document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(restDesc)}`;
-
-            const res = resolveRest();
-            const healLines = res.healed.map(h => h.revived
-                ? `${esc(h.name)}: si rialza (${h.hp}/${h.maxHp})`
-                : h.gained > 0
-                    ? `${esc(h.name)}: +${h.gained} HP (${h.hp}/${h.maxHp})${h.valgoren ? ' · Favore di Valgoren' : ''}`
-                    : `${esc(h.name)}: già in piena salute`);
-            document.getElementById('restDescBox').innerHTML += `<br><br><strong>Il riposo vi ristora:</strong><br>${healLines.join('<br>')}`;
-            if (res.geloRemoved) {
-                document.getElementById('restDescBox').innerHTML += `<br>Il calore del fuoco scioglie il <strong>Gelo nelle ossa</strong>: la penalità ai tiri per colpire svanisce.`;
-            }
-            updatePartyStatusBars();
-        }
-
-        function startCaptainFinale() {
-            showScreen('screenCaptain');
-            document.getElementById('captainHeroSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => `<option value="${h.name}">${h.name}</option>`).join('');
-        }
-
-        let captainActionType = ''; let selectedCaptainHero = null;
-        function captainAction(type) {
-            captainActionType = type;
-            selectedCaptainHero = stato.party.find(p => p.name === document.getElementById('captainHeroSelect').value);
-            document.getElementById('captainHeroSelect').style.display = 'none';
-            document.getElementById('diceCaptainSection').classList.remove('hidden');
-        }
-
-        // Risolve l'azione del finale "capitano": 'force' dimezza gli HP, 'faith'/'int' tirano contro CD 6.
-        function resolveCaptainAction(hero, type) {
-            const roll = Math.floor(Math.random() * 6) + 1;
-            if (type === 'force') {
-                hero.hp = Math.max(1, Math.floor(hero.hp / 2));
-                return { type, roll, success: null };
-            }
-            const statVal = type === 'faith' ? hero.fth : hero.int;
-            const success = naturalRollSuccess(roll, roll + statVal, 6);
-            return { type, roll, statVal, success };
-        }
-
-        function executeCaptainRoll() {
-            const rollBtn = document.getElementById('rollCaptainBtn');
-            const diceBox = document.getElementById('diceCaptain');
-            rollBtn.disabled = true; diceBox.classList.add('rolling');
-            synthSfx('dice');
-
-            let counter = 0;
-            const interval = setInterval(() => {
-                diceBox.textContent = Math.floor(Math.random() * 6) + 1;
-                counter += 50;
-                if(counter >= 500) {
-                    clearInterval(interval);
-                    const res = resolveCaptainAction(selectedCaptainHero, captainActionType);
-                    diceBox.textContent = res.roll; diceBox.classList.remove('rolling');
-                    diceOutcomeSfx(res.roll);
-
-                    if (res.type === 'force') {
-                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">RAMANZINA!</span> Perdi il 50% degli HP.`;
-                    } else if (res.success) {
-                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:var(--gold);">VITTORIA!</span> Meta raggiunta!${res.roll === 6 ? ' (6 naturale)' : ''}`;
-                    } else {
-                        document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">FALLITO!</span>${res.roll === 1 ? ' (1 naturale)' : ''}`;
-                    }
-                    updatePartyStatusBars();
-
-                    const endBtn = document.getElementById('endGameBtn');
-                    endBtn.classList.remove('hidden');
-                    endBtn.textContent = "Vedi Vittoria / Fine Campagna";
-                    endBtn.onclick = () => showScreen('screenVictory');
-                }
-            }, 50);
         }
 
         /* =========================================================
@@ -2355,9 +1452,29 @@ function breakRelic(relicId) {
                         ${stat(stato.expeditionStats.itemsFound, 'Oggetti trovati')}
                         ${stat(`${stato.party.filter(h => h.hp > 0).length} / ${stato.party.length}`, 'Eroi in piedi')}
                     </div>
-                </div>`,
+                </div>
+                ${diceStatsHtml()}`,
                 [{ label: 'Chiudi', className: 'btn-proceed' }],
                 { wide: true });
+        }
+
+        // Quante volte è uscita ogni faccia nei dadi degli eroi in questa spedizione (vedi rollD6):
+        // barre in proporzione, percentuale accanto al 16,7% atteso e media accanto a 3,5
+        function diceStatsHtml() {
+            const counts = (stato.expeditionStats && stato.expeditionStats.diceRolls) || [0, 0, 0, 0, 0, 0];
+            const total = counts.reduce((a, b) => a + b, 0);
+            if (!total) return '<div class="journal-section"><h4>I dadi</h4><span class="journal-empty">Nessun dado tirato finora</span></div>';
+            const max = Math.max(...counts);
+            const mean = counts.reduce((sum, n, i) => sum + n * (i + 1), 0) / total;
+            const bars = counts.map((n, i) => `
+                <div class="dice-bar" data-tip="Faccia ${i + 1}||Uscita ${n} volte su ${total} (${(n / total * 100).toFixed(1)}%). Con un dado onesto ci si aspetta il 16,7%.">
+                    <span class="dice-bar-fill" style="height:${max ? Math.round(n / max * 100) : 0}%"></span>
+                    <b>${i + 1}</b><small>${Math.round(n / total * 100)}%</small>
+                </div>`).join('');
+            return `<div class="journal-section"><h4>I dadi</h4>
+                <div class="dice-stats">${bars}</div>
+                <div class="dice-stats-note">${total} dadi tirati dagli eroi · media ${mean.toFixed(2)} (attesa 3,50)${total < 60 ? ' · con pochi tiri le differenze sono normali' : ''}</div>
+            </div>`;
         }
 
         /* ---------- 17. Conferma prima di lasciare mercante e tesoro ---------- */

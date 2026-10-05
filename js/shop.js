@@ -1,6 +1,6 @@
 /* ==========================================================================
    MERCANTE
-   Merce (5 oggetti + 1 consumabile, rarità in base all'avanzamento),
+   Merce (4 armi o armature, 2 consumabili e il medico; rarità in base all'avanzamento),
    carte coperte da scoprire, rinnovo della merce a pagamento, contrattazione
    (prova di Intelligenza sempre più difficile), acquisto, vendita e uscita.
    Caricato dopo js/game.js (stesso ambito globale: usa stato, gameItems, LIBRERIA...).
@@ -24,10 +24,16 @@
         let merchantItemsWithPrices = [];
         let currentMerchantItem = null;
 
-        // Merce del mercante: 5 oggetti da equipaggiare (senza doppioni finché il bottino lo permette)
-        // più 1 consumabile, tutti dal bottino della campagna. Le rarità alte diventano più probabili
-        // andando avanti nella mappa (scarso/comune/non comune/raro/epico/leggendario, % dal primo all'ultimo livello).
-        const MERCHANT_EQUIPMENT_SLOTS = 5;
+        // Merce del mercante: 4 oggetti da equipaggiare e 2 consumabili (senza doppioni finché il bottino
+        // lo permette) e il medico (cura 2 HP a un eroe). Niente reliquie: si trovano nelle sfide e dagli elite.
+        // Le rarità alte diventano più probabili andando avanti nella mappa.
+        const MERCHANT_EQUIPMENT_SLOTS = 4;
+        const MERCHANT_CONSUMABLE_SLOTS = 2;
+        const MEDIC_PRICE = 7;             // fisso: niente rincari, contrattazione o sconti
+        const MEDIC_HEAL = 2;
+        // Le carte che non sono oggetti hanno un "item" di facciata per icona, nome e tooltip
+        const MEDIC_CARD = { id: 'medico', name: 'Medico da campo', rarity: 'non_comune', icon: 'immagini/icone/BTNHeal.png',
+            desc: `Cura ${MEDIC_HEAL} HP a un eroe ferito` };
         const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
         function merchantRarityWeights(progress) {
@@ -44,26 +50,34 @@
             if (consumables.length === 0) consumables = Object.values(LIBRERIA.armeria).filter(isConsumableItem);
 
             const shopPool = [];
-            for (let i = 0; i < MERCHANT_EQUIPMENT_SLOTS && equipment.length > 0; i++) {
-                const notYetOffered = equipment.filter(item => !shopPool.includes(item));
-                shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : equipment, weights));
-            }
-            shopPool.push(pickByRarity(consumables, weights));
+            const pickDistinct = (pool, count) => {
+                for (let i = 0; i < count && pool.length > 0; i++) {
+                    const notYetOffered = pool.filter(item => !shopPool.includes(item));
+                    shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : pool, weights));
+                }
+            };
+            pickDistinct(equipment, MERCHANT_EQUIPMENT_SLOTS);
+            pickDistinct(consumables, MERCHANT_CONSUMABLE_SLOTS);
 
-            return shopPool.filter(Boolean).map(item => {
-                const rarity = itemRarity(item);
-                const spread = ITEM_PRICE_SPREAD[rarity];
-                let basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
+            // Reliquie, maledizioni e rincaro valgono per gli oggetti, non per il medico
+            const adjust = basePrice => {
                 basePrice = Math.round(basePrice * merchantProgressMultiplier());
-
-                // Applica gli sconti delle reliquie
                 if (hasRelic('moneta_di_fredlos')) basePrice = Math.floor(basePrice * 0.5);
                 if (hasRelic('lasciapassare_mercantile')) basePrice = Math.max(1, basePrice - 3);
                 // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
                 if (hasCurse('rancore_del_mercante')) basePrice += 2;
+                return basePrice;
+            };
 
-                return { item, price: basePrice, revealed: false };
+            const stock = shopPool.filter(Boolean).map(item => {
+                const rarity = itemRarity(item);
+                const spread = ITEM_PRICE_SPREAD[rarity];
+                const basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
+                return { kind: 'item', item, price: adjust(basePrice), revealed: false };
             });
+
+            stock.push({ kind: 'medic', item: MEDIC_CARD, price: MEDIC_PRICE, fixedPrice: true, revealed: true });
+            return stock;
         }
 
         /* ---------- Contrattazione: una sola proposta per mercante ---------- */
@@ -72,6 +86,18 @@
         const HAGGLE_PENALTY = 2;       // fallimento: +2 monete su ogni articolo
         let merchantHaggle = null;      // null = non ancora tentata, 'ok' = riuscita, 'fail' = fallita
         let merchantRerolled = false;   // la merce si rinnova una sola volta per mercante
+        let merchantStolen = false;     // passiva "La mano è più veloce dell'occhio": primo oggetto già rubato?
+
+        // Eroe vivo che può rubare il primo oggetto di questo mercante (hero_set freeFirstMerchantItem), o null
+        function merchantThief() {
+            if (merchantStolen) return null;
+            return stato.party.find(h => h.hp > 0 && h.freeFirstMerchantItem) || null;
+        }
+
+        // Prezzo da pagare adesso: gli oggetti sono gratis finché il ladro non ne ha rubato uno (il medico no)
+        function effectiveMerchantPrice(entry) {
+            return entry.kind === 'item' && merchantThief() ? 0 : entry.price;
+        }
 
         // Rinnovo possibile una sola volta e solo prima di aver comprato qualcosa (un articolo comprato diventa null)
         function merchantBoughtSomething() {
@@ -89,9 +115,22 @@
             return basePrice;
         }
 
+        // Sconto dalle passive degli eroi vivi (hero_set "merchantDiscount", es. 0.2 = -20%, "Inganno del drago verde").
+        // Più eroi con lo sconto non si sommano: vale il più alto. Il costo di "Rinnova la merce" non cambia.
+        function merchantDiscount() {
+            return Math.max(0, ...stato.party.filter(h => h.hp > 0).map(h => h.merchantDiscount || 0));
+        }
+
+        // Prezzo finale di un articolo: contrattazione, poi sconto delle passive
+        function merchantPrice(basePrice) {
+            const price = hagglePrice(basePrice);
+            const discount = merchantDiscount();
+            return discount > 0 ? Math.max(1, Math.round(price * (1 - discount))) : price;
+        }
+
         // Nuova merce coperta, con il prezzo base conservato per la contrattazione
         function stockMerchant() {
-            merchantItemsWithPrices = generateMerchantStock().map(entry => ({ ...entry, basePrice: entry.price, price: hagglePrice(entry.price) }));
+            merchantItemsWithPrices = generateMerchantStock().map(entry => ({ ...entry, basePrice: entry.price, price: entry.fixedPrice ? entry.price : merchantPrice(entry.price) }));
         }
 
         // Stesse regole delle prove: vantaggio di Dioforo con l'Intelligenza (Fede Inaridita qui non conta: si contratta solo con l'Intelligenza)
@@ -116,6 +155,7 @@
 
     merchantHaggle = null;
     merchantRerolled = false;
+    merchantStolen = false;
     showMerchantTab('buy');
     stockMerchant();
 
@@ -131,17 +171,20 @@
                     return cardBackHtml(`revealMerchantItem(${idx})`, 'Merce coperta', 'Clicca per scoprire cosa offre il mercante', `rar-back-${itemRarity(entry.item)}`)
                         .replace('<button ', `<button data-idx="${idx}" `);
                 }
-                const canAfford = stato.partyCoins >= entry.price;
+                const price = effectiveMerchantPrice(entry);
+                const canAfford = stato.partyCoins >= price;
                 const flip = idx === justRevealedMerchantIdx ? `card-flip-in reveal-${itemRarity(entry.item)}` : '';
-                const oldPrice = entry.price !== entry.basePrice ? `<s class="price-old">${entry.basePrice}</s>` : '';
+                const listPrice = price !== entry.price ? entry.price : entry.basePrice;
+                const oldPrice = price !== listPrice ? `<s class="price-old">${listPrice}</s>` : '';
+                const stealTag = entry.kind === 'item' && price === 0 && merchantThief() ? `<span class="tile-tag">Da rubare (${esc(merchantThief().name)})</span>` : '';
                 return `
-                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})" data-tip="${esc(itemTip(entry.item))}">
+                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})" data-tip="${esc(entry.kind === 'item' ? itemTip(entry.item) : `${entry.item.name}||${entry.item.desc}`)}">
                         ${itemIconHtml(entry.item)}
                         <span class="tile-text">
-                            <strong>${entry.item.name}</strong>
+                            <strong>${entry.item.name}</strong>${entry.kind === 'medic' ? '<span class="tile-tag">Servizio</span>' : ''}${stealTag}
                             <span class="tile-sub">${kw(entry.item.desc)}</span>
                         </span>
-                        <span class="price ${canAfford ? '' : 'too-much'}">${oldPrice}<span class="coin"></span>${entry.price}</span>
+                        <span class="price ${canAfford ? '' : 'too-much'}">${oldPrice}<span class="coin"></span>${price}</span>
                     </button>
                 `;
             }).join('');
@@ -205,13 +248,13 @@
             closeModal();
             const cd = haggleCd();
             const mode = haggleRollMode(hero, stat);
-            const d1 = Math.floor(Math.random() * 6) + 1;
-            const d2 = Math.floor(Math.random() * 6) + 1;
+            const d1 = rollD6(null, 0);
+            const d2 = mode === 'single' ? null : rollD6(null, 1);  // il secondo dado si tira solo se serve
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
             const total = roll + (hero[stat] || 0) + relicDiceBonus();
             const success = naturalRollSuccess(roll, total, cd);
             merchantHaggle = success ? 'ok' : 'fail';
-            merchantItemsWithPrices.forEach(entry => { if (entry) entry.price = hagglePrice(entry.basePrice); });
+            merchantItemsWithPrices.forEach(entry => { if (entry && !entry.fixedPrice) entry.price = merchantPrice(entry.basePrice); });
 
             synthSfx('dice');
             setTimeout(() => {
@@ -229,12 +272,20 @@
         function tryBuyMerchantItem(idx) {
             let entry = merchantItemsWithPrices[idx];
             if (!entry || !entry.revealed) return;
-            if(stato.partyCoins < entry.price) {
+            // Passiva "La mano è più veloce dell'occhio": il primo oggetto di questo mercante si ruba
+            const thief = merchantThief();
+            const price = effectiveMerchantPrice(entry);
+            if(stato.partyCoins < price) {
                 uiError("Non hai abbastanza monete");
                 return;
             }
+            if (entry.kind === 'medic') return openMedic(idx);
+            if (thief && price === 0) {
+                merchantStolen = true;
+                uiMessage(`${thief.name} fa sparire ${entry.item.name} sotto il mantello: è gratis!`);
+            }
 
-            stato.partyCoins -= entry.price;
+            stato.partyCoins -= price;
             currentMerchantItem = entry.item;
             merchantItemsWithPrices[idx] = null;
 
@@ -246,6 +297,27 @@
             fillHeroSelectForItem('merchantHeroSelect', currentMerchantItem);
 
             updatePartyStatusBars();
+        }
+
+        // Medico: si sceglie l'eroe ferito da curare; costa MEDIC_PRICE e si usa una volta per mercante
+        function openMedic(idx) {
+            const entry = merchantItemsWithPrices[idx];
+            const wounded = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp);
+            if (!wounded.length) { uiError('Nessun eroe ferito da curare'); return; }
+            openModal('Medico da campo',
+                `<p>Il medico cura <b>${MEDIC_HEAL} HP</b> a un eroe per <b style="color:var(--wc-yellow)">${entry.price}</b> monete. Chi vuoi far curare?</p>`,
+                wounded.map(h => ({
+                    label: `${h.name} (HP ${h.hp}/${h.maxHp})`,
+                    onClick: () => {
+                        if (!merchantItemsWithPrices[idx] || stato.partyCoins < entry.price) return;
+                        stato.partyCoins -= entry.price;
+                        merchantItemsWithPrices[idx] = null;
+                        const gained = healHero(h, MEDIC_HEAL);
+                        uiMessage(`Il medico cura ${h.name}: +${gained} HP`);
+                        updatePartyStatusBars();
+                        renderMerchantShop();
+                    }
+                })).concat([{ label: 'Annulla', className: 'btn-danger' }]));
         }
 
         function confirmMerchantAssignment() {

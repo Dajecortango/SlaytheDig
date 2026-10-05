@@ -1,6 +1,5 @@
 // Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.
 // Le campagne li richiamano per id in "initialArmory" e "lootItems".
-// "icon" è l'icona di Warcraft III mostrata nel gioco (vuoto = icona generica del tipo di oggetto).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.armeria = {
@@ -137,11 +136,20 @@ window.LIBRERIA.armeria = {
     "elisir_sangue_vivo": { "id": "elisir_sangue_vivo", "name": "Elisir di Sangue Vivo", "rarity": "epico", "type": "consumable_full", "desc": "Consumabile: Ripristina tutti gli HP", "icon": "immagini/icone/BTNPotionOfVampirism.png" },
     "olio_bollente": { "id": "olio_bollente", "name": "Fiala di Olio Bollente", "rarity": "comune", "type": "consumable_damage", "dmg_val": 1, "desc": "Consumabile: 1 danno al nemico", "icon": "immagini/icone/BTNLiquidFire.png" },
     "bomba_acido": { "id": "bomba_acido", "name": "Bomba d'Acido", "rarity": "raro", "type": "consumable_damage", "dmg_val": 2, "desc": "Consumabile: 2 danni al nemico", "icon": "immagini/icone/BTNAcidBomb.png" },
-    "polvere_nera": { "id": "polvere_nera", "name": "Sacchetto di Polvere Nera", "rarity": "epico", "type": "consumable_damage", "dmg_val": 3, "desc": "Consumabile: 3 danni al nemico", "icon": "immagini/icone/BTNFireRocks.png" },
+    "cristallo_flammaurea": { "id": "cristallo_flammaurea", "name": "Cristallo di Flammaurea", "rarity": "epico", "type": "consumable_damage", "dmg_val": 3, "desc": "Consumabile: 3 danni al nemico", "icon": "immagini/oggetti/cristallo_flammaurea.webp" },
     "grappa_soldato": { "id": "grappa_soldato", "name": "Grappa del Soldato", "rarity": "comune", "type": "consumable_buff", "buff_stat": "str", "buff_val": 1, "buff_rounds": 1, "desc": "Consumabile: +1 Forza per 1 round", "icon": "immagini/icone/BTNDrunkenDodge.png" },
     "infuso_corteccia": { "id": "infuso_corteccia", "name": "Infuso di Corteccia", "rarity": "non_comune", "type": "consumable_buff", "buff_stat": "current_armor", "buff_val": 2, "desc": "Consumabile: +2 Armatura subito", "icon": "immagini/icone/BTNScrollOfProtection.png" },
     "olio_da_lama": { "id": "olio_da_lama", "name": "Olio da Lama", "rarity": "non_comune", "type": "consumable_buff", "buff_stat": "dmg", "buff_val": 1, "buff_rounds": 3, "desc": "Consumabile: +1 Danno per 3 round", "icon": "immagini/icone/BTNOrbOfFire.png" },
-    "pozione_pelle_pietra": { "id": "pozione_pelle_pietra", "name": "Pozione di Pelle di Pietra", "rarity": "raro", "type": "consumable_buff", "buff_stat": "def_armor", "buff_val": 1, "desc": "Consumabile: +1 Armatura con Difendi per tutto lo scontro", "icon": "immagini/icone/BTNPotionOfDivinity.png" },
+    "pozione_pelle_pietra": {
+        "id": "pozione_pelle_pietra",
+        "name": "Pozione di Pelle di Pietra",
+        "rarity": "raro",
+        "type": "consumable_buff",
+        "buff_stat": "def_armor",
+        "buff_val": 1,
+        "desc": "Consumabile: +1 Armatura con Difendi per tutto lo scontro",
+        "icon": "immagini/icone/BTNPotionOfDivinity.png"
+    },
     "elisir_berserker": { "id": "elisir_berserker", "name": "Elisir del Berserker", "rarity": "epico", "type": "consumable_buff", "buff_stat": "str", "buff_val": 2, "desc": "Consumabile: +2 Forza per tutto lo scontro", "icon": "immagini/icone/BTNBerserk.png" },
     "ankh_pellegrino": {
         "id": "ankh_pellegrino",
@@ -221,4 +229,4 @@ window.LIBRERIA.armeria = {
 };
 
 // Bottino delle campagne con "lootItems": null
-window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "polvere_nera", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker"];
+window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "cristallo_flammaurea", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker"];
