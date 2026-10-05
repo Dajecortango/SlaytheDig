@@ -358,3 +358,8 @@ code { color: var(--gold); font-size: 0.85em; }
 
 /* Icona dell'elemento nell'elenco a sinistra (oggetti dell'armeria, abilità) */
 .ed-list-icon { float: left; width: 30px; height: 30px; margin: 0 8px 0 0; object-fit: cover; border: 1px solid #8a6418; box-shadow: 0 0 0 1px #000; }
+
+/* Anteprima del tooltip (previewItem / previewAbility in js/editor.js): il tooltip del gioco, fermo nella pagina */
+.ed-tip-preview-wrap { margin-top: 14px; }
+.ed-tip-preview-label { display: block; margin-bottom: 6px; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.wc3-tooltip.ed-tip-preview { position: static; opacity: 1; pointer-events: auto; max-width: 320px; }

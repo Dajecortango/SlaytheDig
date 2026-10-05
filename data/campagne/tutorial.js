@@ -60,7 +60,7 @@ window.CAMPAIGNS["tutorial"] = {
         },
         "fede8": {
             "title": "Onore ai caduti",
-            "desc": "Trovate il corpo di un commilitone abbandonato.",
+            "desc": "Dopo aver trovato un vostro familiare caduto dovete decidere se seppellire il suo corpo perdendo tempo prezioso o se proseguire in fretta verso l'accampamento.",
             "ignoreText": "ormai è quasi l'alba, non avete tempo purtroppo, lasciate il corpo dove si trova.",
             "successText": "Scavate una fossa degna e placate la vostra coscienza.",
             "failText": "La paura dell'adunata vi fa desistere a metà dell'opera.",
@@ -86,7 +86,7 @@ window.CAMPAIGNS["tutorial"] = {
         "4": "Mercanti itineranti vendono merci sottratte agli accampamenti abbandonati."
     },
     "rests": { "1": "Un focolare quasi spento tra due massi: il calore della cenere vi ristora.", "2": "Una radura riparata dalla nebbia vi concede una breve pausa.", "3": "In cima al colle vedete la sagoma della meta: un ultimo respiro prima della fine." },
-    "treasures": { "1": "Sulle rive del torrente ritrovate i vostri fagotti abbandonati.", "2": "Un forziere abbandonato dai fuggiaschi sulle sponde del fiume.", "3": "Il cadavere di un commilitone stringe tra le mani un manufatto prezioso." },
+    "treasures": { "1": "Sulle rive del torrente ritrovate i vostri fagotti abbandonati.", "2": "Un forziere abbandonato dai fuggiaschi sulle sponde del fiume.", "3": "Il cadavere di un commilitone, recuperate ciò che potrebbe essere ancora utile." },
     "lootItems": null,
     "mapNodes": [
         { "id": 0, "level": 0, "x": 400, "type": "combat", "enemy": "cinghiali", "title": "Livello 1 - Scontro 1", "icon": "🗡️", "done": false, "active": true, "next": [1, 2] },
@@ -103,10 +103,10 @@ window.CAMPAIGNS["tutorial"] = {
         { "id": 11, "level": 4, "x": 400, "type": "challenge", "challengeId": "fede7_2", "title": "Livello 5 - Sfida 3", "icon": "❓", "done": false, "active": false, "next": [13, 14], "image": "immagini/lamenti_nebbia.jpg" },
         { "id": 12, "level": 4, "x": 550, "type": "combat", "enemy": "banditi", "title": "Livello 5 - Scontro 4", "icon": "⚔️", "done": false, "active": false, "next": [14, 15] },
         { "id": 13, "level": 5, "x": 260, "type": "elite", "enemy": "sergente", "title": "Livello 6 - Scontro Elite 1", "icon": "👹", "done": false, "active": false, "next": [16] },
-        { "id": 14, "level": 5, "x": 400, "type": "treasure", "treasureId": 3, "title": "Livello 6 - Tesoro 3", "icon": "💎", "done": false, "active": false, "next": [17, 18], "image": "immagini/tesoro_cadavere.jpg" },
+        { "id": 14, "level": 5, "x": 400, "type": "treasure", "treasureId": 3, "title": "Livello 6 - Tesoro 3", "icon": "💎", "done": false, "active": false, "next": [17, 18], "image": "immagini/dignitas_caduto.jfif" },
         { "id": 15, "level": 5, "x": 540, "type": "challenge", "challengeId": "intel8", "title": "Livello 6 - Sfida 4", "icon": "❓", "done": false, "active": false, "next": [19, 18], "image": "immagini/ricordi_marcia.jpg" },
         { "id": 16, "level": 6, "x": 180, "type": "merchant", "merchantId": 3, "title": "Livello 7 - Mercante 3", "icon": "🪙", "done": false, "active": false, "next": [20], "image": "immagini/mercante_viandante.jpg" },
-        { "id": 17, "level": 6, "x": 340, "type": "challenge", "challengeId": "fede8", "title": "Livello 7 - Sfida 5", "icon": "❓", "done": false, "active": false, "next": [20], "image": "immagini/dignitas_caduto.jfif" },
+        { "id": 17, "level": 6, "x": 340, "type": "challenge", "challengeId": "fede8", "title": "Livello 7 - Sfida 5", "icon": "❓", "done": false, "active": false, "next": [20], "image": "immagini/sfida_dignitas_caduto.jfif" },
         { "id": 18, "level": 6, "x": 500, "type": "combat", "enemy": "profanatori", "title": "Livello 7 - Scontro 5", "icon": "🗡️", "done": false, "active": false, "next": [20] },
         { "id": 19, "level": 6, "x": 620, "type": "merchant", "merchantId": 4, "title": "Livello 7 - Mercante 4", "icon": "🪙", "done": false, "active": false, "next": [20], "image": "immagini/mercante_viandante.jpg" },
         { "id": 20, "level": 7, "x": 400, "type": "rest", "restId": 3, "title": "Livello 8 - Riposo 3", "icon": "⛺", "done": false, "active": false, "next": [21], "image": "immagini/riposo_accampamento.jpg" },

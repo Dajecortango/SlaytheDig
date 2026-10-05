@@ -42,13 +42,37 @@ function simBestFaithIntHero(alive) {
     return alive.reduce((best, h) => Math.max(h.fth || 0, h.int || 0) > Math.max(best.fth || 0, best.int || 0) ? h : best, alive[0]);
 }
 
-// Valore approssimativo di un oggetto: somma dei bonus statistici (i consumabili valgono poco ma non zero)
+// Valore di un oggetto per il simulatore, pesato su quanto conta in combattimento: il danno vale più
+// di tutto (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura.
+// I consumabili valgono poco ma non zero.
+const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75 };
 function simItemValue(item) {
     if (item.type && item.type.startsWith('consumable')) return 0.5;
     // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): stimati per un eroe con 3 punti
-    const scaled = (item.scaling || []).reduce((sum, sc) => sum + Math.min(sc.max != null ? sc.max : 99, Math.floor(3 / Math.max(1, sc.every || 1))), 0);
-    return (item.str || 0) + (item.dmg || 0) + (item.armor || 0) + (item.fth || 0) + (item.int || 0)
-        + (item.def_bonus || 0) + (item.help_bonus_val || 0) - (item.att_penalty || 0) + scaled;
+    const scaled = (item.scaling || []).reduce((sum, sc) => sum + (SIM_ITEM_WEIGHTS[sc.stat] || 1) *
+        Math.min(sc.max != null ? sc.max : 99, Math.floor(3 / Math.max(1, sc.every || 1))), 0);
+    const stats = Object.entries(SIM_ITEM_WEIGHTS).reduce((sum, [k, w]) => sum + w * (item[k] || 0), 0);
+    return stats - 2 * (item.att_penalty || 0) + scaled;
+}
+
+// Quanto migliora l'eroe con questo oggetto: valore dell'oggetto meno quello che dovrebbe scartare
+// (zaino pieno). Le armi vanno di preferenza a chi colpisce meglio (più Forza).
+function simItemGain(item, hero) {
+    if (stackableSlot(hero, item)) return simItemValue(item);
+    let gain = simItemValue(item);
+    if (hero.items.length >= BACKPACK_SIZE) gain -= Math.min(...hero.items.map(simItemValue));
+    if (item.dmg || item.str) gain += 0.1 * (hero.str || 0);
+    return gain;
+}
+
+// L'eroe vivo che guadagna di più dall'oggetto, con il guadagno
+function simBestRecipient(item) {
+    let best = null, bestGain = 0;
+    stato.party.filter(h => h.hp > 0).forEach(h => {
+        const g = simItemGain(item, h);
+        if (g > bestGain) { best = h; bestGain = g; }
+    });
+    return { hero: best, gain: bestGain };
 }
 
 function simChooseDiscard(hero) {
@@ -73,6 +97,24 @@ function simAssignItem(item, hero) {
         const removed = hero.items[idx];
         revertItemEffects(removed, hero);
         hero.items.splice(idx, 1);
+    }
+}
+
+// Consumabili da combattimento, usati come nel gioco (non consumano l'azione):
+// danno al nemico se è un elite o un boss o se basta a finirlo; potenziamenti nel primo round
+// degli scontri con elite e boss (l'armatura immediata anche quando l'eroe è sotto metà vita).
+function simUseCombatConsumables(hero) {
+    const enemy = stato.activeEnemy;
+    const big = currentEnemyIsEliteOrBoss();
+    for (let idx = hero.items.length - 1; idx >= 0; idx--) {
+        const item = hero.items[idx];
+        if (!item || enemy.hp <= 0) continue;
+        if (item.type === 'consumable_damage') {
+            if (big || enemy.hp <= (item.dmg_val || 0)) { enemy.hp -= item.dmg_val || 0; consumeOne(hero, idx); }
+        } else if (item.type === 'consumable_buff') {
+            const armorNow = item.buff_stat === 'current_armor';
+            if ((big && stato.combatRound === 1) || (armorNow && hero.hp / hero.maxHp < 0.5)) { applyTempBuff(hero, item); consumeOne(hero, idx); }
+        }
     }
 }
 
@@ -332,23 +374,50 @@ function simSellSurplusItems(profile) {
 function simResolveMerchantNode(campaignData, node, profile, runCtx) {
     simSellSurplusItems(profile);
     const stock = generateMerchantStock();
-    stock.forEach(entry => {
-        if (profile.merchantFilter && !profile.merchantFilter(entry.item)) return;
-        if (stato.partyCoins - entry.price < (profile.merchantReserve || 0)) return;
-        const recipient = profile.lootRecipient(stato.party, runCtx);
-        if (!recipient) return;
-        stato.partyCoins -= entry.price;
-        simAssignItem(entry.item, recipient);
-    });
+    merchantHaggle = null;  // il simulatore non contratta
+    let stolen = false;  // come nel gioco: con la passiva del ladro il primo oggetto è gratis
+    // Medico: cura l'eroe più ferito se ha perso almeno 2 HP e le monete bastano
+    const medic = stock.find(e => e.kind === 'medic');
+    const wounded = simAliveMinBy(stato.party, h => h.hp - h.maxHp);
+    if (medic && wounded && wounded.maxHp - wounded.hp >= MEDIC_HEAL && stato.partyCoins - medic.price >= (profile.merchantReserve || 0)) {
+        stato.partyCoins -= medic.price;
+        healHero(wounded, MEDIC_HEAL);
+    }
+    // Compra come un giocatore attento: ogni volta l'acquisto che migliora di più la compagnia per moneta
+    // spesa (oggetto giusto all'eroe giusto), finché le monete bastano e c'è qualcosa che serve davvero.
+    // Il filtro del profilo resta (es. il Prudente guarda solo armature e consumabili).
+    const restanti = stock.filter(e => e.kind === 'item' && (!profile.merchantFilter || profile.merchantFilter(e.item)));
+    while (restanti.length) {
+        const free = !stolen && stato.party.some(h => h.hp > 0 && h.freeFirstMerchantItem);
+        let scelta = null;
+        restanti.forEach(entry => {
+            const price = free ? 0 : merchantPrice(entry.price);  // sconti delle passive (es. Inganno del drago verde)
+            if (stato.partyCoins - price < (profile.merchantReserve || 0)) return;
+            const { hero, gain } = simBestRecipient(entry.item);
+            if (!hero || gain < 0.5) return;
+            const resa = gain / Math.max(1, price);
+            if (!scelta || resa > scelta.resa) scelta = { entry, hero, price, resa };
+        });
+        if (!scelta) break;
+        if (free) stolen = true;
+        stato.partyCoins -= scelta.price;
+        simAssignItem(scelta.entry.item, scelta.hero);
+        restanti.splice(restanti.indexOf(scelta.entry), 1);
+    }
+}
+
+// Bottino trovato: all'eroe che ne guadagna di più (come farebbe un giocatore attento); se a nessuno
+// serve davvero va comunque a chi indica il profilo, che scarterà l'oggetto peggiore
+function simGiveLoot(item, profile, runCtx) {
+    const { hero, gain } = simBestRecipient(item);
+    const recipient = gain >= 0.5 ? hero : profile.lootRecipient(stato.party, runCtx);
+    if (recipient) simAssignItem(item, recipient);
 }
 
 function simResolveTreasureNode(campaignData, node, profile, runCtx) {
     const offer = generateTreasureOffer();
     stato.partyCoins += offer.coins;
-    offer.items.forEach(item => {
-        const recipient = profile.lootRecipient(stato.party, runCtx);
-        if (recipient) simAssignItem(item, recipient);
-    });
+    offer.items.forEach(item => simGiveLoot(item, profile, runCtx));
 }
 
 function simResolveVictoryLoot(profile, runCtx) {
@@ -368,9 +437,13 @@ function simResolveVictoryLoot(profile, runCtx) {
 
     stato.expeditionStats.combatsWon++;
     stato.expeditionStats.itemsFound++;
-    const item = pickLootItem(isElite, mapProgress());
-    const recipient = profile.lootRecipient(stato.party, runCtx);
-    if (recipient) simAssignItem(item, recipient);
+    simGiveLoot(pickLootItem(isElite), profile, runCtx);
+    // Come nel gioco: gli elite lasciano anche una reliquia non ancora posseduta
+    if (isElite) {
+        stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
+        const relicId = pickUnownedRelicId();
+        if (relicId) grantRelic(relicId);
+    }
 }
 
 function simResolveCaptainNode(profile) {
@@ -395,6 +468,7 @@ function simRunCombat(enemyData, profile, runCtx) {
     stato.party.atamanoUsed = false;
     stato.helpBonus = 0;
     stato.combatRound = 0;
+    expireTempBuffs(true);
     stato.party.forEach(h => {
         if (h.hp > 0) { h.current_armor = h.base_armor; h.abilityUsedThisCombat = false; }
         else h.current_armor = 0;
@@ -405,6 +479,8 @@ function simRunCombat(enemyData, profile, runCtx) {
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
         stato.combatRound++;
+        expireTempBuffs();
+        applyPendingBuffs();
         stato.party.forEach(h => { if (h.hp > 0) h.hasActed = false; });
         const alive = stato.party.filter(h => h.hp > 0);
         const order = profile.turnOrder ? profile.turnOrder(alive) : alive;
@@ -424,23 +500,32 @@ function simRunCombat(enemyData, profile, runCtx) {
                 }
             }
 
+            simUseCombatConsumables(hero);
+            if (stato.activeEnemy.hp <= 0) break;
+            checkEnemyPhases(stato.activeEnemy, hero);
+            if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
+
             const remaining = order.slice(i + 1).filter(h => h.hp > 0 && !h.hasActed);
             const action = profile.combatAction(hero, stato.activeEnemy, { combatRound: stato.combatRound, isLastActor: remaining.length === 0, champion });
             simExecuteCombatAction(hero, action);
             hero.hasActed = true;
             if (stato.activeEnemy.hp <= 0) break;
+            checkEnemyPhases(stato.activeEnemy, hero);
+            if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
         }
 
         if (stato.activeEnemy.hp <= 0) {
+            expireTempBuffs(true);
             simResolveVictoryLoot(profile, runCtx);
             return { defeat: false };
         }
 
         if (stato.activeEnemy.isStunned) {
             stato.activeEnemy.isStunned = false; // salta il turno, poi si riprende
+            stato.activeEnemy.charging = false;
         } else {
             const target = profile.monsterTarget(stato.party, runCtx);
-            if (target) resolveMonsterAttack(stato.activeEnemy, target);
+            resolveEnemyTurn(stato.activeEnemy, target);
             if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
         }
     }
@@ -626,18 +711,12 @@ function renderSimCampaignPicker() {
         campaigns.map(c => `<option value="${esc(c.id)}">${esc(c.title)}</option>`).join('');
 }
 
-function simSelectCampaign(campaignId) {
-    if (!campaignId) {
-        document.getElementById('simHeroesArea').classList.add('hidden');
-        document.getElementById('simStartBtn').classList.add('hidden');
-        return;
-    }
+// Dati di una campagna nel formato del simulatore (copia: il simulatore non tocca l'originale)
+function simCampaignData(campaignId) {
     const raw = campaignsDatabase[campaignId];
-    if (!raw) return;
+    if (!raw) return null;
     const camp = JSON.parse(JSON.stringify(raw));
-
-    simState.campaignId = campaignId;
-    simState.campaignData = {
+    return {
         campaign: camp,
         mapNodes: camp.mapNodes,
         enemies: camp.enemies,
@@ -650,6 +729,19 @@ function simSelectCampaign(campaignId) {
         armory: camp.initialArmory || [],
         gameItems: camp.lootItems && camp.lootItems.length > 0 ? camp.lootItems : DEFAULT_GAME_ITEMS
     };
+}
+
+function simSelectCampaign(campaignId) {
+    if (!campaignId) {
+        document.getElementById('simHeroesArea').classList.add('hidden');
+        document.getElementById('simStartBtn').classList.add('hidden');
+        return;
+    }
+    const data = simCampaignData(campaignId);
+    if (!data) return;
+
+    simState.campaignId = campaignId;
+    simState.campaignData = data;
 
     simState.selection = {};
     simState.campaignData.heroes.forEach(h => { simState.selection[h.name] = { included: false, abilityIdx: 0, itemIdx: -1 }; });
@@ -752,6 +844,18 @@ function simStartTest() {
     }, 30);
 }
 
+// Vittoria media di tutti i profili confrontata con la difficoltà voluta della campagna (campo "difficolta")
+function simDifficultyNote(results) {
+    const rates = Object.values(results).map(r => r.winRate);
+    if (!rates.length) return '';
+    const mean = Math.round(rates.reduce((a, b) => a + b, 0) / rates.length);
+    const d = simState.campaignData.campaign.difficolta || {};
+    const hasTarget = d.vittoriaMin != null || d.vittoriaMax != null;
+    const target = hasTarget ? ` · obiettivo della campagna ${d.vittoriaMin ?? 0}–${d.vittoriaMax ?? 100}%` : '';
+    const off = hasTarget && (mean < (d.vittoriaMin ?? 0) || mean > (d.vittoriaMax ?? 100));
+    return `<p class="panel-label" style="color:${off ? 'var(--curse-color)' : 'inherit'}">Vittoria media di tutti i profili: <b>${mean}%</b>${target}${off ? ' (fuori obiettivo)' : ''}</p>`;
+}
+
 function renderSimReport(results) {
     const campName = simState.campaignData.campaign.title;
     const heroNames = simState.lastHeroSelection.map(h => h.name).join(', ');
@@ -759,7 +863,8 @@ function renderSimReport(results) {
 
     document.getElementById('simReportHeader').innerHTML = `
         <h2>Report — ${esc(campName)}</h2>
-        <p class="panel-label">Party testato: ${esc(heroNames)} · ${runsPerProfile} run per profilo</p>`;
+        <p class="panel-label">Party testato: ${esc(heroNames)} · ${runsPerProfile} run per profilo</p>
+        ${simDifficultyNote(results)}`;
 
     document.getElementById('simReportBody').innerHTML = Object.values(results).map(r => {
         const deathList = Object.entries(r.deathCauses).sort((a, b) => b[1] - a[1])

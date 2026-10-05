@@ -35,7 +35,11 @@ const GENERAL_FIELDS = [
     { k: 'badge', label: 'Etichetta' },
     { k: 'coverImage', label: 'Immagine di copertina', type: 'image', folder: 'immagini', wide: true },
     { k: 'description', label: 'Descrizione breve', type: 'textarea', wide: true },
-    { k: 'introText', label: 'Testo introduttivo', type: 'textarea', wide: true }
+    { k: 'introText', label: 'Testo introduttivo', type: 'textarea', wide: true },
+    { k: 'difficolta.vittoriaMin', label: 'Difficoltà voluta: vittorie minime (%)', type: 'number', omitEmpty: true,
+      help: 'Percentuale di vittoria media del simulatore (tutti i profili, party di 3 eroi). I test avvisano se si scende sotto' },
+    { k: 'difficolta.vittoriaMax', label: 'Difficoltà voluta: vittorie massime (%)', type: 'number', omitEmpty: true,
+      help: 'I test avvisano se la campagna diventa più facile di così' }
 ];
 
 const HERO_FIELDS = [
@@ -79,12 +83,18 @@ const ABILITY_FIELDS = [
     { k: 'combat.attackStat', label: 'Aggiunge al tiro per colpire', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS,
       help: 'Il tiro è sempre d6 + Forza: qui si aggiunge un\'altra statistica' },
     { k: 'combat.damageStat', label: 'Aggiunge al danno', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS },
+    { k: 'combat.attackBonus', label: 'Bonus fisso al tiro per colpire', type: 'number', omitEmpty: true, showIf: isActive, help: 'Es. 2 = +2 al tiro' },
+    { k: 'combat.damageBonus', label: 'Bonus fisso al danno', type: 'number', omitEmpty: true, showIf: isActive, help: 'Es. 1 = +1 danno se colpisce' },
     { k: 'combat.damageMult', label: 'Moltiplicatore del danno', type: 'number', omitEmpty: true, showIf: isActive,
       help: 'Vuoto = normale, 2 = danno raddoppiato' },
     { k: 'combat.stun', label: 'Se colpisce, stordisce il nemico (salta il suo prossimo attacco)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { k: 'combat.critical', label: 'Il colpo a segno mostra i numeri del critico', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { k: 'combat.autoHit', label: 'Colpisce sempre, senza tiro (vale come un 6)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { k: 'combat.requiresHitLastTurn', label: 'Usabile solo se il nemico ha colpito l\'eroe nel suo ultimo turno', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.armorGain', label: 'Senza tiro: armatura ottenuta subito', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
+      help: 'Vuoto = abilità normale. Es. 4: l\'eroe usa la sua azione e guadagna 4 Armatura, senza dadi' },
+    { k: 'combat.sumTarget', label: 'Due dadi: se la somma è esattamente questo numero, nemico sconfitto (elite e boss a metà vita)', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
+      help: 'Vuoto = abilità normale. Es. 7 (17%), 2 o 12 (3%). Il tiro non usa Forza, bonus o reliquie' },
     { k: 'combat.damageTakenBonus', label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
       help: '{eroe} = nome dell\'eroe. Es. "✨ {eroe} infonde il colpo di fede sacra!"' },
@@ -145,6 +155,9 @@ const ENEMY_FIELDS = [
     { k: 'ca', label: 'Classe armatura', type: 'number', help: 'Da superare per colpire' },
     { k: 'dmg', label: 'Danno', type: 'number' },
     { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true },
+    { k: 'fasi', label: 'Fasi (elite e boss)', type: 'json', wide: true, nullable: true,
+      help: 'Es. [{ "soglia": 50, "testo": "…", "schema": "carica" }]. soglia = % di vita. schema: carica, travolge, predatore, furia. ' +
+        'reazione: contrattacco, colpo_area. bonusDanno: numero. ruggito: { "malus": 1, "fedeMin": 4 }' },
     { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true },
     { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true },
     { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true,
@@ -1147,6 +1160,68 @@ LIB_KINDS.forEach(kind => Object.assign(COLLECTIONS[kind], {
     dirty: () => markLibDirty(kind)
 }));
 
+/* ---------- Anteprima del tooltip ----------
+   Sotto il modulo di oggetti, abilità, reliquie e maledizioni: come il giocatore vedrà il tooltip
+   (stessa grafica di #wc3Tooltip del gioco). Si aggiorna a ogni modifica. Rispecchia itemTip di
+   js/oggetti.js e i tooltip delle abilità di js/combattimento.js: se cambiano, va aggiornata anche qui. */
+const PREVIEW_ITEM_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_armor', 'Armatura con Difendi'],
+    ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
+const PREVIEW_STAT = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_bonus: 'Difesa', def_armor: 'Armatura con Difendi',
+    help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza', att_bonus: 'Tiro per colpire', current_armor: 'Armatura (subito)' };
+
+function previewTipHtml(title, lines) {
+    return `<div class="wc3-tooltip show ed-tip-preview"><div class="tip-title">${title}</div>${lines.length ? `<div class="tip-body">${lines.join('<br>')}</div>` : ''}</div>`;
+}
+
+function previewItem(it) {
+    const r = it.rarity || 'comune';
+    const consumable = (it.type || '').startsWith('consumable');
+    const lines = [`<span class="tip-rar-label tip-rar-${r}">${esc(RARITY_LABELS[r] || '')}${consumable ? ' · consumabile' : ''}</span>`];
+    PREVIEW_ITEM_LINES.forEach(([k, label]) => { if (it[k]) lines.push(esc(`${it[k] > 0 ? '+' : ''}${it[k]} ${label}`)); });
+    if (it.att_penalty) lines.push(`<span class="kw kw-curse">-${esc(it.att_penalty)} al tiro per colpire</span>`);
+    if (it.type === 'consumable_heal') lines.push(esc(`Cura ${it.heal_val || 0} HP`));
+    if (it.type === 'consumable_full') lines.push('Cura tutti gli HP');
+    if (it.type === 'consumable_damage') lines.push(esc(`Infligge ${it.dmg_val || 0} danni al nemico`));
+    if (it.type === 'consumable_buff') {
+        const rounds = it.buff_rounds || 0;
+        const durata = it.buff_stat === 'current_armor' ? '' : rounds > 0 ? (rounds === 1 ? ' per 1 round' : ` per ${rounds} round`) : ' per tutto lo scontro';
+        lines.push(esc(`+${it.buff_val || 0} ${PREVIEW_STAT[it.buff_stat] || it.buff_stat || '?'}${durata}`));
+    }
+    if (['consumable_damage', 'consumable_buff'].includes(it.type)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
+    (Array.isArray(it.scaling) ? it.scaling : []).forEach(sc => lines.push(esc(`+1 ${PREVIEW_STAT[sc.stat] || sc.stat} ogni ${sc.every} ${PREVIEW_STAT[sc.per] || sc.per}${sc.max != null ? ` (max +${sc.max})` : ''}`)));
+    if (it.desc) lines.push(`<span class="tip-desc">${esc(it.desc)}</span>`);
+    return previewTipHtml(`<span class="tip-rar tip-rar-${r}">${esc(it.name || '(senza nome)')}</span>`, lines);
+}
+
+// Riassunto delle regole di un'abilità attiva, per controllare che i campi dicano quello che dice la descrizione
+function previewAbility(a) {
+    const lines = [esc(a.desc || '')];
+    if (a.isCombatActive) {
+        const c = a.combat || {};
+        const regole = [];
+        if (c.armorGain) regole.push(`nessun tiro: +${c.armorGain} Armatura subito`);
+        else if (c.sumTarget) regole.push(`due dadi: con somma esattamente ${c.sumTarget} nemico sconfitto (elite e boss a metà vita)`);
+        else {
+            regole.push(c.autoHit ? 'colpisce sempre (come un 6)' : (c.dice === 2 ? 'tiro per colpire con 2 dadi, tiene il migliore' : 'tiro per colpire con 1 dado'));
+            if (c.attackStat) regole.push(`+${PREVIEW_STAT[c.attackStat] || c.attackStat} al tiro`);
+            if (c.attackBonus) regole.push(`+${c.attackBonus} al tiro`);
+            if (c.damageStat) regole.push(`+${PREVIEW_STAT[c.damageStat] || c.damageStat} al danno`);
+            if (c.damageBonus) regole.push(`+${c.damageBonus} al danno`);
+            if (c.damageTakenBonus) regole.push('+ danni subiti nell\'ultimo colpo');
+            if (c.damageMult > 1) regole.push(`danno x${c.damageMult}`);
+            if (c.stun) regole.push('stordisce il nemico');
+        }
+        if (c.requiresHitLastTurn) regole.push('solo dopo essere stati colpiti nell\'ultimo turno del nemico');
+        lines.push(`<span class="tip-hint">Attiva, 1 volta per scontro: ${esc(regole.join('; '))}</span>`);
+    } else {
+        lines.push('<span class="tip-hint">Passiva</span>');
+    }
+    return previewTipHtml(esc(a.name || '(senza nome)'), lines);
+}
+
+const previewSimple = o => previewTipHtml(esc(o.name || '(senza nome)'), o.desc ? [esc(o.desc)] : []);
+const PREVIEWS = { armeria: previewItem, abilita: previewAbility, reliquie: previewSimple, maledizioni: previewSimple };
+
 function renderCollection(name) {
     const col = COLLECTIONS[name];
     const content = document.getElementById('edContent');
@@ -1178,13 +1253,23 @@ function renderCollection(name) {
     if (sel) {
         const uses = col.usage(sel);
         const detail = document.getElementById('edDetail');
+        const preview = PREVIEWS[name];
+        const updatePreview = () => {
+            const box = document.getElementById('edTipPreview');
+            if (box && preview) box.innerHTML = preview(items[sel]);
+        };
         renderForm(detail, items[sel], col.fields, key => {
             if (col.afterChange) col.afterChange(items[sel], key);
             col.dirty();
             const active = document.querySelector('.ed-list-item.active');
             if (active && (key === 'name' || key === 'title')) active.firstChild.textContent = col.label(items[sel]) || sel;
+            updatePreview();
         });
         detail.insertAdjacentHTML('afterbegin', `<p class="ed-usage-box"><b>Id:</b> <code>${esc(sel)}</code> · <b>Usato in:</b> ${esc(usageText(uses))}</p>`);
+        if (preview) {
+            detail.insertAdjacentHTML('beforeend', '<div class="ed-tip-preview-wrap"><span class="ed-tip-preview-label">Anteprima del tooltip nel gioco</span><div id="edTipPreview"></div></div>');
+            updatePreview();
+        }
     }
 }
 
