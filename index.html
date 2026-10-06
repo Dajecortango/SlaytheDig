@@ -315,6 +315,8 @@
                         <div class="event-left-image-box combat-stage">
                             <!-- ID immagine dinamica scontro -->
                             <img id="combatImg" src="immagini/scontro_cinghiali.jpg" alt="Scontro">
+                            <!-- Video del nemico (campo "video" del bestiario): al posto dell'immagine, se c'è (setCombatVideo) -->
+                            <video id="combatVideo" class="combat-video hidden" muted loop playsinline preload="auto"></video>
                             <!-- Cosa farà il nemico al suo turno (updateEnemyInfoUI in js/combattimento.js) -->
                             <div id="enemyIntent" class="enemy-intent" aria-live="polite"></div>
                             <!-- Nome, vita e statistiche del nemico sopra l'immagine -->
@@ -441,6 +443,24 @@
                             <select id="lootHeroSelect"></select>
                             <button onclick="confirmLootAssignment()" class="btn-proceed">Assegna e Prosegui</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nodo di trama: immagine e testo della storia, poi si prosegue (startStory in js/prove.js) -->
+            <div id="screenStory" class="hidden">
+                <h2 id="storyTitle">Trama</h2>
+                <div class="event-grid-layout">
+                    <div>
+                        <div class="event-left-image-box">
+                            <img id="storyImg" src="immagini/inizio_campagna.jpg" alt="Trama">
+                        </div>
+                    </div>
+                    <div class="event-right-panel">
+                        <div>
+                            <div class="narrative-desc-box story-text" id="storyDescBox"></div>
+                        </div>
+                        <button onclick="finishStory()" class="btn-proceed">Prosegui</button>
                     </div>
                 </div>
             </div>
@@ -700,9 +720,11 @@
     <script src="data/campagne/tutorial.js"></script>
     <script src="data/campagne/astarte_ch1.js"></script>
     <script src="data/campagne/astarte_ch2.js"></script>
+    <script src="data/campagne/drakengrad.js"></script>
     <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
     <script src="js/libreria.js"></script>
     <script src="js/comune.js"></script>
+    <script src="js/procedurale.js"></script>
     <script src="js/vendor/gsap.min.js"></script>
     <script src="js/game.js"></script>
     <script src="js/creazione.js"></script>

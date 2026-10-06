@@ -90,6 +90,7 @@
                 stato: {
                     stsMapNodes: stato.stsMapNodes.map(n => ({ id: n.id, done: !!n.done, active: !!n.active })),
                     currentNodeId: stato.currentNodeId,
+                    procSeed: stato.procSeed || null,  // campagne procedurali: la mappa si rigenera da qui
                     party: stato.party,
                     // Segnali delle reliquie appesi all'elenco degli eroi (JSON.stringify non li salverebbe)
                     partyFlags: { atamanoUsed: !!stato.party.atamanoUsed, sigilloCharges: stato.party.sigilloCharges || 0 },
@@ -146,7 +147,7 @@
                 return `<div class="save-slot empty"><div class="save-slot-info"><b>${label}</b><span>Vuoto</span></div><div class="save-slot-actions">${actions}</div></div>`;
             }
             const s = data.stato;
-            const camp = campaignsDatabase[data.campaignId];
+            const camp = campaignsDatabase[data.campaignId] && campaignForPlay(data.campaignId, s.procSeed);
             const nodes = camp ? camp.mapNodes : [];
             const node = nodes.find(n => n.id === s.currentNodeId);
             const maxLevel = Math.max(0, ...nodes.map(n => n.level));
@@ -242,14 +243,15 @@
         // Rimette in gioco un salvataggio (già nel formato attuale). False se non si può caricare.
         function applySaveData(data) {
             try {
-                const rawCamp = campaignsDatabase[data.campaignId];
+                const rawCamp = campaignsDatabase[data.campaignId] && campaignForPlay(data.campaignId, data.stato.procSeed);
                 if (!rawCamp) {
                     openModal('Errore', `<p>Campagna del salvataggio non trovata: <b>${esc(data.campaignId)}</b>.</p>`);
                     return false;
                 }
                 const s = data.stato;
 
-                stato.currentCampaign = JSON.parse(JSON.stringify(rawCamp));
+                stato.currentCampaign = rawCamp;
+                stato.procSeed = s.procSeed || null;
                 // I nodi vengono dalla campagna attuale: del salvataggio si tiene solo lo stato
                 stato.stsMapNodes = stato.currentCampaign.mapNodes.map(node => {
                     const saved = (s.stsMapNodes || []).find(n => n.id === node.id);
