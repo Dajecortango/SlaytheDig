@@ -36,16 +36,16 @@ window.LIBRERIA.reliquie = {
             { "effect": "party_stat", "stat": "int", "val": 1 }
         ]
     },
-    "corno_antico": { "type": "relic", "name": "Corno antico", "desc": "Durante il terzo turno tutti gli eroi ottengono +1 al danno" },
+    "corno_antico": { "type": "relic", "name": "Corno dell'Esodo", "desc": "Durante il terzo turno tutti gli eroi ottengono +1 al danno" },
     "lasciapassare_mercantile": { "type": "relic", "name": "Lasciapassare mercantile", "desc": "Gli oggetti dai mercanti sono scontati di 3 monete" },
     "pietra_del_focolare": { "type": "relic", "name": "Pietra del focolare", "desc": "Durante il riposo rimuove una maledizione casuale" },
-    "frammento_di_matrice": { "type": "relic", "name": "Frammento di matrice", "desc": "La prossima sfida fallita diventa un successo, poi si rompe" },
+    "frammento_di_matrice": { "type": "relic", "name": "Fortuna degli Stolti", "desc": "La prossima sfida fallita diventa un successo, poi si rompe" },
     "dente_del_grande_lupo": { "type": "relic", "name": "Dente del grande lupo", "desc": "Dopo ogni scontro l'eroe con meno HP recupera 1 HP" },
-    "frammento_di_yr_drazul": { "type": "relic", "name": "Frammento di Yr-Drazul", "desc": "+1 a tutti i tiri di dado" },
+    "frammento_di_yr_drazul": { "type": "relic", "name": "Bussola dell'Occhio Cieco", "desc": "+1 a tutti i tiri di dado" },
     "favore_di_valgoren": { "type": "relic", "name": "Favore di Valgoren", "desc": "Quando un eroe recupera HP, cura 1 HP ad un altro eroe casuale" },
     "idolo_del_cacciatore": { "type": "relic", "name": "Idolo del cacciatore", "desc": "+1 al danno durante gli scontri elite" },
-    "occhio_del_corvo": { "type": "relic", "name": "Occhio del corvo", "desc": "Diminuisce di 1 la statistica attacco dei mostri" },
-    "anello_del_giuramento": { "type": "relic", "name": "Anello del giuramento", "desc": "+3 al tiro per la prossima sfida, poi la reliquia si rompe" },
+    "occhio_del_corvo": { "type": "relic", "name": "Calma del Margine", "desc": "Diminuisce di 1 la statistica attacco dei mostri" },
+    "anello_del_giuramento": { "type": "relic", "name": "Benedizione del Caos", "desc": "+3 al tiro per la prossima sfida, poi la reliquia si rompe" },
     "marchio_di_jag_antar": { "type": "relic", "name": "Marchio di Jag Antar", "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe" },
     "sigillo_runico": { "type": "relic", "name": "Sigillo runico", "desc": "+2 al tiro delle prossime 2 prove, poi si rompe" },
     "lanterna_dei_morti": {
