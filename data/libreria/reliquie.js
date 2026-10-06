@@ -45,9 +45,9 @@ window.LIBRERIA.reliquie = {
     "favore_di_valgoren": { "type": "relic", "name": "Favore di Valgoren", "desc": "Quando un eroe recupera HP, cura 1 HP ad un altro eroe casuale" },
     "idolo_del_cacciatore": { "type": "relic", "name": "Idolo del cacciatore", "desc": "+1 al danno durante gli scontri elite" },
     "occhio_del_corvo": { "type": "relic", "name": "Occhio del corvo", "desc": "Diminuisce di 1 la statistica attacco dei mostri" },
-    "anello_del_giuramento": { "type": "relic", "name": "Anello del giuramento", "desc": "+3 al tiro per la prossima sfida, poi la reliquia si rompe" },
+    "anello_del_giuramento": { "type": "relic", "name": "Anello del giuramento", "desc": "+3 al prossimo tiro di dado, poi la reliquia si rompe" },
     "marchio_di_jag_antar": { "type": "relic", "name": "Marchio di Jag Antar", "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe" },
-    "sigillo_runico": { "type": "relic", "name": "Sigillo runico", "desc": "+2 al tiro delle prossime 2 prove, poi si rompe" },
+    "sigillo_runico": { "type": "relic", "name": "Sigillo runico", "desc": "+2 ai prossimi 2 tiri di dado, poi si rompe" },
     "lanterna_dei_morti": {
         "type": "relic",
         "name": "Lanterna dei morti",

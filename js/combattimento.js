@@ -50,9 +50,36 @@
             return null;
         }
 
-        // Frammento di Yr-Drazul: +1 a tutti i tiri di dado degli eroi (combattimento, prove, contrattazione)
+        // Bonus delle reliquie a tutti i tiri di dado degli eroi (combattimento, prove, contrattazione, capitano):
+        // Frammento di Yr-Drazul +1 sempre; Anello del giuramento +3 e Sigillo runico +2 solo al prossimo tiro
+        // (si consumano con spendNextRollRelics dopo il tiro). Le anteprime lo leggono senza consumarlo.
+        function relicDiceSources() {
+            const out = [];
+            if (hasRelic('frammento_di_yr_drazul')) out.push({ name: 'Frammento di Yr-Drazul', val: 1 });
+            if (hasRelic('anello_del_giuramento')) out.push({ name: 'Anello del giuramento', val: 3 });
+            if (hasRelic('sigillo_runico')) out.push({ name: 'Sigillo runico', val: 2 });
+            return out;
+        }
+
         function relicDiceBonus() {
-            return hasRelic('frammento_di_yr_drazul') ? 1 : 0;
+            return relicDiceSources().reduce((sum, r) => sum + r.val, 0);
+        }
+
+        // Dopo un tiro di dado di un eroe: l'Anello si rompe, il Sigillo consuma una carica (2 in tutto).
+        // Ritorna le note per il diario.
+        function spendNextRollRelics() {
+            const notes = [];
+            if (hasRelic('anello_del_giuramento')) {
+                breakRelic('anello_del_giuramento');
+                notes.push('Anello del giuramento si rompe');
+            }
+            if (hasRelic('sigillo_runico')) {
+                stato.party.sigilloCharges = (stato.party.sigilloCharges || 0) + 1;
+                const broken = stato.party.sigilloCharges >= 2;
+                if (broken) { breakRelic('sigillo_runico'); stato.party.sigilloCharges = 0; }
+                notes.push(broken ? 'Sigillo runico si rompe' : 'Sigillo runico: resta 1 tiro');
+            }
+            return notes;
         }
 
         // Bonus delle reliquie a tiro per colpire (att) e danno (dmg) in questo round di combattimento.
@@ -71,8 +98,7 @@
             add(stato.combatRound === 3, "Corno antico", 0, 1);
             add(isElite, "Idolo del cacciatore", 0, 1);
             add(isElite, "Catena di Norgrad", 1, 0);
-            const dice = relicDiceBonus();
-            if (dice) { b.att += dice; b.notes.push('Frammento di Yr-Drazul (+1 al tiro)'); }
+            relicDiceSources().forEach(r => { b.att += r.val; b.notes.push(`${r.name} (+${r.val} al tiro)`); });
             return b;
         }
 
@@ -91,6 +117,7 @@
             const first = firstActorBonus(hero);
             const total = roll + hero.str + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
+            const spent = spendNextRollRelics();
 
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             let dmg = 0;
@@ -98,7 +125,7 @@
                 dmg = hero.dmg + rb.dmg + first;
                 enemy.hp -= dmg;
             }
-            return { roll, total, hit, dmg, firstBonus: first, relicAttBonus: rb.att, relicNotes: rb.notes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
+            return { roll, total, hit, dmg, firstBonus: first, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
 
         // Armatura che un tiro di difesa riuscito dà all'eroe: 1, più quella degli scudi (def_armor)
@@ -110,20 +137,26 @@
         // Gli scudi più forti danno anche def_bonus, che si somma al tiro.
         function resolveDefend(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
+            const sources = relicDiceSources();
             const total = roll + hero.str + (hero.def_bonus || 0) + relicDiceBonus();
+            const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
             const gained = success ? defendArmorGain(hero) : 0;
             hero.current_armor += gained;
-            return { roll, total, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att) };
+            return { roll, total, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att),
+                relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
         // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
         function resolveHelp(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
+            const sources = relicDiceSources();
             const total = roll + hero.str + (hero.help_bonus_val || 0) + relicDiceBonus();
+            const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
             if (success) stato.helpBonus = 1;
-            return { roll, total, success, naturalNote: naturalRollNote(roll, total, enemy.att) };
+            return { roll, total, success, naturalNote: naturalRollNote(roll, total, enemy.att),
+                relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
         // Comportamento in combattimento di un'abilità attiva, descritto nel campo "combat" della
@@ -233,6 +266,7 @@
             const roll = Math.max(...dice);
             const total = roll + hero.str + attStat + (c.attackBonus || 0) + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
+            rb.notes.push(...spendNextRollRelics());
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             if (hit) {
                 enemy.hp -= dmg;
@@ -982,6 +1016,7 @@
                     }
                     else if(chosenAction === 'defend') {
                         const res = resolveDefend(hero, stato.activeEnemy, externalRolls);
+                        logRelicNotes(res);
                         logNaturalRoll(res);
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} si difende: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
@@ -994,6 +1029,7 @@
                     }
                     else if(chosenAction === 'help') {
                         const res = resolveHelp(hero, stato.activeEnemy, externalRolls);
+                        logRelicNotes(res);
                         logNaturalRoll(res);
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} aiuta: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);

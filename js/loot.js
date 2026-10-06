@@ -140,17 +140,8 @@
             currentLootItem = pickLootItem(isEliteCombat);
             stato.expeditionStats.itemsFound++;
 
-            // Gli elite lasciano anche una reliquia che il party non ha ancora
-            let eliteRelic = null;
-            if (isEliteCombat) {
-                stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
-                const relicId = pickUnownedRelicId();
-                if (relicId) eliteRelic = grantRelic(relicId);
-            }
-            if (eliteRelic) {
-                document.getElementById('lootCoinsBonus').textContent += ` · Reliquia: ${eliteRelic.name}`;
-                setTimeout(() => showOutcomeOverlay('relic', eliteRelic), 400);
-            }
+            // Elite sconfitti: contano per la rarità del bottino (LOOT_BY_ELITE); reliquie non più
+            if (isEliteCombat) stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
 
             document.getElementById('lootCoinsText').textContent = coins;
             document.getElementById('lootItemIcon').innerHTML = itemIconHtml(currentLootItem);

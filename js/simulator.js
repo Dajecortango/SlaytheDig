@@ -438,12 +438,7 @@ function simResolveVictoryLoot(profile, runCtx) {
     stato.expeditionStats.combatsWon++;
     stato.expeditionStats.itemsFound++;
     simGiveLoot(pickLootItem(isElite), profile, runCtx);
-    // Come nel gioco: gli elite lasciano anche una reliquia non ancora posseduta
-    if (isElite) {
-        stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
-        const relicId = pickUnownedRelicId();
-        if (relicId) grantRelic(relicId);
-    }
+    if (isElite) stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
 }
 
 function simResolveCaptainNode(profile) {
@@ -544,6 +539,7 @@ function simResolveNode(campaignData, node, profile, runCtx) {
     if (node.type === 'rest') { resolveRest(); return { defeat: false, finalVictory: false }; }
     if (node.type === 'merchant') { simResolveMerchantNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'treasure') { simResolveTreasureNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
+    if (node.type === 'story') return { defeat: false, finalVictory: false };  // solo racconto
     if (node.type === 'captain') { simResolveCaptainNode(profile); return { defeat: false, finalVictory: true }; }
     return { defeat: false, finalVictory: false };
 }
@@ -591,6 +587,8 @@ function simCollectResult(victory, lastNode, campaignData) {
    UNA RUN COMPLETA
    ========================================================================== */
 function simRunOne(campaignData, heroSelection, profile) {
+    // Campagna procedurale: ogni partita su una mappa nuova, come nel gioco
+    if (campaignData.campaign && campaignData.campaign.procedurale) campaignData = simCampaignData(campaignData.campaign.id);
     simBuildParty(campaignData, heroSelection);
     stato.partyCoins = 0;
     stato.unlockedRelics = [];
@@ -712,10 +710,9 @@ function renderSimCampaignPicker() {
 }
 
 // Dati di una campagna nel formato del simulatore (copia: il simulatore non tocca l'originale)
-function simCampaignData(campaignId) {
-    const raw = campaignsDatabase[campaignId];
-    if (!raw) return null;
-    const camp = JSON.parse(JSON.stringify(raw));
+function simCampaignData(campaignId, seed) {
+    if (!campaignsDatabase[campaignId]) return null;
+    const camp = campaignForPlay(campaignId, seed);  // campagne procedurali: una mappa nuova (o quella del seme)
     return {
         campaign: camp,
         mapNodes: camp.mapNodes,

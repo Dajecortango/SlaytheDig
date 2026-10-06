@@ -39,7 +39,8 @@
             challengeState: null,
             activeEnemy: null,
             helpBonus: 0,
-            combatRound: 0
+            combatRound: 0,
+            procSeed: null  // seme della mappa delle campagne procedurali (js/procedurale.js)
         };
 
         // Stato della presentazione: schermata attiva, fase del combattimento
@@ -297,10 +298,13 @@ function breakRelic(relicId) {
         }
 
         function selectCampaign(campaignId) {
-            const rawCamp = campaignsDatabase[campaignId];
+            // Le campagne procedurali generano qui la loro mappa, da un seme nuovo
+            const seed = campaignsDatabase[campaignId] && campaignsDatabase[campaignId].procedurale ? newProcSeed() : null;
+            const rawCamp = campaignForPlay(campaignId, seed);
             if(!rawCamp) return;
+            stato.procSeed = seed;
 
-            stato.currentCampaign = JSON.parse(JSON.stringify(rawCamp));
+            stato.currentCampaign = rawCamp;
 
             stato.stsMapNodes = stato.currentCampaign.mapNodes;
             enemies = stato.currentCampaign.enemies;

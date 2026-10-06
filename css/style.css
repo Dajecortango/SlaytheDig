@@ -2925,3 +2925,10 @@
 .phase-banner-text { max-width: 70vw; padding: 18px 34px; font-family: var(--font-title); font-size: 1.6rem; font-weight: 900; text-align: center; color: #ffd9a8; text-shadow: 0 2px 0 #000, 0 0 18px rgba(255, 90, 30, 0.9); background: radial-gradient(ellipse at center, rgba(70, 8, 4, 0.92), rgba(20, 2, 1, 0.6) 70%, transparent); }
 @keyframes phase-banner { 0% { opacity: 0; transform: scale(1.15); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
 body.no-anim .phase-banner { animation: none; }
+
+/* Nodo di trama (screenStory) e video del nemico nello scontro (setCombatVideo in js/mappa.js) */
+.sts-node.node-story { --node-c1: #5d6d7e; --node-c2: #1c2833; color: #e8e2c8; }
+.story-text p { margin: 0 0 0.8em; }
+.story-text p:last-child { margin-bottom: 0; }
+.event-left-image-box .combat-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.event-left-image-box .combat-video.hidden, .event-left-image-box img.hidden { display: none; }

@@ -251,7 +251,9 @@
             const d1 = rollD6(null, 0);
             const d2 = mode === 'single' ? null : rollD6(null, 1);  // il secondo dado si tira solo se serve
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
+            const sources = relicDiceSources();
             const total = roll + (hero[stat] || 0) + relicDiceBonus();
+            spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, cd);
             merchantHaggle = success ? 'ok' : 'fail';
             merchantItemsWithPrices.forEach(entry => { if (entry && !entry.fixedPrice) entry.price = merchantPrice(entry.basePrice); });
@@ -262,7 +264,7 @@
                 const statLabel = 'Intelligenza';
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (${mode === 'best' ? 'Era solo una prova!' : 'Fede Inaridita'})`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
-                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${relicDiceBonus() ? ' + 1 Frammento di Yr-Drazul' : ''} = <b>${total}</b> contro CD ${cd}.</p>
+                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${r.name}`).join('')} = <b>${total}</b> contro CD ${cd}.</p>
                      ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
                      <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} monete in più.`}</p>`);
                 renderMerchantShop();

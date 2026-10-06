@@ -78,7 +78,7 @@ window.LIBRERIA.armeria = {
         ],
         "desc": "+1 Aiuto; +1 Forza ogni 3 Intelligenza"
     },
-    "mannaia_pesante": { "id": "mannaia_pesante", "name": "Mannaia Pesante", "rarity": "raro", "dmg": 3, "desc": "+3 Danni", "icon": "immagini/icone/BTNOrcMeleeUpTwo.png" },
+    "mannaia_pesante": { "id": "mannaia_pesante", "name": "Mannaia Pesante", "rarity": "epico", "dmg": 3, "desc": "+3 Danni", "icon": "immagini/icone/BTNOrcMeleeUpTwo.png" },
     "scudo_ferro": { "id": "scudo_ferro", "name": "Scudo Rinforzato in Ferro", "rarity": "raro", "def_armor": 2, "def_bonus": 1, "desc": "+2 Armatura con Difendi, +1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpTwo.png" },
     "corazza_scaglie": { "id": "corazza_scaglie", "name": "Corazza a Scaglie", "rarity": "raro", "armor": 2, "desc": "+2 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNNagaArmorUp1.png", "def_bonus": 1 },
     "tomo_proibito": {

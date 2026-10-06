@@ -25,9 +25,10 @@ const NODE_TYPES = {
     treasure: { label: 'Tesoro', color: '#d4a017', ref: 'treasureId' },
     merchant: { label: 'Mercante', color: '#27ae60', ref: 'merchantId' },
     rest: { label: 'Riposo', color: '#e67e22', ref: 'restId' },
+    story: { label: 'Trama', color: '#7f8c8d', ref: 'storyId' },
     captain: { label: 'Meta (capitano)', color: '#ecf0f1', ref: null }
 };
-const NODE_ICONS = { combat: '🗡️', elite: '👹', challenge: '❓', treasure: '💎', merchant: '🪙', rest: '⛺', captain: '👑' };
+const NODE_ICONS = { combat: '🗡️', elite: '👹', challenge: '❓', treasure: '💎', merchant: '🪙', rest: '⛺', story: '📜', captain: '👑' };
 
 const GENERAL_FIELDS = [
     { k: 'id', label: 'Id (nome del file)', help: 'Solo lettere minuscole, numeri e _' },
@@ -158,6 +159,8 @@ const ENEMY_FIELDS = [
     { k: 'fasi', label: 'Fasi (elite e boss)', type: 'json', wide: true, nullable: true,
       help: 'Es. [{ "soglia": 50, "testo": "…", "schema": "carica" }]. soglia = % di vita. schema: carica, travolge, predatore, furia. ' +
         'reazione: contrattacco, colpo_area. bonusDanno: numero. ruggito: { "malus": 1, "fedeMin": 4 }' },
+    { k: 'video', label: 'Video (elite e boss)', type: 'video', folder: 'video/nemici', wide: true,
+      help: 'Facoltativo (.mp4 o .webm, senza audio): nello scontro si vede al posto dell\'immagine, in ciclo' },
     { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true },
     { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true },
     { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true,
@@ -208,6 +211,8 @@ const NODE_FIELDS = [
     { k: 'treasureId', label: 'Testo del tesoro', type: 'select', options: refOptions('treasures'), showIf: n => n.type === 'treasure' },
     { k: 'merchantId', label: 'Testo del mercante', type: 'select', options: refOptions('merchants'), showIf: n => n.type === 'merchant' },
     { k: 'restId', label: 'Testo del riposo', type: 'select', options: refOptions('rests'), showIf: n => n.type === 'rest' },
+    { k: 'storyId', label: 'Trama', type: 'select', options: refOptions('stories'), showIf: n => n.type === 'story',
+      help: 'Titolo e testo si scrivono nella sezione "Trame" della campagna' },
     { k: 'title', label: 'Titolo', wide: true },
     { k: 'icon', label: 'Icona' },
     { k: 'image', label: 'Immagine', type: 'image', folder: 'immagini', wide: true,
@@ -219,7 +224,8 @@ const NODE_FIELDS = [
 const OTHER_SECTIONS = [
     { k: 'merchants', label: 'Testi dei mercanti', help: 'Chiave usata da merchantId nei nodi ("default" vale per tutti).' },
     { k: 'rests', label: 'Testi dei riposi', help: 'Chiave usata da restId nei nodi.' },
-    { k: 'treasures', label: 'Testi dei tesori', help: 'Chiave usata da treasureId nei nodi.' }
+    { k: 'treasures', label: 'Testi dei tesori', help: 'Chiave usata da treasureId nei nodi.' },
+    { k: 'stories', label: 'Trame', help: 'Chiave usata da storyId nei nodi di trama: { "chiave": { "title": "...", "text": "..." } }. Una riga vuota nel testo separa i paragrafi.' }
 ];
 
 const ITEM_LISTS = { initialArmory: 'Armeria iniziale', lootItems: 'Bottino' };
@@ -1053,6 +1059,27 @@ function renderForm(container, obj, fields, onChange) {
             play.addEventListener('click', () => { if (input.value) new Audio(assetUrl(input.value)).play().catch(() => alert('Suono non trovato: ' + input.value)); });
             row.append(input, btn, play);
         }
+        if (f.type === 'video') {
+            const row = document.createElement('div');
+            row.className = 'ed-image-row';
+            wrap.replaceChild(row, input);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-small';
+            btn.textContent = 'Carica…';
+            const thumb = document.createElement('video');
+            thumb.className = 'ed-thumb';
+            thumb.muted = true;
+            thumb.loop = true;
+            thumb.autoplay = true;
+            thumb.playsInline = true;
+            thumb.onerror = () => { thumb.hidden = true; };
+            const updateThumb = () => { thumb.hidden = !input.value; if (input.value) thumb.src = assetUrl(input.value); };
+            btn.addEventListener('click', () => pickFile(f.folder || 'video', 'video/*', path => { input.value = path; commit(); updateThumb(); }));
+            input.addEventListener('input', updateThumb);
+            row.append(input, btn, thumb);
+            updateThumb();
+        }
         if (f.type === 'image') {
             const row = document.createElement('div');
             row.className = 'ed-image-row';
@@ -1802,9 +1829,9 @@ function validateCampaign() {
         if (!type) add('error', `${name}: tipo "${n.type}" sconosciuto`, 'map', n.id);
         else if (type.ref === 'enemy' && !lib.bestiario[n.enemy] && !(camp.enemies && camp.enemies[n.enemy])) add('error', `${name}: nemico "${n.enemy || ''}" non trovato nel bestiario`, 'map', n.id);
         else if (type.ref === 'challengeId' && !camp.challenges[n.challengeId]) add('warn', `${name}: sfida "${n.challengeId || ''}" inesistente (il gioco userà una sfida vuota)`, 'map', n.id);
-        else if (type.ref && ['treasureId', 'merchantId', 'restId'].includes(type.ref)) {
-            const coll = { treasureId: 'treasures', merchantId: 'merchants', restId: 'rests' }[type.ref];
-            if (camp[coll][n[type.ref]] == null && !(type.ref === 'merchantId' && camp.merchants.default)) add('warn', `${name}: testo "${n[type.ref]}" non trovato in ${coll} (verrà usato un testo generico)`, 'map', n.id);
+        else if (type.ref && ['treasureId', 'merchantId', 'restId', 'storyId'].includes(type.ref)) {
+            const coll = { treasureId: 'treasures', merchantId: 'merchants', restId: 'rests', storyId: 'stories' }[type.ref];
+            if ((camp[coll] || {})[n[type.ref]] == null && !(type.ref === 'merchantId' && camp.merchants.default)) add('warn', `${name}: testo "${n[type.ref]}" non trovato in ${coll} (verrà usato un testo generico)`, 'map', n.id);
         }
         (n.next || []).forEach(id => {
             const target = byId.get(id);

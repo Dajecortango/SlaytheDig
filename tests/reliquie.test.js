@@ -10,6 +10,26 @@ module.exports = (t, carica) => {
     const g = carica();
     const lib = g.LIBRERIA;
 
+    t.test('Anello del giuramento (+3) e Sigillo runico (+2) valgono per i prossimi tiri di dado, di qualsiasi tipo', () => {
+        const stato = g.eval('stato');
+        const eroe = { name: 'A', hp: 4, maxHp: 4, str: 2, dmg: 1, current_armor: 0, items: [] };
+        const nemico = { name: 'N', hp: 20, maxHp: 20, att: 20, ca: 20, dmg: 1 };
+        stato.party = [eroe]; stato.party.sigilloCharges = 0; stato.helpBonus = 0; stato.combatRound = 1;
+        stato.stsMapNodes = []; stato.currentNodeId = null; stato.activeCurses = [];
+        stato.unlockedRelics = [{ id: 'anello_del_giuramento' }, { id: 'sigillo_runico' }];
+        t.uguale(5, g.relicDiceBonus(), 'anteprima: +3 +2, senza consumarle');
+        const r1 = g.resolveDefend(eroe, nemico, [3]);
+        t.uguale(3 + 2 + 5, r1.total, 'difesa: dado 3 + Forza 2 + 5');
+        t.ok(!g.hasRelic('anello_del_giuramento'), "l'Anello si rompe dopo un tiro");
+        t.ok(g.hasRelic('sigillo_runico'), 'al Sigillo resta un tiro');
+        const r2 = g.resolveAttack(eroe, nemico, [3]);
+        t.uguale(3 + 2 + 2, r2.total, 'attacco: solo il Sigillo');
+        t.ok(!g.hasRelic('sigillo_runico'), 'il Sigillo si rompe dopo il secondo tiro');
+        t.uguale(3 + 2, g.resolveHelp(eroe, nemico, [3]).total, 'poi niente bonus');
+    });
+
+    t.test('la Mannaia Pesante è epica', () => t.uguale('epico', lib.armeria.mannaia_pesante.rarity));
+
     t.test('idFromName dà le stesse chiavi della libreria (reliquie e maledizioni)', () => {
         for (const [id, r] of Object.entries(lib.reliquie)) t.uguale(id, g.idFromName(r.name), `reliquia "${r.name}"`);
         for (const [id, c] of Object.entries(lib.maledizioni)) t.uguale(id, g.idFromName(c.name), `maledizione "${c.name}"`);
