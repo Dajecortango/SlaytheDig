@@ -8,7 +8,7 @@ window.LIBRERIA.bestiario = {
         "image": "immagini/bestiario/scontro_cinghiali.jpg",
         "hp": 7,
         "maxHp": 7,
-        "att": 5,
+        "att": 6,
         "dmg": 1,
         "ca": 6,
         "desc": "Un fruscio improvviso squarcia il silenzio della nebbia mattutina. Sagome scure e massicce emergono dal grigiore: cinghiali con zanne ricurve terrificanti.",
@@ -58,8 +58,8 @@ window.LIBRERIA.bestiario = {
     "profanatori": {
         "name": "Profanatori",
         "image": "immagini/bestiario/profanatori.jpg",
-        "hp": 10,
-        "maxHp": 10,
+        "hp": 12,
+        "maxHp": 12,
         "att": 7,
         "dmg": 2,
         "ca": 7,
@@ -83,7 +83,7 @@ window.LIBRERIA.bestiario = {
     },
     "banditi_strada": {
         "name": "Banditi Kin dei campi",
-        "image": "immagini/bestiario/banditi.jpg",
+        "image": "immagini/bestiario/banditi_kin.png",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
@@ -96,7 +96,7 @@ window.LIBRERIA.bestiario = {
     },
     "briganti_pedaggio": {
         "name": "Briganti del pedaggio",
-        "image": "immagini/bestiario/briganti_pedaggio.jpg",
+        "image": "immagini/bestiario/pedaggio_scontro.png",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -109,7 +109,7 @@ window.LIBRERIA.bestiario = {
     },
     "branco_lupi": {
         "name": "Branco di lupi",
-        "image": "immagini/bestiario/lupi_inverno.jpg",
+        "image": "immagini/bestiario/lupi.png",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -122,10 +122,10 @@ window.LIBRERIA.bestiario = {
     },
     "disertori": {
         "name": "Banda di disertori Kin",
-        "image": "immagini/bestiario/disertori.jpg",
+        "image": "immagini/bestiario/disertori_kin.png",
         "hp": 12,
         "maxHp": 12,
-        "att": 8,
+        "att": 7,
         "dmg": 2,
         "ca": 8,
         "desc": "Soldati sbandati ed emigrati dell'esercito di resistenza di Foscoclivo, questi uomini si danno al brigantaggio nella Valle del Krogg. Alcuni abitano le caverne sui Picchi del Tramonto, ed è proprio nei pressi di uno di questi rifugi che venite sorpresi da questi Kin. Armati di lance e coltelli, hanno uno sguardo vuoto e segnato dalla paranoia più totale. Non hanno più nulla da perdere.",
@@ -135,7 +135,7 @@ window.LIBRERIA.bestiario = {
     },
     "predoni": {
         "name": "Predoni",
-        "image": "immagini/bestiario/scontro_profanatori.jfif",
+        "image": "immagini/bestiario/predoni_kin.png",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -148,7 +148,7 @@ window.LIBRERIA.bestiario = {
     },
     "cani_caccia": {
         "name": "Cani da caccia rinselvatichiti",
-        "image": "immagini/bestiario/cani_caccia.jfif",
+        "image": "immagini/bestiario/cani_scontro.png",
         "hp": 7,
         "maxHp": 7,
         "att": 7,
@@ -161,7 +161,7 @@ window.LIBRERIA.bestiario = {
     },
     "sciacalli_cadaveri": {
         "name": "Sciacalli di cadaveri",
-        "image": "immagini/bestiario/sciacalli_cadaveri.jpg",
+        "image": "immagini/bestiario/sciacalli_cadaveri.png",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
@@ -174,7 +174,7 @@ window.LIBRERIA.bestiario = {
     },
     "orso_bruno": {
         "name": "Orso bruno selvaggio",
-        "image": "immagini/bestiario/orso_bruno.jpg",
+        "image": "immagini/bestiario/orso.png",
         "hp": 14,
         "maxHp": 14,
         "att": 7,
@@ -187,7 +187,7 @@ window.LIBRERIA.bestiario = {
     },
     "balestrieri_disertori": {
         "name": "Arcieri disertori",
-        "image": "immagini/bestiario/disertori.jpg",
+        "image": "immagini/bestiario/arcieri.png",
         "hp": 11,
         "maxHp": 11,
         "att": 7,
@@ -200,9 +200,9 @@ window.LIBRERIA.bestiario = {
     },
     "cinghiali_pietraie": {
         "name": "Cinghiali delle pendici",
-        "image": "immagini/bestiario/scontro_cinghiali.jpg",
-        "hp": 8,
-        "maxHp": 8,
+        "image": "immagini/bestiario/cinghiali.png",
+        "hp": 10,
+        "maxHp": 10,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -213,7 +213,7 @@ window.LIBRERIA.bestiario = {
     },
     "picchieri_sbandati": {
         "name": "Picchieri disertori",
-        "image": "immagini/bestiario/picchieri_sbandati.jpg",
+        "image": "immagini/bestiario/picchieri.png",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -226,7 +226,7 @@ window.LIBRERIA.bestiario = {
     },
     "esploratori_predoni": {
         "name": "Esploratori Kin",
-        "image": "immagini/bestiario/esploratori_predoni.jpg",
+        "image": "immagini/bestiario/esploratori.png",
         "hp": 8,
         "maxHp": 8,
         "att": 7,
@@ -265,7 +265,7 @@ window.LIBRERIA.bestiario = {
     },
     "capitano_predoni": {
         "name": "Capitano dei predoni Kin",
-        "image": "immagini/bestiario/capitano_predoni.jpg",
+        "image": "immagini/bestiario/capitano_predoni.png",
         "hp": 10,
         "maxHp": 10,
         "att": 7,
@@ -310,7 +310,7 @@ window.LIBRERIA.bestiario = {
     },
     "boia_rinnegati": {
         "name": "Boia rinnegato degli Heymaey",
-        "image": "immagini/bestiario/boia_rinnegati.jpg",
+        "image": "immagini/bestiario/boia.png",
         "hp": 16,
         "maxHp": 16,
         "att": 7,
@@ -358,7 +358,7 @@ window.LIBRERIA.bestiario = {
     },
     "ragno_nero_imperiale": {
         "name": "Ragno Nero Imperiale",
-        "image": "",
+        "image": "immagini/bestiario/ragno_imperiale.png",
         "hp": 15,
         "maxHp": 15,
         "att": 7,
@@ -374,7 +374,7 @@ window.LIBRERIA.bestiario = {
     },
     "cenofori_slavine": {
         "name": "Cenofori delle Slavine",
-        "image": "",
+        "image": "immagini/bestiario/cenofori.png",
         "hp": 14,
         "maxHp": 14,
         "att": 7,
@@ -390,7 +390,7 @@ window.LIBRERIA.bestiario = {
     },
     "vitghen_rinnegati": {
         "name": "Vitghen rinnegati",
-        "image": "",
+        "image": "immagini/bestiario/vitgen.jpg",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -403,7 +403,7 @@ window.LIBRERIA.bestiario = {
     },
     "cantori_fiamma": {
         "name": "Cantore della Fiamma rinnegato",
-        "image": "",
+        "image": "immagini/bestiario/cantori_fiamma.png",
         "hp": 12,
         "maxHp": 12,
         "att": 7,
@@ -416,7 +416,7 @@ window.LIBRERIA.bestiario = {
     },
     "tremabosco_striato": {
         "name": "Tremabosco Striato",
-        "image": "immagini/bestiario/tremabosco.jpg",
+        "image": "immagini/bestiario/tremabosco.png",
         "hp": 22,
         "maxHp": 22,
         "att": 7,

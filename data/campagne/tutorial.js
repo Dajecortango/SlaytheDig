@@ -16,7 +16,7 @@ window.CAMPAIGNS["tutorial"] = {
     "challenges": {
         "fede7": {
             "title": "Un piccolo santuario",
-            "desc": "Una nicchia nella roccia ospita una statuetta sacra.",
+            "desc": "Vi lasciate alle spalle i corpi privi di vita dei cinghiali, il sentiero serpeggia tra pareti di pietra umida fino a stringersi in un anfratto angusto. Una piccola nicchia scavata nella roccia, protetta da una cortina di muschio e radici pendenti. Ospita una statuetta di legno inciso, un omaggio agli Asi o qualsiasi altro nome abbiano in queste terre.",
             "ignoreText": "Proseguite oltre senza fermarvi...",
             "successText": "Omaggiate gli dei e notate un riflesso prezioso tra i sassi.",
             "failText": "Storditi, fate cadere goffamente la statuetta a terra.",
@@ -27,7 +27,7 @@ window.CAMPAIGNS["tutorial"] = {
         },
         "intel7": {
             "title": "Tracce nel fango",
-            "desc": "Strane impronte indicano una lotta o qualcos'altro...",
+            "desc": "Proseguendo lungo il tracciato fangoso, il gruppo si imbatte in uno scenario a dir poco bizzarro: tracce evidenti di una lotta disperata, con zolle di terra divelte, solchi profondi scavati da stivali disperati e una strana scia di sudore.",
             "ignoreText": "Tutta la zona è piena di fango, non sono rilevanti.",
             "successText": "Riconoscete le tracce dei piegamenti fatti da ubriachi ieri notte e ritrovate materiale disperso!",
             "failText": "Non riuscite a decifrare nulla e fuggite frettolosamente.",
@@ -38,10 +38,10 @@ window.CAMPAIGNS["tutorial"] = {
         },
         "fede7_2": {
             "title": "Lamenti nelle nebbie",
-            "desc": "Popolani in processione piangono i caduti verso una fossa comune.",
+            "desc": "La nebbia mattutina si dirada lentamente, rivelando una scena di profonda malinconia. Un lungo e silenzioso gruppo di popolani in abiti lisi, con il capo coperto da cappucci scuri e volti rigati dal pianto, procede a lento passo in una solenne processione.\nReggono torce fumiganti e rami di tasso intrecciati, diretti verso una fossa comune scavata ai margini dei campi per dare l'eterno addio ai caduti della loro comunità. Il loro cammino incrocia il vostro: vi guardano con occhi svuotati dal dolore, stringendosi al petto piccoli ricordi e immagini sacre, offrendovi un momento di inaspettato raccoglimento in mezzo all'orrore della guerra.",
             "ignoreText": "Non avete tempo da perdere, affrettate il passo.",
-            "successText": "Vi raccogliete in silenzio e aiutate a posare un caduto. Ricevete la loro benedizione.",
-            "failText": "I fumi e l'odore nauseabondo vi respingono.",
+            "successText": "Vi raccogliete in un momento di silenzio insieme ai fresi che piangono i loro morti, pensate anche ai vostri che sono stati portati via dalla guerra. Aiutate i paesani a depositare qualche corpo nella fossa comune, vi ringraziano con occhi lucidi e riconoscenti.",
+            "failText": "i fumi delle torce e la litania seppelliscono le vostre buone intenzioni, anche se avreste voluto aiutare quei popolani, respirare quei fumi insieme all’alcol vi avrebbe steso sicuramente.",
             "stat": "fth",
             "cd": 7,
             "reward": "benedetti_da_jag_antar",
@@ -49,7 +49,7 @@ window.CAMPAIGNS["tutorial"] = {
         },
         "intel8": {
             "title": "Ricordi della marcia",
-            "desc": "Solchi di carri pesanti. Saprete capire quale direzione hanno preso?",
+            "desc": "Il sentiero fangoso si fa sempre più pesante, solcato da centinaia di impronte di stivali pesanti e solchi di carri pesanti che testimoniano la frenetica marcia della truppa del giorno prima. Che sia possibile capire la direzione da prendere grazie a questi segni?",
             "ignoreText": "Meglio seguire l'istinto.",
             "successText": "Vi ricordate improvvisamente di avere la mappa nel borsello!",
             "failText": "Non ricordate nulla e procedete a caso.",
@@ -86,7 +86,11 @@ window.CAMPAIGNS["tutorial"] = {
         "4": "Mercanti itineranti vendono merci sottratte agli accampamenti abbandonati."
     },
     "rests": { "1": "Un focolare quasi spento tra due massi: il calore della cenere vi ristora.", "2": "Una radura riparata dalla nebbia vi concede una breve pausa.", "3": "In cima al colle vedete la sagoma della meta: un ultimo respiro prima della fine." },
-    "treasures": { "1": "Sulle rive del torrente ritrovate i vostri fagotti abbandonati.", "2": "Un forziere abbandonato dai fuggiaschi sulle sponde del fiume.", "3": "Il cadavere di un commilitone, recuperate ciò che potrebbe essere ancora utile." },
+    "treasures": {
+        "1": "Seguendo quelle che vi sembrano le vostre orme, arrivate sulle rive di un fiumiciattolo. Sulle rocce lisce intorno a una pozza d'acqua limpida ci sono vestiti inzuppati, stivali spaiati e cumuli di oggetti abbandonati in fretta e furia: vi torna alla mente il bagno notturno prima di perdere i sensi! Ritrovate finalmente parte del vostro equipaggiamento disperso..",
+        "2": "Andando avanti vi imbattete in una scena che vi gela il sangue nelle vene. Il cadavere di un membro della vostra famiglia, un commilitone caduto in battaglia, è lì davanti a voi, morto in ginocchio con il volto rivolto verso terra. Il viso è sfigurato e irriconoscibile, ma tra le dita rigide stringe un medaglione che luccica flebile alle prime luci dell'alba.",
+        "3": "Il cadavere di un commilitone, recuperate ciò che potrebbe essere ancora utile."
+    },
     "lootItems": null,
     "mapNodes": [
         { "id": 0, "level": 0, "x": 400, "type": "combat", "enemy": "cinghiali", "title": "Livello 1 - Scontro 1", "icon": "🗡️", "done": false, "active": true, "next": [1, 2] },
