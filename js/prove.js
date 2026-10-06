@@ -103,10 +103,7 @@
         // Modificatori di una prova per l'eroe scelto, senza consumare le reliquie
         function challengeModifiers(hero) {
             const statValue = (hero && hero[stato.challengeState.stat]) || 0;
-            const relics = [];
-            if (hasRelic('anello_del_giuramento')) relics.push({ name: "Anello del giuramento", val: 3 });
-            if (hasRelic('sigillo_runico')) relics.push({ name: "Sigillo runico", val: 2 });
-            if (relicDiceBonus()) relics.push({ name: "Frammento di Yr-Drazul", val: 1 });
+            const relics = relicDiceSources();
             return {
                 statValue,
                 relics,
@@ -152,23 +149,11 @@
             events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
 
             let relicBonus = 0;
-            if (hasRelic('anello_del_giuramento')) {
-                relicBonus += 3;
-                breakRelic('anello_del_giuramento');
-                events.push({ type: 'relic', text: '+3 Anello del giuramento (la reliquia si rompe)' });
-            }
-            if (hasRelic('sigillo_runico')) {
-                relicBonus += 2;
-                stato.party.sigilloCharges = (stato.party.sigilloCharges || 0) + 1;
-                const broken = stato.party.sigilloCharges >= 2;
-                if (broken) breakRelic('sigillo_runico');
-                events.push({ type: 'relic', text: `+2 Sigillo runico (${broken ? 'la reliquia si rompe' : 'resta 1 prova'})` });
-            }
-
-            if (relicDiceBonus()) {
-                relicBonus += 1;
-                events.push({ type: 'relic', text: '+1 Frammento di Yr-Drazul' });
-            }
+            relicDiceSources().forEach(r => {
+                relicBonus += r.val;
+                events.push({ type: 'relic', text: `+${r.val} ${r.name}` });
+            });
+            spendNextRollRelics().forEach(text => events.push({ type: 'relic', text }));
 
             let total = kept + mods.statValue + relicBonus;
             events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
@@ -325,6 +310,23 @@
             return { healAmount, healed, geloRemoved };
         }
 
+        /* ---------- Nodo di trama ----------
+           Solo racconto: titolo, immagine e testo (campagna: "stories" { chiave: { title, text } },
+           il nodo li richiama con storyId), poi si prosegue sulla mappa. */
+        function startStory(node) {
+            const story = (stato.currentCampaign.stories || {})[node.storyId] || {};
+            document.getElementById('storyTitle').textContent = story.title || node.title || 'Trama';
+            // Senza immagine del nodo: la copertina della campagna
+            document.getElementById('storyImg').src = node.image || stato.currentCampaign.coverImage || 'immagini/inizio_campagna.jpg';
+            const testo = story.text || 'Il viaggio prosegue.';
+            document.getElementById('storyDescBox').innerHTML = testo.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join('');
+            showScreen('screenStory');
+        }
+
+        function finishStory() {
+            advanceNode();
+        }
+
         function startRest(restId) {
             showScreen('screenRest');
             const restDesc = restsData[restId] || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
@@ -365,8 +367,10 @@
             }
             const roll = rollD6(null, 0);
             const statVal = type === 'faith' ? hero.fth : hero.int;
-            const success = naturalRollSuccess(roll, roll + statVal, 6);
-            return { type, roll, statVal, success };
+            const relicBonus = relicDiceBonus();  // anche qui valgono le reliquie dei tiri
+            spendNextRollRelics();
+            const success = naturalRollSuccess(roll, roll + statVal + relicBonus, 6);
+            return { type, roll, statVal, relicBonus, success };
         }
 
         function executeCaptainRoll() {

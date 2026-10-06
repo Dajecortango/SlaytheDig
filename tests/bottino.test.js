@@ -1,4 +1,4 @@
-// Bottino degli scontri (rarità per livello e per elite, reliquia dagli elite) e merce del mercante
+// Bottino degli scontri (rarità per livello e per elite) e merce del mercante
 module.exports = (t, carica) => {
     const g = carica();
     const stato = g.eval('stato');

@@ -292,9 +292,11 @@
             stato.currentNodeId = id;
             const node = stato.stsMapNodes.find(n => n.id === id);
 
+            setCombatVideo(null);
             if(node.type === 'combat' || node.type === 'elite') {
                 chooseCombatTheme(node);
                 if(node.image) document.getElementById('combatImg').src = node.image;
+                setCombatVideo(enemies[node.enemy] && enemies[node.enemy].video);
                 startCombat(node.enemy);
             }
             else if(node.type === 'challenge') {
@@ -312,6 +314,9 @@
             else if(node.type === 'treasure') {
                 if(node.image) document.getElementById('treasureImg').src = node.image;
                 startTreasure(node.treasureId);
+            }
+            else if(node.type === 'story') {
+                startStory(node);
             }
             else if(node.type === 'captain') {
                 startCaptainFinale();
@@ -338,13 +343,35 @@
             startMap();
         }
 
-        const NODE_ICON = { combat: 'sword', elite: 'skull', challenge: 'question', rest: 'fire', merchant: 'pouch', treasure: 'chest', captain: 'crown' };
-        const NODE_LABEL = { combat: 'Scontro', elite: 'Scontro Elite', challenge: 'Sfida', rest: 'Riposo', merchant: 'Mercante', treasure: 'Tesoro', captain: 'Meta' };
+        const NODE_ICON = { combat: 'sword', elite: 'skull', challenge: 'question', rest: 'fire', merchant: 'pouch', treasure: 'chest', story: 'book', captain: 'crown' };
+        const NODE_LABEL = { combat: 'Scontro', elite: 'Scontro Elite', challenge: 'Sfida', rest: 'Riposo', merchant: 'Mercante', treasure: 'Tesoro', story: 'Trama', captain: 'Meta' };
+
+        // Video del nemico nello scontro (campo "video" del bestiario, pensato per elite e boss):
+        // se c'è, prende il posto dell'immagine; se manca o non si carica resta l'immagine
+        function setCombatVideo(src) {
+            const video = document.getElementById('combatVideo');
+            const img = document.getElementById('combatImg');
+            if (!video || !img) return;
+            if (!src) {
+                video.pause();
+                video.removeAttribute('src');
+                video.classList.add('hidden');
+                img.classList.remove('hidden');
+                return;
+            }
+            video.muted = true;
+            video.onerror = () => setCombatVideo(null);
+            video.src = src;
+            video.classList.remove('hidden');
+            img.classList.add('hidden');
+            video.play().catch(() => {});
+        }
 
         function renderMapLegend() {
             const legend = document.getElementById('mapLegend');
             if (legend.childElementCount > 0) return;
-            legend.innerHTML = ['combat', 'elite', 'challenge', 'treasure', 'merchant', 'rest'].map(type => `
+            const presenti = new Set(stato.stsMapNodes.map(n => n.type));
+            legend.innerHTML = ['combat', 'elite', 'challenge', 'treasure', 'merchant', 'rest', 'story'].filter(t => t !== 'story' || presenti.has(t)).map(type => `
                 <span><span class="sts-node node-${type} legend-dot">${svgIcon(NODE_ICON[type])}</span>${NODE_LABEL[type]}</span>
             `).join('') + `<span><span class="sts-node node-goal legend-dot">${svgIcon('crown')}</span>Meta</span>`;
         }
@@ -352,7 +379,7 @@
         /* ---------- Segnaposto per le immagini dei nodi che mancano ----------
            Se il file dell'immagine non esiste (nodo o nemico del bestiario) si mostra
            immagini/segnaposto/<tipo>.svg: scena cupa con l'icona del tipo di nodo. */
-        const EVENT_IMG_PLACEHOLDER = { combatImg: 'combat', challengeImg: 'challenge', restImg: 'rest', merchantImg: 'merchant', treasureImg: 'treasure' };
+        const EVENT_IMG_PLACEHOLDER = { combatImg: 'combat', challengeImg: 'challenge', restImg: 'rest', merchantImg: 'merchant', treasureImg: 'treasure', storyImg: 'treasure' };
         document.addEventListener('DOMContentLoaded', () => {
             Object.entries(EVENT_IMG_PLACEHOLDER).forEach(([imgId, type]) => {
                 const img = document.getElementById(imgId);
