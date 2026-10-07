@@ -135,7 +135,7 @@
             if (lastCloseIdx === -1) return html;
 
             const safeName = h.name.replace(/'/g, "\\'");
-            const btn = `<button type="button" class="hero-qr-btn" onclick="event.stopPropagation(); remoteShowHeroQr('${safeName}')" data-tip="Scheda sul telefono||Apri il codice QR di ${h.name} per farlo scansionare">${QR_ICON}</button>`;
+            const btn = `<button type="button" class="hero-qr-btn" ${azione('remoteShowHeroQr', h.name)} data-stop data-tip="Scheda sul telefono||Apri il codice QR di ${h.name} per farlo scansionare">${QR_ICON}</button>`;
             return html.slice(0, lastCloseIdx) + btn + html.slice(lastCloseIdx);
         };
     }
@@ -393,12 +393,12 @@
                             <span class="option-label">Compagnia connessa via QR<small>Server locale + tunnel ngrok, per far tirare i dadi dal telefono ai giocatori</small></span>
                             <div id="remoteNgrokStatus" class="remote-ngrok-status">Verifica in corso...</div>
                             <div class="remote-ngrok-buttons">
-                                <button id="remoteNgrokInstallBtn" class="btn-small" onclick="remoteNgrokInstall()">Configura Tunnel ngrok</button>
-                                <button id="remoteNgrokToggleBtn" class="btn-small" onclick="remoteNgrokToggle()" disabled>Attiva Tunnel</button>
+                                <button id="remoteNgrokInstallBtn" class="btn-small" data-action="remoteNgrokInstall">Configura Tunnel ngrok</button>
+                                <button id="remoteNgrokToggleBtn" class="btn-small" data-action="remoteNgrokToggle" disabled>Attiva Tunnel</button>
                             </div>
                             <div id="remoteNgrokTokenArea" class="remote-ngrok-token hidden">
                                 <input type="text" id="remoteNgrokTokenInput" placeholder="Incolla qui il tuo authtoken ngrok">
-                                <button class="btn-small" onclick="remoteNgrokSaveToken()">Salva token</button>
+                                <button class="btn-small" data-action="remoteNgrokSaveToken">Salva token</button>
                             </div>
                         </div>
                     </div>`);

@@ -171,6 +171,7 @@ const MIME = {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.jfif': 'image/jpeg',
+    '.webp': 'image/webp',
     '.gif': 'image/gif',
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',

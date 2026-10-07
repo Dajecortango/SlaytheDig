@@ -28,7 +28,7 @@
             document.getElementById('diceChallengeSection').classList.add('hidden');
             document.getElementById('closeChallengeBtn').classList.add('hidden');
 
-            document.getElementById('closeChallengeBtn').onclick = advanceNode;
+            impostaAzione(document.getElementById('closeChallengeBtn'), 'advanceNode');
         }
 
         function challengeChoose(approach) {
@@ -84,19 +84,17 @@
                 rollMode.mode === 'best' ? "Tira (2D6, tieni il migliore)" : (rollMode.mode === 'worst' ? "Tira (2D6, tieni il peggiore)" : "Tira (D6)");
         }
 
-        // Come si tira in una prova: 'best' (vantaggio), 'worst' (svantaggio) o 'single'.
-        // Vantaggio: abilità di Dioforo "Era solo una prova!" nelle prove di Intelligenza e Fede
-        // Svantaggio: maledizione "Fede Inaridita" nelle prove di Fede. Se ci sono entrambi si annullano.
+        // Come si tira in una prova: 'worst' (svantaggio) o 'single'.
+        // Svantaggio: maledizione "Fede Inaridita" nelle prove di Fede.
+        // La passiva di Dioforo "Era solo una prova!" (hero_set challengeRerollMalus) non cambia i dadi:
+        // se la prova fallisce si ripete il tiro una volta, con il malus indicato (vedi resolveChallenge).
         function challengeRollMode(hero) {
             if (!hero || !stato.challengeState) return { mode: 'single' };
             const stat = stato.challengeState.stat;
-            const advantage = (stat === 'int' || stat === 'fth') &&
-                !!hero.hasAdvantageOnIntFth;
             const disadvantage = stat === 'fth' && hasCurse('fede_inaridita');
-            if (advantage && disadvantage) return { mode: 'single', note: 'Era solo una prova! e Fede Inaridita si annullano: un solo dado' };
-            if (advantage) return { mode: 'best', note: `Era solo una prova! ${hero.name} tira due dadi e tiene il più alto`, source: 'Era solo una prova!' };
-            if (disadvantage) return { mode: 'worst', note: 'Fede Inaridita: si tirano due dadi e si tiene il più basso', source: 'Fede Inaridita' };
-            return { mode: 'single' };
+            const reroll = hero.challengeRerollMalus ? `Era solo una prova! Se fallisce, ${hero.name} ripete il tiro con −${hero.challengeRerollMalus}` : '';
+            if (disadvantage) return { mode: 'worst', note: ['Fede Inaridita: si tirano due dadi e si tiene il più basso', reroll].filter(Boolean).join('. '), source: 'Fede Inaridita' };
+            return { mode: 'single', note: reroll || undefined };
         }
 
 
@@ -109,14 +107,23 @@
                 relics,
                 relicBonus: relics.reduce((sum, r) => sum + r.val, 0),
                 rollMode: challengeRollMode(hero).mode,
+                rerollMalus: (hero && hero.challengeRerollMalus) || 0,
                 safetyNet: hasRelic('frammento_di_matrice')
             };
         }
 
         function challengeChanceInfo(mods) {
             const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus;
-            if (mods.safetyNet) return { short: 'Sicuro', long: 'Riuscita garantita: il Frammento di matrice trasforma un fallimento in successo', pct: 100 };
-            return chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
+            if (mods.safetyNet) return { short: 'Sicuro', long: `Riuscita garantita: ${relicName('frammento_di_matrice')} trasforma un fallimento in successo`, pct: 100 };
+            const info = chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
+            if (!mods.rerollMalus) return info;
+            // Era solo una prova!: un secondo tentativo con il malus se il primo fallisce
+            // (stima: stesse reliquie anche al secondo tiro)
+            const p1 = rollChance(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
+            const p2 = rollChance(needed + mods.rerollMalus, mods.rollMode === 'best', mods.rollMode === 'worst');
+            const pct = Math.round((p1 + (1 - p1) * p2) * 100);
+            const head = needed <= 2 ? '2+' : (needed >= 6 ? '6' : `${needed}+`);
+            return { short: `${head} · ${pct}%`, long: `${info.long.replace(/: \d+% di riuscita$/, '')}; se fallisce ripete il tiro con −${mods.rerollMalus}: ${pct}% di riuscita`, pct };
         }
 
         function addChallengeLog(text) {
@@ -126,47 +133,60 @@
             log.scrollTop = log.scrollHeight;
         }
 
-        // Risolve una prova: tiro (con vantaggio/svantaggio), reliquie, ricompensa/punizione.
+        // Risolve una prova: tiro (con svantaggio e ritiro di Dioforo), reliquie, ricompensa/punizione.
         // Muta unlockedRelics/activeCurses/expeditionStats. "events" sono le righe di log in ordine.
         function resolveChallenge(hero, challenge, rolls) {
             const events = [];
             const rollMode = challengeRollMode(hero);
             const twoDice = rollMode.mode !== 'single';
-            const roll = rollD6(rolls, 0);
-            let roll2 = null, kept = roll;
-
-            if (twoDice) {
-                roll2 = rollD6(rolls, 1);
-                const best = rollMode.mode === 'best';
-                kept = best ? Math.max(roll, roll2) : Math.min(roll, roll2);
-                events.push({ type: 'roll2', text: `🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})` });
-            } else {
-                events.push({ type: 'roll', text: `🎲 Dado: <b>${roll}</b>` });
-            }
-
             const mods = challengeModifiers(hero);
             const statLabel = STAT_LABELS[challenge.stat] || 'Statistica';
-            events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
 
-            let relicBonus = 0;
-            relicDiceSources().forEach(r => {
-                relicBonus += r.val;
-                events.push({ type: 'relic', text: `+${r.val} ${r.name}` });
-            });
-            spendNextRollRelics().forEach(text => events.push({ type: 'relic', text }));
+            // Un tentativo: dadi (offset = indice del primo dado in "rolls"), statistica, reliquie, malus.
+            // Le reliquie "al prossimo tiro" si consumano a ogni tentativo.
+            const attempt = (offset, malus) => {
+                const roll = rollD6(rolls, offset);
+                let roll2 = null, kept = roll;
+                if (twoDice) {
+                    roll2 = rollD6(rolls, offset + 1);
+                    kept = rollMode.mode === 'best' ? Math.max(roll, roll2) : Math.min(roll, roll2);
+                    events.push({ type: 'roll2', text: `🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})` });
+                } else {
+                    events.push({ type: 'roll', text: `🎲 Dado: <b>${roll}</b>` });
+                }
+                events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
 
-            let total = kept + mods.statValue + relicBonus;
-            events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
+                let relicBonus = 0;
+                relicDiceSources().forEach(r => {
+                    relicBonus += r.val;
+                    events.push({ type: 'relic', text: `+${r.val} ${r.name}` });
+                });
+                spendNextRollRelics().forEach(text => events.push({ type: 'relic', text }));
+                if (malus) events.push({ type: 'malus', text: `−${malus} secondo tentativo` });
 
-            let success = naturalRollSuccess(kept, total, challenge.cd);
-            const natural = naturalRollNote(kept, total, challenge.cd);
-            if (natural) events.push({ type: 'natural', text: natural });
+                const total = kept + mods.statValue + relicBonus - malus;
+                events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
+                const natural = naturalRollNote(kept, total, challenge.cd);
+                if (natural) events.push({ type: 'natural', text: natural });
+                return { roll, roll2, kept, relicBonus, total, success: naturalRollSuccess(kept, total, challenge.cd) };
+            };
+
+            const first = attempt(0, 0);
+            let final = first, rerolled = false;
+            // Era solo una prova! (Dioforo): una prova fallita si ritenta una volta, con il malus
+            if (!first.success && hero && hero.challengeRerollMalus) {
+                events.push({ type: 'reroll', text: `🔁 Era solo una prova! ${hero.name} ripete il tiro (−${hero.challengeRerollMalus})` });
+                final = attempt(2, hero.challengeRerollMalus);
+                rerolled = true;
+            }
+            const { roll, roll2, kept, relicBonus } = final;
+            let { total, success } = final;
 
             if (!success && hasRelic('frammento_di_matrice')) {
                 total = Math.max(total, challenge.cd);
                 success = true;
                 breakRelic('frammento_di_matrice');
-                events.push({ type: 'relic', text: 'Frammento di matrice: il fallimento diventa un successo (la reliquia si rompe)' });
+                events.push({ type: 'relic', text: `${relicName('frammento_di_matrice')}: il fallimento diventa un successo (la reliquia si rompe)` });
             }
 
             events.push({ type: 'outcome', text: success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>' });
@@ -201,7 +221,7 @@
 
             const isFinal = challenge.stat === 'scelta_finale' || challenge.title === "Accampamento";
 
-            return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rewardGranted, punishmentApplied, isFinal, events };
+            return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rerolled, firstAttempt: rerolled ? first : null, rewardGranted, punishmentApplied, isFinal, events };
         }
 
         // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
@@ -237,6 +257,11 @@
                         document.getElementById('diceChallengeNote').textContent =
                             `${res.rollMode.source}: dadi [${res.roll}, ${res.roll2}], tiene ${res.kept}`;
                     }
+                    if (res.rerolled) {
+                        const note = document.getElementById('diceChallengeNote');
+                        note.textContent = `Era solo una prova! Primo tiro ${res.firstAttempt.kept} fallito, ritentato con −${selectedChallengeHero.challengeRerollMalus}: ${res.kept}`;
+                        note.classList.remove('hidden');
+                    }
 
                     diceOutcomeSfx(res.kept);
                     res.events.forEach(ev => addChallengeLog(ev.text));
@@ -250,9 +275,9 @@
                         document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.successText || 'Prova superata!')}${rewardMsg}`;
 
                         if (res.isFinal) {
-                            document.getElementById('closeChallengeBtn').onclick = () => showScreen('screenVictory');
+                            impostaAzione(document.getElementById('closeChallengeBtn'), 'showScreen', 'screenVictory');
                         } else {
-                            document.getElementById('closeChallengeBtn').onclick = advanceNode;
+                            impostaAzione(document.getElementById('closeChallengeBtn'), 'advanceNode');
                         }
                     } else {
                         let punishmentMsg = "";
@@ -261,7 +286,7 @@
                             showOutcomeOverlay('curse', res.punishmentApplied);
                         }
                         document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.failText || 'Prova fallita!')}${punishmentMsg}`;
-                        document.getElementById('closeChallengeBtn').onclick = advanceNode;
+                        impostaAzione(document.getElementById('closeChallengeBtn'), 'advanceNode');
                     }
 
                     updatePartyStatusBars();
@@ -317,7 +342,7 @@
             const story = (stato.currentCampaign.stories || {})[node.storyId] || {};
             document.getElementById('storyTitle').textContent = story.title || node.title || 'Trama';
             // Senza immagine del nodo: la copertina della campagna
-            document.getElementById('storyImg').src = node.image || stato.currentCampaign.coverImage || 'immagini/inizio_campagna.jpg';
+            document.getElementById('storyImg').src = node.image || stato.currentCampaign.coverImage || 'immagini/inizio_campagna.webp';
             const testo = story.text || 'Il viaggio prosegue.';
             document.getElementById('storyDescBox').innerHTML = testo.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join('');
             showScreen('screenStory');
@@ -347,6 +372,12 @@
 
         function startCaptainFinale() {
             showScreen('screenCaptain');
+            // La schermata può essere già stata usata in una partita precedente della stessa pagina: torna come all'inizio
+            document.getElementById('captainHeroSelect').style.display = '';
+            document.getElementById('diceCaptainSection').classList.add('hidden');
+            document.getElementById('rollCaptainBtn').disabled = false;
+            document.getElementById('resultCaptainLog').innerHTML = '';
+            document.getElementById('endGameBtn').classList.add('hidden');
             document.getElementById('captainHeroSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => `<option value="${h.name}">${h.name}</option>`).join('');
         }
 
@@ -401,7 +432,7 @@
                     const endBtn = document.getElementById('endGameBtn');
                     endBtn.classList.remove('hidden');
                     endBtn.textContent = "Vedi Vittoria / Fine Campagna";
-                    endBtn.onclick = () => showScreen('screenVictory');
+                    impostaAzione(endBtn, 'showScreen', 'screenVictory');
                 }
             }, 50);
         }

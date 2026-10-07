@@ -63,19 +63,19 @@
     <div class="party-topbar" id="partyTopBar">
         <div class="topbar-side">
             <div class="topbar-actions">
-                <button onclick="saveGame()" data-tip="Salva||Salva lo stato attuale della partita.">
+                <button data-action="saveGame" data-tip="Salva||Salva lo stato attuale della partita.">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>
                     <span>Salva</span>
                 </button>
-                <button onclick="loadGame()" data-tip="Carica||Carica l'ultimo salvataggio.">
+                <button data-action="loadGame" data-tip="Carica||Carica l'ultimo salvataggio.">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/><path d="M12 17v-5M9.5 14.5L12 12l2.5 2.5"/></svg>
                     <span>Carica</span>
                 </button>
-                <button onclick="openJournal()" data-tip="Diario||Eroi, oggetti, reliquie, maledizioni e statistiche della spedizione.">
+                <button data-action="openJournal" data-tip="Diario||Eroi, oggetti, reliquie, maledizioni e statistiche della spedizione.">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6M9 11h4"/></svg>
                     <span>Diario</span>
                 </button>
-                <button onclick="openOptions()" data-tip="Opzioni||Velocità del testo, volumi ed effetti animati.">
+                <button data-action="openOptions" data-tip="Opzioni||Velocità del testo, volumi ed effetti animati.">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
                     <span>Opzioni</span>
                 </button>
@@ -151,11 +151,11 @@
                 <div class="wc-hang wc-hang-main">
                     <div class="wc-chains"><span></span><span></span></div>
                     <nav class="wc-panel main-menu">
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="goToCampaigns()">Nuova Partita</button></div>
-                        <div class="wc-slot"><button id="btnContinueSavedGame" class="wc-menu-btn hidden" onclick="loadGame()">Carica Partita</button></div>
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openCompendium()">Compendio</button></div>
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openHowToPlay()">Come si gioca</button></div>
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openOptions()">Opzioni</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="goToCampaigns">Nuova Partita</button></div>
+                        <div class="wc-slot"><button id="btnContinueSavedGame" class="wc-menu-btn hidden" data-action="loadGame">Carica Partita</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="openCompendium">Compendio</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="openHowToPlay">Come si gioca</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="openOptions">Opzioni</button></div>
                     </nav>
                 </div>
 
@@ -163,8 +163,8 @@
                 <div class="wc-hang wc-hang-bottom">
                     <div class="wc-chains short"><span></span><span></span></div>
                     <nav class="wc-panel">
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="location.href='editor.html'">Editor Campagne</button></div>
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="openSimTester()">Test Tasso di Vittoria</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="vaiAPagina" data-args='["editor.html"]'>Editor Campagne</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="openSimTester">Test Tasso di Vittoria</button></div>
                     </nav>
                 </div>
 
@@ -177,11 +177,11 @@
                     <div class="wc-panel wc-panel-wide">
                         <h2>Campagne Disponibili</h2>
                         <div class="campaign-carousel">
-                            <button class="carousel-arrow prev" id="campaignPrev" onclick="scrollCampaigns(-1)" aria-label="Campagna precedente">
+                            <button class="carousel-arrow prev" id="campaignPrev" data-action="scrollCampaigns" data-args='[-1]' aria-label="Campagna precedente">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
                             </button>
                             <div class="campaigns-track" id="campaignsGridList" tabindex="0" aria-label="Campagne disponibili"></div>
-                            <button class="carousel-arrow next" id="campaignNext" onclick="scrollCampaigns(1)" aria-label="Campagna successiva">
+                            <button class="carousel-arrow next" id="campaignNext" data-action="scrollCampaigns" data-args='[1]' aria-label="Campagna successiva">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
                             </button>
                         </div>
@@ -192,7 +192,7 @@
                 <div class="wc-hang wc-hang-bottom">
                     <div class="wc-chains short"><span></span><span></span></div>
                     <nav class="wc-panel">
-                        <div class="wc-slot"><button class="wc-menu-btn" onclick="showScreen('screenStart')">Indietro</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="showScreen" data-args='["screenStart"]'>Indietro</button></div>
                     </nav>
                 </div>
             </div>
@@ -204,7 +204,7 @@
                 </div>
 
                 <p class="panel-label">Campagna:</p>
-                <select id="simCampaignSelect" onchange="simSelectCampaign(this.value)"></select>
+                <select id="simCampaignSelect" data-change="simSelectCampaign" data-change-args='["$value"]'></select>
 
                 <div id="simHeroesArea" class="hidden">
                     <h3>Eroi da includere</h3>
@@ -214,20 +214,20 @@
                     <div id="simProfileList" class="sim-profile-list"></div>
 
                     <h3>Run per profilo</h3>
-                    <input type="number" id="simRunsInput" min="1" max="500" value="100" onchange="simSetRunsPerProfile(this.value)">
+                    <input type="number" id="simRunsInput" min="1" max="500" value="100" data-change="simSetRunsPerProfile" data-change-args='["$value"]'>
                 </div>
 
                 <p id="simStartHint" class="panel-label"></p>
-                <button id="simStartBtn" class="btn-proceed hidden" onclick="simStartTest()" disabled>Avvia Test</button>
-                <button class="wc-menu-btn" onclick="showScreen('screenStart')">Indietro</button>
+                <button id="simStartBtn" class="btn-proceed hidden" data-action="simStartTest" disabled>Avvia Test</button>
+                <button class="wc-menu-btn" data-action="showScreen" data-args='["screenStart"]'>Indietro</button>
             </div>
 
             <div id="screenSimReport" class="hidden">
                 <div id="simReportHeader"></div>
                 <div id="simReportBody" class="sim-report-grid"></div>
                 <div class="sim-report-actions">
-                    <button class="wc-menu-btn" onclick="showScreen('screenSimSetup')">Nuovo Test</button>
-                    <button class="wc-menu-btn" onclick="showScreen('screenStart')">Menu Principale</button>
+                    <button class="wc-menu-btn" data-action="showScreen" data-args='["screenSimSetup"]'>Nuovo Test</button>
+                    <button class="wc-menu-btn" data-action="showScreen" data-args='["screenStart"]'>Menu Principale</button>
                 </div>
             </div>
 
@@ -236,7 +236,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img src="immagini/creazione_armeria.jpg" alt="Creazione / Armeria">
+                            <img src="immagini/creazione_armeria.webp" alt="Creazione / Armeria" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -248,7 +248,7 @@
                             <div id="partyConfigArea">
                                 <p id="partyStepText" class="panel-label">Scegli quanti membri comporranno la spedizione:</p>
                                 <select id="partySizeSelect"></select>
-                                <button onclick="confirmPartySize()" class="btn-block">Conferma Dimensione</button>
+                                <button data-action="confirmPartySize" class="btn-block">Conferma Dimensione</button>
                             </div>
 
                             <div id="heroCreationArea" class="hidden">
@@ -269,7 +269,7 @@
                         </div>
 
                         <div>
-                            <button id="btnProceedHero" class="btn-proceed hidden" onclick="nextHero()" disabled>Conferma Eroe / Avanti</button>
+                            <button id="btnProceedHero" class="btn-proceed hidden" data-action="nextHero" disabled>Conferma Eroe / Avanti</button>
                         </div>
                     </div>
                 </div>
@@ -280,7 +280,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img id="campaignIntroImg" src="immagini/inizio_campagna.jpg" alt="Inizio Campagna">
+                            <img id="campaignIntroImg" src="immagini/inizio_campagna.webp" alt="Inizio Campagna">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -289,7 +289,7 @@
                                 <strong>Descrizione:</strong>
                             </div>
                         </div>
-                        <button onclick="startExpedition()" class="btn-proceed">Inizia</button>
+                        <button data-action="startExpedition" class="btn-proceed">Inizia</button>
                     </div>
                 </div>
             </div>
@@ -314,7 +314,7 @@
                     <div>
                         <div class="event-left-image-box combat-stage">
                             <!-- ID immagine dinamica scontro -->
-                            <img id="combatImg" src="immagini/scontro_cinghiali.jpg" alt="Scontro">
+                            <img id="combatImg" src="immagini/scontro_cinghiali.webp" alt="Scontro">
                             <!-- Video del nemico (campo "video" del bestiario): al posto dell'immagine, se c'è (setCombatVideo) -->
                             <video id="combatVideo" class="combat-video hidden" muted loop playsinline preload="auto"></video>
                             <!-- Cosa farà il nemico al suo turno (updateEnemyInfoUI in js/combattimento.js) -->
@@ -334,33 +334,33 @@
                                 <p class="turn-label">Turno del Party</p>
                                 <div id="heroChoiceArea">
                                     <select id="combatHeroSelect"></select>
-                                    <button onclick="confirmCombatHeroChoice()" class="btn-block">Conferma Eroe</button>
+                                    <button data-action="confirmCombatHeroChoice" class="btn-block">Conferma Eroe</button>
                                 </div>
                                 <div id="heroActionControlArea" class="hidden">
                                     <p id="activeCombatantText" class="turn-label"></p>
-                                    <button id="combatChangeHeroBtn" class="btn-small combat-back-btn" onclick="cancelCombatHeroChoice()" data-tip="Cambia eroe [Esc]||Torna alla scelta dell'eroe che agisce. Si può fare finché non tiri il dado.">Cambia eroe</button>
+                                    <button id="combatChangeHeroBtn" class="btn-small combat-back-btn" data-action="cancelCombatHeroChoice" data-tip="Cambia eroe [Esc]||Torna alla scelta dell'eroe che agisce. Si può fare finché non tiri il dado.">Cambia eroe</button>
                                     <div id="combatActionButtons" class="command-card">
-                                        <button id="cmdAttack" class="cmd-btn" onclick="selectCombatAction('attack')" data-tip="Attacca [Q]||Tira Forza + d6 contro la CA del nemico. Se riesci infliggi i tuoi danni.">
+                                        <button id="cmdAttack" class="cmd-btn" data-action="selectCombatAction" data-args='["attack"]' data-tip="Attacca [Q]||Tira Forza + d6 contro la CA del nemico. Se riesci infliggi i tuoi danni.">
                                             <span class="cmd-key">Q</span>
                                             <img class="cmd-img" src="immagini/icone/BTNAttack.png" alt="">
                                             Attacca<span class="cmd-sub">Forza + d6</span>
                                         </button>
-                                        <button id="cmdDefend" class="cmd-btn" onclick="selectCombatAction('defend')" data-tip="Difendi [W]||Tira Forza + d6 contro l'attacco nemico. Se riesci ottieni +1 Armatura.">
+                                        <button id="cmdDefend" class="cmd-btn" data-action="selectCombatAction" data-args='["defend"]' data-tip="Difendi [W]||Tira Forza + d6 contro l'attacco nemico. Se riesci ottieni +1 Armatura.">
                                             <span class="cmd-key">W</span>
                                             <img class="cmd-img" src="immagini/icone/BTNDefend.png" alt="">
                                             Difendi<span class="cmd-sub">+1 Armatura</span>
                                         </button>
-                                        <button id="cmdHelp" class="cmd-btn" onclick="selectCombatAction('help')" data-tip="Aiuta [E]||Tira Forza + d6 contro l'attacco nemico. Se riesci il prossimo attacco ottiene +1.">
+                                        <button id="cmdHelp" class="cmd-btn" data-action="selectCombatAction" data-args='["help"]' data-tip="Aiuta [E]||Tira Forza + d6 contro l'attacco nemico. Se riesci il prossimo attacco ottiene +1.">
                                             <span class="cmd-key">E</span>
                                             <img class="cmd-img" src="immagini/icone/BTNRallyPoint.png" alt="">
                                             Aiuta<span class="cmd-sub">+1 al prossimo</span>
                                         </button>
-                                        <button id="cmdItem" class="cmd-btn" onclick="selectCombatAction('use_item')" data-tip="Usa Oggetto [R]||Usa un consumabile dello zaino (cura, danno al nemico o potenziamento). Non consuma l'azione: dopo puoi ancora attaccare, difendere o aiutare.">
+                                        <button id="cmdItem" class="cmd-btn" data-action="selectCombatAction" data-args='["use_item"]' data-tip="Usa Oggetto [R]||Usa un consumabile dello zaino (cura, danno al nemico o potenziamento). Non consuma l'azione: dopo puoi ancora attaccare, difendere o aiutare.">
                                             <span class="cmd-key">R</span>
                                             <img class="cmd-img" src="immagini/icone/BTNPotionRed.png" alt="">
                                             Oggetto<span class="cmd-sub">Consumabile</span>
                                         </button>
-                                        <button id="btnCombatAbility" class="cmd-btn" onclick="selectCombatAction('ability')" data-tip="Usa Abilità [T]||">
+                                        <button id="btnCombatAbility" class="cmd-btn" data-action="selectCombatAction" data-args='["ability"]' data-tip="Usa Abilità [T]||">
                                             <span class="cmd-key">T</span>
                                             <span class="cmd-ability-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l2.6 6 6.4.6-4.9 4.2 1.5 6.3L12 16.3 6.4 19.6l1.5-6.3L3 9.1l6.4-.6z"/></svg></span>
                                             <span class="cmd-ability-label">Abilità</span><span class="cmd-sub">1 per scontro</span>
@@ -372,8 +372,8 @@
                                         <select id="combatConsumableSelect"></select>
                                         <p>Seleziona il bersaglio:</p>
                                         <select id="combatTargetSelect"></select>
-                                        <button onclick="executeCombatUseItem()" class="btn-small">Conferma Utilizzo</button>
-                                        <button onclick="cancelCombatItemSubmenu()" class="btn-small">Indietro</button>
+                                        <button data-action="executeCombatUseItem" class="btn-small">Conferma Utilizzo</button>
+                                        <button data-action="cancelCombatItemSubmenu" class="btn-small">Indietro</button>
                                     </div>
 
                                     <div id="combatDiceArea" class="hidden" style="text-align:center;">
@@ -381,8 +381,8 @@
                                             <div id="diceCombat" class="dice-box">6</div>
                                             <div id="diceCombat2" class="dice-box hidden">6</div>
                                         </div>
-                                        <button id="rollCombatBtn" onclick="executeCombatHeroRoll()">Tira (D6)</button>
-                                        <button id="combatDiceBackBtn" class="btn-small combat-back-btn" onclick="backToCombatActions()" data-tip="Indietro [Esc]||Torna alla scelta dell'azione senza tirare.">Indietro</button>
+                                        <button id="rollCombatBtn" data-action="executeCombatHeroRoll">Tira (D6)</button>
+                                        <button id="combatDiceBackBtn" class="btn-small combat-back-btn" data-action="backToCombatActions" data-tip="Indietro [Esc]||Torna alla scelta dell'azione senza tirare.">Indietro</button>
                                         <div id="diceCombatResult" class="dice-result"></div>
                                     </div>
                                 </div>
@@ -391,13 +391,13 @@
                                 <p id="monsterTurnText" class="turn-label enemy"></p>
                                 <div id="monsterTargetArea">
                                     <select id="monsterTargetSelect"></select>
-                                    <button onclick="executeMonsterAttack()" class="btn-block btn-danger">Assegna Danno</button>
+                                    <button data-action="executeMonsterAttack" class="btn-block btn-danger">Assegna Danno</button>
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <button id="combatNextBtn" class="hidden btn-proceed" onclick="proceedCombatPhase()">Avanti al prossimo</button>
-                            <button id="combatLootBtn" class="hidden btn-proceed" onclick="triggerLoot()">Depreda il Nemico!</button>
+                            <button id="combatNextBtn" class="hidden btn-proceed" data-action="proceedCombatPhase">Avanti al prossimo</button>
+                            <button id="combatLootBtn" class="hidden btn-proceed" data-action="triggerLoot">Depreda il Nemico!</button>
                             <div class="log-box" id="combatLog"></div>
                         </div>
                     </div>
@@ -410,7 +410,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img src="immagini/bottino.jpg" alt="Bottino">
+                            <img src="immagini/bottino.webp" alt="Bottino" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -422,7 +422,7 @@
                                 <p class="loot-coins">Monete trovate: <strong id="lootCoinsText"></strong> <span class="coin"></span></p>
                                 <p id="lootCoinsBonus" class="loot-coins-bonus"></p>
                                 <p style="color:#d8cba8;">Oggetto rinvenuto:</p>
-                                <button id="lootCardBack" class="armory-btn card-back loot-card-back" onclick="revealLootItem()">
+                                <button id="lootCardBack" class="armory-btn card-back loot-card-back" data-action="revealLootItem">
                                     <span class="card-back-emblem" aria-hidden="true">?</span>
                                     <span class="tile-text">
                                         <strong>Bottino coperto</strong>
@@ -441,7 +441,7 @@
                         <div id="lootAssignArea" class="hidden">
                             <p class="panel-label">A chi vuoi assegnare questo oggetto?</p>
                             <select id="lootHeroSelect"></select>
-                            <button onclick="confirmLootAssignment()" class="btn-proceed">Assegna e Prosegui</button>
+                            <button data-action="confirmLootAssignment" class="btn-proceed">Assegna e Prosegui</button>
                         </div>
                     </div>
                 </div>
@@ -453,14 +453,14 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img id="storyImg" src="immagini/inizio_campagna.jpg" alt="Trama">
+                            <img id="storyImg" src="immagini/inizio_campagna.webp" alt="Trama">
                         </div>
                     </div>
                     <div class="event-right-panel">
                         <div>
                             <div class="narrative-desc-box story-text" id="storyDescBox"></div>
                         </div>
-                        <button onclick="finishStory()" class="btn-proceed">Prosegui</button>
+                        <button data-action="finishStory" class="btn-proceed">Prosegui</button>
                     </div>
                 </div>
             </div>
@@ -471,7 +471,7 @@
                     <div>
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica tesoro -->
-                            <img id="treasureImg" src="immagini/tesoro_cassa.jpg" alt="Cassa del Tesoro">
+                            <img id="treasureImg" src="immagini/tesoro.webp" alt="Cassa del Tesoro">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -480,7 +480,7 @@
                                 <strong>Descrizione:</strong>
                             </div>
                         </div>
-                        <button onclick="openTreasure()" class="btn-proceed">Apri la Cassa</button>
+                        <button data-action="openTreasure" class="btn-proceed">Apri la Cassa</button>
                     </div>
                 </div>
             </div>
@@ -490,7 +490,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img src="immagini/tesoro_aperto.jpg" alt="Tesoro Aperto">
+                            <img src="immagini/tesoro_aperto.webp" alt="Tesoro Aperto" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -508,11 +508,11 @@
                                 <h3 id="selectedTreasureName" style="margin-top:0;"></h3>
                                 <p id="selectedTreasureDesc" style="color:#d8cba8;"></p>
                                 <select id="treasureHeroSelect"></select>
-                                <button onclick="confirmTreasureAssignment()" class="btn-proceed" style="margin-top:4px; padding:8px;">Assegna</button>
-                                <button onclick="cancelTreasureItemSelection()" class="btn-small btn-block">Indietro</button>
+                                <button data-action="confirmTreasureAssignment" class="btn-proceed" style="margin-top:4px; padding:8px;">Assegna</button>
+                                <button data-action="cancelTreasureItemSelection" class="btn-small btn-block">Indietro</button>
                             </div>
                         </div>
-                        <button onclick="confirmLeaveTreasure()" id="btnExitTreasure" class="btn-proceed btn-danger">Termina e Prosegui</button>
+                        <button data-action="confirmLeaveTreasure" id="btnExitTreasure" class="btn-proceed btn-danger">Termina e Prosegui</button>
                     </div>
                 </div>
             </div>
@@ -531,7 +531,7 @@
                     <div>
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica sfida -->
-                            <img id="challengeImg" src="immagini/sfida.jpg" alt="Sfida">
+                            <img id="challengeImg" src="immagini/sfida.webp" alt="Sfida">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -541,14 +541,14 @@
                             </div>
 
                             <div id="challengeStage1" style="margin-top:10px;">
-                                <button onclick="challengeChoose(true)" class="btn-block">a) Uno di voi si avvicina</button>
-                                <button onclick="challengeChoose(false)" class="btn-block">b) Lascia Perdere</button>
+                                <button data-action="challengeChoose" data-args='[true]' class="btn-block">a) Uno di voi si avvicina</button>
+                                <button data-action="challengeChoose" data-args='[false]' class="btn-block">b) Lascia Perdere</button>
                             </div>
 
                             <div id="challengeStage2" class="hidden" style="margin-top:10px;">
                                 <p class="panel-label">Scegli quale eroe affronta la sfida:</p>
                                 <select id="challengeHeroSelect"></select>
-                                <button onclick="confirmChallengeHero()" class="btn-proceed">Procedi al Tiro</button>
+                                <button data-action="confirmChallengeHero" class="btn-proceed">Procedi al Tiro</button>
                             </div>
 
                             <div id="diceChallengeSection" class="hidden" style="text-align:center; margin-top: 8px;">
@@ -559,11 +559,11 @@
                                     <div id="diceChallenge2" class="dice-box hidden">6</div>
                                 </div>
                                 <p id="diceChallengeNote" class="dice-result hidden"></p>
-                                <button id="rollChallengeBtn" onclick="executeChallengeRoll()">Tira (D6)</button>
+                                <button id="rollChallengeBtn" data-action="executeChallengeRoll">Tira (D6)</button>
                                 <div id="challengeLog" class="log-box challenge-log hidden"></div>
                             </div>
                         </div>
-                        <button id="closeChallengeBtn" class="hidden btn-proceed" onclick="advanceNode()">Prosegui</button>
+                        <button id="closeChallengeBtn" class="hidden btn-proceed" data-action="advanceNode">Prosegui</button>
                     </div>
                 </div>
             </div>
@@ -574,7 +574,7 @@
                     <div>
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica riposo -->
-                            <img id="restImg" src="immagini/riposo.jpg" alt="Riposo">
+                            <img id="restImg" src="immagini/riposo.webp" alt="Riposo">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -583,7 +583,7 @@
                                 <strong>Descrizione:</strong>
                             </div>
                         </div>
-                        <button onclick="advanceNode()" class="btn-proceed">Continua il Viaggio</button>
+                        <button data-action="advanceNode" class="btn-proceed">Continua il Viaggio</button>
                     </div>
                 </div>
             </div>
@@ -594,7 +594,7 @@
                     <div>
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica mercante -->
-                            <img id="merchantImg" src="immagini/mercante.jpg" alt="Mercante">
+                            <img id="merchantImg" src="immagini/mercante.webp" alt="Mercante">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -603,13 +603,13 @@
                                 <strong>Descrizione:</strong>
                             </div>
                             <div id="merchantTabs" class="merchant-tabs">
-                                <button id="merchantTabBuy" class="merchant-tab active" onclick="showMerchantTab('buy')">Compra</button>
-                                <button id="merchantTabSell" class="merchant-tab" onclick="showMerchantTab('sell')">Vendi</button>
+                                <button id="merchantTabBuy" class="merchant-tab active" data-action="showMerchantTab" data-args='["buy"]'>Compra</button>
+                                <button id="merchantTabSell" class="merchant-tab" data-action="showMerchantTab" data-args='["sell"]'>Vendi</button>
                             </div>
                             <div id="merchantItemsList" class="armory-grid" style="grid-template-columns: 1fr;"></div>
                             <div id="merchantTools" class="merchant-tools">
-                                <button id="btnMerchantReroll" class="btn-small" onclick="rerollMerchantStock()">Rinnova la merce · 5 <span class="coin"></span></button>
-                                <button id="btnMerchantHaggle" class="btn-small" onclick="openHaggle()">Contratta</button>
+                                <button id="btnMerchantReroll" class="btn-small" data-action="rerollMerchantStock">Rinnova la merce · 5 <span class="coin"></span></button>
+                                <button id="btnMerchantHaggle" class="btn-small" data-action="openHaggle">Contratta</button>
                             </div>
                             <p id="merchantHaggleNote" class="merchant-haggle-note hidden"></p>
                             <div id="merchantSellList" class="armory-grid hidden" style="grid-template-columns: 1fr;"></div>
@@ -617,10 +617,10 @@
                             <div id="merchantAssignArea" class="hidden sub-panel">
                                 <p>Oggetto acquistato! A chi vuoi assegnarlo?</p>
                                 <select id="merchantHeroSelect"></select>
-                                <button onclick="confirmMerchantAssignment()" class="btn-proceed" style="margin-top:4px; padding:8px;">Assegna all'Eroe</button>
+                                <button data-action="confirmMerchantAssignment" class="btn-proceed" style="margin-top:4px; padding:8px;">Assegna all'Eroe</button>
                             </div>
                         </div>
-                        <button onclick="confirmLeaveMerchant()" id="btnExitMerchant" class="btn-proceed btn-danger">Esci dal Negozio</button>
+                        <button data-action="confirmLeaveMerchant" id="btnExitMerchant" class="btn-proceed btn-danger">Esci dal Negozio</button>
                     </div>
                 </div>
             </div>
@@ -630,7 +630,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img src="immagini/accampamento.jpg" alt="Meta">
+                            <img src="immagini/accampamento.webp" alt="Meta" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -640,17 +640,17 @@
                             </div>
                             <div style="margin-top: 8px;">
                                 <select id="captainHeroSelect" style="margin-bottom:8px;"></select>
-                                <button onclick="captainAction('faith')" class="btn-block">a) Sfida Fede (CD 6)</button>
-                                <button onclick="captainAction('intel')" class="btn-block">b) Sfida Intelletto (CD 6)</button>
-                                <button onclick="captainAction('force')" class="btn-block">c) Prendersi ramanzina (-50% hp)</button>
+                                <button data-action="captainAction" data-args='["faith"]' class="btn-block">a) Sfida Fede (CD 6)</button>
+                                <button data-action="captainAction" data-args='["intel"]' class="btn-block">b) Sfida Intelletto (CD 6)</button>
+                                <button data-action="captainAction" data-args='["force"]' class="btn-block">c) Prendersi ramanzina (-50% hp)</button>
                             </div>
                             <div id="diceCaptainSection" class="hidden" style="text-align:center; margin-top: 8px;">
                                 <div id="diceCaptain" class="dice-box">6</div>
-                                <button id="rollCaptainBtn" onclick="executeCaptainRoll()">Tira (D6)</button>
+                                <button id="rollCaptainBtn" data-action="executeCaptainRoll">Tira (D6)</button>
                                 <div id="resultCaptainLog" class="dice-result"></div>
                             </div>
                         </div>
-                        <button id="endGameBtn" class="hidden btn-proceed" onclick="location.reload()">Ricomincia il Gioco</button>
+                        <button id="endGameBtn" class="hidden btn-proceed" data-action="showScreen" data-args='["screenVictory"]'>Vedi Vittoria / Fine Campagna</button>
                     </div>
                 </div>
             </div>
@@ -661,7 +661,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img src="immagini/sconfitta.jpg" alt="Sconfitta">
+                            <img src="immagini/sconfitta_party.webp" alt="Sconfitta" class="end-banner" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -669,8 +669,10 @@
                             <div class="narrative-desc-box" style="border-color: #7a1a10;">
                                 <strong>Tragico Epilogo:</strong> Tutti i membri della spedizione sono caduti in battaglia o hanno esaurito le forze.
                             </div>
+                            <!-- Riepilogo della partita, scritto da mostraRiepilogo (js/spedizione.js) -->
+                            <div id="defeatSummary" class="run-summary wc-inset"></div>
                         </div>
-                        <button onclick="location.reload()" class="btn-proceed btn-danger">Riprova</button>
+                        <button data-action="tornaAlMenu" class="btn-proceed btn-danger">Torna al menu</button>
                     </div>
                 </div>
             </div>
@@ -681,7 +683,7 @@
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
-                            <img src="immagini/vittoria.jpg" alt="Vittoria">
+                            <img src="immagini/vittoria_capitolo.webp" alt="Vittoria" class="end-banner" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -689,8 +691,9 @@
                             <div class="narrative-desc-box" style="border-color: #c9982f;">
                                 <strong>Gloria alla Compagnia:</strong> Avete superato ogni prova, affrontato le avversità e raggiunto la meta finale con onore!
                             </div>
+                            <div id="victorySummary" class="run-summary wc-inset"></div>
                         </div>
-                        <button onclick="location.reload()" class="btn-proceed">Ricomincia</button>
+                        <button data-action="tornaAlMenu" class="btn-proceed">Torna al menu</button>
                     </div>
                 </div>
             </div>
@@ -722,11 +725,17 @@
     <script src="data/campagne/astarte_ch2.js"></script>
     <script src="data/campagne/drakengrad.js"></script>
     <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
+    <script src="js/azioni.js"></script>
     <script src="js/libreria.js"></script>
+    <script src="js/regole.js"></script>
     <script src="js/comune.js"></script>
     <script src="js/procedurale.js"></script>
     <script src="js/vendor/gsap.min.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/interfaccia.js"></script>
+    <script src="js/effetti.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/spedizione.js"></script>
     <script src="js/creazione.js"></script>
     <script src="js/oggetti.js"></script>
     <script src="js/prove.js"></script>

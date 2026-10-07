@@ -6,9 +6,9 @@
   },
   "riferimenti": {
     "scena": [
-      "immagini/bestiario/banditi.jpg",
-      "immagini/bestiario/tremabosco.jpg",
-      "immagini/bestiario/disertori.jpg"
+      "immagini/bestiario/banditi.webp",
+      "immagini/bestiario/tremabosco.webp",
+      "immagini/bestiario/disertori.webp"
     ],
     "interfaccia": [],
     "elemento_ui": []
@@ -16,244 +16,244 @@
   "lavori": [
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/cani_caccia.jfif",
+      "file": "immagini/bestiario/cani_scontro.webp",
       "stile": "scena",
       "prompt": "A pack of feral starving war hounds and mastiffs, skin and bones, creeping low through dry ferns at the edge of a dark forest, bared teeth, one lunging forward; broken army gear and a torn banner in the mud."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/esploratori_predoni.jpg",
+      "file": "immagini/bestiario/esploratori.webp",
       "stile": "scena",
       "prompt": "Hooded raider scouts with short bows and sabres crouching among rocky cliffs and mountain ravines, one drawing an arrow toward the viewer, mist in the gorge below."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/predoni.jpg",
+      "file": "immagini/bestiario/predoni_kin.webp",
       "stile": "scena",
       "prompt": "A band of nomad border raiders in light leather and fur armour, curved scimitars and throwing knives glinting, ambushing on a mountain pass, dark red rags, rain."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/orso_bruno.jpg",
+      "file": "immagini/bestiario/orso.webp",
       "stile": "scena",
       "prompt": "A huge wild brown bear rearing up to full height among fallen boulders, claws raised, roaring, mouth of a mountain cave behind it, early winter frost on the ground."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/fabbro_rinnegato.jpg",
+      "file": "immagini/bestiario/fabbro_rinnegato.webp",
       "stile": "scena",
       "prompt": "A renegade army blacksmith turned brigand, massive forge hammer and glowing red-hot tongs, studded leather apron, two brutish henchmen at his sides, a ruined field forge smoking behind them."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/cani_corsi.jpg",
+      "file": "immagini/bestiario/cani_corsi.webp",
       "stile": "scena",
       "prompt": "A pack of massive collarless cane corso dogs blocking a muddy path, silent and growling, muscles tense, a burned looted farmstead in the valley behind."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/hungrabarn.jpg",
+      "file": "immagini/bestiario/hungrabarn.webp",
       "stile": "scena",
       "prompt": "A colossal ancient giant emerging from the darkness of a vast ruined stone hall, titanic limbs, hungry eyes, tiny armed figures in the foreground for scale, dust and torchlight."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/mastino_bokgar.jpg",
+      "file": "immagini/bestiario/mastino_bokgar.webp",
       "stile": "scena",
       "prompt": "Gaunt dark nocturnal beasts with glassy dead eyes, the Hounds of Bokgar, slipping out of crumbling ruins at dusk, unnatural silence, fog clinging to the stones."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/boia_rinnegati.jpg",
+      "file": "immagini/bestiario/boia.webp",
       "stile": "scena",
       "prompt": "A colossal executioner in a blackened stained leather apron, face hidden by a rough hemp hood, a heavy raw-steel cleaver on his shoulder, gallows and renegade camp behind him."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/carro_rovesciato.jpg",
+      "file": "immagini/carro_rovesciato.webp",
       "stile": "scena",
       "prompt": "An overturned heavy merchant wagon lying on its side on a mountain trail, broken wheel spokes, crates balanced precariously, snapped ropes, no people."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/guerriero_morto_neve.jpg",
+      "file": "immagini/guerriero_morto_neve.webp",
       "stile": "scena",
       "prompt": "The frozen body of a knight sitting at the foot of a monumental fir tree, half buried in fresh snow and pine needles, frost on his chainmail, serene face, a sword held in his gauntlets."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/pietra_miliare.jpg",
+      "file": "immagini/pietra_miliare.webp",
       "stile": "scena",
       "prompt": "An ancient grey limestone boundary stone at an overgrown crossroads choked with brambles and nettles, eroded carvings and yellow lichen, two paths splitting into the mist."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/pellegrino.jpg",
+      "file": "immagini/pellegrino.webp",
       "stile": "scena",
       "prompt": "An old pilgrim in rough worn wool sitting on a smooth stone at the edge of the trail, weathered face, swollen ankles, calm solemn eyes, walking staff, empty road behind."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/cavallo_senza_cavaliere.jpg",
+      "file": "immagini/cavallo_senza_cavaliere.webp",
       "stile": "scena",
       "prompt": "A pitch-black war mare with a broken saddle and torn bridle panicking in a clearing ringed by burned tree trunks, flared nostrils, foam at the mouth, terrified eyes."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/mercante_bloccato.jpg",
+      "file": "immagini/mercante_bloccato.webp",
       "stile": "scena",
       "prompt": "A stocky mud-soaked merchant whipping two exhausted horses, his heavy covered wagon stuck with the rear wheel sunk in deep mud around a blind bend of a forest road."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/cappella_viandante.jpg",
+      "file": "immagini/cappella_viandante.webp",
       "stile": "scena",
       "prompt": "A tiny roadside shrine of tuff blocks partly wrecked by scavengers, a wooden icon of the patron god thrown in the mud, holy water basin full of dead leaves."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/ponte_marcio.jpg",
+      "file": "immagini/ponte_marcio.webp",
       "stile": "scena",
       "prompt": "A rotten rope-and-plank footbridge spanning a dizzying gorge, foaming mountain rapids far below, missing planks, frayed ropes, mist rising from the river."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/sentiero_rune.jpg",
+      "file": "immagini/sentiero_rune.webp",
       "stile": "scena",
       "prompt": "A short stretch of ancient ceremonial road paved with black basalt slabs deeply carved with warding runes, crossing a misty mountain slope, faint cold light in the grooves."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/strada_scompare.jpg",
+      "file": "immagini/strada_scompare.webp",
       "stile": "scena",
       "prompt": "A trail vanishing into a vast plain of rubble and alluvial debris erased by a recent landslide, a thick milky fog bank swallowing the horizon, no landmarks."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/forca_crocevia.jpg",
+      "file": "immagini/forca_crocevia.webp",
       "stile": "scena",
       "prompt": "A tall oak gallows blackened by fire at a crossroads of four paths on a barren moor, three nameless bodies hanging from ropes swaying in an icy wind, crows."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/pedaggio.jpg",
+      "file": "immagini/pedaggio.webp",
       "stile": "scena",
       "prompt": "A palisade of sharpened logs blocking the narrowest point of a gorge, a makeshift watchtower, armoured toll-men in rusted plates stepping down, crossbowmen surrounding the road."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/rifugio_abbandonato.jpg",
+      "file": "immagini/rifugio_abbandonato.webp",
       "stile": "scena",
       "prompt": "A half-collapsed hunters' cabin jutting from a rocky ridge, door torn off its hinges, crude snap traps of taut ropes and scythe blades hidden among the floorboards inside."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/cippo_giuramento.jpg",
+      "file": "immagini/cippo_giuramento.webp",
       "stile": "scena",
       "prompt": "A cairn of consecrated stones in a windswept clearing around a broken old military standard, faded votive ribbons tied to it fluttering, mountain passes behind."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/mercante_viaggiatore.jpg",
+      "file": "immagini/mercante_viaggiatore.webp",
       "stile": "scena",
       "prompt": "A travelling merchant in a coat worn by a thousand journeys, smiling knowingly, beside a small cart covered with waxed canvas, pulled by a patient mule and packed with chests, cages and trinkets, at the edge of a muddy road."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/riposo.jpg",
+      "file": "immagini/riposo.webp",
       "stile": "scena",
       "prompt": "A small campfire sheltered from the wind in a quiet wild clearing at dusk, a tired band of mercenaries resting around it, bedrolls, a cooking pot, warm firelight against the cold grey mist."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/lamenti_nebbia.jpg",
+      "file": "immagini/lamenti_nebbia.webp",
       "stile": "scena",
       "prompt": "A procession of weeping peasants carrying the fallen through thick fog toward a mass grave after a battle, torches, bowed heads, muddy field."
     },
     {
       "gruppo": "bestiario",
-      "file": "immagini/bestiario/scontro_sergente.jpg",
+      "file": "immagini/bestiario/scontro_sergente.webp",
       "stile": "scena",
       "prompt": "A surviving squad of regular soldiers led by a sergeant in blood-stained armour drawing their weapons on a muddy battlefield, tattered red banners behind them."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/onore_caduti.jpg",
+      "file": "immagini/onore_caduti.webp",
       "stile": "scena",
       "prompt": "The abandoned body of a fallen comrade lying in the mud of a battlefield under a grey sky, his broken shield and sword beside him, a lone crow."
     },
     {
       "gruppo": "nodi",
-      "file": "immagini/accampamento_arrivo.jpg",
+      "file": "immagini/accampamento_arrivo.webp",
       "stile": "scena",
       "prompt": "The entrance of a large military camp with a wooden palisade gate, rows of tents, smoking fires, banners and guards, the captain's large tent in the distance."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/astarte_capitolo_uno.jpg",
+      "file": "immagini/astarte_capitolo_uno.webp",
       "stile": "scena",
       "prompt": "Campaign cover: Astarte, a fierce red-haired warrior woman of the Dignitas family, leading a small mercenary company up a snowy mountain pass at dawn, tattered dark red banner, ruined watchtower above, epic wide composition with empty sky at the top for a title."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/bottino.jpg",
+      "file": "immagini/bottino.webp",
       "stile": "scena",
       "prompt": "Aftermath of a skirmish: mercenaries searching fallen bandits on a muddy road, open purses, scattered coins, daggers and a battered shield, a wrecked cart, crows waiting on a fence."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/tesoro_aperto.jpg",
+      "file": "immagini/tesoro_aperto.webp",
       "stile": "scena",
       "prompt": "An old iron-bound treasure chest just forced open in a dim ruined cellar, gold coins, a jewelled goblet and a rolled scroll inside, warm torchlight spilling over the treasure, dust in the air."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/accampamento.jpg",
+      "file": "immagini/accampamento.webp",
       "stile": "scena",
       "prompt": "A large military war camp at dusk seen from its palisade gate, rows of tents, campfires, banners, soldiers drilling in the mud, the captain's great command tent at the centre."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/vittoria.jpg",
+      "file": "immagini/vittoria.webp",
       "stile": "scena",
       "prompt": "Victory: a battered mercenary company standing on a hill at sunrise raising weapons and a torn dark red banner, the storm clouds breaking, golden light over the valley below."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/sconfitta.jpg",
+      "file": "immagini/sconfitta.webp",
       "stile": "scena",
       "prompt": "Defeat: a fallen warrior lying in the rain-soaked mud of a battlefield at dusk, broken sword and shield, a torn dark red banner half buried, crows circling, cold grey light."
     },
     {
       "gruppo": "schermate",
-      "file": "immagini/copertina.jfif",
+      "file": "immagini/copertina.webp",
       "stile": "scena",
       "prompt": "Main menu background in the spirit of the Warcraft III Reign of Chaos menu: a dark stormy night over a medieval fortress on a cliff, burning braziers, a lone hooded knight with a dark red banner in the foreground left, lightning in the clouds, rain. Keep the right third darker and empty for menu panels."
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/pietra_wc3.jpg",
+      "file": "immagini/ui/pietra_wc3.webp",
       "stile": "interfaccia",
       "formato": "1:1",
       "prompt": "Seamless tileable texture, top-down flat view: dark grey carved stone blocks like the Warcraft III Reign of Chaos interface panels, worn edges, subtle cracks, slight moss in the joints, even lighting, no perspective, no objects, no text."
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/cuoio_wc3.jpg",
+      "file": "immagini/ui/cuoio_wc3.webp",
       "stile": "interfaccia",
       "formato": "1:1",
       "prompt": "Seamless tileable texture, top-down flat view: dark brown worn leather like the Warcraft III interface, stitched seams, scratches, even lighting, no perspective, no objects, no text."
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/pergamena_wc3.jpg",
+      "file": "immagini/ui/pergamena_wc3.webp",
       "stile": "interfaccia",
       "formato": "1:1",
       "prompt": "Seamless tileable texture filling the entire image edge to edge: aged warm parchment paper surface, perfectly uniform brightness and colour everywhere, faint fibres and very light small stains spread evenly, absolutely no vignette, no darker edges or corners, no border, no text, no drawings, flat top-down view."
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/console_wc3.jpg",
+      "file": "immagini/ui/console_wc3.webp",
       "stile": "interfaccia",
       "formato": "21:9",
       "prompt": "Wide flat front view of an ornate carved stone and gold-trimmed metal console panel in the style of the Warcraft III Reign of Chaos bottom interface bar, dark stone with engraved knotwork, gold rivets along the top edge, empty recessed centre area, even lighting, no text, no icons."

@@ -19,9 +19,10 @@ index.html           struttura delle schermate (markup)
 css/wc3-base.css     base grafica comune (gioco, editor, telefono)
 css/style.css        stile e animazioni dell'interfaccia
 js/wc3fx.js          animazioni dei menu con GSAP (js/vendor/gsap.min.js)
-editor.html          editor delle campagne (js/editor.js, css/editor.css)
+editor.html          editor delle campagne (js/editor/, css/editor.css)
 js/comune.js         costanti e funzioni condivise da gioco ed editor
-js/game.js           logica di gioco: stato, campagne, eroi, oggetti, sfide, interfaccia
+js/regole.js         numeri del bilanciamento (prezzi, bottino, zaino, difficoltà)
+js/game.js           stato, campagne e schermate (con interfaccia.js, effetti.js, menu.js, spedizione.js)
 js/salvataggi.js     tre slot di salvataggio
 js/audio.js          musica con dissolvenze incrociate ed effetti sonori
 js/mappa.js          mappa, nodi e avanzamento
@@ -44,7 +45,7 @@ Oggetti, nemici, reliquie e maledizioni stanno nella **libreria condivisa** (`da
 
 Ogni campagna sta in `data/campagne/<id>.js`: eroi, abilità, sfide, mercanti, riposi, nodi della mappa e gli id degli elementi della libreria che usa. Dopo `window.CAMPAIGNS["<id>"] =` il contenuto è JSON puro. È un file `.js` e non `.json` perché il browser blocca il caricamento di file `.json` locali aperti con doppio click.
 
-Per aggiungere una campagna, crea un nuovo file e aggiungi il suo tag `<script>` in `index.html` (prima di `js/game.js`) e in `editor.html` (prima di `js/editor.js`). L'ordine dei tag è l'ordine nel menu.
+Per aggiungere una campagna, crea un nuovo file e aggiungi il suo tag `<script>` in `index.html` (prima di `js/game.js`) e in `editor.html` (prima di `js/libreria.js`). L'ordine dei tag è l'ordine nel menu.
 
 ### Editor delle campagne
 
@@ -58,6 +59,6 @@ Salvataggio diretto, caricamento immagini, bozze e prova nel gioco riprendono le
 
 ## Icone personalizzate
 
-Oggetti e abilità hanno il campo `icon` nei dati (`data/libreria/armeria.js` e `data/libreria/abilita.js`): dall'editor, schede Armeria e Abilità, si sceglie con "Carica…". Senza icona, un oggetto usa l'icona generica del suo tipo (`ITEM_IMAGES` in `js/game.js`).
+Oggetti e abilità hanno il campo `icon` nei dati (`data/libreria/armeria.js` e `data/libreria/abilita.js`): dall'editor, schede Armeria e Abilità, si sceglie con "Carica…". Senza icona, un oggetto usa l'icona generica del suo tipo (`ITEM_IMAGES` in `js/interfaccia.js`).
 
 Le icone in `immagini/icone/` provengono da *Warcraft III* © Blizzard Entertainment e sono usate a scopo personale e non commerciale.

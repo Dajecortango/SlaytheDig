@@ -64,7 +64,7 @@ module.exports = (t, carica) => {
         t.uguale(1, stock.filter(e => e.kind === 'medic').length);
         t.uguale(0, stock.filter(e => e.kind === 'relic').length);
         const medico = stock.find(e => e.kind === 'medic');
-        t.uguale(7, medico.price); t.ok(medico.fixedPrice && medico.revealed);
+        t.uguale(5, medico.price, '5 monete per HP'); t.ok(medico.fixedPrice && medico.revealed);
     });
 
     t.test('il prezzo del medico non cambia con sconti o contrattazione', () => {
@@ -73,7 +73,7 @@ module.exports = (t, carica) => {
         g.eval("merchantHaggle = 'ok'");
         g.stockMerchant();
         const medico = g.eval('merchantItemsWithPrices').find(e => e.kind === 'medic');
-        t.uguale(7, medico.price);
+        t.uguale(5, medico.price);
         g.eval('merchantHaggle = null');
     });
 };

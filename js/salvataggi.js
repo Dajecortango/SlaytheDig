@@ -102,7 +102,7 @@
             };
         }
 
-        // Le passive agiscono con i segnali scritti sull'eroe (hero_set: bonusLootCoins, hasAdvantageOnIntFth...).
+        // Le passive agiscono con i segnali scritti sull'eroe (hero_set: bonusLootCoins, challengeRerollMalus...).
         // Un salvataggio può non averli: abilità salvata senza id prima della libreria Abilità, o passiva
         // aggiunta dopo. Al caricamento si rimettono quelli che mancano (mai quelli già presenti).
         function restorePassiveFlags(hero) {
@@ -176,7 +176,7 @@
             const rows = [];
             for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
                 const current = slot === currentSaveSlot ? ' <em class="save-current">partita attuale</em>' : '';
-                rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small" onclick="saveToSlot(${slot})">Salva qui</button>${current}`));
+                rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small" ${azione('saveToSlot', slot)}>Salva qui</button>${current}`));
             }
             openModal('Salva partita', `<div class="save-slots">${rows.join('')}</div>`,
                 [{ label: 'Esporta in un file', className: 'btn-proceed', onClick: () => downloadSave(buildSaveData()) },
@@ -211,7 +211,7 @@
             for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
                 const data = readSave(slot);
                 const actions = data
-                    ? `<button class="btn-small btn-proceed" onclick="loadFromSlot(${slot})">Carica</button><button class="btn-small" onclick="exportSlot(${slot})">Esporta</button><button class="btn-small btn-danger" onclick="deleteSlot(${slot})">Elimina</button>`
+                    ? `<button class="btn-small btn-proceed" ${azione('loadFromSlot', slot)}>Carica</button><button class="btn-small" ${azione('exportSlot', slot)}>Esporta</button><button class="btn-small btn-danger" ${azione('deleteSlot', slot)}>Elimina</button>`
                     : '';
                 rows.push(saveSlotHtml(slot, data, actions));
             }
@@ -356,7 +356,7 @@
             window.pendingImportedSave = data;
             const rows = [saveSlotHtml(0, data, '')];
             for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
-                rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small btn-proceed" onclick="storeImportedSave(${slot})">Importa qui</button>`));
+                rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small btn-proceed" ${azione('storeImportedSave', slot)}>Importa qui</button>`));
             }
             openModal('Importa salvataggio', `<p>Salvataggio letto dal file:</p><div class="save-slots">${rows.join('')}</div>`,
                 [{ label: 'Annulla', className: 'btn-danger' }], { wide: true });

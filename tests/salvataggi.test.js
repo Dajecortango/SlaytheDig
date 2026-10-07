@@ -30,10 +30,10 @@ module.exports = (t, carica) => {
         t.uguale('Gelo nelle ossa (-1 tiri per colpire)', s.activeCurses[1].text);
     });
 
-    t.test('2 -> 3: le passive scrivono il loro segnale sull\'eroe (Icaro +3 monete, Dioforo vantaggio)', () => {
+    t.test('2 -> 3: le passive scrivono il loro segnale sull\'eroe (Icaro +3 monete, Dioforo ripete le prove)', () => {
         const s = g.migrateSave(v2()).stato;
         t.uguale(3, s.party[0].bonusLootCoins);
-        t.uguale(true, s.party[1].hasAdvantageOnIntFth);
+        t.uguale(1, s.party[1].challengeRerollMalus);
     });
 
     t.test('1 -> 3: un salvataggio senza versione arriva al formato attuale', () => {

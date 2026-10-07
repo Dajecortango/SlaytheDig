@@ -2,7 +2,7 @@
    COMUNE A GIOCO ED EDITOR
    Costanti e funzioni usate sia da index.html sia da editor.html, scritte una
    volta sola perché le due pagine non possano dare risultati diversi.
-   Caricato dopo js/libreria.js e prima di js/game.js / js/editor.js.
+   Caricato dopo js/libreria.js e prima di js/game.js / js/editor/.
    ========================================================================== */
 
 // Testo sicuro dentro l'HTML (nomi e descrizioni scritti nelle campagne)
@@ -27,10 +27,9 @@ const EFFECT_TYPES = {
     hero_item: ['item', 'val']   // dà all'eroe "val" copie dell'oggetto con id "item" dell'armeria
 };
 
-// Ritratti degli eroi: inquadratura predefinita, soglia del ritratto da ferito,
+// Ritratti degli eroi: inquadratura predefinita (soglia del ritratto da ferito: WOUNDED_HP in js/regole.js),
 // zoom della cinematica d'attacco (la banda è larga e bassa: si ingrandisce meno che nell'icona)
 const HERO_PORTRAIT_DEFAULTS = { pos: '50% 38%', zoom: 1.7 };
-const WOUNDED_HP = 2;
 function strikeZoomFor(zoom) {
     return Math.round((1 + (zoom - 1) * 0.45) * 100) / 100;
 }
