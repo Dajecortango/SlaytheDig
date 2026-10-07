@@ -82,7 +82,8 @@ window.LIBRERIA.bestiario = {
         "sfxDeath": "audio/nemici/umano_morte.ogg",
         "fasi": [
             { "soglia": 50, "testo": "Il Sergente serra i ranghi e si volta contro chi l'ha ferito!", "reazione": "contrattacco" }
-        ]
+        ],
+        "video": "video/nemici/sergente_tutorial.mp4"
     },
     "banditi_strada": {
         "name": "Banditi Kin dei campi",
@@ -359,10 +360,15 @@ window.LIBRERIA.bestiario = {
         "desc": "Mentre vi avvicinate all'accampamento della famiglia sentite dei rumori provenire dalla piccola boscaglia che si sviluppa su un lato della collina, ad uno sguardo più attento notate il riflesso dei raggi di sole che colpiscono il metallo di una lama. Un gruppo di esploratori guidati da un Noviano in armatura è appostato spiando i nostri movimenti, Non possono tornare indietro dal Signore del Ponte.",
         "image": "immagini/bestiario/capitano_esploratori.webp",
         "fasi": [
-            { "soglia": 66, "testo": "Il Capitano chiama a raccolta gli esploratori: punta il più debole!", "schema": "predatore",
-              "ruggito": { "malus": 1, "fedeMin": 3 } },
+            {
+                "soglia": 66,
+                "testo": "Il Capitano chiama a raccolta gli esploratori: punta il più debole!",
+                "schema": "predatore",
+                "ruggito": { "malus": 1, "fedeMin": 3 }
+            },
             { "soglia": 33, "testo": "Messo alle strette, il Capitano mena fendenti a tutta la compagnia!", "reazione": "colpo_area" }
-        ]
+        ],
+        "video": "video/nemici/boss_tutorial.mp4"
     },
     "ragno_nero_imperiale": {
         "name": "Ragno Nero Imperiale",
@@ -443,5 +449,32 @@ window.LIBRERIA.bestiario = {
         "sfxAttack": "",
         "sfxHit": "",
         "sfxDeath": ""
+    },
+    "fuorilegge_tutorial": {
+        "name": "Fuorilegge",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Un gruppo di fuorilegge, disertori, non ne avete idea, sicuramente non hanno buone intenzioni, dovrete farvi strada combattendo",
+        "image": "immagini/bestiario/fuorilegge_tutorial.webp"
+    },
+    "orso_bruno_tutorial": {
+        "name": "Orso bruno",
+        "image": "immagini/bestiario/orso_tutorial.webp",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Un orso, un solitario esemplare maschio, vi si para dinanzi non appena prendete una svolta illuminata dalla luce dell'alba. La fiera è particolarmente nervosa. Si alza sulle zampe posteriori, facendo sfoggio della sua grandezza mentre è in procinto di attaccarvi. Dovrete sconfiggerla per raggiungere l'uscita della grotta.",
+        "sfxAttack": "",
+        "sfxHit": "",
+        "sfxDeath": "",
+        "fasi": [
+            { "soglia": 50, "testo": "L'Orso Bruno si scaglia furioso: le sue zampe falciano chiunque gli stia accanto!", "schema": "travolge" }
+        ],
+        "video": "video/nemici/orso_tutorial.mp4"
     }
 };

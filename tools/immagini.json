@@ -260,7 +260,7 @@
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/catena.png",
+      "file": "sorgenti/ui/catena.png",
       "stile": "elemento_ui",
       "formato": "2:3",
       "modello": "gptimage",
@@ -269,7 +269,7 @@
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/gancio_catena.png",
+      "file": "sorgenti/ui/gancio_catena.png",
       "stile": "elemento_ui",
       "formato": "1:1",
       "modello": "gptimage",
@@ -278,7 +278,7 @@
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/bottone.png",
+      "file": "sorgenti/ui/bottone.png",
       "stile": "elemento_ui",
       "formato": "3:2",
       "modello": "gptimage",
@@ -287,7 +287,7 @@
     },
     {
       "gruppo": "ui",
-      "file": "immagini/ui/targa_barra.png",
+      "file": "sorgenti/ui/targa_barra.png",
       "stile": "elemento_ui",
       "formato": "3:2",
       "modello": "gptimage",
