@@ -44,8 +44,7 @@ function simBestFaithIntHero(alive) {
 
 // Valore di un oggetto per il simulatore, pesato su quanto conta in combattimento: il danno vale più
 // di tutto (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura.
-// I consumabili valgono poco ma non zero.
-const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75 };
+// I consumabili valgono poco ma non zero. Pesi in SIM_ITEM_WEIGHTS (js/regole.js).
 function simItemValue(item) {
     if (item.type && item.type.startsWith('consumable')) return 0.5;
     // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): stimati per un eroe con 3 punti
@@ -376,12 +375,19 @@ function simResolveMerchantNode(campaignData, node, profile, runCtx) {
     const stock = generateMerchantStock();
     merchantHaggle = null;  // il simulatore non contratta
     let stolen = false;  // come nel gioco: con la passiva del ladro il primo oggetto è gratis
-    // Medico: cura l'eroe più ferito se ha perso almeno 2 HP e le monete bastano
+    // Medico: rialza i caduti e cura chi ha perso almeno 2 HP (fino a 2 HP a eroe, prima i più gravi),
+    // finché le monete bastano senza scendere sotto la riserva del profilo
     const medic = stock.find(e => e.kind === 'medic');
-    const wounded = simAliveMinBy(stato.party, h => h.hp - h.maxHp);
-    if (medic && wounded && wounded.maxHp - wounded.hp >= MEDIC_HEAL && stato.partyCoins - medic.price >= (profile.merchantReserve || 0)) {
-        stato.partyCoins -= medic.price;
-        healHero(wounded, MEDIC_HEAL);
+    if (medic) {
+        const reserve = profile.merchantReserve || 0;
+        stato.party.filter(h => h.hp <= 0 || h.maxHp - h.hp >= 2)
+            .sort((a, b) => a.hp - b.hp)
+            .forEach(h => {
+                const hp = Math.min(2, h.maxHp - h.hp, Math.floor((stato.partyCoins - reserve) / medic.price));
+                if (hp <= 0) return;
+                stato.partyCoins -= hp * medic.price;
+                healHero(h, hp);
+            });
     }
     // Compra come un giocatore attento: ogni volta l'acquisto che migliora di più la compagnia per moneta
     // spesa (oggetto giusto all'eroe giusto), finché le monete bastano e c'è qualcosa che serve davvero.
@@ -434,6 +440,7 @@ function simResolveVictoryLoot(profile, runCtx) {
         const lowest = simAliveMinBy(stato.party, h => h.hp);
         if (lowest && lowest.hp < lowest.maxHp) healHero(lowest, 1);
     }
+    battleSurgeonHeal();
 
     stato.expeditionStats.combatsWon++;
     stato.expeditionStats.itemsFound++;
@@ -462,6 +469,7 @@ function simRunCombat(enemyData, profile, runCtx) {
     stato.activeEnemy.isStunned = false;
     stato.party.atamanoUsed = false;
     stato.helpBonus = 0;
+    stato.helpDmgBonus = 0;
     stato.combatRound = 0;
     expireTempBuffs(true);
     stato.party.forEach(h => {
@@ -474,6 +482,7 @@ function simRunCombat(enemyData, profile, runCtx) {
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
         stato.combatRound++;
+        stato.helpDmgBonus = 0;
         expireTempBuffs();
         applyPendingBuffs();
         stato.party.forEach(h => { if (h.hp > 0) h.hasActed = false; });
@@ -604,6 +613,7 @@ function simRunOne(campaignData, heroSelection, profile) {
     stato.currentCampaign = campaignData.campaign;
     stato.combatRound = 0;
     stato.helpBonus = 0;
+    stato.helpDmgBonus = 0;
     stato.expeditionStats = newExpeditionStats();
 
     const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0 };
@@ -766,13 +776,13 @@ function renderSimHeroList() {
         return `
             <div class="sim-hero-row ${sel.included ? 'included' : ''}">
                 <label class="sim-hero-toggle">
-                    <input type="checkbox" ${sel.included ? 'checked' : ''} onchange="simToggleHero('${esc(h.name)}')">
+                    <input type="checkbox" ${sel.included ? 'checked' : ''} ${azioneSu('change', 'simToggleHero', h.name)}>
                     <span class="hero-portrait small ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name)}</span>
                     <strong>${esc(h.name)}</strong>
                 </label>
                 <div class="sim-hero-config ${sel.included ? '' : 'hidden'}">
-                    ${heroAbilities.length ? `<label>Abilità<select onchange="simSetHeroAbility('${esc(h.name)}', this.value)">${abilityOptions}</select></label>` : ''}
-                    <label>Oggetto iniziale<select onchange="simSetHeroItem('${esc(h.name)}', this.value)">${itemOptions}</select></label>
+                    ${heroAbilities.length ? `<label>Abilità<select ${azioneSu('change', 'simSetHeroAbility', h.name, '$value')}>${abilityOptions}</select></label>` : ''}
+                    <label>Oggetto iniziale<select ${azioneSu('change', 'simSetHeroItem', h.name, '$value')}>${itemOptions}</select></label>
                 </div>
             </div>`;
     }).join('');
@@ -791,7 +801,7 @@ function renderSimProfileChecklist() {
     document.getElementById('simProfileList').innerHTML = Object.values(SIM_PROFILES).map(p => `
         <div class="sim-profile-row">
             <label class="sim-profile-toggle">
-                <input type="checkbox" ${simState.profiles[p.key] ? 'checked' : ''} onchange="simToggleProfile('${p.key}')">
+                <input type="checkbox" ${simState.profiles[p.key] ? 'checked' : ''} ${azioneSu('change', 'simToggleProfile', p.key)}>
                 ${esc(p.label)}
             </label>
             <p class="sim-profile-desc">${esc(p.description)}</p>
@@ -882,7 +892,7 @@ function renderSimReport(results) {
 
         return `
             <div class="sim-report-card">
-                <div class="sim-report-card-head" onclick="simToggleRunDetail('${r.key}')">
+                <div class="sim-report-card-head" ${azione('simToggleRunDetail', r.key)}>
                     <h3>${esc(r.label)}</h3>
                     <button type="button" class="sim-detail-toggle" id="simDetailArrow-${r.key}" aria-label="Mostra dettaglio di tutte le run">▾</button>
                 </div>

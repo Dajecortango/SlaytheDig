@@ -13,6 +13,9 @@
             stato.unlockedRelics = [];
             stato.activeCurses = [];
             stato.expeditionStats = newExpeditionStats();
+            // Testi come all'inizio (confirmPartySize li cambia): conta per una seconda partita nella stessa pagina
+            document.getElementById('partyHeaderTitle').textContent = 'Creazione del Party';
+            document.getElementById('partyNarrativeBox').innerHTML = '<strong>Descrizione:</strong> Raduna i membri della spedizione e seleziona il loro equipaggiamento iniziale.';
             document.getElementById('partyConfigArea').classList.remove('hidden');
             document.getElementById('heroCreationArea').classList.add('hidden');
             document.getElementById('abilityArea').classList.add('hidden');
@@ -36,7 +39,7 @@
             const availableHeroes = campaignHeroes.filter(h => !stato.party.some(p => p.name === h.name));
 
             gridContainer.innerHTML = availableHeroes.map(h => `
-                <button class="armory-btn" onclick="selectHeroCard('${h.name}')">
+                <button class="armory-btn" ${azione('selectHeroCard', h.name)}>
                     <span class="hero-portrait small ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name)}</span>
                     <span class="tile-text">
                         <strong>${h.name}</strong>
@@ -60,7 +63,7 @@
             if(heroAbilities.length > 0) {
                 document.getElementById('abilityArea').classList.remove('hidden');
                 document.getElementById('abilityButtons').innerHTML = heroAbilities.map((ab, idx) => `
-                    <button class="armory-btn" onclick="selectAbility(${idx})" style="width:100%; margin:5px 0;">
+                    <button class="armory-btn" ${azione('selectAbility', idx)} style="width:100%; margin:5px 0;">
                         ${abilityIconHtml(ab)}
                         <span class="tile-text">
                             <strong>${ab.name}</strong>
@@ -110,7 +113,7 @@
             document.getElementById('armoryButtons').innerHTML = campaignArmory.map((item, idx) => {
                 const isSelected = hasItem && picked.name === item.name;
                 return `
-                    <button class="armory-btn ${isSelected ? 'selected' : ''}" onclick="togglePickItem(${idx})">
+                    <button class="armory-btn ${isSelected ? 'selected' : ''}" ${azione('togglePickItem', idx)}>
                         ${itemIconHtml(item)}
                         <span class="tile-text">
                             <strong>${item.name}</strong>

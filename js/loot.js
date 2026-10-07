@@ -8,9 +8,9 @@
         /* ---------- Carte coperte: merce del mercante e bottino degli scontri si scoprono con un clic ---------- */
         let justRevealedMerchantIdx = null;
 
-        function cardBackHtml(onclick, title, sub, extraClass = '') {
+        function cardBackHtml(actionAttrs, title, sub, extraClass = '') {
             return `
-                <button class="armory-btn card-back ${extraClass}" onclick="${onclick}">
+                <button class="armory-btn card-back ${extraClass}" ${actionAttrs}>
                     <span class="card-back-emblem" aria-hidden="true">?</span>
                     <span class="tile-text">
                         <strong>${title}</strong>
@@ -51,19 +51,8 @@
         /* ---------- Rarità del bottino degli scontri ----------
            Scontri normali: probabilità (in %) secondo il livello della mappa (1 = primo livello).
            Scontri elite: secondo quanti elite il party ha già sconfitto in questa spedizione.
-           Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity). */
-        const LOOT_BY_LEVEL = [
-            { upTo: 2, weights: { comune: 70, non_comune: 30 } },
-            { upTo: 5, weights: { comune: 35, non_comune: 50, raro: 15 } },
-            { upTo: 8, weights: { comune: 20, non_comune: 45, raro: 30, epico: 5 } },
-            { upTo: 11, weights: { raro: 45, epico: 50, leggendario: 5 } },
-            { upTo: Infinity, weights: { raro: 40, epico: 50, leggendario: 10 } }
-        ];
-        const LOOT_BY_ELITE = [
-            { raro: 80, epico: 20 },                      // primo elite sconfitto
-            { raro: 70, epico: 30 },                      // secondo
-            { raro: 30, epico: 50, leggendario: 20 }      // dal terzo in poi
-        ];
+           Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity).
+           Tabelle LOOT_BY_LEVEL e LOOT_BY_ELITE in js/regole.js. */
 
         // Livello del nodo corrente come lo vede il giocatore (1 = primo livello della mappa)
         function currentMapLevel() {
@@ -107,6 +96,20 @@
             return Math.round(base * (1 + mapProgress()) * (isElite ? 1.5 : 1));
         }
 
+        // Passiva "Cerusico da Battaglia" (hero_set postCombatHeal: N): dopo ogni scontro vinto, ogni eroe
+        // vivo con la passiva cura N HP all'eroe vivo più ferito (più HP persi). Usata anche dal simulatore.
+        function battleSurgeonHeal() {
+            const out = [];
+            stato.party.filter(h => h.hp > 0 && h.postCombatHeal).forEach(healer => {
+                const wounded = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp);
+                if (!wounded.length) return;
+                const hero = wounded.reduce((a, b) => (b.maxHp - b.hp) > (a.maxHp - a.hp) ? b : a);
+                const gained = healHero(hero, healer.postCombatHeal);
+                if (gained > 0) out.push({ healer, hero, gained });
+            });
+            return out;
+        }
+
         function triggerLoot() {
             expireTempBuffs(true);  // fine dello scontro: via tutti i potenziamenti temporanei
             showScreen('screenLoot');
@@ -118,6 +121,9 @@
                     healHero(lowestHero, 1);
                 }
             }
+
+            battleSurgeonHeal().forEach(({ healer, hero, gained }) =>
+                uiMessage(`${healer.name} (Cerusico da Battaglia) cura ${hero.name}: +${gained} HP`));
 
             const currentNode = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
             const isEliteCombat = currentNode && (currentNode.type === 'elite' || currentNode.type === 'captain');
@@ -228,7 +234,7 @@
                     return `<div class="armory-btn taken"><span class="tile-text"><strong>Prelevato</strong></span></div>`;
                 }
                 return `
-                    <button class="armory-btn rar-card-${itemRarity(it)}" onclick="selectTreasureItem(${idx})" data-tip="${esc(itemTip(it))}">
+                    <button class="armory-btn rar-card-${itemRarity(it)}" ${azione('selectTreasureItem', idx)} data-tip="${esc(itemTip(it))}">
                         ${itemIconHtml(it)}
                         <span class="tile-text">
                             <strong>${it.name}</strong>

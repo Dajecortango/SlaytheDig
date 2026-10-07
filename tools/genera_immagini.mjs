@@ -64,12 +64,25 @@ function refPart(file) {
     return { inline_data: { mime_type: MIME[path.extname(file).toLowerCase()] || 'image/jpeg', data: fs.readFileSync(path.join(ROOT, file)).toString('base64') } };
 }
 
-// Salva nel formato chiesto dall'estensione del file: Gemini risponde in PNG, la conversione
-// in JPG passa da System.Drawing di Windows (niente librerie da installare).
+// Salva nel formato chiesto dall'estensione del file: Gemini risponde in PNG, Pollinations di solito
+// in JPG. Le immagini del gioco sono in WebP: la conversione passa da ffmpeg (deve essere nel PATH,
+// build con libwebp), qualità 82 come tools/ottimizza_immagini.mjs. La conversione in JPG (vecchi
+// lavori) passa da System.Drawing di Windows.
+const WEBP_QUALITY = 82;
 function save(file, mime, b64) {
     const out = path.join(ROOT, file);
     fs.mkdirSync(path.dirname(out), { recursive: true });
     const ext = path.extname(file).toLowerCase();
+    if (ext === '.webp') {
+        if (mime === 'image/webp') { fs.writeFileSync(out, Buffer.from(b64, 'base64')); return; }
+        const tmp = out + '.tmp' + (mime === 'image/jpeg' ? '.jpg' : '.png');
+        fs.writeFileSync(tmp, Buffer.from(b64, 'base64'));
+        try {
+            execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', tmp, '-c:v', 'libwebp', '-quality', String(WEBP_QUALITY),
+                '-compression_level', '6', '-frames:v', '1', out]);
+        } finally { fs.rmSync(tmp, { force: true }); }
+        return;
+    }
     const wantJpg = ['.jpg', '.jpeg', '.jfif'].includes(ext);
     if (!wantJpg || mime === 'image/jpeg') { fs.writeFileSync(out, Buffer.from(b64, 'base64')); return; }
     const tmp = out + '.tmp.png';

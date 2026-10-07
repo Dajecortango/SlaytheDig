@@ -66,12 +66,17 @@ window.LIBRERIA.abilita = {
     "astarte_veleni": {
         "id": "astarte_veleni",
         "name": "Veleni ed altri composti",
-        "desc": "Passiva: cosparge le lame con composti alchemici (+1 al Danno permanente)",
+        "desc": "Passiva: cosparge le lame con composti alchemici (+1 al Danno permanente). Se supera un tiro di Aiuto, anche il prossimo eroe ottiene +1 al Danno fino alla fine del turno",
         "isCombatActive": false,
         "effects": [
             {
                 "effect": "hero_stat",
                 "stat": "dmg",
+                "val": 1
+            },
+            {
+                "effect": "hero_set",
+                "stat": "helpDmgBonus",
                 "val": 1
             }
         ],
@@ -159,13 +164,13 @@ window.LIBRERIA.abilita = {
     "dioforo_era_solo_una_prova": {
         "id": "dioforo_era_solo_una_prova",
         "name": "Era solo una prova!",
-        "desc": "Passiva: quando affronta una prova di Intelligenza o Fede tira 2 dadi e tiene il migliore",
+        "desc": "Passiva: se fallisce una prova può ripetere il tiro, con -1 al secondo tentativo",
         "isCombatActive": false,
         "effects": [
             {
                 "effect": "hero_set",
-                "stat": "hasAdvantageOnIntFth",
-                "val": true
+                "stat": "challengeRerollMalus",
+                "val": 1
             }
         ],
         "icon": "immagini/icone/BTNSnazzyScroll.png"
@@ -326,5 +331,33 @@ window.LIBRERIA.abilita = {
             "hitLabel": "DENTE PER DENTE!",
             "hitText": "Il dolore diventa forza: infliggi {danni} danni!"
         }
+    },
+    "tanto_ho_tenacia": {
+        "id": "tanto_ho_tenacia",
+        "name": "Tanto ho tenacia",
+        "desc": "Passiva: la prima volta che l'eroe va a 0 HP torna in piedi con 2 HP (una volta per campagna)",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "tenacityRevive",
+                "val": 2
+            }
+        ],
+        "icon": "immagini/icone/BTNAnkh.png"
+    },
+    "cerusico_da_battaglia": {
+        "id": "cerusico_da_battaglia",
+        "name": "Cerusico da Battaglia",
+        "desc": "Passiva: dopo ogni scontro cura 1 HP all'eroe più ferito",
+        "isCombatActive": false,
+        "effects": [
+            {
+                "effect": "hero_set",
+                "stat": "postCombatHeal",
+                "val": 1
+            }
+        ],
+        "icon": "immagini/icone/BTNHealingSalve.png"
     }
 };
