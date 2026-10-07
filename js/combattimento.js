@@ -393,8 +393,9 @@
              subito al primo turno dopo la soglia, poi un turno raspa il terreno e quello dopo travolge), "travolge" (travolge
              a ogni turno, senza pause), "predatore" (attacca da solo l'eroe con meno
              HP + armatura), "furia" (+1 danno a ogni suo turno).
-           reazione (al suo turno successivo, al posto dell'attacco normale, contro l'eroe che ha fatto
-             scattare la soglia): "contrattacco" (un colpo), "colpo_area" (un colpo più 1 danno agli eroi accanto).
+           reazione (attacco in risposta, subito, fuori dal suo turno, contro l'eroe che ha fatto scattare
+             la soglia; al suo turno poi attacca come sempre): "contrattacco" (un colpo), "colpo_area" (un colpo
+             più 1 danno agli eroi accanto).
            bonusDanno: + al danno del nemico. ruggito: { malus, fedeMin }: -malus al tiro per colpire
              nel prossimo turno degli eroi, per chi ha Fede sotto fedeMin. */
         const ENEMY_SCHEMES = {
@@ -404,8 +405,8 @@
             furia: '+1 danno a ogni suo turno'
         };
         const ENEMY_REACTIONS = {
-            contrattacco: "al suo turno colpisce l'eroe che lo ha ferito",
-            colpo_area: "al suo turno colpisce l'eroe che lo ha ferito e fa 1 danno agli eroi accanto"
+            contrattacco: "colpisce subito l'eroe che lo ha ferito",
+            colpo_area: "colpisce subito l'eroe che lo ha ferito e fa 1 danno agli eroi accanto"
         };
 
         // Eroi vivi accanto al bersaglio nell'ordine della compagnia (travolgimento e colpo ad area)
@@ -430,16 +431,9 @@
             return events;
         }
 
-        // Bersaglio della reazione preparata (l'eroe che ha fatto scattare la soglia; se è caduto, nessuno)
-        function reactionTarget(enemy) {
-            const r = enemy.reazionePronta;
-            const hero = r && stato.party.find(h => h.name === r.bersaglio && h.hp > 0);
-            return hero || null;
-        }
-
         // Controlla le soglie dopo un colpo dell'eroe "attacker". Applica le fasi scattate e ritorna gli eventi
-        // (type 'phase' con il testo della fase, poi le informazioni) per diario e interfaccia.
-        // La reazione non colpisce adesso: resta pronta per il turno del nemico (enemy.reazionePronta).
+        // (type 'phase' con il testo della fase, poi le informazioni e i colpi) per diario e interfaccia.
+        // La reazione è un attacco in risposta: colpisce subito chi ha fatto scattare la soglia.
         function checkEnemyPhases(enemy, attacker) {
             const events = [];
             const fasi = enemy.fasi || [];
@@ -461,8 +455,8 @@
                     });
                 }
                 if (f.reazione && attacker && attacker.hp > 0) {
-                    enemy.reazionePronta = { tipo: f.reazione, bersaglio: attacker.name };
-                    events.push({ type: 'phase_info', text: `Al suo turno ${enemy.name} si scaglierà contro ${attacker.name}!` });
+                    events.push({ type: 'reaction', text: `⚔️ ${enemy.name} risponde al colpo e si scaglia contro ${attacker.name}!` });
+                    events.push(...(f.reazione === 'colpo_area' ? monsterStrikeWithSplash(enemy, attacker) : resolveMonsterAttack(enemy, attacker).events));
                 }
             });
             return events;
@@ -480,17 +474,6 @@
                 enemy.charging = true;
                 events.push({ type: 'charge', text: `${enemy.name} raspa il terreno: al prossimo turno travolgerà la compagnia!` });
                 return { events, attacked: false, target: null };
-            }
-            // Reazione preparata alla soglia: al posto dell'attacco normale, contro chi l'ha fatta scattare
-            const reazione = enemy.reazionePronta;
-            if (reazione) {
-                enemy.reazionePronta = null;
-                const bersaglio = stato.party.find(h => h.name === reazione.bersaglio && h.hp > 0);
-                if (bersaglio) {
-                    events.push({ type: 'reaction', text: `${enemy.name} si scaglia contro ${bersaglio.name}!` });
-                    events.push(...(reazione.tipo === 'colpo_area' ? monsterStrikeWithSplash(enemy, bersaglio) : resolveMonsterAttack(enemy, bersaglio).events));
-                    return { events, attacked: true, target: bersaglio };
-                }
             }
             // Predatore: il bersaglio annunciato a inizio turno (announcedPrey), se è ancora in piedi
             const announced = enemy.announcedPrey && stato.party.find(h => h.name === enemy.announcedPrey && h.hp > 0);
@@ -617,9 +600,7 @@
             const dmg = enemy.dmg + (hasCurse('presagio_di_morte') ? 1 : 0) + (enemy.schema === 'furia' ? 1 : 0);
             const danni = `<b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b>`;
             let cosa = `Attaccherà per ${danni}`;
-            const vendetta = reactionTarget(enemy);
-            if (vendetta) cosa = `Si scaglierà contro <b>${esc(vendetta.name)}</b> per ${danni}${enemy.reazionePronta.tipo === 'colpo_area' ? ' e farà 1 danno agli eroi accanto' : ''}`;
-            else if (enemy.schema === 'carica') cosa = enemy.charging
+            if (enemy.schema === 'carica') cosa = enemy.charging
                 ? `Travolgerà il bersaglio per ${danni} e farà 1 danno agli eroi accanto`
                 : 'Raspa il terreno: questo turno non attacca, il prossimo travolgerà';
             else if (enemy.schema === 'travolge') cosa = `Travolgerà il bersaglio per ${danni} e farà 1 danno agli eroi accanto`;
@@ -961,6 +942,8 @@
                 return;
             }
             if (handleEnemyPhasesUI(currentActiveHero)) return;
+            // L'attacco in risposta del nemico (reazione della fase) può averlo abbattuto: si sceglie un altro eroe
+            if (currentActiveHero.hp <= 0) { showHeroSelectionPhase(); return; }
             // Ridisegna comandi e anteprime per lo stesso eroe (e chiede di nuovo l'azione al telefono)
             confirmCombatHeroChoice();
         }
@@ -1184,15 +1167,12 @@
             document.getElementById('monsterTurnText').textContent = `Turno di ${enemy.name}!`;
             const select = document.getElementById('monsterTargetSelect');
             // Schema "predatore": il bersaglio lo sceglie il nemico (l'eroe con meno HP + armatura)
-            // Reazione della fase: il bersaglio è l'eroe che l'ha fatta scattare
-            const vendetta = reactionTarget(enemy);
-            const preda = vendetta || (enemy.schema === 'predatore' ? predatorTarget() : null);
-            if (!vendetta && preda) enemy.announcedPrey = preda.name;  // resolveEnemyTurn colpisce lui
+            const preda = enemy.schema === 'predatore' ? predatorTarget() : null;
+            if (preda) enemy.announcedPrey = preda.name;  // resolveEnemyTurn colpisce lui
             const candidati = preda ? [preda] : stato.party.filter(p => p.hp > 0);
             select.innerHTML = candidati.map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
             select.disabled = !!preda;
-            if (vendetta) document.getElementById('monsterTurnText').textContent = `${enemy.name} si scaglia contro ${vendetta.name}!`;
-            else if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, il più debole!`;
+            if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, il più debole!`;
         }
 
         function executeMonsterAttack() {

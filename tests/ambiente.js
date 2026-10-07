@@ -24,6 +24,8 @@ function finto() {
             if (key === 'length') return 0;
             if (key === Symbol.iterator) return function* () {};
             if (key === 'then') return undefined;
+            // Audio e video: play() nel browser restituisce una Promise (qui non si risolve mai: niente musica nei test)
+            if (key === 'play') return () => new Promise(() => {});
             if (!(key in target)) target[key] = finto();
             return target[key];
         },

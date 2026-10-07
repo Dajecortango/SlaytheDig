@@ -12,6 +12,9 @@ desktop.ini
 *.tmp
 _t*.html
 
+# Immagini sorgente dell'interfaccia (generate grandi, nel gioco vanno le versioni ritagliate di immagini/ui/)
+sorgenti/
+
 # Archivio completo delle icone di Warcraft III (in immagini/icone/ vanno solo quelle usate)
 warcraft3_icons/
 

@@ -43,20 +43,27 @@ module.exports = (t, carica) => {
         t.uguale('B', g.resolveEnemyTurn(boia, a).target.name, 'B: 5 contro 7 di A');
     });
 
-    t.test('reazione di una fase: al turno del nemico colpisce chi l\'ha fatta scattare, poi torna normale', () => {
+    t.test('reazione di una fase: attacco in risposta subito contro chi l\'ha fatta scattare, poi turno normale', () => {
         const [a, b] = prepara([eroe('A'), eroe('B')]);
         const boia = nemico('boia_rinnegati');
         boia.fasi = [{ soglia: 50, reazione: 'contrattacco', bonusDanno: 1 }];
         const danno = boia.dmg;
         boia.hp = 1;
-        g.checkEnemyPhases(boia, b);
+        const ev = g.checkEnemyPhases(boia, b);
         t.uguale(danno + 1, boia.dmg);
-        t.uguale([6, 6], [a.hp, b.hp], 'non colpisce subito');
-        const r = g.resolveEnemyTurn(boia, a);
-        t.uguale('B', r.target.name, 'al suo turno colpisce B, anche se il bersaglio scelto era A');
-        t.uguale(6 - (danno + 1), b.hp, 'con il danno nuovo');
+        t.ok(ev.some(e => e.type === 'reaction'), 'evento di reazione nel diario');
+        t.uguale(6 - (danno + 1), b.hp, 'colpisce subito B, con il danno nuovo');
         t.uguale(6, a.hp);
-        t.uguale('A', g.resolveEnemyTurn(boia, a).target.name, 'poi torna normale');
+        t.uguale('A', g.resolveEnemyTurn(boia, a).target.name, 'al suo turno attacca il bersaglio scelto');
+        t.uguale(6 - (danno + 1), a.hp);
+    });
+
+    t.test('reazione colpo_area: colpo pieno a chi ha fatto scattare la soglia e 1 danno agli eroi accanto', () => {
+        const [a, b, c] = prepara([eroe('A'), eroe('B'), eroe('C')]);
+        const cap = nemico('capitano_esploratori');
+        cap.hp = Math.floor(cap.maxHp * 0.33);
+        g.checkEnemyPhases(cap, b);
+        t.uguale([5, 6 - cap.dmg, 5], [a.hp, b.hp, c.hp]);
     });
 
     t.test('Hungrabarn: al 66% carica come il Tremabosco, travolgendo al primo turno dopo la soglia', () => {

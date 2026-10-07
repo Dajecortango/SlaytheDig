@@ -20,6 +20,11 @@
         const REST_THEME = 'audio/temi/rest_theme.ogg';
         // Tema delle prove (schermata della sfida)
         const CHALLENGE_THEME = 'audio/temi/challenge_theme.ogg';
+        // Tema del mercante (schermata del mercante)
+        const MERCHANT_THEME = 'audio/temi/merchant_theme.ogg';
+        // Tema dei tesori (scelta del forziere e oggetti trovati: il brano continua fra le due schermate)
+        const TREASURE_THEME = 'audio/temi/treasure_theme.ogg';
+        const TREASURE_SCREENS = ['screenTreasure', 'screenTreasureLoot'];
         // Tema della mappa (scelta dei nodi): tornando sulla mappa riprende dal punto in cui era rimasto
         const MAP_THEME = 'audio/temi/map_theme.ogg';
         // Brani che riprendono da dove erano stati interrotti invece di ripartire da capo
@@ -122,13 +127,15 @@
             startMusicDeck(deck, src, MUSIC_FADE_IN, startAt);
         }
 
-        // Brano della schermata attiva: tema dei menu, tema dello scontro in corso, tema del riposo, tema delle prove, tema della mappa oppure silenzio
+        // Brano della schermata attiva: tema dei menu, tema dello scontro in corso, tema del riposo, tema delle prove, tema del mercante, tema dei tesori, tema della mappa oppure silenzio
         function updateMenuMusic(screenId) {
             if (screenId) currentAudioScreen = screenId;
             if (MENU_MUSIC_SCREENS.includes(currentAudioScreen)) setMusic(MENU_THEME);
             else if (currentAudioScreen === 'screenCombat') setMusic(combatThemeSrc);
             else if (currentAudioScreen === 'screenRest') setMusic(REST_THEME);
             else if (currentAudioScreen === 'screenChallenge') setMusic(CHALLENGE_THEME);
+            else if (currentAudioScreen === 'screenMerchant') setMusic(MERCHANT_THEME);
+            else if (TREASURE_SCREENS.includes(currentAudioScreen)) setMusic(TREASURE_THEME);
             else if (currentAudioScreen === 'screenMap') { setMusic(MAP_THEME); preloadNextThemes(); }
             else setMusic(null);
         }
@@ -140,7 +147,7 @@
         function preloadNextThemes() {
             if (soundMuted || !gameOptions.musicVolume) return;
             const nextCombat = COMBAT_THEMES[((stato.expeditionStats && stato.expeditionStats.combatThemes) || 0) % COMBAT_THEMES.length];
-            [nextCombat, ELITE_THEME, REST_THEME, CHALLENGE_THEME].forEach(src => {
+            [nextCombat, ELITE_THEME, REST_THEME, CHALLENGE_THEME, MERCHANT_THEME, TREASURE_THEME].forEach(src => {
                 if (preloadedThemes[src]) return;
                 const a = new Audio();
                 a.preload = 'auto';
