@@ -348,10 +348,14 @@ function simResolveChallengeNode(campaignData, node, profile) {
     const alive = stato.party.filter(h => h.hp > 0);
     const hero = alive.reduce((best, h) => (h[challenge.stat] || 0) > (best[challenge.stat] || 0) ? h : best, alive[0]);
     const chance = challengeChanceInfo(challengeModifiers(hero)).pct / 100;
-    if (!profile.attemptChallenge(chance)) return { defeat: false, finalVictory: false };
+    const final = (node.next || []).length === 0;
+    // La prova finale non si può lasciar perdere
+    if (!final && !profile.attemptChallenge(chance)) return { defeat: false, finalVictory: false };
 
     const res = resolveChallenge(hero, challenge);
-    return { defeat: false, finalVictory: !!res.isFinal };
+    // Prova finale: riuscita = vittoria, fallimento = sconfitta (come nel gioco)
+    if (final) return { defeat: !res.success, finalVictory: res.success };
+    return { defeat: false, finalVictory: false };
 }
 
 // Vende gli oggetti che il profilo non vuole tenere (profile.sellFilter) prima di comprare.
@@ -376,14 +380,16 @@ function simResolveMerchantNode(campaignData, node, profile, runCtx) {
     merchantHaggle = null;  // il simulatore non contratta
     let stolen = false;  // come nel gioco: con la passiva del ladro il primo oggetto è gratis
     // Medico: rialza i caduti e cura chi ha perso almeno 2 HP (fino a 2 HP a eroe, prima i più gravi),
-    // finché le monete bastano senza scendere sotto la riserva del profilo
+    // al massimo MEDIC_MAX_HP in tutto, finché le monete bastano senza scendere sotto la riserva del profilo
     const medic = stock.find(e => e.kind === 'medic');
     if (medic) {
         const reserve = profile.merchantReserve || 0;
+        let left = MEDIC_MAX_HP;
         stato.party.filter(h => h.hp <= 0 || h.maxHp - h.hp >= 2)
             .sort((a, b) => a.hp - b.hp)
             .forEach(h => {
-                const hp = Math.min(2, h.maxHp - h.hp, Math.floor((stato.partyCoins - reserve) / medic.price));
+                const hp = Math.min(2, left, h.maxHp - h.hp, Math.floor((stato.partyCoins - reserve) / medic.price));
+                left -= Math.max(0, hp);
                 if (hp <= 0) return;
                 stato.partyCoins -= hp * medic.price;
                 healHero(h, hp);
@@ -414,6 +420,11 @@ function simResolveMerchantNode(campaignData, node, profile, runCtx) {
 
 // Bottino trovato: all'eroe che ne guadagna di più (come farebbe un giocatore attento); se a nessuno
 // serve davvero va comunque a chi indica il profilo, che scarterà l'oggetto peggiore
+// Bottino degli scontri: fra LOOT_CHOICES oggetti tiene quello che migliora di più la compagnia
+function simPickLootChoice(choices) {
+    return choices.reduce((best, item) => simBestRecipient(item).gain > simBestRecipient(best).gain ? item : best, choices[0]);
+}
+
 function simGiveLoot(item, profile, runCtx) {
     const { hero, gain } = simBestRecipient(item);
     const recipient = gain >= 0.5 ? hero : profile.lootRecipient(stato.party, runCtx);
@@ -428,7 +439,7 @@ function simResolveTreasureNode(campaignData, node, profile, runCtx) {
 
 function simResolveVictoryLoot(profile, runCtx) {
     const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
-    const isElite = !!(node && (node.type === 'elite' || node.type === 'captain'));
+    const isElite = currentEnemyIsEliteOrBoss();  // come nel gioco: anche il boss dell'ultimo livello
     let coins = scaledCoins([3, 5, 7, 9, 12], isElite);
     if (hasCurse('15_ricompensa_monete')) coins = Math.floor(coins * 0.85);
 
@@ -444,7 +455,8 @@ function simResolveVictoryLoot(profile, runCtx) {
 
     stato.expeditionStats.combatsWon++;
     stato.expeditionStats.itemsFound++;
-    simGiveLoot(pickLootItem(isElite), profile, runCtx);
+    const choices = pickLootChoices(isElite);
+    if (choices.length) simGiveLoot(simPickLootChoice(choices), profile, runCtx);
     if (isElite) stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
 }
 
@@ -453,7 +465,7 @@ function simResolveCaptainNode(profile) {
     if (alive.length === 0) return;
     const hero = profile.captainHero(alive);
     const type = profile.captainActionType(hero);
-    resolveCaptainAction(hero, type);
+    return resolveCaptainAction(hero, type).success !== false;  // tiro fallito = sconfitta
 }
 
 function simExecuteCombatAction(hero, action) {
@@ -549,7 +561,7 @@ function simResolveNode(campaignData, node, profile, runCtx) {
     if (node.type === 'merchant') { simResolveMerchantNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'treasure') { simResolveTreasureNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'story') return { defeat: false, finalVictory: false };  // solo racconto
-    if (node.type === 'captain') { simResolveCaptainNode(profile); return { defeat: false, finalVictory: true }; }
+    if (node.type === 'captain') { const won = simResolveCaptainNode(profile); return { defeat: !won, finalVictory: won }; }
     return { defeat: false, finalVictory: false };
 }
 

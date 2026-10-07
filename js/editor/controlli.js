@@ -41,6 +41,12 @@ function checkEffects(effects, where, issues, tab, sel) {
         const needed = EFFECT_TYPES[e && e.effect];
         if (!needed) issues.push({ level: 'error', msg: `${where}: effetto sconosciuto "${e && e.effect}"`, tab, sel });
         else needed.filter(p => e[p] === undefined).forEach(p => issues.push({ level: 'error', msg: `${where}: all'effetto "${e.effect}" manca "${p}"`, tab, sel }));
+        if (e && e.effect === 'hero_set' && e.stat !== undefined && !HERO_FLAGS[e.stat]) {
+            issues.push({ level: 'error', msg: `${where}: segnale "${esc(e.stat)}" sconosciuto al motore (noti: ${Object.keys(HERO_FLAGS).join(', ')})`, tab, sel });
+        }
+        if (e && e.effect === 'hero_item' && e.item !== undefined && !(LIBRERIA.armeria || {})[e.item]) {
+            issues.push({ level: 'error', msg: `${where}: oggetto "${esc(e.item)}" non trovato nell'armeria`, tab, sel });
+        }
     });
 }
 
@@ -48,6 +54,8 @@ function validateCampaign() {
     const issues = [];
     const add = (level, msg, tab, sel) => issues.push({ level, msg, tab, sel });
     if (!camp.id || !/^[a-z0-9_]+$/.test(camp.id)) add('error', 'Id della campagna mancante o non valido', 'general');
+    // Un id già usato da un'altra campagna: "Salva nel progetto" ne sovrascriverebbe il file
+    else if (camp.id !== campaignOrigin && rawCampaigns()[camp.id]) add('error', `Id "${esc(camp.id)}" già usato dalla campagna "${esc(rawCampaigns()[camp.id].title || camp.id)}": salvando la sovrascriveresti`, 'general');
     if (!camp.title) add('warn', 'Titolo della campagna mancante', 'general');
     if (checkImage(camp.coverImage) === 'missing') add('warn', `Copertina non trovata: ${camp.coverImage}`, 'general');
 
@@ -80,7 +88,9 @@ function validateCampaign() {
     nodes.forEach(n => ids.set(n.id, (ids.get(n.id) || 0) + 1));
     const byId = new Map(nodes.map(n => [n.id, n]));
     const incoming = new Set(nodes.flatMap(n => n.next || []));
-    if (!nodes.some(n => n.active)) add('error', 'Nessun nodo di partenza (spunta "Nodo di partenza")', 'map');
+    // Campagna procedurale: la mappa si genera a ogni partita (js/procedurale.js), nel file è vuota
+    const procedurale = !!camp.procedurale;
+    if (!procedurale && !nodes.some(n => n.active)) add('error', 'Nessun nodo di partenza (spunta "Nodo di partenza")', 'map');
     nodes.forEach(n => {
         const name = `Nodo <b>${n.id}</b>`;
         if (ids.get(n.id) > 1) add('error', `${name}: id duplicato`, 'map', n.id);
@@ -110,6 +120,14 @@ function validateCampaign() {
         ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(f => { if (checkAudio(e[f]) === 'missing') add('warn', `Bestiario <b>${k}</b>: suono non trovato ${esc(e[f])}`, 'bestiario', k); });
         if (e.hp !== e.maxHp) add('warn', `Bestiario <b>${k}</b>: HP (${e.hp}) diversi da HP massimi (${e.maxHp})`, 'bestiario', k);
         if (!e.name) add('warn', `Bestiario <b>${k}</b>: nome mancante`, 'bestiario', k);
+        if (e.fasi != null) {
+            if (!Array.isArray(e.fasi)) add('error', `Bestiario <b>${k}</b>: "fasi" deve essere un elenco`, 'bestiario', k);
+            else e.fasi.forEach((f, i) => {
+                if (typeof f.soglia !== 'number') add('error', `Bestiario <b>${k}</b>: fase ${i + 1} senza "soglia" numerica`, 'bestiario', k);
+                if (f.schema && !ENEMY_PHASE_SCHEMES.includes(f.schema)) add('error', `Bestiario <b>${k}</b>: fase ${i + 1}, schema "${esc(f.schema)}" sconosciuto (${ENEMY_PHASE_SCHEMES.join(', ')})`, 'bestiario', k);
+                if (f.reazione && !ENEMY_PHASE_REACTIONS.includes(f.reazione)) add('error', `Bestiario <b>${k}</b>: fase ${i + 1}, reazione "${esc(f.reazione)}" sconosciuta (${ENEMY_PHASE_REACTIONS.join(', ')})`, 'bestiario', k);
+            });
+        }
     });
     Object.entries(lib.armeria).forEach(([k, it]) => {
         if (it.id !== k) add('error', `Armeria <b>${k}</b>: il campo id ("${esc(it.id)}") deve coincidere con la chiave`, 'armeria', k);

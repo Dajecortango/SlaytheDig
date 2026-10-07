@@ -17,6 +17,9 @@ const { spawn, execFile } = require('child_process');
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8787;
 const ROOT = path.join(__dirname, '..');
+// Il server mostra solo questo del progetto: pagine del gioco e cartelle con i file che usano
+const STATIC_ALLOWED_FILES = ['index.html', 'editor.html', 'favicon.svg'];
+const STATIC_ALLOWED_DIRS = ['css', 'js', 'data', 'immagini', 'audio', 'video', 'fonts'];
 const PHONE_PAGE = path.join(__dirname, 'public', 'phone.html');
 
 function getLanIps() {
@@ -426,10 +429,16 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // File statici del gioco (index.html, css/, js/, data/, immagini/, audio/, ...)
+    // File statici del gioco: solo le pagine e le cartelle che servono al gioco (STATIC_ALLOWED).
+    // Mai tools/ (chiavi delle API, profilo del browser), .git/, server/ o file nascosti.
     const relPath = pathname === '/' ? '/index.html' : pathname;
     const filePath = path.normalize(path.join(ROOT, relPath));
-    if (!filePath.startsWith(ROOT)) {
+    const rel = path.relative(ROOT, filePath);
+    const parts = rel.split(path.sep);
+    const allowed = !rel.startsWith('..') && !path.isAbsolute(rel)
+        && !parts.some(p => p.startsWith('.'))
+        && (STATIC_ALLOWED_FILES.includes(rel) || (parts.length > 1 && STATIC_ALLOWED_DIRS.includes(parts[0])));
+    if (!allowed) {
         res.writeHead(403); res.end('Vietato');
         return;
     }

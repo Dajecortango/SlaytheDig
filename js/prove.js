@@ -8,6 +8,26 @@
         /* ==========================================================================
            GESTIONE SFIDE
            ========================================================================== */
+        // Il nodo corrente è l'ultimo della mappa (nessun collegamento dopo)?
+        function isFinalNode() {
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            return !!node && (node.next || []).length === 0;
+        }
+
+        // Finale perso (prova finale fallita o capitano non convinto): il nodo è fatto, la spedizione fallisce
+        function finishLostFinal() {
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            if (node) { node.done = true; node.active = false; }
+            showScreen('screenDefeat');
+        }
+
+        // Finale vinto dal capitano: il nodo conta come fatto nel riepilogo
+        function finishWonFinal() {
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            if (node) { node.done = true; node.active = false; }
+            showScreen('screenVictory');
+        }
+
         function startChallenge(challengeId) {
             showScreen('screenChallenge');
             stato.challengeState = challengesData[challengeId] || {
@@ -24,6 +44,9 @@
             document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.desc)}`;
 
             document.getElementById('challengeStage1').classList.remove('hidden');
+            // La prova finale non si può lasciar perdere
+            const ignoreBtn = document.querySelector('#challengeStage1 [data-args=\'[false]\']');
+            if (ignoreBtn) ignoreBtn.classList.toggle('hidden', isFinalNode());
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('diceChallengeSection').classList.add('hidden');
             document.getElementById('closeChallengeBtn').classList.add('hidden');
@@ -106,6 +129,8 @@
                 statValue,
                 relics,
                 relicBonus: relics.reduce((sum, r) => sum + r.val, 0),
+                // Reliquie che valgono anche al ritiro di Dioforo (non quelle "al prossimo tiro")
+                lastingRelicBonus: relics.filter(r => !r.nextRoll).reduce((sum, r) => sum + r.val, 0),
                 rollMode: challengeRollMode(hero).mode,
                 rerollMalus: (hero && hero.challengeRerollMalus) || 0,
                 safetyNet: hasRelic('frammento_di_matrice')
@@ -117,10 +142,11 @@
             if (mods.safetyNet) return { short: 'Sicuro', long: `Riuscita garantita: ${relicName('frammento_di_matrice')} trasforma un fallimento in successo`, pct: 100 };
             const info = chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
             if (!mods.rerollMalus) return info;
-            // Era solo una prova!: un secondo tentativo con il malus se il primo fallisce
-            // (stima: stesse reliquie anche al secondo tiro)
+            // Era solo una prova!: un secondo tentativo con il malus se il primo fallisce,
+            // senza le reliquie "al prossimo tiro" (consumate dal primo)
+            const needed2 = stato.challengeState.cd - mods.statValue - (mods.lastingRelicBonus || 0) + mods.rerollMalus;
             const p1 = rollChance(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
-            const p2 = rollChance(needed + mods.rerollMalus, mods.rollMode === 'best', mods.rollMode === 'worst');
+            const p2 = rollChance(needed2, mods.rollMode === 'best', mods.rollMode === 'worst');
             const pct = Math.round((p1 + (1 - p1) * p2) * 100);
             const head = needed <= 2 ? '2+' : (needed >= 6 ? '6' : `${needed}+`);
             return { short: `${head} · ${pct}%`, long: `${info.long.replace(/: \d+% di riuscita$/, '')}; se fallisce ripete il tiro con −${mods.rerollMalus}: ${pct}% di riuscita`, pct };
@@ -143,8 +169,10 @@
             const statLabel = STAT_LABELS[challenge.stat] || 'Statistica';
 
             // Un tentativo: dadi (offset = indice del primo dado in "rolls"), statistica, reliquie, malus.
-            // Le reliquie "al prossimo tiro" si consumano a ogni tentativo.
+            // Le reliquie "al prossimo tiro" (Anello, Sigillo) valgono e si consumano solo al primo
+            // tentativo: il ritiro di Dioforo è lo stesso tiro ripetuto, non un tiro nuovo.
             const attempt = (offset, malus) => {
+                const reroll = malus > 0;
                 const roll = rollD6(rolls, offset);
                 let roll2 = null, kept = roll;
                 if (twoDice) {
@@ -157,11 +185,11 @@
                 events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
 
                 let relicBonus = 0;
-                relicDiceSources().forEach(r => {
+                relicDiceSources().filter(r => !reroll || !r.nextRoll).forEach(r => {
                     relicBonus += r.val;
                     events.push({ type: 'relic', text: `+${r.val} ${r.name}` });
                 });
-                spendNextRollRelics().forEach(text => events.push({ type: 'relic', text }));
+                if (!reroll) spendNextRollRelics().forEach(text => events.push({ type: 'relic', text }));
                 if (malus) events.push({ type: 'malus', text: `−${malus} secondo tentativo` });
 
                 const total = kept + mods.statValue + relicBonus - malus;
@@ -193,20 +221,31 @@
 
             let rewardGranted = null, punishmentApplied = null;
             if (success) {
-                if (challenge.reward) {
+                const relicId = challenge.reward && challenge.reward.type === 'relic' && (challenge.reward.id || idFromName(challenge.reward.name));
+                if (relicId && hasRelic(relicId)) {
+                    // Una reliquia si possiede una volta sola (la stessa sfida può tornare, es. nelle campagne procedurali)
+                    events.push({ type: 'relic', text: `${challenge.reward.name}: la compagnia la possiede già` });
+                } else if (challenge.reward) {
                     // Solo le reliquie restano nell'elenco: i premi immediati (es. monete) agiscono e basta
-                    if (challenge.reward.type === 'relic') {
-                        stato.unlockedRelics.push({ ...challenge.reward, id: challenge.reward.id || idFromName(challenge.reward.name) });
-                    }
-                    applyEffects(challenge.reward.effects);
-                    if (challenge.reward.type === 'relic') discover('relics', challenge.reward.name);
+                    if (relicId) stato.unlockedRelics.push({ ...challenge.reward, id: relicId });
+                    applyEffects(challenge.reward.effects, hero);
+                    if (relicId) discover('relics', challenge.reward.name);
                     rewardGranted = challenge.reward;
                 }
                 stato.expeditionStats.challengesPassed++;
             } else {
                 if (challenge.punishment) {
                     const cursesBefore = stato.activeCurses.length;
-                    applyEffects(challenge.punishment.effects);
+                    // Quanto cambiano davvero le statistiche (party_stat non scende sotto 0): serve per
+                    // restituire il giusto quando la maledizione viene tolta (removeCurseAt)
+                    const statKeys = [...new Set((challenge.punishment.effects || []).filter(e => e.effect === 'party_stat').map(e => e.stat))];
+                    const before = stato.party.map(h => statKeys.map(k => h[k] || 0));
+                    applyEffects(challenge.punishment.effects, hero);
+                    const applied = {};
+                    stato.party.forEach((h, i) => statKeys.forEach((k, j) => {
+                        const d = (h[k] || 0) - before[i][j];
+                        if (d) (applied[h.name] = applied[h.name] || {})[k] = d;
+                    }));
                     if (challenge.punishment.type === 'curse') discover('curses', challenge.punishment.name);
                     const curseId = challenge.punishment.id || idFromName(challenge.punishment.name);
                     // Le maledizioni aggiunte dagli effetti prendono l'id della maledizione della libreria
@@ -214,12 +253,14 @@
                     if (stato.activeCurses.length === cursesBefore) {
                         stato.activeCurses.push({ id: curseId, text: `${challenge.punishment.name} (${challenge.punishment.desc})` });
                     }
+                    if (statKeys.length) stato.activeCurses[stato.activeCurses.length - 1].applied = applied;
                     punishmentApplied = challenge.punishment;
                 }
                 stato.expeditionStats.challengesFailed++;
             }
 
-            const isFinal = challenge.stat === 'scelta_finale' || challenge.title === "Accampamento";
+            // Prova sull'ultimo nodo della mappa: la riuscita è la vittoria, il fallimento la sconfitta
+            const isFinal = isFinalNode();
 
             return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rerolled, firstAttempt: rerolled ? first : null, rewardGranted, punishmentApplied, isFinal, events };
         }
@@ -274,11 +315,7 @@
                         }
                         document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Successo! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.successText || 'Prova superata!')}${rewardMsg}`;
 
-                        if (res.isFinal) {
-                            impostaAzione(document.getElementById('closeChallengeBtn'), 'showScreen', 'screenVictory');
-                        } else {
-                            impostaAzione(document.getElementById('closeChallengeBtn'), 'advanceNode');
-                        }
+                        impostaAzione(document.getElementById('closeChallengeBtn'), 'advanceNode');
                     } else {
                         let punishmentMsg = "";
                         if (res.punishmentApplied) {
@@ -286,13 +323,36 @@
                             showOutcomeOverlay('curse', res.punishmentApplied);
                         }
                         document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Fallimento! (${res.total} vs CD ${stato.challengeState.cd})</strong><br>${kw(stato.challengeState.failText || 'Prova fallita!')}${punishmentMsg}`;
-                        impostaAzione(document.getElementById('closeChallengeBtn'), 'advanceNode');
+                        impostaAzione(document.getElementById('closeChallengeBtn'), res.isFinal ? 'finishLostFinal' : 'advanceNode');
                     }
 
                     updatePartyStatusBars();
                     document.getElementById('closeChallengeBtn').classList.remove('hidden');
                 }
             }, 50);
+        }
+
+        // Toglie una maledizione e ne annulla i malus fissi (party_stat: -Fede, -Int, +penalità al tiro).
+        // Se la maledizione ricorda quanto ha tolto a ogni eroe ("applied", scritto da resolveChallenge)
+        // si restituisce esattamente quello: chi era già a 0 non guadagna punti. Altrimenti (salvataggi
+        // vecchi) gli effetti si cercano nella libreria Maledizioni, poi nelle punizioni delle sfide.
+        function removeCurseAt(idx) {
+            const curse = stato.activeCurses[idx];
+            if (!curse) return;
+            stato.activeCurses.splice(idx, 1);
+            if (curse.applied) {
+                stato.party.forEach(h => Object.entries(curse.applied[h.name] || {}).forEach(([k, d]) => {
+                    h[k] = Math.max(0, (h[k] || 0) - d);
+                }));
+                return;
+            }
+            const fromLib = (LIBRERIA.maledizioni || {})[curse.id];
+            const fromChallenge = Object.values(challengesData || {}).map(c => c.punishment)
+                .find(p => p && typeof p === 'object' && (p.id || idFromName(p.name || '')) === curse.id);
+            const effects = (fromLib || fromChallenge || {}).effects || [];
+            effects.filter(e => e.effect === 'party_stat').forEach(e => {
+                stato.party.forEach(h => { h[e.stat] = Math.max(0, (h[e.stat] || 0) - e.val); });
+            });
         }
 
         // Risolve un riposo: cura party, rimuove Gelo nelle ossa e (a caso) 1 maledizione con Pietra del focolare.
@@ -322,14 +382,12 @@
             let geloRemoved = false;
             const geloIdx = stato.activeCurses.findIndex(c => c.id === 'gelo_nelle_ossa');
             if (geloIdx > -1) {
-                stato.activeCurses.splice(geloIdx, 1);
-                stato.party.forEach(h => { h.att_penalty = Math.max(0, (h.att_penalty || 0) - 1); });
+                removeCurseAt(geloIdx);
                 geloRemoved = true;
             }
 
             if (hasRelic('pietra_del_focolare') && stato.activeCurses.length > 0) {
-                const rIdx = Math.floor(Math.random() * stato.activeCurses.length);
-                stato.activeCurses.splice(rIdx, 1);
+                removeCurseAt(Math.floor(Math.random() * stato.activeCurses.length));
             }
 
             return { healAmount, healed, geloRemoved };
@@ -398,7 +456,8 @@
             }
             const roll = rollD6(null, 0);
             const statVal = type === 'faith' ? hero.fth : hero.int;
-            const relicBonus = relicDiceBonus();  // anche qui valgono le reliquie dei tiri
+            // Anche qui valgono le reliquie dei tiri; la Catena di Norgrad vale contro il capitano
+            const relicBonus = relicDiceBonus() + (hasRelic('catena_di_norgrad') ? 1 : 0);
             spendNextRollRelics();
             const success = naturalRollSuccess(roll, roll + statVal + relicBonus, 6);
             return { type, roll, statVal, relicBonus, success };
@@ -431,8 +490,10 @@
 
                     const endBtn = document.getElementById('endGameBtn');
                     endBtn.classList.remove('hidden');
-                    endBtn.textContent = "Vedi Vittoria / Fine Campagna";
-                    impostaAzione(endBtn, 'showScreen', 'screenVictory');
+                    // Il capitano non convinto (tiro fallito) è una sconfitta; la ramanzina (forza) chiude comunque la campagna
+                    const lost = res.success === false;
+                    endBtn.textContent = lost ? "Vedi Sconfitta / Fine Campagna" : "Vedi Vittoria / Fine Campagna";
+                    impostaAzione(endBtn, lost ? 'finishLostFinal' : 'finishWonFinal');
                 }
             }, 50);
         }

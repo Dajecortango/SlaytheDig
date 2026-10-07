@@ -891,8 +891,6 @@
         }
         .sub-panel p { font-size: 0.8rem; margin: 0 0 4px; color: var(--wc-yellow); }
         .loot-panel h3 { margin: 4px 0 2px; }
-        .loot-item-row { display: flex; align-items: center; gap: 10px; }
-        .loot-item-row .icon-frame { flex-basis: 48px; width: 48px; height: 48px; }
         .loot-coins { font-size: 1rem; margin: 0 0 6px; }
         .loot-coins-bonus { font-size: 0.75rem; color: var(--text-dim); margin: -4px 0 6px; }
         .loot-coins-bonus:empty { display: none; }
@@ -2653,10 +2651,6 @@
         .armory-btn.rar-card-comune { border-color: #8d8a84; }
         .armory-btn.rar-card-raro { border-color: #4a8cff; box-shadow: 0 0 0 1px #000, 0 0 10px rgba(74, 140, 255, 0.3), inset 0 0 12px rgba(0, 0, 0, 0.7); }
         .armory-btn.rar-card-epico { border-color: #b06cff; box-shadow: 0 0 0 1px #000, 0 0 14px rgba(176, 108, 255, 0.45), inset 0 0 12px rgba(0, 0, 0, 0.7); }
-        .loot-item-row.rar-card-comune, .loot-item-row.rar-card-raro, .loot-item-row.rar-card-epico { padding: 6px 8px; border: 1px solid; }
-        .loot-item-row.rar-card-comune { border-color: #8d8a84; }
-        .loot-item-row.rar-card-raro { border-color: #4a8cff; box-shadow: 0 0 10px rgba(74, 140, 255, 0.3); }
-        .loot-item-row.rar-card-epico { border-color: #b06cff; box-shadow: 0 0 14px rgba(176, 108, 255, 0.45); }
 
         /* 21. Mercante: carte in griglia 2x3 invece che in elenco */
         #merchantItemsList { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
@@ -2777,8 +2771,6 @@
         [class*="rar-back-"] .card-back-emblem { border-color: var(--rar); }
         .armory-btn[class*="rar-card-"] { border-color: var(--rar); box-shadow: 0 0 0 1px #000, 0 0 12px var(--rar-glow), inset 0 0 12px rgba(0, 0, 0, 0.7); }
         .armory-btn[class*="rar-card-"] strong { color: var(--rar); }
-        .loot-item-row[class*="rar-card-"] { padding: 6px 8px; border: 1px solid var(--rar); box-shadow: 0 0 12px var(--rar-glow); }
-        .loot-item-row[class*="rar-card-"] #lootItemName { color: var(--rar); }
         /* Rivelazione delle nuove rarità: bagliore del colore della rarità */
         .reveal-non_comune, .reveal-leggendario { animation: card-flip-in 0.45s ease-out, reveal-glow-var 1.8s ease-out; }
         @keyframes reveal-glow-var { 0% { box-shadow: 0 0 0 1px #000, 0 0 34px 8px var(--rar-glow); } 100% { box-shadow: 0 0 0 1px #000, 0 0 12px var(--rar-glow); } }

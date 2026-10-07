@@ -13,9 +13,12 @@
             return order.indexOf(itemRarity(item)) >= order.indexOf(REVIVE_MIN_RARITY);
         }
 
-        // Eroe su cui si può usare il consumabile: vivo, oppure caduto se la pozione rialza
+        // Eroe su cui si può usare il consumabile: vivo, oppure caduto se la pozione rialza.
+        // Le pozioni di cura solo su chi ha perso HP (non si sprecano su chi è al massimo).
         function canTargetWithItem(item, target) {
-            return !!target && (target.hp > 0 || itemRevives(item));
+            if (!target || (target.hp <= 0 && !itemRevives(item))) return false;
+            const heals = item && (item.type === 'consumable_heal' || item.type === 'consumable_full');
+            return !heals || target.hp < target.maxHp;
         }
 
         window.useConsumableFromTopbar = function(heroName, itemIdx) {
@@ -264,7 +267,7 @@
 
             let target = targetName ? stato.party.find(p => p.name === targetName) : hero;
             if(!canTargetWithItem(item, target)) {
-                uiError("Bersaglio non valido o non disponibile");
+                uiError(target && target.hp >= target.maxHp ? `${target.name} ha già tutti gli HP` : "Bersaglio non valido o non disponibile");
                 return false;
             }
 
@@ -406,6 +409,7 @@
 
         let discardCallback = null;
         let heroNeedingDiscard = null;
+        let discardReturnScreen = null;  // schermata da cui si è arrivati allo scarto
 
         // discardIdx: oggetto dello zaino da scartare subito per fare posto (vedi fillHeroSelectForItem)
         function assignItemToHero(item, hero, callback, discardIdx = null) {
@@ -430,6 +434,7 @@
             if (hero.items.length > BACKPACK_SIZE) {
                 heroNeedingDiscard = hero;
                 discardCallback = callback;
+                discardReturnScreen = currentScreenId;  // dopo lo scarto si torna qui (mercante, tesoro...)
                 showScreen('screenDiscard');
                 renderDiscardScreen();
             } else {
@@ -451,11 +456,16 @@
             `).join('');
         }
 
+        // Un solo scarto: poi si torna alla schermata di prima e si prosegue con la callback
+        // (che può anche cambiare schermata, es. advanceNode dal bottino)
         function executeDiscard(idx) {
+            const hero = heroNeedingDiscard, callback = discardCallback, back = discardReturnScreen;
+            if (!hero || !hero.items[idx]) return;
+            heroNeedingDiscard = null; discardCallback = null; discardReturnScreen = null;
             // (dopo la rimozione updatePartyStatusBars ricalcola i bonus in scala)
-            const itemToRemove = heroNeedingDiscard.items[idx];
-            revertItemEffects(itemToRemove, heroNeedingDiscard);
-            heroNeedingDiscard.items.splice(idx, 1);
+            revertItemEffects(hero.items[idx], hero);
+            hero.items.splice(idx, 1);
             updatePartyStatusBars();
-            discardCallback();
+            if (back && back !== 'screenDiscard') showScreen(back);
+            if (callback) callback();
         }

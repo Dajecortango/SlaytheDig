@@ -98,6 +98,7 @@ function scheduleDraftSave() {
     draftTimer = setTimeout(() => {
         kvSet('draft', {
             campaign: deepCopy(camp),
+            origin: campaignOrigin,
             library: libDirty.size ? deepCopy(lib) : null,
             libDirty: [...libDirty],
             assets: [...pendingAssets].map(([p, a]) => [p, a.blob]),
@@ -135,7 +136,7 @@ async function offerDraftRestore() {
         if (draft.library) lib = { ...deepCopy(window.LIBRERIA), ...draft.library };
         libDirty.clear();
         (draft.libDirty || []).forEach(k => libDirty.add(k));
-        setCampaign(draft.campaign);
+        setCampaign(draft.campaign, draft.origin !== undefined ? draft.origin : draft.campaign.id);
         dirty = true;
         return true;
     }
@@ -155,8 +156,13 @@ function confirmDiscard() {
     return !dirty || confirm('Ci sono modifiche alla campagna non salvate nel progetto. Continuare e perderle?');
 }
 
-function setCampaign(data) {
+// Id della campagna così com'era quando è stata aperta (null = campagna nuova): se l'id viene
+// cambiato in quello di un'altra campagna del progetto, validateCampaign lo segnala
+let campaignOrigin = null;
+
+function setCampaign(data, origin = data.id) {
     camp = data;
+    campaignOrigin = origin;
     ['challenges', 'merchants', 'rests', 'treasures'].forEach(k => { if (!camp[k] || typeof camp[k] !== 'object') camp[k] = {}; });
     ['heroes', 'initialArmory', 'mapNodes'].forEach(k => { if (!Array.isArray(camp[k])) camp[k] = []; });
     if (camp.lootItems !== null && !Array.isArray(camp.lootItems)) camp.lootItems = null;
@@ -166,10 +172,10 @@ function setCampaign(data) {
     render();
 }
 
-function switchCampaign(data) {
+function switchCampaign(data, origin = data.id) {
     pendingAssets.clear();
     if (!libDirty.size) clearDraft();
-    setCampaign(data);
+    setCampaign(data, origin);
 }
 
 function loadSelectedCampaign() {
@@ -185,7 +191,7 @@ function newCampaign() {
         heroes: [], initialArmory: [], challenges: {},
         merchants: { default: '' }, rests: { default: '' }, treasures: {}, lootItems: null,
         mapNodes: [{ id: 0, level: 0, x: 400, type: 'combat', enemy: '', title: 'Livello 1 - Scontro', icon: '🗡️', done: false, active: true, next: [], image: '' }]
-    });
+    }, null);
 }
 
 // Legge un file .js della cartella data/campagne (o un .json con la sola campagna)

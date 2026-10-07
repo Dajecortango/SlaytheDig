@@ -421,21 +421,15 @@
                             <div class="sub-panel loot-panel">
                                 <p class="loot-coins">Monete trovate: <strong id="lootCoinsText"></strong> <span class="coin"></span></p>
                                 <p id="lootCoinsBonus" class="loot-coins-bonus"></p>
-                                <p style="color:#d8cba8;">Oggetto rinvenuto:</p>
+                                <p style="color:#d8cba8;">Oggetti rinvenuti: puoi tenerne uno.</p>
                                 <button id="lootCardBack" class="armory-btn card-back loot-card-back" data-action="revealLootItem">
                                     <span class="card-back-emblem" aria-hidden="true">?</span>
                                     <span class="tile-text">
                                         <strong>Bottino coperto</strong>
-                                        <span class="tile-sub">Clicca per scoprire cosa avete trovato</span>
+                                        <span class="tile-sub">Clicca per scoprire cosa avete trovato e sceglierne uno</span>
                                     </span>
                                 </button>
-                                <div id="lootItemRow" class="loot-item-row hidden">
-                                    <span id="lootItemIcon"></span>
-                                    <div>
-                                        <h3 id="lootItemName"></h3>
-                                        <p id="lootItemDesc" style="color:#d8cba8; font-size:0.82rem;"></p>
-                                    </div>
-                                </div>
+                                <div id="lootChoices" class="armory-grid loot-choices hidden"></div>
                             </div>
                         </div>
                         <div id="lootAssignArea" class="hidden">

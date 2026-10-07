@@ -37,6 +37,11 @@ const MERCHANT_PROGRESS_MARKUP = 0.4;
 const MERCHANT_EQUIPMENT_SLOTS = 4;
 const MERCHANT_CONSUMABLE_SLOTS = 2;
 const MEDIC_PRICE_PER_HP = 5;      // fisso: niente rincari, contrattazione o sconti
+const MEDIC_MAX_HP = 4;            // HP che il medico cura in tutto a ogni mercante
+const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno questa parte delle monete
+
+// Bottino degli scontri: quanti oggetti si vedono (se ne tiene uno)
+const LOOT_CHOICES = 2;
 
 // Pozioni di cura da questa rarità in su rialzano anche gli eroi caduti (0 HP)
 const REVIVE_MIN_RARITY = 'raro';

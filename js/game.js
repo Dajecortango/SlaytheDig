@@ -109,38 +109,44 @@ function breakRelic(relicId) {
     }
 }
 
-        // Effetto hero_item: mette nello zaino dell'eroe "count" copie di un oggetto dell'armeria
-        // (i consumabili uguali in pile da CONSUMABLE_STACK). Non conta come l'oggetto iniziale scelto.
+        // Effetto hero_item: mette nello zaino dell'eroe "count" copie di un oggetto dell'armeria.
+        // I consumabili uguali vanno prima nelle pile esistenti (CONSUMABLE_STACK); senza posto nello
+        // zaino (BACKPACK_SIZE) le copie in più vanno perse. Non conta come l'oggetto iniziale scelto.
         function giveHeroItem(hero, itemId, count) {
             const base = (LIBRERIA.armeria || {})[itemId];
             if (!base) { console.warn('hero_item: oggetto sconosciuto', itemId); return; }
             const consumable = (base.type || '').startsWith('consumable');
-            let left = count;
-            while (left > 0) {
+            let lost = 0;
+            for (let i = 0; i < count; i++) {
+                const pila = stackableSlot(hero, base);
+                if (pila) { pila.qty = (pila.qty || 1) + 1; continue; }
+                if (hero.items.length >= BACKPACK_SIZE) { lost++; continue; }
                 const copy = JSON.parse(JSON.stringify(base));
-                const n = consumable ? Math.min(left, CONSUMABLE_STACK) : 1;
-                if (n > 1) copy.qty = n;
                 hero.items.push(copy);
                 if (!consumable) applyItemEffects(copy, hero);
-                left -= n;
             }
+            if (lost) uiMessage(`Zaino di ${hero.name} pieno: ${lost} ${base.name} ${lost === 1 ? 'va perso' : 'vanno persi'}`);
             discover('items', itemId);
         }
 
         // Interprete degli effetti descritti nei dati delle campagne (campo "effects").
-        // Gli effetti "hero_*" agiscono sull'eroe passato, gli altri sull'intera compagnia.
+        // Gli effetti "hero_*" agiscono sull'eroe passato (es. chi ha affrontato la prova); senza eroe
+        // (es. una reliquia) su ogni eroe in piedi. Gli altri sull'intera compagnia; i caduti restano a 0 HP.
         // I tipi sono elencati in EFFECT_TYPES (js/comune.js, usato anche dall'editor): un tipo nuovo va aggiunto lì e qui.
         function applyEffects(effects, hero) {
+            const targets = hero ? [hero] : stato.party.filter(h => h.hp > 0);
             (effects || []).forEach(e => {
                 switch (e.effect) {
-                    case 'hero_stat': hero[e.stat] = (hero[e.stat] || 0) + e.val; break;
-                    case 'hero_set': hero[e.stat] = e.val; break;
+                    case 'hero_stat': targets.forEach(h => { h[e.stat] = (h[e.stat] || 0) + e.val; }); break;
+                    case 'hero_set': targets.forEach(h => { h[e.stat] = e.val; }); break;
                     case 'party_stat': stato.party.forEach(h => { h[e.stat] = Math.max(0, (h[e.stat] || 0) + e.val); }); break;
-                    case 'party_max_hp': stato.party.forEach(h => { h.maxHp += e.val; h.hp += e.val; }); break;
-                    case 'party_damage': stato.party.forEach(h => { h.hp = Math.max(1, h.hp - e.val); }); break;
+                    // Più HP massimi a tutti; quelli attuali solo a chi è in piedi (un caduto non si rialza)
+                    case 'party_max_hp': stato.party.forEach(h => { h.maxHp += e.val; if (h.hp > 0) h.hp = Math.max(1, Math.min(h.maxHp, h.hp + e.val)); }); break;
+                    // Danno a chi è in piedi, che resta almeno a 1 HP; i caduti restano a 0
+                    case 'party_damage': stato.party.forEach(h => { if (h.hp > 0) h.hp = Math.max(1, h.hp - e.val); }); break;
                     case 'coins': stato.partyCoins = Math.max(0, stato.partyCoins + e.val); break;
                     case 'add_curse': stato.activeCurses.push({ id: e.id || idFromName(e.text), text: e.text }); break;
-                    case 'hero_item': if (hero) giveHeroItem(hero, e.item, e.val || 1); break;
+                    case 'hero_item': targets.forEach(h => giveHeroItem(h, e.item, e.val || 1)); break;
                     default: console.warn('Effetto sconosciuto:', e);
                 }
             });
@@ -364,7 +370,7 @@ function breakRelic(relicId) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '1.4';
+        const GAME_VERSION = '1.5';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];

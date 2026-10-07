@@ -173,6 +173,12 @@
                 uiError("La compagnia è caduta: non si può salvare una partita persa");
                 return;
             }
+            // Si salva solo dalla mappa: dentro un nodo (scontro, mercante, tesoro, prova...) lo stato
+            // è a metà e ricaricando si potrebbe rifare il nodo o perdere quello che si è comprato
+            if (currentScreenId !== 'screenMap') {
+                uiError("Si può salvare solo dalla mappa, tra un nodo e l'altro");
+                return;
+            }
             const rows = [];
             for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
                 const current = slot === currentSaveSlot ? ' <em class="save-current">partita attuale</em>' : '';
