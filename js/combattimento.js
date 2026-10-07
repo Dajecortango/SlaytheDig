@@ -103,12 +103,13 @@
             return b;
         }
 
-        // Passiva "Libertas in furor" (hero_set firstActorDmgBonus): +danno se l'eroe è il primo ad agire nel round.
+        // Passiva "Libertas in furor" (hero_set firstActorStrBonus): +Forza al tiro (attacco, abilità, Difendi,
+        // Aiuta) se l'eroe è il primo ad agire nel round.
         // È il primo se nessun altro eroe vivo ha già agito (usare un oggetto non conta: non consuma l'azione).
         function firstActorBonus(hero) {
-            if (!hero || !hero.firstActorDmgBonus) return 0;
+            if (!hero || !hero.firstActorStrBonus) return 0;
             const first = stato.party.every(h => h === hero || h.hp <= 0 || !h.hasActed);
-            return first ? hero.firstActorDmgBonus : 0;
+            return first ? hero.firstActorStrBonus : 0;
         }
 
         // Passiva "Veleni ed altri composti" (hero_set helpDmgBonus): un Aiuta riuscito dà anche +danno
@@ -128,8 +129,8 @@
             const rb = relicCombatBonus();
             const first = firstActorBonus(hero);
             const helpDmg = helpDmgBonus();
-            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Aiuto', val: stato.helpBonus }, { label: 'Mod.', val: attackMod(hero) }, { label: 'Reliquie', val: rb.att }];
-            const total = roll + hero.str + stato.helpBonus + attackMod(hero) + rb.att;
+            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Aiuto', val: stato.helpBonus }, { label: 'Mod.', val: attackMod(hero) }, { label: 'Reliquie', val: rb.att }];
+            const total = roll + hero.str + first + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
             stato.helpDmgBonus = 0;
             const spent = spendNextRollRelics();
@@ -137,7 +138,7 @@
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             let dmg = 0;
             if (hit) {
-                dmg = hero.dmg + rb.dmg + first + helpDmg;
+                dmg = hero.dmg + rb.dmg + helpDmg;
                 enemy.hp -= dmg;
             }
             return { roll, total, parts, hit, dmg, firstBonus: first, helpDmgBonus: helpDmg, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], naturalNote: naturalRollNote(roll, total, enemy.ca) };
@@ -153,8 +154,9 @@
         function resolveDefend(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const sources = relicDiceSources();
-            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Scudo', val: hero.def_bonus || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
-            const total = roll + hero.str + (hero.def_bonus || 0) + relicDiceBonus();
+            const first = firstActorBonus(hero);
+            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Scudo', val: hero.def_bonus || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
+            const total = roll + hero.str + first + (hero.def_bonus || 0) + relicDiceBonus();
             const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
             const gained = success ? defendArmorGain(hero) : 0;
@@ -168,8 +170,9 @@
         function resolveHelp(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const sources = relicDiceSources();
-            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Aiuto', val: hero.help_bonus_val || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
-            const total = roll + hero.str + (hero.help_bonus_val || 0) + relicDiceBonus();
+            const first = firstActorBonus(hero);
+            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Aiuto', val: hero.help_bonus_val || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
+            const total = roll + hero.str + first + (hero.help_bonus_val || 0) + relicDiceBonus();
             const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
             let dmgBonus = 0;
@@ -231,7 +234,7 @@
         // Danno di un colpo a segno dell'abilità (stesso calcolo per il tiro vero e per le anteprime)
         function abilityHitDamage(hero, c, relicDmg) {
             const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
-            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + firstActorBonus(hero) + helpDmgBonus() + relicDmg) * (c.damageMult || 1);
+            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + helpDmgBonus() + relicDmg) * (c.damageMult || 1);
         }
 
         // Elite o boss: nodo elite o capitano, oppure lo scontro dell'ultimo livello della mappa
@@ -295,9 +298,9 @@
             }
             const dice = c.dice === 2 ? [rollD6(rolls, 0), rollD6(rolls, 1)] : [rollD6(rolls, 0)];
             const roll = Math.max(...dice);
-            const parts = [{ label: 'Forza', val: hero.str }, { label: STAT_LABELS[c.attackStat] || 'Stat.', val: attStat }, { label: hero.chosenAbility.name, val: c.attackBonus || 0 },
+            const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: firstBonus }, { label: STAT_LABELS[c.attackStat] || 'Stat.', val: attStat }, { label: hero.chosenAbility.name, val: c.attackBonus || 0 },
                 { label: 'Aiuto', val: stato.helpBonus }, { label: 'Mod.', val: attackMod(hero) }, { label: 'Reliquie', val: rb.att }];
-            const total = roll + hero.str + attStat + (c.attackBonus || 0) + stato.helpBonus + attackMod(hero) + rb.att;
+            const total = roll + hero.str + firstBonus + attStat + (c.attackBonus || 0) + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
             rb.notes.push(...spendNextRollRelics());
             const hit = naturalRollSuccess(roll, total, enemy.ca);
@@ -633,7 +636,7 @@
         function expectedHitDamage(hero, action) {
             if (!hero || !stato.activeEnemy) return 0;
             const enemy = stato.activeEnemy;
-            let dmg = hero.dmg + relicCombatBonus().dmg + firstActorBonus(hero) + helpDmgBonus();
+            let dmg = hero.dmg + relicCombatBonus().dmg + helpDmgBonus();
             const c = action === 'ability' ? abilityCombat(hero.chosenAbility) : null;
             if (c && c.armorGain) return 0;  // solo armatura: nessun danno al nemico
             // Somma esatta: sconfitto, o a metà vita se elite o boss
@@ -770,9 +773,10 @@
         function updateActionPreviews(hero) {
             if (!hero || !stato.activeEnemy) return;
             const rb = relicCombatBonus();
-            const attackNeeded = stato.activeEnemy.ca - hero.str - stato.helpBonus - attackMod(hero) - rb.att;
-            const defendNeeded = stato.activeEnemy.att - hero.str - (hero.def_bonus || 0) - relicDiceBonus();
-            const helpNeeded = stato.activeEnemy.att - hero.str - (hero.help_bonus_val || 0) - relicDiceBonus();
+            const first = firstActorBonus(hero);  // Libertas in furor: +Forza se è il primo ad agire
+            const attackNeeded = stato.activeEnemy.ca - hero.str - first - stato.helpBonus - attackMod(hero) - rb.att;
+            const defendNeeded = stato.activeEnemy.att - hero.str - first - (hero.def_bonus || 0) - relicDiceBonus();
+            const helpNeeded = stato.activeEnemy.att - hero.str - first - (hero.help_bonus_val || 0) - relicDiceBonus();
 
             const setPreview = (id, title, desc, needed, twoDice) => {
                 const btn = document.getElementById(id);
@@ -1016,7 +1020,7 @@
 
                         if(res.hit) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${res.dmg} danni.`;
-                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.${res.firstBonus ? ` (Libertas in furor: +${res.firstBonus}, primo ad agire)` : ''}${res.helpDmgBonus ? ` (Veleni: +${res.helpDmgBonus} dall'aiuto)` : ''}`);
+                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.${res.helpDmgBonus ? ` (Veleni: +${res.helpDmgBonus} dall'aiuto)` : ''}`);
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
                         }
@@ -1054,7 +1058,6 @@
                                 if (c.damageBonus) extra.push(`+${c.damageBonus} ${ability.name}`);
                                 if (c.damageTakenBonus) extra.push(`+${res.taken} danni subiti`);
                                 if (res.sumRoll) extra.push(res.eliteHalf ? 'elite o boss: scende a metà vita' : 'nemico sconfitto');
-                                if (res.firstBonus) extra.push(`+${res.firstBonus} primo ad agire`);
                                 if (res.helpDmgBonus) extra.push(`+${res.helpDmgBonus} dall'aiuto`);
                                 if ((c.damageMult || 1) > 1) extra.push(`x${c.damageMult}`);
                                 if (c.stun) extra.push('nemico stordito per un turno');

@@ -79,7 +79,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Una truppa regolare sopravvissuta, guidata da un sergente con corazza insanguinata. Si sfoderano le armi.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "fasi": [
+            { "soglia": 50, "testo": "Il Sergente serra i ranghi e si volta contro chi l'ha ferito!", "reazione": "contrattacco" }
+        ]
     },
     "banditi_strada": {
         "name": "Banditi Kin dei campi",
@@ -354,7 +357,12 @@ window.LIBRERIA.bestiario = {
         "dmg": 3,
         "ca": 8,
         "desc": "Mentre vi avvicinate all'accampamento della famiglia sentite dei rumori provenire dalla piccola boscaglia che si sviluppa su un lato della collina, ad uno sguardo più attento notate il riflesso dei raggi di sole che colpiscono il metallo di una lama. Un gruppo di esploratori guidati da un Noviano in armatura è appostato spiando i nostri movimenti, Non possono tornare indietro dal Signore del Ponte.",
-        "image": "immagini/bestiario/capitano_esploratori.webp"
+        "image": "immagini/bestiario/capitano_esploratori.webp",
+        "fasi": [
+            { "soglia": 66, "testo": "Il Capitano chiama a raccolta gli esploratori: punta il più debole!", "schema": "predatore",
+              "ruggito": { "malus": 1, "fedeMin": 3 } },
+            { "soglia": 33, "testo": "Messo alle strette, il Capitano mena fendenti a tutta la compagnia!", "reazione": "colpo_area" }
+        ]
     },
     "ragno_nero_imperiale": {
         "name": "Ragno Nero Imperiale",

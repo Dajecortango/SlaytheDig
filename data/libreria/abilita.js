@@ -192,12 +192,12 @@ window.LIBRERIA.abilita = {
     "libertas_in_furor": {
         "id": "libertas_in_furor",
         "name": "Libertas in furor",
-        "desc": "Passiva: se l'eroe è il primo ad agire nel round, il suo attacco o la sua abilità infliggono 1 danno in più",
+        "desc": "Passiva: se l'eroe è il primo ad agire nel round, ha +1 Forza al suo tiro (attacco, abilità, Difendi o Aiuta)",
         "isCombatActive": false,
         "effects": [
             {
                 "effect": "hero_set",
-                "stat": "firstActorDmgBonus",
+                "stat": "firstActorStrBonus",
                 "val": 1
             }
         ],
