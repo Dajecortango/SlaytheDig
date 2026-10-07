@@ -27,7 +27,7 @@
         // Le rarità alte diventano più probabili andando avanti nella mappa.
         // Le carte che non sono oggetti hanno un "item" di facciata per icona, nome e tooltip
         const MEDIC_CARD = { id: 'medico', name: 'Medico da campo', rarity: 'non_comune', icon: 'immagini/icone/BTNHeal.png',
-            desc: `Cura un eroe ferito o caduto: ${MEDIC_PRICE_PER_HP} monete per ogni HP` };
+            desc: `Cura un eroe ferito o caduto: ${MEDIC_PRICE_PER_HP} monete per ogni HP, fino a ${MEDIC_MAX_HP} HP per mercante` };
         const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
         function merchantRarityWeights(progress) {
@@ -79,6 +79,7 @@
         /* ---------- Contrattazione: una sola proposta per mercante ---------- */
         let merchantHaggle = null;      // null = non ancora tentata, 'ok' = riuscita, 'fail' = fallita
         let merchantRerolled = false;   // la merce si rinnova una sola volta per mercante
+        let merchantMedicHealed = 0;    // HP già curati dal medico di questo mercante (al massimo MEDIC_MAX_HP)
         let merchantStolen = false;     // passiva "La mano è più veloce dell'occhio": primo oggetto già rubato?
 
         // Eroe vivo che può rubare il primo oggetto di questo mercante (hero_set freeFirstMerchantItem), o null
@@ -94,7 +95,8 @@
 
         // Rinnovo possibile una sola volta e solo prima di aver comprato qualcosa (un articolo comprato diventa null)
         function merchantBoughtSomething() {
-            return merchantItemsWithPrices.some(entry => !entry);
+            // Anche una cura del medico conta come acquisto
+            return merchantItemsWithPrices.some(entry => !entry) || merchantMedicHealed > 0;
         }
 
         // Classe di difficoltà: 6 al primo livello, 10 all'ultimo
@@ -146,6 +148,7 @@
     merchantHaggle = null;
     merchantRerolled = false;
     merchantStolen = false;
+    merchantMedicHealed = 0;
     showMerchantTab('buy');
     stockMerchant();
 
@@ -291,14 +294,20 @@
             updatePartyStatusBars();
         }
 
+        // HP che il medico di questo mercante può ancora curare
+        function medicHpLeft() {
+            return Math.max(0, MEDIC_MAX_HP - merchantMedicHealed);
+        }
+
         // Medico: si sceglie l'eroe (ferito o caduto) e quanti HP curare, MEDIC_PRICE_PER_HP monete l'uno.
-        // Resta disponibile: si può tornare dal medico finché ci sono monete.
+        // Resta disponibile finché non ha curato MEDIC_MAX_HP HP in tutto (anche fra eroi diversi).
         function openMedic(idx) {
             const entry = merchantItemsWithPrices[idx];
+            if (!medicHpLeft()) { uiError(`Il medico ha già curato ${MEDIC_MAX_HP} HP: torna al prossimo mercante`); return; }
             const wounded = stato.party.filter(h => h.hp < h.maxHp);
             if (!wounded.length) { uiError('Nessun eroe ferito da curare'); return; }
             openModal('Medico da campo',
-                `<p>Il medico cura eroi feriti o caduti per <b style="color:var(--wc-yellow)">${entry.price}</b> monete per ogni HP. Chi vuoi far curare?</p>`,
+                `<p>Il medico cura eroi feriti o caduti per <b style="color:var(--wc-yellow)">${entry.price}</b> monete per ogni HP. Può curare ancora <b>${medicHpLeft()} HP</b>. Chi vuoi far curare?</p>`,
                 wounded.map(h => ({
                     label: `${h.name} (HP ${h.hp}/${h.maxHp}${h.hp <= 0 ? ', caduto' : ''})`,
                     onClick: () => openMedicHeal(idx, h)
@@ -309,20 +318,27 @@
         function openMedicHeal(idx, hero) {
             const entry = merchantItemsWithPrices[idx];
             const options = [];
-            for (let hp = 1; hp <= hero.maxHp - hero.hp; hp++) {
+            for (let hp = 1; hp <= Math.min(hero.maxHp - hero.hp, medicHpLeft()); hp++) {
                 const cost = hp * entry.price;
+                const heal = () => {
+                    if (!merchantItemsWithPrices[idx] || stato.partyCoins < cost || hp > medicHpLeft()) return;
+                    stato.partyCoins -= cost;
+                    merchantMedicHealed += hp;
+                    const wasDown = hero.hp <= 0;
+                    const gained = healHero(hero, hp);
+                    uiMessage(wasDown ? `Il medico rimette in piedi ${hero.name}: +${gained} HP` : `Il medico cura ${hero.name}: +${gained} HP`);
+                    updatePartyStatusBars();
+                    renderMerchantShop();
+                };
                 options.push({
                     label: `+${hp} HP (${cost} monete)`,
                     disabled: stato.partyCoins < cost,
-                    onClick: () => {
-                        if (!merchantItemsWithPrices[idx] || stato.partyCoins < cost) return;
-                        stato.partyCoins -= cost;
-                        const wasDown = hero.hp <= 0;
-                        const gained = healHero(hero, hp);
-                        uiMessage(wasDown ? `Il medico rimette in piedi ${hero.name}: +${gained} HP` : `Il medico cura ${hero.name}: +${gained} HP`);
-                        updatePartyStatusBars();
-                        renderMerchantShop();
-                    }
+                    // Spesa grossa (almeno MEDIC_CONFIRM_SHARE delle monete): si chiede conferma
+                    onClick: () => cost >= stato.partyCoins * MEDIC_CONFIRM_SHARE
+                        ? openModal('Sei sicuro?',
+                            `<p>Curare ${esc(hero.name)} di ${hp} HP costa <b style="color:var(--wc-yellow)">${cost}</b> monete su ${stato.partyCoins}. Ne restano ${stato.partyCoins - cost}.</p>`,
+                            [{ label: 'Paga il medico', onClick: heal }, { label: 'Indietro', onClick: () => openMedicHeal(idx, hero) }])
+                        : heal()
                 });
             }
             openModal('Medico da campo',

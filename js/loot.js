@@ -39,7 +39,8 @@
             });
         }
 
-        let currentLootItem = null;
+        let currentLootItem = null;   // oggetto scelto fra quelli del bottino
+        let lootChoices = [];         // oggetti del bottino fra cui scegliere (LOOT_CHOICES)
 
         // Avanzamento nella mappa del nodo corrente: 0 al primo livello, 1 all'ultimo
         function mapProgress() {
@@ -72,6 +73,23 @@
         // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
         function pickLootItem(isElite) {
             return pickByRarity(gameItems, lootRarityWeights(isElite));
+        }
+
+        // "count" oggetti del bottino, sempre diversi fra loro, con la tabella delle rarità per livello
+        // (o per elite). Se la rarità estratta non ha altri oggetti si pesca fra quelli rimasti.
+        function pickDistinctLoot(count, isElite) {
+            const out = [];
+            for (let i = 0; i < count; i++) {
+                const rest = gameItems.filter(it => !out.includes(it));
+                if (!rest.length) break;
+                out.push(pickByRarity(rest, lootRarityWeights(isElite)));
+            }
+            return out;
+        }
+
+        // Oggetti del bottino di uno scontro fra cui sceglierne uno (LOOT_CHOICES)
+        function pickLootChoices(isElite) {
+            return pickDistinctLoot(LOOT_CHOICES, isElite);
         }
 
         // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti), poi un oggetto a caso di quella rarità
@@ -125,8 +143,7 @@
             battleSurgeonHeal().forEach(({ healer, hero, gained }) =>
                 uiMessage(`${healer.name} (Cerusico da Battaglia) cura ${hero.name}: +${gained} HP`));
 
-            const currentNode = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
-            const isEliteCombat = currentNode && (currentNode.type === 'elite' || currentNode.type === 'captain');
+            const isEliteCombat = currentEnemyIsEliteOrBoss();  // elite, capitano e boss dell'ultimo livello
             let coins = scaledCoins([3, 5, 7, 9, 12], isEliteCombat);
 
             if (hasCurse('15_ricompensa_monete')) {
@@ -143,46 +160,67 @@
 
             stato.partyCoins += coins;
 
-            currentLootItem = pickLootItem(isEliteCombat);
+            lootChoices = pickLootChoices(isEliteCombat);
+            currentLootItem = null;
             stato.expeditionStats.itemsFound++;
 
             // Elite sconfitti: contano per la rarità del bottino (LOOT_BY_ELITE); reliquie non più
             if (isEliteCombat) stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
 
             document.getElementById('lootCoinsText').textContent = coins;
-            document.getElementById('lootItemIcon').innerHTML = itemIconHtml(currentLootItem);
-            document.getElementById('lootItemName').textContent = currentLootItem.name;
-            document.getElementById('lootItemDesc').innerHTML = kw(currentLootItem.desc);
-            const lootRow = document.getElementById('lootItemRow');
-            lootRow.classList.remove(...Object.keys(RARITY_LABELS).map(r => `rar-card-${r}`));
-            lootRow.classList.add(`rar-card-${itemRarity(currentLootItem)}`);
-            lootRow.dataset.tip = itemTip(currentLootItem);
             revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
-            fillHeroSelectForItem('lootHeroSelect', currentLootItem);
-            // Il dorso lascia intuire la rarità (colori di WoW: grigio, bianco, verde, blu, viola, arancio)
+            // Il dorso lascia intuire la rarità migliore (colori di WoW: grigio, bianco, verde, blu, viola, arancio)
             const lootBack = document.getElementById('lootCardBack');
             lootBack.classList.remove('hidden', 'card-flip-out', ...Object.keys(RARITY_LABELS).map(r => `rar-back-${r}`));
-            lootBack.classList.add(`rar-back-${itemRarity(currentLootItem)}`);
-            document.getElementById('lootItemRow').classList.add('hidden');
-            document.getElementById('lootItemRow').classList.remove('card-flip-in', ...Object.keys(RARITY_LABELS).map(r => `reveal-${r}`));
+            if (lootChoices.length) lootBack.classList.add(`rar-back-${itemRarity(bestLootChoice())}`);
+            document.getElementById('lootChoices').classList.add('hidden');
+            document.getElementById('lootChoices').innerHTML = '';
             document.getElementById('lootAssignArea').classList.add('hidden');
 
             updatePartyStatusBars();
         }
 
+        // Oggetto più raro fra quelli del bottino (colore del dorso e suono della carta)
+        function bestLootChoice() {
+            const order = Object.keys(RARITY_LABELS);
+            return lootChoices.reduce((a, it) => order.indexOf(itemRarity(it)) > order.indexOf(itemRarity(a)) ? it : a);
+        }
+
+        // Carte del bottino scoperte: un clic sceglie quale tenere
+        function renderLootChoices(flip) {
+            document.getElementById('lootChoices').innerHTML = lootChoices.map((it, idx) => `
+                <button class="armory-btn rar-card-${itemRarity(it)} ${it === currentLootItem ? 'selected' : ''} ${flip ? `card-flip-in reveal-${itemRarity(it)}` : ''}" ${azione('selectLootChoice', idx)} data-tip="${esc(itemTip(it))}">
+                    ${itemIconHtml(it)}
+                    <span class="tile-text">
+                        <strong>${esc(it.name)}</strong>
+                        <span class="tile-sub">${kw(it.desc || '')}</span>
+                        <span class="tile-tag">${it === currentLootItem ? 'Scelto' : 'Scegli'}</span>
+                    </span>
+                </button>`).join('');
+        }
+
         function revealLootItem() {
             const back = document.getElementById('lootCardBack');
-            if (back.classList.contains('hidden')) return;
-            flipCard(back, currentLootItem, () => {
+            if (back.classList.contains('hidden') || !lootChoices.length) return;
+            flipCard(back, bestLootChoice(), () => {
                 back.classList.add('hidden');
-                const row = document.getElementById('lootItemRow');
-                row.classList.remove('hidden');
-                row.classList.add('card-flip-in', `reveal-${itemRarity(currentLootItem)}`);
-                document.getElementById('lootAssignArea').classList.remove('hidden');
+                document.getElementById('lootChoices').classList.remove('hidden');
+                renderLootChoices(true);
+                // Con un solo oggetto (bottino povero) è già scelto
+                if (lootChoices.length === 1) selectLootChoice(0);
             });
         }
 
+        function selectLootChoice(idx) {
+            currentLootItem = lootChoices[idx];
+            if (!currentLootItem) return;
+            renderLootChoices(false);
+            fillHeroSelectForItem('lootHeroSelect', currentLootItem);
+            document.getElementById('lootAssignArea').classList.remove('hidden');
+        }
+
         function confirmLootAssignment() {
+            if (!currentLootItem) { uiError('Scegli prima un oggetto'); return; }
             const hero = stato.party.find(p => p.name === document.getElementById('lootHeroSelect').value);
             assignItemToHero(currentLootItem, hero, () => {
                 advanceNode();
@@ -204,10 +242,8 @@
             if (hasCurse('15_ricompensa_monete')) {
                 coins = Math.floor(coins * 0.85);
             }
-            const items = [];
-            for (let i = 0; i < 3; i++) {
-                items.push(gameItems[Math.floor(Math.random() * gameItems.length)]);
-            }
+            // Rarità come il bottino degli scontri normali (per livello della mappa), tutti diversi
+            const items = pickDistinctLoot(3, false);
             return { coins, items };
         }
 
