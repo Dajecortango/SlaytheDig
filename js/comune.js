@@ -27,6 +27,25 @@ const EFFECT_TYPES = {
     hero_item: ['item', 'val']   // dà all'eroe "val" copie dell'oggetto con id "item" dell'armeria
 };
 
+// Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi CLAUDE.md).
+// Un segnale nuovo va aggiunto qui, altrimenti l'editor lo segnala come sconosciuto.
+const HERO_FLAGS = {
+    bonusLootCoins: 'monete in più dopo ogni scontro',
+    challengeRerollMalus: 'ripete una prova fallita con questo malus',
+    dodgeNoArmor: 'senza armatura evita il colpo con d6 >= valore',
+    factotum: 'conversione delle statistiche (true o ogni N punti)',
+    firstActorDmgBonus: 'danno in più se agisce per primo nel round',
+    freeFirstMerchantItem: 'primo oggetto di ogni mercante gratis',
+    helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round',
+    merchantDiscount: 'sconto dal mercante (frazione, es. 0.2)',
+    postCombatHeal: 'dopo ogni scontro cura l\'eroe più ferito',
+    tenacityRevive: 'la prima volta a 0 HP torna con questi HP'
+};
+
+// Schemi e reazioni delle fasi dei nemici (fasi nel bestiario, interpretate in js/combattimento.js)
+const ENEMY_PHASE_SCHEMES = ['carica', 'travolge', 'predatore', 'furia'];
+const ENEMY_PHASE_REACTIONS = ['contrattacco', 'colpo_area'];
+
 // Ritratti degli eroi: inquadratura predefinita (soglia del ritratto da ferito: WOUNDED_HP in js/regole.js),
 // zoom della cinematica d'attacco (la banda è larga e bassa: si ingrandisce meno che nell'icona)
 const HERO_PORTRAIT_DEFAULTS = { pos: '50% 38%', zoom: 1.7 };

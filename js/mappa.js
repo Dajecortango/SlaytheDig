@@ -368,8 +368,8 @@
         }
 
         function renderMapLegend() {
+            // Si ricostruisce ogni volta: la campagna (e i suoi tipi di nodo) può cambiare fra una partita e l'altra
             const legend = document.getElementById('mapLegend');
-            if (legend.childElementCount > 0) return;
             const presenti = new Set(stato.stsMapNodes.map(n => n.type));
             legend.innerHTML = ['combat', 'elite', 'challenge', 'treasure', 'merchant', 'rest', 'story'].filter(t => t !== 'story' || presenti.has(t)).map(type => `
                 <span><span class="sts-node node-${type} legend-dot">${svgIcon(NODE_ICON[type])}</span>${NODE_LABEL[type]}</span>

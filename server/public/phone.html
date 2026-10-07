@@ -160,15 +160,15 @@
         function renderBag(hero, state) {
             const items = hero.items || [];
             if (!items.length) return '<div class="bag-title">Zaino</div><div>Zaino vuoto</div>';
-            const alive = (state.heroes || []).filter(h => h.hp > 0);
             const rows = items.map((it, idx) => {
+                const targets = bagTargets(state, it);
                 const rar = it.rarity || 'comune';
                 const icon = it.icon ? `<img class="bag-icon rar-${rar}" src="/${it.icon}" alt="">` : `<span class="bag-icon rar-${rar}"></span>`;
                 // Danni e potenziamenti si usano solo nel turno di combattimento ("Usa oggetto")
                 const useBtn = it.consumable && !it.combatOnly
                     ? `<button class="use-btn" onclick="startBagUse(${idx})" ${state.inCombat || hero.hp <= 0 ? 'disabled' : ''}>Usa</button>` : '';
                 const target = bagUseIndex === idx
-                    ? `<div class="use-target">${alive.map((a, ai) => `<button onclick="useBagItem(${idx}, ${ai})">${a.name} (${a.hp}/${a.maxHp})</button>`).join('')}<button onclick="cancelBagUse()">Annulla</button></div>`
+                    ? `<div class="use-target">${targets.map((a, ai) => `<button onclick="useBagItem(${idx}, ${ai})">${a.name} (${a.hp}/${a.maxHp})</button>`).join('')}<button onclick="cancelBagUse()">Annulla</button></div>`
                     : '';
                 return `<div class="bag-item rar-${rar}">${icon}<div class="bag-text"><b>${it.name}${(it.qty || 1) > 1 ? ` x${it.qty}` : ''}</b><small>${it.desc || ''}</small>${target}</div>${useBtn}</div>`;
             }).join('');
@@ -176,13 +176,19 @@
             return `<div class="bag-title">Zaino</div>${rows}${note ? `<div class="bag-note">${note}</div>` : ''}`;
         }
 
+        // Bersagli di una pozione dello zaino: gli eroi vivi, anche i caduti se la pozione rialza
+        function bagTargets(state, item) {
+            if (item && Array.isArray(item.targets)) return (state.heroes || []).filter(h => item.targets.includes(h.name));
+            return (state.heroes || []).filter(h => h.hp > 0 || (item && item.revives));
+        }
+
         function startBagUse(idx) { bagUseIndex = idx; bagMessage = ''; if (lastState) renderHero(lastState); }
         function cancelBagUse() { bagUseIndex = null; if (lastState) renderHero(lastState); }
 
-        // aliveIdx: posizione del bersaglio fra gli eroi in piedi (evita di mettere nomi negli attributi onclick)
-        function useBagItem(idx, aliveIdx) {
+        // targetIdx: posizione del bersaglio fra quelli possibili (evita di mettere nomi negli attributi onclick)
+        function useBagItem(idx, targetIdx) {
             if (!currentHero || !lastState) return;
-            const target = (lastState.heroes || []).filter(h => h.hp > 0)[aliveIdx];
+            const target = bagTargets(lastState, (currentHero.items || [])[idx])[targetIdx];
             if (!target) return;
             bagUseIndex = null;
             bagMessage = 'Pozione in uso...';
@@ -314,7 +320,8 @@
                 const back = document.getElementById('backBtn');
                 if (back) back.addEventListener('click', () => { itemPickState = null; renderActionArea(); });
             } else {
-                const allies = (lastPendingAction && lastPendingAction.livingAllies) || [];
+                const chosen = ((lastPendingAction && lastPendingAction.consumables) || []).find(it => it.index === state.itemIndex);
+                const allies = (chosen && chosen.targets) || (lastPendingAction && lastPendingAction.livingAllies) || [];
                 panel.innerHTML = `
                     <div class="action-title">Su chi usarlo?</div>
                     <div class="item-list">${allies.map(name => `<button class="item-btn" data-name="${name}">${name}</button>`).join('')}</div>

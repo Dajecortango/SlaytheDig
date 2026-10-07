@@ -30,6 +30,9 @@
                     icon: typeof itemImageSrc === 'function' ? (itemImageSrc(it) || null) : null,
                     consumable: !!(it.type && it.type.startsWith('consumable')),
                     combatOnly: typeof isCombatConsumable === 'function' && isCombatConsumable(it),
+                    revives: typeof itemRevives === 'function' && itemRevives(it),  // si può usare anche sui caduti
+                    // Eroi su cui si può usare (stesse regole del gioco: canTargetWithItem)
+                    targets: typeof canTargetWithItem === 'function' ? stato.party.filter(p => canTargetWithItem(it, p)).map(p => p.name) : null,
                     qty: it.qty || 1
                 })),
                 chosenAbility: h.chosenAbility ? h.chosenAbility.name : null,
@@ -152,7 +155,9 @@
     function requestRemoteAction(hero) {
         const canUseAbility = typeof abilityUsable === 'function' ? abilityUsable(hero).ok : !!(hero.chosenAbility && hero.chosenAbility.isCombatActive && !hero.abilityUsedThisCombat);
         const consumables = (hero.items || [])
-            .map((it, idx) => (it.type && it.type.startsWith('consumable')) ? { index: idx, name: it.name, desc: it.desc } : null)
+            .map((it, idx) => (it.type && it.type.startsWith('consumable')) ? { index: idx, name: it.name, desc: it.desc,
+                // Bersagli possibili: gli eroi vivi, anche i caduti con le pozioni che rialzano
+                targets: (typeof stato.party !== 'undefined' ? stato.party : []).filter(p => canTargetWithItem(it, p)).map(p => p.name) } : null)
             .filter(Boolean);
         const livingAllies = (typeof stato.party !== 'undefined' ? stato.party : []).filter(p => p.hp > 0).map(p => p.name);
 
