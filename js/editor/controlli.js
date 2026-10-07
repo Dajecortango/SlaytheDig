@@ -101,6 +101,7 @@ function validateCampaign() {
         else if (type.ref && ['treasureId', 'merchantId', 'restId', 'storyId'].includes(type.ref)) {
             const coll = { treasureId: 'treasures', merchantId: 'merchants', restId: 'rests', storyId: 'stories' }[type.ref];
             if ((camp[coll] || {})[n[type.ref]] == null && !(type.ref === 'merchantId' && camp.merchants.default)) add('warn', `${name}: testo "${n[type.ref]}" non trovato in ${coll} (verrà usato un testo generico)`, 'map', n.id);
+            else if (type.ref === 'storyId' && !((camp.stories[n.storyId] || {}).text || '').trim()) add('warn', `${name}: la trama "${esc(n.storyId)}" non ha ancora una descrizione`, 'map', n.id);
         }
         (n.next || []).forEach(id => {
             const target = byId.get(id);

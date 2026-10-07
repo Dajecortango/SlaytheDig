@@ -52,10 +52,32 @@ function renderNodeForm(node) {
             if (ref && node[ref] == null) node[ref] = ref === 'restId' || ref === 'merchantId' ? 'default' : '';
             renderNodeForm(node);
         }
-        if (key === 'enemy') renderNodeForm(node);
+        if (key === 'enemy' || key === 'storyId') renderNodeForm(node);
         if (key === 'id') selection.map = node.id;
         markDirty();
     });
+    if (node.type === 'story') renderStoryForm(node);
+}
+
+// Nodo di trama: titolo e descrizione si scrivono qui, in camp.stories[storyId].
+// Senza trama scelta se ne crea una nuova per il nodo (chiave "trama_<id>").
+function renderStoryForm(node) {
+    camp.stories = camp.stories || {};
+    if (!node.storyId) {
+        let key = `trama_${node.id}`;
+        for (let i = 2; camp.stories[key]; i++) key = `trama_${node.id}_${i}`;
+        camp.stories[key] = { title: (node.title || '').replace(/^Livello \d+ - /, ''), text: '' };
+        node.storyId = key;
+        markDirty();
+        renderNodeForm(node);
+        return;
+    }
+    if (!camp.stories[node.storyId]) { camp.stories[node.storyId] = { title: '', text: '' }; markDirty(); }
+    const box = document.createElement('div');
+    box.className = 'ed-story';
+    box.innerHTML = `<h3>Testo della trama <small>(${esc(node.storyId)})</small></h3><div></div>`;
+    document.getElementById('edDetail').appendChild(box);
+    renderForm(box.lastElementChild, camp.stories[node.storyId], STORY_FIELDS, markDirty);
 }
 
 // Geometria dell'anteprima della mappa: x libera 20–780, livelli su righe distanti MAP_STEP_Y

@@ -61,15 +61,18 @@ module.exports = (t, carica) => {
         t.ok(!g.abilityUsable(eroe).ok, 'colpo annullato');
     });
 
-    t.test('Libertas in furor: +1 danno solo al primo eroe che agisce nel round', () => {
-        const a = { name: 'A', str: 9, dmg: 2, hp: 4, hasActed: false };
+    t.test('Libertas in furor: +1 Forza al tiro solo al primo eroe che agisce nel round', () => {
+        const a = { name: 'A', str: 3, dmg: 2, hp: 4, hasActed: false, current_armor: 0 };
         g.applyEffects(abilita('libertas_in_furor').effects, a);
-        const b = { name: 'B', str: 9, dmg: 1, hp: 4, hasActed: false };
+        const b = { name: 'B', str: 3, dmg: 1, hp: 4, hasActed: false };
         const morto = { name: 'M', hp: 0, hasActed: true };
         prepara([a, b, morto]);
-        t.uguale(3, g.resolveAttack(a, { hp: 50, ca: 2 }, [5]).dmg, 'primo ad agire');
+        const primo = g.resolveAttack(a, { hp: 50, ca: 9 }, [5]);
+        t.uguale(9, primo.total, 'primo ad agire: 5 + 3 + 1');
+        t.uguale(2, primo.dmg, 'il danno non cambia');
+        t.uguale(9, g.resolveDefend(a, { att: 9 }, [5]).total, 'vale anche per Difendi');
         b.hasActed = true;
-        t.uguale(2, g.resolveAttack(a, { hp: 50, ca: 2 }, [5]).dmg, 'dopo un altro');
+        t.uguale(8, g.resolveAttack(a, { hp: 50, ca: 9 }, [5]).total, 'dopo un altro');
     });
 
     t.test('reliquie di combattimento riconosciute per id', () => {

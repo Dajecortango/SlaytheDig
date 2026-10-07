@@ -34,7 +34,7 @@ const HERO_FLAGS = {
     challengeRerollMalus: 'ripete una prova fallita con questo malus',
     dodgeNoArmor: 'senza armatura evita il colpo con d6 >= valore',
     factotum: 'conversione delle statistiche (true o ogni N punti)',
-    firstActorDmgBonus: 'danno in più se agisce per primo nel round',
+    firstActorStrBonus: 'Forza in più ai tiri se agisce per primo nel round',
     freeFirstMerchantItem: 'primo oggetto di ogni mercante gratis',
     helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round',
     merchantDiscount: 'sconto dal mercante (frazione, es. 0.2)',

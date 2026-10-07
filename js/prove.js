@@ -402,7 +402,9 @@
             // Senza immagine del nodo: la copertina della campagna
             document.getElementById('storyImg').src = node.image || stato.currentCampaign.coverImage || 'immagini/inizio_campagna.webp';
             const testo = story.text || 'Il viaggio prosegue.';
-            document.getElementById('storyDescBox').innerHTML = testo.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join('');
+            // Come le altre schermate degli eventi: "Descrizione:" in apertura del primo paragrafo
+            document.getElementById('storyDescBox').innerHTML = testo.split(/\n\s*\n/)
+                .map((p, i) => `<p>${i === 0 ? '<strong>Descrizione:</strong> ' : ''}${esc(p)}</p>`).join('');
             showScreen('screenStory');
         }
 

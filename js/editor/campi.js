@@ -221,13 +221,20 @@ const NODE_FIELDS = [
     { k: 'merchantId', label: 'Testo del mercante', type: 'select', options: refOptions('merchants'), showIf: n => n.type === 'merchant' },
     { k: 'restId', label: 'Testo del riposo', type: 'select', options: refOptions('rests'), showIf: n => n.type === 'rest' },
     { k: 'storyId', label: 'Trama', type: 'select', options: refOptions('stories'), showIf: n => n.type === 'story',
-      help: 'Titolo e testo si scrivono nella sezione "Trame" della campagna' },
+      help: 'Titolo e descrizione si scrivono qui sotto (più nodi possono usare la stessa trama)' },
     { k: 'title', label: 'Titolo', wide: true },
     { k: 'icon', label: 'Icona' },
     { k: 'image', label: 'Immagine', type: 'image', folder: 'immagini', wide: true,
       help: 'Negli scontri, vuoto = immagine del nemico nel bestiario' },
     { k: 'next', label: 'Collegamenti (id separati da virgola)', type: 'idlist' },
     { k: 'active', label: 'Nodo di partenza', type: 'checkbox' }
+];
+
+// Trama di un nodo di tipo "story" (camp.stories[storyId]), scritta sotto il modulo del nodo
+const STORY_FIELDS = [
+    { k: 'title', label: 'Titolo della trama', wide: true },
+    { k: 'text', label: 'Descrizione', type: 'textarea', wide: true,
+      help: 'Il racconto mostrato nella schermata della trama, dopo "Descrizione:". Una riga vuota separa i paragrafi.' }
 ];
 
 const OTHER_SECTIONS = [

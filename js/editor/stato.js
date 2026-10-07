@@ -163,7 +163,7 @@ let campaignOrigin = null;
 function setCampaign(data, origin = data.id) {
     camp = data;
     campaignOrigin = origin;
-    ['challenges', 'merchants', 'rests', 'treasures'].forEach(k => { if (!camp[k] || typeof camp[k] !== 'object') camp[k] = {}; });
+    ['challenges', 'merchants', 'rests', 'treasures', 'stories'].forEach(k => { if (!camp[k] || typeof camp[k] !== 'object') camp[k] = {}; });
     ['heroes', 'initialArmory', 'mapNodes'].forEach(k => { if (!Array.isArray(camp[k])) camp[k] = []; });
     if (camp.lootItems !== null && !Array.isArray(camp.lootItems)) camp.lootItems = null;
     selection.challenges = keysOf(camp.challenges)[0] || null;
