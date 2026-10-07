@@ -95,7 +95,7 @@ const libraryFilePath = kind => `data/libreria/${kind}.js`;
 // Immagini caricate che la campagna usa ancora (le altre non vengono scritte)
 function usedPendingAssets() {
     const used = new Set([camp.coverImage, ...camp.mapNodes.map(n => n.image),
-        ...Object.values(lib.bestiario).flatMap(e => [e.image, e.sfxAttack, e.sfxHit, e.sfxDeath]),
+        ...Object.values(lib.bestiario).flatMap(e => [e.image, e.video, e.sfxAttack, e.sfxHit, e.sfxDeath]),
         ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded]),
         ...Object.values(lib.abilita || {}).map(a => a.icon)]);
     return [...pendingAssets].filter(([path]) => used.has(path));

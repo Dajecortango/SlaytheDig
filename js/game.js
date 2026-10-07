@@ -235,6 +235,8 @@ function breakRelic(relicId) {
                     const camp = resolveCampaign(data.campaign, LIBRERIA);
                     camp.coverImage = fix(camp.coverImage);
                     (camp.mapNodes || []).forEach(n => { n.image = fix(n.image); });
+                    // Video e suoni dei nemici caricati nell'editor (il video degli elite e dei boss gira in ciclo nello scontro)
+                    Object.values(camp.enemies || {}).forEach(e => ['image', 'video', 'sfxAttack', 'sfxHit', 'sfxDeath'].forEach(k => { if (e[k]) e[k] = fix(e[k]); }));
                     (camp.heroes || []).forEach(h => {
                         if (h.portrait) h.portrait = fix(h.portrait);
                         if (h.portraitWounded) h.portraitWounded = fix(h.portraitWounded);
@@ -370,7 +372,7 @@ function breakRelic(relicId) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '1.6';
+        const GAME_VERSION = '1.7';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];

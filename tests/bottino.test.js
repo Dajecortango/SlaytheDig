@@ -6,10 +6,11 @@ module.exports = (t, carica) => {
 
     // Bottino con tutte le rarità: tutto l'armeria
     g.eval('gameItems = Object.values(LIBRERIA.armeria)');
-    const prepara = (level, elitesWon = 0) => {
-        stato.stsMapNodes = [{ id: 1, level: level - 1, type: 'combat' }, { id: 2, level: 15, type: 'combat' }];
+    // Livello 1..17 su una mappa di 17 livelli (avanzamento = (livello - 1) / 16)
+    const prepara = (level) => {
+        stato.stsMapNodes = [{ id: 1, level: level - 1, type: 'combat' }, { id: 2, level: 16, type: 'combat' }];
         stato.currentNodeId = 1;
-        stato.expeditionStats = { ...g.eval('newExpeditionStats()'), elitesWon };
+        stato.expeditionStats = g.eval('newExpeditionStats()');
         stato.unlockedRelics = []; stato.activeCurses = [];
         stato.party = [{ name: 'A', hp: 2, maxHp: 4, items: [] }];
     };
@@ -19,30 +20,28 @@ module.exports = (t, carica) => {
         return conta;
     };
 
-    t.test('tabella per livello: le rarità ammesse sono solo quelle della riga', () => {
-        const righe = { 1: ['comune', 'non_comune'], 4: ['comune', 'non_comune', 'raro'], 7: ['comune', 'non_comune', 'raro', 'epico'],
-            10: ['raro', 'epico', 'leggendario'], 13: ['raro', 'epico', 'leggendario'], 16: ['raro', 'epico', 'leggendario'] };
-        for (const [livello, ammesse] of Object.entries(righe)) {
-            prepara(Number(livello));
-            const trovate = Object.keys(rarita(false, 600));
-            t.ok(trovate.every(r => ammesse.includes(r)), `livello ${livello}: trovate ${trovate.join(', ')}`);
-        }
+    t.test('pesi del bottino: dal primo livello all\u2019ultimo in proporzione all\u2019avanzamento', () => {
+        t.uguale({ scarso: 20, comune: 55, non_comune: 20, raro: 5 }, g.lootRarityWeights(false, 0));
+        t.uguale({ scarso: 10, comune: 30, non_comune: 20, raro: 20, epico: 15, leggendario: 5 }, g.lootRarityWeights(false, 0.5));
+        t.uguale({ comune: 5, non_comune: 20, raro: 35, epico: 30, leggendario: 10 }, g.lootRarityWeights(false, 1));
+        prepara(9);
+        t.uguale(g.lootRarityWeights(false, 0.5), g.lootRarityWeights(false), 'livello 9 di 17 = metà mappa');
     });
 
-    t.test('livelli 1-2: circa 70% comuni e 30% non comuni', () => {
-        prepara(2);
+    t.test('primo livello: tre quarti scarsi o comuni, niente epici', () => {
+        prepara(1);
         const c = rarita(false, 4000);
-        const comuni = c.comune / 4000;
-        t.ok(comuni > 0.65 && comuni < 0.75, `comuni ${Math.round(comuni * 100)}%`);
+        const bassi = ((c.scarso || 0) + (c.comune || 0)) / 4000;
+        t.ok(bassi > 0.7 && bassi < 0.8, `scarsi + comuni ${Math.round(bassi * 100)}%`);
+        t.ok(!c.epico && !c.leggendario);
     });
 
-    t.test('elite: primo 80/20 raro-epico, terzo anche leggendario', () => {
-        prepara(5, 0);
-        t.uguale({ raro: 80, epico: 20 }, g.lootRarityWeights(true));
-        prepara(5, 1);
-        t.uguale({ raro: 70, epico: 30 }, g.lootRarityWeights(true));
-        prepara(5, 7);
-        t.uguale({ raro: 30, epico: 50, leggendario: 20 }, g.lootRarityWeights(true));
+    t.test('elite: più avanti di 0,4 nella tabella, senza scarsi e comuni', () => {
+        t.uguale({ non_comune: 20, raro: 17, epico: 12, leggendario: 4 }, g.lootRarityWeights(true, 0));
+        t.uguale(g.lootRarityWeights(false, 1), { comune: 5, ...g.lootRarityWeights(true, 0.8) }, 'oltre la fine resta l\u2019ultimo livello');
+        prepara(1);
+        const c = rarita(true, 600);
+        t.ok(!c.scarso && !c.comune, 'niente scarsi o comuni dagli elite');
     });
 
     t.test('grantRelic dà una reliquia non posseduta e ne applica gli effetti', () => {

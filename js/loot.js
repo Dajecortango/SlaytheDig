@@ -50,24 +50,19 @@
         }
 
         /* ---------- Rarità del bottino degli scontri ----------
-           Scontri normali: probabilità (in %) secondo il livello della mappa (1 = primo livello).
-           Scontri elite: secondo quanti elite il party ha già sconfitto in questa spedizione.
-           Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity).
-           Tabelle LOOT_BY_LEVEL e LOOT_BY_ELITE in js/regole.js. */
-
-        // Livello del nodo corrente come lo vede il giocatore (1 = primo livello della mappa)
-        function currentMapLevel() {
-            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
-            return node ? node.level + 1 : 1;
-        }
-
-        function lootRarityWeights(isElite) {
-            if (isElite) {
-                const done = (stato.expeditionStats && stato.expeditionStats.elitesWon) || 0;
-                return LOOT_BY_ELITE[Math.min(done, LOOT_BY_ELITE.length - 1)];
+           Probabilità che passano da quelle del primo livello a quelle dell'ultimo secondo
+           l'avanzamento nella mappa (LOOT_RARITY_RANGE in js/regole.js). Gli elite pescano come
+           se fossero LOOT_ELITE_PROGRESS_BONUS più avanti, senza scarsi e comuni.
+           Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity). */
+        function lootRarityWeights(isElite, progress = mapProgress()) {
+            const p = isElite ? Math.min(1, progress + LOOT_ELITE_PROGRESS_BONUS) : progress;
+            const weights = {};
+            for (const [rarity, [from, to]] of Object.entries(LOOT_RARITY_RANGE)) {
+                if (isElite && LOOT_ELITE_EXCLUDED.includes(rarity)) continue;
+                const w = from + (to - from) * p;
+                if (w > 0) weights[rarity] = Math.round(w * 100) / 100;
             }
-            const level = currentMapLevel();
-            return LOOT_BY_LEVEL.find(row => level <= row.upTo).weights;
+            return weights;
         }
 
         // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
@@ -164,7 +159,7 @@
             currentLootItem = null;
             stato.expeditionStats.itemsFound++;
 
-            // Elite sconfitti: contano per la rarità del bottino (LOOT_BY_ELITE); reliquie non più
+            // Elite sconfitti: solo per il riepilogo della spedizione (gli elite non lasciano reliquie)
             if (isEliteCombat) stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
 
             document.getElementById('lootCoinsText').textContent = coins;

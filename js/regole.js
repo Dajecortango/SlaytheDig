@@ -62,22 +62,22 @@ const MERCHANT_REROLL_COST = 5;
 const HAGGLE_DISCOUNT = 0.25;   // successo: -25% su tutta la merce
 const HAGGLE_PENALTY = 2;       // fallimento: +2 monete su ogni articolo
 
-/* ---------- Rarità del bottino degli scontri (js/loot.js) ----------
-   Scontri normali: probabilità (in %) secondo il livello della mappa (1 = primo livello).
-   Scontri elite: secondo quanti elite il party ha già sconfitto in questa spedizione.
-   Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity). */
-const LOOT_BY_LEVEL = [
-    { upTo: 2, weights: { comune: 70, non_comune: 30 } },
-    { upTo: 5, weights: { comune: 35, non_comune: 50, raro: 15 } },
-    { upTo: 8, weights: { comune: 20, non_comune: 45, raro: 30, epico: 5 } },
-    { upTo: 11, weights: { raro: 45, epico: 50, leggendario: 5 } },
-    { upTo: Infinity, weights: { raro: 40, epico: 50, leggendario: 10 } }
-];
-const LOOT_BY_ELITE = [
-    { raro: 80, epico: 20 },                      // primo elite sconfitto
-    { raro: 70, epico: 30 },                      // secondo
-    { raro: 30, epico: 50, leggendario: 20 }      // dal terzo in poi
-];
+/* ---------- Rarità del bottino degli scontri e dei tesori (js/loot.js) ----------
+   Probabilità (in %) al primo livello della mappa e all'ultimo: in mezzo si passa dall'una
+   all'altra in proporzione all'avanzamento (come il mercante), così mappe lunghe e corte
+   seguono la stessa curva. Le rarità che il bottino della campagna non ha vengono saltate
+   (vedi pickByRarity). */
+const LOOT_RARITY_RANGE = {
+    scarso: [20, 0],
+    comune: [55, 5],
+    non_comune: [20, 20],
+    raro: [5, 35],
+    epico: [0, 30],
+    leggendario: [0, 10]
+};
+// Elite (e boss): la stessa tabella, come se fossero più avanti nella mappa, senza scarsi e comuni
+const LOOT_ELITE_PROGRESS_BONUS = 0.4;
+const LOOT_ELITE_EXCLUDED = ['scarso', 'comune'];
 
 /* ---------- Campagne procedurali (js/procedurale.js) ----------
    Crescita della difficoltà (p = avanzamento da 0 al primo livello a 1 al boss) */
