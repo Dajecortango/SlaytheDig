@@ -10,7 +10,8 @@ const ROOT = path.resolve(__dirname, '..');
 
 // Script nell'ordine di index.html, senza avvio, telefono e animazioni (audio e ritratti servono alla barra degli eroi)
 const SCRIPT_MOTORE = [
-    'js/libreria.js', 'js/comune.js', 'js/procedurale.js', 'js/game.js', 'js/creazione.js', 'js/oggetti.js', 'js/prove.js', 'js/salvataggi.js', 'js/audio.js', 'js/mappa.js',
+    'js/azioni.js', 'js/libreria.js', 'js/regole.js', 'js/comune.js', 'js/procedurale.js', 'js/game.js', 'js/interfaccia.js', 'js/effetti.js', 'js/menu.js', 'js/spedizione.js',
+    'js/creazione.js', 'js/oggetti.js', 'js/prove.js', 'js/salvataggi.js', 'js/audio.js', 'js/mappa.js',
     'js/combattimento.js', 'js/ritratti.js', 'js/loot.js', 'js/shop.js', 'js/simulator.js'
 ];
 
@@ -43,8 +44,8 @@ function storageFinto() {
     };
 }
 
-// Carica dati (tutte le librerie e le campagne di index.html) e motore in un contesto nuovo
-function carica() {
+// Contesto nuovo con il DOM finto e le API del browser che i file usano al caricamento
+function creaContesto() {
     const ctx = {
         console, Math, JSON, Date, Promise, setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
         document: finto(), localStorage: storageFinto(), navigator: finto(), location: { search: '', hash: '', protocol: 'file:', pathname: '/index.html', href: 'file:///index.html' },
@@ -63,16 +64,32 @@ function carica() {
     ctx.window = ctx;
     ctx.globalThis = ctx;
     vm.createContext(ctx);
-
-    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    const dati = [...html.matchAll(/<script src="(data\/[^"]+)"/g)].map(m => m[1]);
-    for (const file of [...dati, ...SCRIPT_MOTORE]) {
-        vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), ctx, { filename: file });
-    }
     // Le dichiarazioni "const"/"let" di primo livello non diventano proprietà del contesto:
     // eval le rende raggiungibili ("g.eval('stato')"), le funzioni sono già proprietà
     ctx.eval = code => vm.runInContext(code, ctx);
     return ctx;
 }
 
-module.exports = { carica, ROOT };
+// Carica dati (tutte le librerie e le campagne di index.html) e motore in un contesto nuovo
+function carica() {
+    const ctx = creaContesto();
+    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    const dati = [...html.matchAll(/<script src="(data\/[^"]+)"/g)].map(m => m[1]);
+    for (const file of [...dati, ...SCRIPT_MOTORE]) {
+        vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), ctx, { filename: file });
+    }
+    return ctx;
+}
+
+// Carica TUTTI gli script di una pagina (index.html o editor.html) nell'ordine dei tag, come il browser:
+// controlla che nulla si rompa al caricamento e rende raggiungibili le funzioni globali della pagina
+function caricaPagina(pagina) {
+    const ctx = creaContesto();
+    const html = fs.readFileSync(path.join(ROOT, pagina), 'utf8');
+    for (const [, file] of html.matchAll(/<script src="([^"]+)"/g)) {
+        vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), ctx, { filename: file });
+    }
+    return ctx;
+}
+
+module.exports = { carica, caricaPagina, ROOT, SCRIPT_MOTORE };

@@ -51,13 +51,13 @@
         }
 
         // Bonus delle reliquie a tutti i tiri di dado degli eroi (combattimento, prove, contrattazione, capitano):
-        // Frammento di Yr-Drazul +1 sempre; Anello del giuramento +3 e Sigillo runico +2 solo al prossimo tiro
+        // frammento_di_yr_drazul +1 sempre; anello_del_giuramento +3 e sigillo_runico +2 solo al prossimo tiro
         // (si consumano con spendNextRollRelics dopo il tiro). Le anteprime lo leggono senza consumarlo.
         function relicDiceSources() {
             const out = [];
-            if (hasRelic('frammento_di_yr_drazul')) out.push({ name: 'Frammento di Yr-Drazul', val: 1 });
-            if (hasRelic('anello_del_giuramento')) out.push({ name: 'Anello del giuramento', val: 3 });
-            if (hasRelic('sigillo_runico')) out.push({ name: 'Sigillo runico', val: 2 });
+            if (hasRelic('frammento_di_yr_drazul')) out.push({ name: relicName('frammento_di_yr_drazul'), val: 1 });
+            if (hasRelic('anello_del_giuramento')) out.push({ name: relicName('anello_del_giuramento'), val: 3 });
+            if (hasRelic('sigillo_runico')) out.push({ name: relicName('sigillo_runico'), val: 2 });
             return out;
         }
 
@@ -71,13 +71,13 @@
             const notes = [];
             if (hasRelic('anello_del_giuramento')) {
                 breakRelic('anello_del_giuramento');
-                notes.push('Anello del giuramento si rompe');
+                notes.push(`${relicName('anello_del_giuramento')} si rompe`);
             }
             if (hasRelic('sigillo_runico')) {
                 stato.party.sigilloCharges = (stato.party.sigilloCharges || 0) + 1;
                 const broken = stato.party.sigilloCharges >= 2;
                 if (broken) { breakRelic('sigillo_runico'); stato.party.sigilloCharges = 0; }
-                notes.push(broken ? 'Sigillo runico si rompe' : 'Sigillo runico: resta 1 tiro');
+                notes.push(broken ? `${relicName('sigillo_runico')} si rompe` : `${relicName('sigillo_runico')}: resta 1 tiro`);
             }
             return notes;
         }
@@ -88,16 +88,16 @@
             const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
             const isElite = !!node && (node.type === 'elite' || node.type === 'captain');
             const b = { att: 0, dmg: 0, notes: [] };
-            const add = (when, name, att, dmg) => {
-                if (!when || !hasRelic(idFromName(name))) return;
+            const add = (when, id, att, dmg) => {
+                if (!when || !hasRelic(id)) return;
                 b.att += att; b.dmg += dmg;
-                b.notes.push(`${name} (${att ? `+${att} al tiro` : `+${dmg} danno`})`);
+                b.notes.push(`${relicName(id)} (${att ? `+${att} al tiro` : `+${dmg} danno`})`);
             };
-            add(stato.combatRound === 1, "Stendardo da battaglia", 1, 0);
-            add(stato.combatRound === 2, "Zanna del leone bianco", 0, 2);
-            add(stato.combatRound === 3, "Corno antico", 0, 1);
-            add(isElite, "Idolo del cacciatore", 0, 1);
-            add(isElite, "Catena di Norgrad", 1, 0);
+            add(stato.combatRound === 1, 'stendardo_da_battaglia', 1, 0);
+            add(stato.combatRound === 2, 'zanna_del_leone_bianco', 0, 2);
+            add(stato.combatRound === 3, 'corno_antico', 0, 1);
+            add(isElite, 'idolo_del_cacciatore', 0, 1);
+            add(isElite, 'catena_di_norgrad', 1, 0);
             relicDiceSources().forEach(r => { b.att += r.val; b.notes.push(`${r.name} (+${r.val} al tiro)`); });
             return b;
         }
@@ -110,22 +110,30 @@
             return first ? hero.firstActorDmgBonus : 0;
         }
 
-        // Tiro di attacco: muta enemy.hp, consuma helpBonus. Ritorna l'esito per log/DOM.
+        // Passiva "Veleni ed altri composti" (hero_set helpDmgBonus): un Aiuta riuscito dà anche +danno
+        // al prossimo attacco o abilità; vale fino alla fine del round (azzerato da startHeroesTurnCycle)
+        function helpDmgBonus() {
+            return stato.helpDmgBonus || 0;
+        }
+
+        // Tiro di attacco: muta enemy.hp, consuma helpBonus e helpDmgBonus. Ritorna l'esito per log/DOM.
         function resolveAttack(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const rb = relicCombatBonus();
             const first = firstActorBonus(hero);
+            const helpDmg = helpDmgBonus();
             const total = roll + hero.str + stato.helpBonus + attackMod(hero) + rb.att;
             stato.helpBonus = 0;
+            stato.helpDmgBonus = 0;
             const spent = spendNextRollRelics();
 
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             let dmg = 0;
             if (hit) {
-                dmg = hero.dmg + rb.dmg + first;
+                dmg = hero.dmg + rb.dmg + first + helpDmg;
                 enemy.hp -= dmg;
             }
-            return { roll, total, hit, dmg, firstBonus: first, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], naturalNote: naturalRollNote(roll, total, enemy.ca) };
+            return { roll, total, hit, dmg, firstBonus: first, helpDmgBonus: helpDmg, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
 
         // Armatura che un tiro di difesa riuscito dà all'eroe: 1, più quella degli scudi (def_armor)
@@ -147,15 +155,21 @@
                 relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
-        // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità.
+        // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità
+        // (e, con la passiva helpDmgBonus, anche +danno fino alla fine del round).
         function resolveHelp(hero, enemy, rolls) {
             const roll = rollD6(rolls, 0);
             const sources = relicDiceSources();
             const total = roll + hero.str + (hero.help_bonus_val || 0) + relicDiceBonus();
             const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
-            if (success) stato.helpBonus = 1;
-            return { roll, total, success, naturalNote: naturalRollNote(roll, total, enemy.att),
+            let dmgBonus = 0;
+            if (success) {
+                stato.helpBonus = 1;
+                dmgBonus = hero.helpDmgBonus || 0;
+                if (dmgBonus) stato.helpDmgBonus = dmgBonus;
+            }
+            return { roll, total, success, dmgBonus, naturalNote: naturalRollNote(roll, total, enemy.att),
                 relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
@@ -203,7 +217,7 @@
         // Danno di un colpo a segno dell'abilità (stesso calcolo per il tiro vero e per le anteprime)
         function abilityHitDamage(hero, c, relicDmg) {
             const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
-            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + firstActorBonus(hero) + relicDmg) * (c.damageMult || 1);
+            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + firstActorBonus(hero) + helpDmgBonus() + relicDmg) * (c.damageMult || 1);
         }
 
         // Elite o boss: nodo elite o capitano, oppure lo scontro dell'ultimo livello della mappa
@@ -254,12 +268,14 @@
             const attStat = abilityStatBonus(hero, c.attackStat);
             const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
             const firstBonus = firstActorBonus(hero);
+            const helpDmg = helpDmgBonus();
             const dmg = abilityHitDamage(hero, c, rb.dmg);
+            stato.helpDmgBonus = 0;
             // Colpo automatico: niente tiro, vale come un 6 naturale (il bonus di Aiuta resta per il prossimo)
             if (c.autoHit) {
                 enemy.hp -= dmg;
                 if (c.stun) enemy.isStunned = true;
-                return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg, attStat, taken, firstBonus, naturalNote: null,
+                return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: null,
                     dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
             }
             const dice = c.dice === 2 ? [rollD6(rolls, 0), rollD6(rolls, 1)] : [rollD6(rolls, 0)];
@@ -272,7 +288,7 @@
                 enemy.hp -= dmg;
                 if (c.stun) enemy.isStunned = true;
             }
-            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, hit, dmg, attStat, taken, firstBonus, naturalNote: naturalRollNote(roll, total, enemy.ca),
+            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, hit, dmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: naturalRollNote(roll, total, enemy.ca),
                 dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
         }
 
@@ -324,7 +340,13 @@
             let hpDamage = 0;
             let targetDied = false;
             if (dmg > 0) {
-                if (target.hp - dmg <= 0 && hasRelic('marchio_di_jag_antar')) {
+                // Passiva "Tanto ho tenacia" (hero_set tenacityRevive: N): la prima volta che l'eroe
+                // andrebbe a 0 HP torna in piedi con N HP; una volta per campagna (tenacityUsed resta sull'eroe)
+                if (target.hp - dmg <= 0 && target.tenacityRevive && !target.tenacityUsed) {
+                    target.tenacityUsed = true;
+                    target.hp = Math.min(target.maxHp, target.tenacityRevive);
+                    events.push({ type: 'tenacia', text: `💪 ${target.name} crolla a terra... ma si rialza con ${target.hp} HP: tanto ho tenacia!` });
+                } else if (target.hp - dmg <= 0 && hasRelic('marchio_di_jag_antar')) {
                     target.hp = 1;
                     breakRelic('marchio_di_jag_antar');
                     events.push({ type: 'marchio', text: `✨ Il Marchio di Jag Antar si infrange, salvando ${target.name} da morte certa!` });
@@ -467,13 +489,14 @@
     discover('enemies', enemyKey);
     stato.activeEnemy.isStunned = false;
     
-    // Reliquia: Occhio del corvo
+    // Reliquia: occhio_del_corvo
     if (hasRelic('occhio_del_corvo')) stato.activeEnemy.att = Math.max(1, stato.activeEnemy.att - 1);
     
     // Flag per Scudo dell'Atamano
     stato.party.atamanoUsed = false;
 
     stato.helpBonus = 0;
+    stato.helpDmgBonus = 0;
 
             document.getElementById('combatDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.activeEnemy.desc)}`;
 
@@ -490,6 +513,7 @@
             });
             fxResyncHeroes();
             stato.combatRound = 0;
+            impostaAzione(document.getElementById('combatNextBtn'), 'proceedCombatPhase');  // nessun 'Avanti' rimasto da uno scontro precedente
             document.getElementById('combatLootBtn').classList.remove('btn-attention');
 
             document.getElementById('combatLog').innerHTML = `Combatti contro ${stato.activeEnemy.name}! (Armature e Abilità ripristinate)<br>`;
@@ -588,7 +612,7 @@
         // 11. Passando su "Attacca" o sull'abilità, la parte di vita che il colpo toglierebbe lampeggia
         function expectedHitDamage(hero, action) {
             if (!hero || !stato.activeEnemy) return 0;
-            let dmg = hero.dmg + relicCombatBonus().dmg + firstActorBonus(hero);
+            let dmg = hero.dmg + relicCombatBonus().dmg + firstActorBonus(hero) + helpDmgBonus();
             const c = action === 'ability' ? abilityCombat(hero.chosenAbility) : null;
             if (c) dmg = abilityHitDamage(hero, c, relicCombatBonus().dmg);
             return Math.max(0, dmg);
@@ -623,6 +647,7 @@
         function startHeroesTurnCycle() {
             stato.party.forEach(h => { if(h.hp > 0) h.hasActed = false; });
             stato.combatRound++;
+            stato.helpDmgBonus = 0;  // il danno in più di un Aiuta (helpDmgBonus) vale solo nel round
             expireTempBuffs().forEach(({ hero, buff }) => logCombat(`⌛ Finisce l'effetto di ${buff.name} su ${hero.name}.`));
             applyPendingBuffs();
             updateEnemyInfoUI();
@@ -734,7 +759,7 @@
 
             setPreview('cmdAttack', 'Attacca [Q]', `Forza + d6 contro CA ${stato.activeEnemy.ca}. Se riesci infliggi ${expectedHitDamage(hero, 'attack')} danni.${rb.notes.length ? `<br>Reliquie: ${rb.notes.join(', ')}` : ''}`, attackNeeded, false);
             setPreview('cmdDefend', 'Difendi [W]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci ottieni +${defendArmorGain(hero)} Armatura${hero.def_armor ? ' (scudo compreso)' : ''}.`, defendNeeded, false);
-            setPreview('cmdHelp', 'Aiuta [E]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci il prossimo attacco ottiene +1.`, helpNeeded, false);
+            setPreview('cmdHelp', 'Aiuta [E]', `Forza + d6 contro l'attacco nemico (${stato.activeEnemy.att}). Se riesci il prossimo attacco ottiene +1${hero.helpDmgBonus ? ` e +${hero.helpDmgBonus} al danno (fino a fine round)` : ''}.`, helpNeeded, false);
 
             const ability = hero.chosenAbility;
             if (ability && abilityUsable(hero).ok) {
@@ -878,6 +903,7 @@
         }
 
         // Bersaglio del consumabile scelto: il nemico per quelli da danno, un eroe vivo per gli altri
+        // (anche caduto con le pozioni che rialzano, canTargetWithItem)
         function refreshCombatItemTargets() {
             const item = currentActiveHero && currentActiveHero.items[parseInt(document.getElementById('combatConsumableSelect').value)];
             const select = document.getElementById('combatTargetSelect');
@@ -886,8 +912,8 @@
                 return;
             }
             select.innerHTML = stato.party
-                .filter(p => p.hp > 0)
-                .map(p => `<option value="${p.name}">${p.name} (HP: ${p.hp}/${p.maxHp})</option>`)
+                .filter(p => canTargetWithItem(item, p))
+                .map(p => `<option value="${p.name}">${p.name} (HP: ${p.hp}/${p.maxHp}${p.hp <= 0 ? ', caduto' : ''})</option>`)
                 .join('');
         }
 
@@ -965,7 +991,7 @@
 
                         if(res.hit) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${res.dmg} danni.`;
-                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.${res.firstBonus ? ` (Libertas in furor: +${res.firstBonus}, primo ad agire)` : ''}`);
+                            logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.${res.firstBonus ? ` (Libertas in furor: +${res.firstBonus}, primo ad agire)` : ''}${res.helpDmgBonus ? ` (Veleni: +${res.helpDmgBonus} dall'aiuto)` : ''}`);
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">MANCATO!</span>`;
                         }
@@ -1004,6 +1030,7 @@
                                 if (c.damageTakenBonus) extra.push(`+${res.taken} danni subiti`);
                                 if (res.sumRoll) extra.push(res.eliteHalf ? 'elite o boss: scende a metà vita' : 'nemico sconfitto');
                                 if (res.firstBonus) extra.push(`+${res.firstBonus} primo ad agire`);
+                                if (res.helpDmgBonus) extra.push(`+${res.helpDmgBonus} dall'aiuto`);
                                 if ((c.damageMult || 1) > 1) extra.push(`x${c.damageMult}`);
                                 if (c.stun) extra.push('nemico stordito per un turno');
                                 document.getElementById('diceCombatResult').innerHTML =
@@ -1034,7 +1061,7 @@
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} aiuta: Tiro ${res.roll} + Forza ${hero.str} = ${res.total}`);
                         if(res.success) {
-                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">AIUTO RIUSCITO!</span> +1 al prossimo.`;
+                            document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">AIUTO RIUSCITO!</span> +1 al prossimo${res.dmgBonus ? `, +${res.dmgBonus} al danno fino a fine round` : ''}.`;
                         } else {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:#ff4d4d;">FALLITO.</span>`;
                         }
@@ -1078,6 +1105,15 @@
             }, 50);
         }
 
+        // "Avanti" dopo il turno del nemico (o dopo un turno saltato): il pulsante torna a proceedCombatPhase e riparte il giro degli eroi
+        function resumeHeroesTurn() {
+            const btn = document.getElementById('combatNextBtn');
+            btn.classList.add('hidden');
+            document.getElementById('monsterTargetArea').classList.remove('hidden');
+            impostaAzione(btn, 'proceedCombatPhase');
+            startHeroesTurnCycle();
+        }
+
         function proceedCombatPhase() {
             document.getElementById('combatNextBtn').classList.add('hidden');
             showHeroSelectionPhase();
@@ -1099,12 +1135,7 @@
 
                 document.getElementById('monsterTargetArea').classList.add('hidden');
                 document.getElementById('combatNextBtn').classList.remove('hidden');
-                document.getElementById('combatNextBtn').onclick = function() {
-                    document.getElementById('combatNextBtn').classList.add('hidden');
-                    document.getElementById('monsterTargetArea').classList.remove('hidden');
-                    document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
-                    startHeroesTurnCycle();
-                };
+                impostaAzione(document.getElementById('combatNextBtn'), 'resumeHeroesTurn');
                 return;
             }
 
@@ -1117,12 +1148,7 @@
                 updateEnemyInfoUI();
                 document.getElementById('monsterTargetArea').classList.add('hidden');
                 document.getElementById('combatNextBtn').classList.remove('hidden');
-                document.getElementById('combatNextBtn').onclick = function() {
-                    document.getElementById('combatNextBtn').classList.add('hidden');
-                    document.getElementById('monsterTargetArea').classList.remove('hidden');
-                    document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
-                    startHeroesTurnCycle();
-                };
+                impostaAzione(document.getElementById('combatNextBtn'), 'resumeHeroesTurn');
                 return;
             }
 
@@ -1161,9 +1187,5 @@
 
             document.getElementById('monsterTurnSection').classList.add('hidden');
             document.getElementById('combatNextBtn').classList.remove('hidden');
-            document.getElementById('combatNextBtn').onclick = function() {
-                document.getElementById('combatNextBtn').classList.add('hidden');
-                document.getElementById('combatNextBtn').onclick = proceedCombatPhase;
-                startHeroesTurnCycle();
-            };
+            impostaAzione(document.getElementById('combatNextBtn'), 'resumeHeroesTurn');
         }

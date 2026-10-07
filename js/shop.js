@@ -6,13 +6,11 @@
    Caricato dopo js/game.js (stesso ambito globale: usa stato, gameItems, LIBRERIA...).
    ========================================================================== */
 
-        // Prezzo base per rarità: il mercante vende con una piccola oscillazione e compra a metà
-        const ITEM_BASE_PRICE = { scarso: 3, comune: 5, non_comune: 8, raro: 11, epico: 21, leggendario: 30 };
-        const ITEM_PRICE_SPREAD = { scarso: 1, comune: 1, non_comune: 1, raro: 2, epico: 3, leggendario: 4 };
+        // Prezzi, rincari, merce, medico e contrattazione: i numeri sono in js/regole.js
+        // (ITEM_BASE_PRICE, ITEM_PRICE_SPREAD, MERCHANT_*, MEDIC_*, HAGGLE_*)
 
         // Più si avanza nella mappa più il mercante alza i prezzi: +40% all'ultimo livello
         // (anche le monete trovate crescono con l'avanzamento, vedi scaledCoins)
-        const MERCHANT_PROGRESS_MARKUP = 0.4;
         function merchantProgressMultiplier() {
             return 1 + MERCHANT_PROGRESS_MARKUP * mapProgress();
         }
@@ -25,20 +23,17 @@
         let currentMerchantItem = null;
 
         // Merce del mercante: 4 oggetti da equipaggiare e 2 consumabili (senza doppioni finché il bottino
-        // lo permette) e il medico (cura 2 HP a un eroe). Niente reliquie: si trovano nelle sfide e dagli elite.
+        // lo permette) e il medico (cura feriti e caduti, MEDIC_PRICE_PER_HP a HP). Niente reliquie: si trovano nelle sfide e dagli elite.
         // Le rarità alte diventano più probabili andando avanti nella mappa.
-        const MERCHANT_EQUIPMENT_SLOTS = 4;
-        const MERCHANT_CONSUMABLE_SLOTS = 2;
-        const MEDIC_PRICE = 7;             // fisso: niente rincari, contrattazione o sconti
-        const MEDIC_HEAL = 2;
         // Le carte che non sono oggetti hanno un "item" di facciata per icona, nome e tooltip
         const MEDIC_CARD = { id: 'medico', name: 'Medico da campo', rarity: 'non_comune', icon: 'immagini/icone/BTNHeal.png',
-            desc: `Cura ${MEDIC_HEAL} HP a un eroe ferito` };
+            desc: `Cura un eroe ferito o caduto: ${MEDIC_PRICE_PER_HP} monete per ogni HP` };
         const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
         function merchantRarityWeights(progress) {
-            const lerp = (a, b) => a + (b - a) * progress;
-            return { scarso: lerp(10, 0), comune: lerp(38, 8), non_comune: lerp(27, 20), raro: lerp(20, 35), epico: lerp(5, 27), leggendario: lerp(0, 10) };
+            const weights = {};
+            for (const [rarity, [from, to]] of Object.entries(MERCHANT_RARITY_RANGE)) weights[rarity] = from + (to - from) * progress;
+            return weights;
         }
 
         // Usata anche dal simulatore: niente stato dell'interfaccia (contrattazione, carte scoperte) qui dentro
@@ -76,14 +71,12 @@
                 return { kind: 'item', item, price: adjust(basePrice), revealed: false };
             });
 
-            stock.push({ kind: 'medic', item: MEDIC_CARD, price: MEDIC_PRICE, fixedPrice: true, revealed: true });
+            // Il prezzo è quello di 1 HP: il medico resta disponibile finché ci sono monete
+            stock.push({ kind: 'medic', item: MEDIC_CARD, price: MEDIC_PRICE_PER_HP, fixedPrice: true, revealed: true });
             return stock;
         }
 
         /* ---------- Contrattazione: una sola proposta per mercante ---------- */
-        const MERCHANT_REROLL_COST = 5;
-        const HAGGLE_DISCOUNT = 0.25;   // successo: -25% su tutta la merce
-        const HAGGLE_PENALTY = 2;       // fallimento: +2 monete su ogni articolo
         let merchantHaggle = null;      // null = non ancora tentata, 'ok' = riuscita, 'fail' = fallita
         let merchantRerolled = false;   // la merce si rinnova una sola volta per mercante
         let merchantStolen = false;     // passiva "La mano è più veloce dell'occhio": primo oggetto già rubato?
@@ -133,13 +126,10 @@
             merchantItemsWithPrices = generateMerchantStock().map(entry => ({ ...entry, basePrice: entry.price, price: entry.fixedPrice ? entry.price : merchantPrice(entry.price) }));
         }
 
-        // Stesse regole delle prove: vantaggio di Dioforo con l'Intelligenza (Fede Inaridita qui non conta: si contratta solo con l'Intelligenza)
+        // Stesse regole delle prove: Fede Inaridita toglie il dado migliore solo con la Fede
+        // (oggi si contratta solo con l'Intelligenza, quindi un dado solo)
         function haggleRollMode(hero, stat) {
-            const advantage = !!hero.hasAdvantageOnIntFth;
-            const disadvantage = stat === 'fth' && hasCurse('fede_inaridita');
-            if (advantage && !disadvantage) return 'best';
-            if (disadvantage && !advantage) return 'worst';
-            return 'single';
+            return stat === 'fth' && hasCurse('fede_inaridita') ? 'worst' : 'single';
         }
 
        function startMerchant(merchantId) {
@@ -168,7 +158,7 @@
                     return `<div class="armory-btn taken"><span class="tile-text"><strong>Venduto</strong></span></div>`;
                 }
                 if (!entry.revealed) {
-                    return cardBackHtml(`revealMerchantItem(${idx})`, 'Merce coperta', 'Clicca per scoprire cosa offre il mercante', `rar-back-${itemRarity(entry.item)}`)
+                    return cardBackHtml(azione('revealMerchantItem', idx), 'Merce coperta', 'Clicca per scoprire cosa offre il mercante', `rar-back-${itemRarity(entry.item)}`)
                         .replace('<button ', `<button data-idx="${idx}" `);
                 }
                 const price = effectiveMerchantPrice(entry);
@@ -178,13 +168,13 @@
                 const oldPrice = price !== listPrice ? `<s class="price-old">${listPrice}</s>` : '';
                 const stealTag = entry.kind === 'item' && price === 0 && merchantThief() ? `<span class="tile-tag">Da rubare (${esc(merchantThief().name)})</span>` : '';
                 return `
-                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${canAfford ? '' : 'unaffordable'} ${flip}" onclick="tryBuyMerchantItem(${idx})" data-tip="${esc(entry.kind === 'item' ? itemTip(entry.item) : `${entry.item.name}||${entry.item.desc}`)}">
+                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${canAfford ? '' : 'unaffordable'} ${flip}" ${azione('tryBuyMerchantItem', idx)} data-tip="${esc(entry.kind === 'item' ? itemTip(entry.item) : `${entry.item.name}||${entry.item.desc}`)}">
                         ${itemIconHtml(entry.item)}
                         <span class="tile-text">
                             <strong>${entry.item.name}</strong>${entry.kind === 'medic' ? '<span class="tile-tag">Servizio</span>' : ''}${stealTag}
                             <span class="tile-sub">${kw(entry.item.desc)}</span>
                         </span>
-                        <span class="price ${canAfford ? '' : 'too-much'}">${oldPrice}<span class="coin"></span>${price}</span>
+                        <span class="price ${canAfford ? '' : 'too-much'}">${oldPrice}<span class="coin"></span>${price}${entry.kind === 'medic' ? '/HP' : ''}</span>
                     </button>
                 `;
             }).join('');
@@ -229,7 +219,7 @@
                 const btn = (stat, label) => {
                     const mode = haggleRollMode(h, stat);
                     const info = chanceText(cd - (h[stat] || 0) - relicDiceBonus(), mode === 'best', mode === 'worst');
-                    return `<button class="btn-small" onclick="haggle('${esc(h.name)}', '${stat}')">${label} ${h[stat] || 0} · ${info.short}</button>`;
+                    return `<button class="btn-small" ${azione('haggle', h.name, stat)}>${label} ${h[stat] || 0} · ${info.short}</button>`;
                 };
                 return `<div class="haggle-row"><b>${esc(h.name)}</b>${btn('int', 'Intelligenza')}</div>`;
             }).join('');
@@ -262,7 +252,7 @@
             setTimeout(() => {
                 diceOutcomeSfx(roll);
                 const statLabel = 'Intelligenza';
-                const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (${mode === 'best' ? 'Era solo una prova!' : 'Fede Inaridita'})`;
+                const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (Fede Inaridita)`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
                     `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${r.name}`).join('')} = <b>${total}</b> contro CD ${cd}.</p>
                      ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
@@ -301,25 +291,43 @@
             updatePartyStatusBars();
         }
 
-        // Medico: si sceglie l'eroe ferito da curare; costa MEDIC_PRICE e si usa una volta per mercante
+        // Medico: si sceglie l'eroe (ferito o caduto) e quanti HP curare, MEDIC_PRICE_PER_HP monete l'uno.
+        // Resta disponibile: si può tornare dal medico finché ci sono monete.
         function openMedic(idx) {
             const entry = merchantItemsWithPrices[idx];
-            const wounded = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp);
+            const wounded = stato.party.filter(h => h.hp < h.maxHp);
             if (!wounded.length) { uiError('Nessun eroe ferito da curare'); return; }
             openModal('Medico da campo',
-                `<p>Il medico cura <b>${MEDIC_HEAL} HP</b> a un eroe per <b style="color:var(--wc-yellow)">${entry.price}</b> monete. Chi vuoi far curare?</p>`,
+                `<p>Il medico cura eroi feriti o caduti per <b style="color:var(--wc-yellow)">${entry.price}</b> monete per ogni HP. Chi vuoi far curare?</p>`,
                 wounded.map(h => ({
-                    label: `${h.name} (HP ${h.hp}/${h.maxHp})`,
+                    label: `${h.name} (HP ${h.hp}/${h.maxHp}${h.hp <= 0 ? ', caduto' : ''})`,
+                    onClick: () => openMedicHeal(idx, h)
+                })).concat([{ label: 'Annulla', className: 'btn-danger' }]));
+        }
+
+        // Seconda finestra del medico: quanti HP curare all'eroe scelto (quelli non pagabili sono disattivati)
+        function openMedicHeal(idx, hero) {
+            const entry = merchantItemsWithPrices[idx];
+            const options = [];
+            for (let hp = 1; hp <= hero.maxHp - hero.hp; hp++) {
+                const cost = hp * entry.price;
+                options.push({
+                    label: `+${hp} HP (${cost} monete)`,
+                    disabled: stato.partyCoins < cost,
                     onClick: () => {
-                        if (!merchantItemsWithPrices[idx] || stato.partyCoins < entry.price) return;
-                        stato.partyCoins -= entry.price;
-                        merchantItemsWithPrices[idx] = null;
-                        const gained = healHero(h, MEDIC_HEAL);
-                        uiMessage(`Il medico cura ${h.name}: +${gained} HP`);
+                        if (!merchantItemsWithPrices[idx] || stato.partyCoins < cost) return;
+                        stato.partyCoins -= cost;
+                        const wasDown = hero.hp <= 0;
+                        const gained = healHero(hero, hp);
+                        uiMessage(wasDown ? `Il medico rimette in piedi ${hero.name}: +${gained} HP` : `Il medico cura ${hero.name}: +${gained} HP`);
                         updatePartyStatusBars();
                         renderMerchantShop();
                     }
-                })).concat([{ label: 'Annulla', className: 'btn-danger' }]));
+                });
+            }
+            openModal('Medico da campo',
+                `<p>${esc(hero.name)}: HP ${hero.hp}/${hero.maxHp}. Quanti HP vuoi far curare (${entry.price} monete l'uno)?</p>`,
+                options.concat([{ label: 'Indietro', onClick: () => openMedic(idx) }, { label: 'Annulla', className: 'btn-danger' }]));
         }
 
         function confirmMerchantAssignment() {
@@ -353,7 +361,7 @@
                 return;
             }
             list.innerHTML = entries.map(({ hero, item, idx }) => `
-                <button class="armory-btn rar-card-${itemRarity(item)}" onclick="trySellItem('${esc(hero.name)}', ${idx})" data-tip="${esc(itemTip(item, hero))}">
+                <button class="armory-btn rar-card-${itemRarity(item)}" ${azione('trySellItem', hero.name, idx)} data-tip="${esc(itemTip(item, hero))}">
                     ${itemIconHtml(item)}
                     <span class="tile-text">
                         <strong>${item.name}${(item.qty || 1) > 1 ? ` x${item.qty}` : ''}</strong>

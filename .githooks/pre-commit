@@ -11,7 +11,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 errori=0
-for f in js/*.js data/libreria/*.js data/campagne/*.js tools/*.mjs tests/*.js server/*.js; do
+for f in js/*.js js/editor/*.js data/libreria/*.js data/campagne/*.js tools/*.mjs tests/*.js server/*.js; do
     [ -f "$f" ] || continue
     if ! node --check "$f" 2>/dev/null; then
         echo "pre-commit: errore di sintassi in $f"

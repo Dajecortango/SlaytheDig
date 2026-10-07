@@ -129,8 +129,25 @@
             else if (currentAudioScreen === 'screenCombat') setMusic(combatThemeSrc);
             else if (currentAudioScreen === 'screenRest') setMusic(REST_THEME);
             else if (currentAudioScreen === 'screenChallenge') setMusic(CHALLENGE_THEME);
-            else if (currentAudioScreen === 'screenMap') setMusic(MAP_THEME);
+            else if (currentAudioScreen === 'screenMap') { setMusic(MAP_THEME); preloadNextThemes(); }
             else setMusic(null);
+        }
+
+        // Sulla mappa il browser carica in anticipo i brani che possono servire al prossimo nodo
+        // (prossimo tema degli scontri a rotazione, elite, riposo, prove): al cambio niente silenzio d'attesa.
+        // Ogni brano si carica una volta sola; i lettori tengono il riferimento perché non venga scartato.
+        const preloadedThemes = {};
+        function preloadNextThemes() {
+            if (soundMuted || !gameOptions.musicVolume) return;
+            const nextCombat = COMBAT_THEMES[((stato.expeditionStats && stato.expeditionStats.combatThemes) || 0) % COMBAT_THEMES.length];
+            [nextCombat, ELITE_THEME, REST_THEME, CHALLENGE_THEME].forEach(src => {
+                if (preloadedThemes[src]) return;
+                const a = new Audio();
+                a.preload = 'auto';
+                a.src = src;
+                a.load();
+                preloadedThemes[src] = a;
+            });
         }
 
         // Sceglie il tema del prossimo scontro: elite col proprio tema, scontri normali a rotazione

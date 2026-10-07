@@ -1,11 +1,14 @@
-// Riduce e comprime le immagini del gioco (niente librerie da installare: usa System.Drawing di Windows).
+// Riduce e comprime le immagini del gioco. Le foto del gioco sono in WebP: per queste serve ffmpeg
+// nel PATH (build con libwebp); JPG e PNG passano da System.Drawing di Windows.
 // Uso (dalla cartella del progetto):
 //   node tools/ottimizza_immagini.mjs              mostra cosa cambierebbe e quanto si risparmia, senza toccare niente
 //   node tools/ottimizza_immagini.mjs --applica    riscrive le immagini
-//   aggiungere --max 1600 per il lato massimo (predefinito 1600 px) e --qualita 82 per i JPG (predefinito 82)
-// Regole: JPG/JFIF con il lato più lungo oltre il massimo vengono rimpiccioliti e tutti i JPG vengono
-// ricompressi; un file si riscrive solo se diventa almeno il 15% più leggero. I PNG (trasparenze
-// dell'interfaccia) si rimpiccioliscono solo se superano il massimo, senza ricomprimerli.
+//   aggiungere --max 1600 per il lato massimo (predefinito 1600 px) e --qualita 82 per WebP e JPG (predefinito 82)
+// Regole: WebP e JPG/JFIF con il lato più lungo oltre il massimo vengono rimpiccioliti e tutti vengono
+// ricompressi (stesso formato, stesso nome); un file si riscrive solo se diventa almeno il 15% più leggero.
+// I PNG (trasparenze dell'interfaccia) si rimpiccioliscono solo se superano il massimo, senza ricomprimerli.
+// Un JPG nuovo va convertito in WebP (ffmpeg -i x.jpg -c:v libwebp -quality 82 x.webp) e va cambiato
+// il percorso nei dati: questo strumento non cambia i nomi dei file.
 // Le immagini originali restano nella cronologia di git.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -22,18 +25,21 @@ const QUALITY = value('--qualita', 82);
 const MIN_GAIN = 0.15;
 // Immagini usate con border-image: il taglio (es. --frame-slice: 150) è in pixel dell'immagine,
 // quindi non si rimpiccioliscono (si ricomprimono soltanto)
-const NON_RIDIMENSIONARE = ['immagini/ui/console_wc3.jpg', 'immagini/ui/bottone_menu.png', 'immagini/ui/targa_barra_web.png'];
+const NON_RIDIMENSIONARE = ['immagini/ui/console_wc3.webp', 'immagini/ui/bottone_menu.png', 'immagini/ui/targa_barra_web.png'];
 const rel = f => path.relative(ROOT, f).replace(/\\/g, '/');
 
 function walk(dir) {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => {
         const p = path.join(dir, e.name);
         if (e.isDirectory()) return e.name === 'segnaposto' ? [] : walk(p);
-        return /\.(jpe?g|jfif|png)$/i.test(e.name) ? [p] : [];
+        return /\.(jpe?g|jfif|png|webp)$/i.test(e.name) ? [p] : [];
     });
 }
 
-const files = walk(path.join(ROOT, 'immagini'));
+const allFiles = walk(path.join(ROOT, 'immagini'));
+const isWebp = f => /\.webp$/i.test(f);
+const files = allFiles.filter(f => !isWebp(f));
+const webpFiles = allFiles.filter(isWebp);
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ottimizza-'));
 const listFile = path.join(tmp, 'elenco.txt');
 // Una riga per file: percorso e lato massimo, separati da una tabulazione
@@ -72,7 +78,29 @@ foreach ($row in [System.IO.File]::ReadAllLines('${listFile.replace(/'/g, "''")}
     Write-Output $line
 }
 `;
-const output = execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const output = files.length ? execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }) : '';
+
+// WebP: System.Drawing non li legge, passano da ffprobe (dimensioni) e ffmpeg (ricompressione).
+// Stesso formato delle righe di PowerShell: file|w|h|nw|nh|size|newSize|out
+function webpLines() {
+    if (!webpFiles.length) return [];
+    try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); } catch (e) {
+        console.log(`ffmpeg non trovato nel PATH: ${webpFiles.length} immagini WebP saltate.`);
+        return [];
+    }
+    return webpFiles.map((f, i) => {
+        const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height',
+            '-of', 'csv=p=0', f], { encoding: 'utf8' }).trim().split(',').map(Number);
+        const max = NON_RIDIMENSIONARE.includes(rel(f)) ? 1e9 : MAX;
+        const scale = Math.min(1, max / Math.max(w, h));
+        const nw = Math.round(w * scale), nh = Math.round(h * scale);
+        const out = path.join(tmp, `w${i}.webp`);
+        const vf = scale < 1 ? ['-vf', `scale=${nw}:${nh}:flags=lanczos`] : [];
+        execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', f, ...vf, '-c:v', 'libwebp', '-quality', String(QUALITY),
+            '-compression_level', '6', '-frames:v', '1', out]);
+        return [f, w, h, nw, nh, fs.statSync(f).size, fs.statSync(out).size, out].join('|');
+    });
+}
 
 let before = 0, after = 0, changed = 0;
 const kb = n => `${Math.round(n / 1024)} KB`;

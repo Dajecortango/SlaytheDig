@@ -12,13 +12,7 @@
    campaignForPlay(id, seed) è il punto d'ingresso per gioco, salvataggi e simulatore.
    ========================================================================== */
 
-// Crescita della difficoltà (p = avanzamento da 0 al primo livello a 1 al boss)
-const PROC_SCALA = {
-    hp: p => 0.8 + 0.5 * p,          // vita dei nemici: dall'80% al 130% di quella originale
-    att: p => (p >= 0.5 ? 1 : 0),     // +1 Attacco dalla metà del percorso
-    ca: p => (p >= 0.8 ? 1 : 0),      // +1 CA nell'ultimo tratto
-    cd: p => (p >= 0.6 ? 1 : 0)       // +1 CD alle sfide dell'ultimo tratto
-};
+// Crescita della difficoltà: PROC_SCALA in js/regole.js
 
 // Generatore di numeri casuali con seme (mulberry32): stessa sequenza a parità di seme
 function procRng(seed) {

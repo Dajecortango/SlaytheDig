@@ -6,6 +6,18 @@
    Caricato subito dopo js/game.js; le funzioni si chiamano tra file solo dopo il caricamento.
    ========================================================================== */
 
+        // Le pozioni di cura da REVIVE_MIN_RARITY in su (js/regole.js) rialzano anche gli eroi caduti
+        function itemRevives(item) {
+            if (!item || (item.type !== 'consumable_heal' && item.type !== 'consumable_full')) return false;
+            const order = Object.keys(RARITY_LABELS);
+            return order.indexOf(itemRarity(item)) >= order.indexOf(REVIVE_MIN_RARITY);
+        }
+
+        // Eroe su cui si può usare il consumabile: vivo, oppure caduto se la pozione rialza
+        function canTargetWithItem(item, target) {
+            return !!target && (target.hp > 0 || itemRevives(item));
+        }
+
         window.useConsumableFromTopbar = function(heroName, itemIdx) {
             let hero = stato.party.find(p => p.name === heroName);
             if(!hero) return;
@@ -23,7 +35,7 @@
                 `<p>${item.desc}</p><p>A quale membro della spedizione vuoi applicarlo?</p>`,
                 stato.party.map(p => ({
                     label: `${p.name} (HP ${p.hp}/${p.maxHp})`,
-                    disabled: p.hp <= 0,
+                    disabled: !canTargetWithItem(item, p),
                     onClick: () => useConsumable(hero.name, itemIdx, p.name)
                 })).concat([{ label: 'Annulla', className: 'btn-danger' }])
             );
@@ -53,8 +65,7 @@
            ogni N di Intelligenza guadagnata +1 Fede, ogni N di Fede guadagnata +1 Forza.
            I punti dati da Factotum non contano per le altre conversioni (niente catena infinita):
            hero.factotumBonus ricorda quanto è già stato aggiunto, così si applica solo la differenza. */
-        const FACTOTUM_CYCLE = [['str', 'int'], ['int', 'fth'], ['fth', 'str']];
-        const FACTOTUM_EVERY = 2;  // predefinito, se il segnale è solo "true"
+        // FACTOTUM_CYCLE e FACTOTUM_EVERY in js/regole.js
 
         // Statistiche di partenza dell'eroe (come in heroStatHtml): dalla campagna, poi dalla libreria
         function heroStartStats(hero) {
@@ -147,7 +158,6 @@
            buff_rounds) potenzia un eroe per alcuni round (0 o vuoto = tutto lo scontro): questi due
            si usano solo in combattimento, con il comando Oggetto. Nello zaino un consumabile può
            stare in pila con un altro uguale (campo "qty", al massimo CONSUMABLE_STACK copie). */
-        const CONSUMABLE_STACK = 2;
         const isCombatConsumable = item => item && (item.type === 'consumable_damage' || item.type === 'consumable_buff');
         // Statistiche che un potenziamento può alzare (etichette per tooltip, editor e diario)
         const BUFF_STATS = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
@@ -253,7 +263,7 @@
             }
 
             let target = targetName ? stato.party.find(p => p.name === targetName) : hero;
-            if(!target || target.hp <= 0) {
+            if(!canTargetWithItem(item, target)) {
                 uiError("Bersaglio non valido o non disponibile");
                 return false;
             }
@@ -303,6 +313,7 @@
             if (item.att_penalty) lines.push(`<span class="kw kw-curse">-${item.att_penalty} al tiro per colpire</span>`);
             if (item.type === 'consumable_heal') lines.push(kw(`Cura ${item.heal_val} HP`));
             if (item.type === 'consumable_full') lines.push(kw('Cura tutti gli HP'));
+            if (itemRevives(item)) lines.push(kw('Rialza anche un eroe caduto'));
             if (item.type === 'consumable_damage') lines.push(kw(`Infligge ${item.dmg_val || 0} danni al nemico`));
             if (item.type === 'consumable_buff') lines.push(kw(`+${item.buff_val || 0} ${BUFF_STATS[item.buff_stat] || item.buff_stat}${item.buff_stat === 'current_armor' ? '' : ' ' + buffDurationText(item)}`));
             if (isCombatConsumable(item)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
@@ -347,8 +358,7 @@
             return parts.join(', ') || 'nessun effetto sulle statistiche (per ora)';
         }
 
-        // Capienza dello zaino di ogni eroe: oltre si deve scartare un oggetto
-        const BACKPACK_SIZE = 3;
+        // Capienza dello zaino di ogni eroe: BACKPACK_SIZE in js/regole.js
 
         function heroOptionsForItem(item) {
             return stato.party.filter(p => p.hp > 0).map(h => {
@@ -430,7 +440,7 @@
         function renderDiscardScreen() {
             document.getElementById('discardHeroName').textContent = heroNeedingDiscard.name;
             document.getElementById('discardItemsList').innerHTML = heroNeedingDiscard.items.map((it, idx) => `
-                <button class="armory-btn" onclick="executeDiscard(${idx})">
+                <button class="armory-btn" ${azione('executeDiscard', idx)}>
                     ${itemIconHtml(it)}
                     <span class="tile-text">
                         <strong>${it.name}</strong>

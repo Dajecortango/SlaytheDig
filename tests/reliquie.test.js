@@ -30,18 +30,18 @@ module.exports = (t, carica) => {
 
     t.test('la Mannaia Pesante è epica', () => t.uguale('epico', lib.armeria.mannaia_pesante.rarity));
 
-    t.test('idFromName dà le stesse chiavi della libreria (reliquie e maledizioni)', () => {
-        for (const [id, r] of Object.entries(lib.reliquie)) t.uguale(id, g.idFromName(r.name), `reliquia "${r.name}"`);
+    // Le reliquie si possono rinominare (l'id resta fisso, i testi usano relicName); le maledizioni no
+    t.test('idFromName dà le stesse chiavi della libreria (maledizioni)', () => {
         for (const [id, c] of Object.entries(lib.maledizioni)) t.uguale(id, g.idFromName(c.name), `maledizione "${c.name}"`);
     });
 
     t.test('ogni id usato nel codice esiste nella libreria (o è tra le reliquie orfane note)', () => {
-        const codice = ['js/game.js', 'js/combattimento.js', 'js/loot.js', 'js/shop.js', 'js/simulator.js']
+        const codice = ['js/game.js', 'js/interfaccia.js', 'js/effetti.js', 'js/menu.js', 'js/spedizione.js', 'js/combattimento.js', 'js/loot.js', 'js/shop.js', 'js/simulator.js']
             .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
         const relic = [...codice.matchAll(/(?:hasRelic|breakRelic)\('([^']+)'\)/g)].map(m => m[1]);
         const curse = [...codice.matchAll(/hasCurse\('([^']+)'\)/g)].map(m => m[1]);
-        // relicCombatBonus usa i nomi (convertiti con idFromName)
-        const daNomi = [...codice.matchAll(/\badd\((?:stato\.combatRound === \d+|isElite), "([^"]+)"/g)].map(m => g.idFromName(m[1]));
+        // relicCombatBonus: add(quando, 'id', ...)
+        const daNomi = [...codice.matchAll(/\badd\((?:stato\.combatRound === \d+|isElite), '([^']+)'/g)].map(m => m[1]);
         t.ok(daNomi.length >= 5, `trovate solo ${daNomi.length} reliquie in relicCombatBonus`);
         for (const id of [...relic, ...daNomi]) t.ok(lib.reliquie[id] || ORFANE.includes(id), `reliquia sconosciuta: ${id}`);
         for (const id of curse) t.ok(lib.maledizioni[id], `maledizione sconosciuta: ${id}`);

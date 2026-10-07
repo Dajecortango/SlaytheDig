@@ -36,9 +36,9 @@
             --font-numbers: 'WC Skurri', 'Skranji', 'Cinzel', sans-serif;
             /* Texture (1): generate con tools/genera_immagini.mjs (gruppo "ui"); le vecchie in SVG
                (pietra.svg, cuoio.svg, pergamena.svg) restano in immagini/ui/ come alternativa */
-            --tex-stone: url('../immagini/ui/pietra_wc3.jpg');
-            --tex-leather: url('../immagini/ui/cuoio_wc3.jpg');
-            --tex-parchment: url('../immagini/ui/pergamena_wc3.jpg');
+            --tex-stone: url('../immagini/ui/pietra_wc3.webp');
+            --tex-leather: url('../immagini/ui/cuoio_wc3.webp');
+            --tex-parchment: url('../immagini/ui/pergamena_wc3.webp');
             --tex-slot: url('../immagini/ui/Human-inventory-slotfiller.png');
             --font-body: 'Marcellus', 'Palatino Linotype', 'Georgia', serif;
 
@@ -47,7 +47,7 @@
             /* Cornice dorata dei pannelli (border-image): si usa sempre come
                "border-image: var(--frame) var(--frame-slice) / <spessore> stretch".
                --frame-svg è la vecchia cornice disegnata, con il suo taglio di 26. */
-            --frame: url('../immagini/ui/console_wc3.jpg');
+            --frame: url('../immagini/ui/console_wc3.webp');
             --frame-slice: 150;
             --frame-svg: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23fff0b0'/><stop offset='.45' stop-color='%23d4a53a'/><stop offset='1' stop-color='%236b4a12'/></linearGradient><radialGradient id='r' cx='.38' cy='.34' r='.7'><stop offset='0' stop-color='%23ffb09a'/><stop offset='.35' stop-color='%23c41a14'/><stop offset='1' stop-color='%23300204'/></radialGradient><g id='c'><rect x='.5' y='.5' width='25' height='25' fill='url(%23g)' stroke='%23000'/><rect x='4.5' y='4.5' width='17' height='17' fill='%23241606' stroke='%23000'/><path d='M4.5 21.5v-17h17' fill='none' stroke='%23fff0b0' stroke-opacity='.5'/><circle cx='13' cy='13' r='5.5' fill='url(%23r)' stroke='%23000'/><circle cx='11.3' cy='11.2' r='1.6' fill='%23fff' fill-opacity='.75'/></g></defs><rect x='1' y='1' width='88' height='88' fill='none' stroke='%23000' stroke-width='2'/><rect x='2.5' y='2.5' width='85' height='85' fill='none' stroke='%236b4a12'/><rect x='4' y='4' width='82' height='82' fill='none' stroke='%23d4a53a' stroke-width='2'/><rect x='5.5' y='5.5' width='79' height='79' fill='none' stroke='%23fff0b0' stroke-opacity='.7'/><rect x='7' y='7' width='76' height='76' fill='none' stroke='%238a6418' stroke-width='2'/><rect x='8.5' y='8.5' width='73' height='73' fill='none' stroke='%23000'/><use href='%23c'/><use href='%23c' x='64'/><use href='%23c' y='64'/><use href='%23c' x='64' y='64'/></svg>");
             --diamond: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M6 .5L11.5 6 6 11.5.5 6z' fill='%23e2b951' stroke='%23000'/><path d='M6 3.5L8.5 6 6 8.5 3.5 6z' fill='%23c41a14'/></svg>");
