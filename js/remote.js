@@ -36,8 +36,24 @@
                     qty: it.qty || 1
                 })),
                 chosenAbility: h.chosenAbility ? h.chosenAbility.name : null,
-                abilityDesc: h.chosenAbility ? (h.chosenAbility.desc || '') : ''
+                abilityDesc: h.chosenAbility ? (h.chosenAbility.desc || '') : '',
+                runes: remoteRunes(h),
+                blessings: (h.blessings || []).filter(x => typeof PRAYER_BLESSINGS !== 'undefined' && PRAYER_BLESSINGS[x.id])
+                    .map(x => ({ name: PRAYER_BLESSINGS[x.id].name, desc: PRAYER_BLESSINGS[x.id].desc, icon: PRAYER_BLESSINGS[x.id].icon, n: x.n || 1 }))
             }))
+        };
+    }
+
+    // Rune (Alastorta): equipaggiate, disponibili e se adesso si può fare lo scambio del riposo
+    function remoteRunes(h) {
+        if (typeof heroHasRunes !== 'function' || !heroHasRunes(h)) return null;
+        const info = id => { const r = runeData(id) || {}; return { id, name: r.name || id, desc: r.desc || '', icon: r.icon || null }; };
+        const equipped = h.equippedRunes || [];
+        return {
+            equipped: equipped.map(info),
+            others: h.runeOptions.filter(id => !equipped.includes(id)).map(info),
+            canSwap: typeof currentScreenId !== 'undefined' && currentScreenId === 'screenRest'
+                && typeof restRuneSwapped !== 'undefined' && !restRuneSwapped.includes(h.name)
         };
     }
 
@@ -177,6 +193,14 @@
     }
 
     // Applica "usa oggetto" scelto dal telefono, come farebbe executeCombatUseItem() in locale.
+    // Il turno dell'eroe è ancora aperto e senza azione scelta? Le risposte del telefono possono arrivare
+    // dopo un'azione fatta in locale, un cambio di eroe o la fine dello scontro: allora si ignorano
+    function remoteTurnOpen(heroName) {
+        return currentScreenId === 'screenCombat' && !!currentActiveHero && currentActiveHero.name === heroName
+            && currentActiveHero.hp > 0 && !currentActiveHero.hasActed && !chosenAction
+            && !!stato.activeEnemy && stato.activeEnemy.hp > 0;
+    }
+
     function applyRemoteItemUse(itemIdx, targetName) {
         if (!currentActiveHero || typeof useConsumable !== 'function') return;
         if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
@@ -186,7 +210,7 @@
     function handleRemoteActionChosen(data) {
         if (!data || !currentActionRequestId || data.requestId !== currentActionRequestId) return;
         currentActionRequestId = null;
-        if (!currentActiveHero || currentActiveHero.name !== data.heroName) return; // turno già cambiato
+        if (!remoteTurnOpen(data.heroName)) return; // turno già cambiato o azione già scelta in locale
 
         if (data.action === 'use_item') {
             applyRemoteItemUse(data.itemIndex, data.targetName);
@@ -252,6 +276,13 @@
                     const data = JSON.parse(e.data);
                     if (typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat') return;
                     if (typeof useConsumable === 'function') useConsumable(data.heroName, data.itemIndex, data.targetName);
+                } catch (err) {}
+            });
+            // Scambio di una runa dal telefono durante un riposo
+            rollEvents.addEventListener('rune-swap', e => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (typeof restSwapRune === 'function') restSwapRune(data.heroName, data.out, data.into);
                 } catch (err) {}
             });
             // nessun onerror gestito apposta: senza server l'EventSource ritenta da solo e non blocca nulla

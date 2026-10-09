@@ -214,5 +214,27 @@ window.LIBRERIA.eroi = {
         "portraitZoom": 2.5,
         "portraitWoundedPos": "43% 28%",
         "portraitWoundedZoom": 2.3
+    },
+    "alastorta_dignitas": {
+        "name": "Alastorta B. Dignitas",
+        "str": 1,
+        "int": 5,
+        "fth": 1,
+        "maxHp": 4,
+        "hp": 4,
+        "dmg": 1,
+        "base_armor": 0,
+        "current_armor": 0,
+        "att_penalty": 0,
+        "def_bonus": 0,
+        "help_bonus_val": 0,
+        "items": [],
+        "abilities": [],
+        "runeOptions": ["runa_rinascita", "runa_guarigione", "runa_sapere", "runa_vento"],
+        "runeSlots": 2,
+        "portrait": "immagini/ritratti/alastorta.webp",
+        "portraitWounded": "immagini/ritratti/alastorta_ferito.webp",
+        "portraitPos": "52% 24%",
+        "portraitZoom": 2.4
     }
 };

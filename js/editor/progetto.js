@@ -10,8 +10,13 @@
 function libraryUsage(kind, key) {
     // Le abilità sono usate dagli eroi della libreria, non direttamente dalle campagne
     if (kind === 'abilita') {
-        return Object.entries(lib.eroi).filter(([, h]) => (h.abilities || []).includes(key))
+        return Object.entries(lib.eroi).filter(([, h]) => [...(h.abilities || []), ...(h.runeOptions || [])].includes(key))
             .map(([id, h]) => ({ id, title: h.name, n: 1, current: true }));
+    }
+    // Le azioni speciali sono usate dalle fasi dei nemici del bestiario
+    if (kind === 'azioni_elite') {
+        return Object.entries(lib.bestiario).map(([id, e]) => ({ id, title: e.name, current: true,
+            n: (e.fasi || []).filter(f => (f.azioni || []).includes(key) || f.schema === key || f.reazione === key).length })).filter(u => u.n);
     }
     const count = raw => {
         if (kind === 'bestiario') return (raw.mapNodes || []).filter(n => n.enemy === key).length;
@@ -67,14 +72,15 @@ window.CAMPAIGNS[${JSON.stringify(camp.id)}] = ${formatJson(camp)};
 `;
 }
 
-const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita'];
-const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi', abilita: 'Abilità' };
+const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite'];
+const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite' };
 const LIB_HEADERS = {
     armeria: 'Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.\n// Le campagne li richiamano per id in "initialArmory" e "lootItems".',
     bestiario: 'Bestiario: tutti i nemici, condivisi dalle campagne.\n// I nodi della mappa li richiamano per id nel campo "enemy".',
     reliquie: 'Reliquie: ricompense delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "reward". Molte reliquie hanno un effetto\n// gestito per nome in js/game.js (hasRelic): rinominarle ne cambia il comportamento.',
     maledizioni: 'Maledizioni: punizioni delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "punishment".',
     eroi: 'Eroi: statistiche iniziali e abilità tra cui scegliere, condivisi dalle campagne.\n// Le campagne li richiamano per id nel campo "heroes"; le abilità sono id della libreria Abilità\n// (data/libreria/abilita.js). Ritratti: "portrait" e "portraitWounded" (2 HP o meno),\n// inquadratura nell\'icona con "portraitPos" (punto da tenere al centro) e "portraitZoom";\n// "portraitWoundedPos"/"portraitWoundedZoom" se il ritratto da ferito va inquadrato diversamente,\n// "portraitStrikeZoom" per lo zoom nella cinematica d\'attacco (vuoto = calcolato da portraitZoom).',
+    azioni_elite: 'Azioni speciali degli elite e dei boss: le fasi del bestiario ("fasi": [{ soglia, testo, azioni }])\n// le richiamano per id e scattano quando il nemico scende sotto la soglia di vita.\n// Solo dati, interpretati da js/combattimento.js (applyEliteAction, resolveEnemyTurn): un\'azione nuova\n// si crea dall\'editor (scheda "Azioni elite") combinando i campi, senza codice.\n// Subito, alla soglia: colpo (attacco in risposta: "attaccante", "tutti", "piu_debole", "piu_forte", "casuale"),\n// colpoDanno (vuoto = danno del nemico), colpoVicini (danno agli eroi accanto), bonusDanno, bonusAttacco, bonusCA,\n// cura (HP del nemico), malus / malusRound / resisteFede (malus al tiro per colpire degli eroi),\n// stordisce e spezzaArmatura (stessi bersagli di colpo).\n// Da quel momento, a ogni turno del nemico ("turno": true; sostituisce il modo di attaccare di prima):\n// turnoBersaglio ("scelto", "piu_debole", "piu_forte", "casuale", "tutti"), turnoDanno, turnoColpi, turnoVicini,\n// turnoPreparazione + turnoTestoPreparazione ({nemico} = nome), turnoCrescitaDanno, turnoRigenera, turnoAura, turnoRubaVita.',
     abilita: 'Abilità: passive e attive degli eroi, condivise dalla libreria Eroi.\n// Gli eroi le richiamano per id nel campo "abilities". Le passive agiscono con "effects"\n// (o con "type": "passive_stat"); le attive (isCombatActive) agiscono con "combat" (vedi abilityCombat in js/game.js).\n// "icon" è l\'icona di Warcraft III mostrata nel gioco.'
 };
 
@@ -90,14 +96,15 @@ ${extra}`;
 }
 
 const campaignFilePath = () => `data/campagne/${camp.id}.js`;
-const libraryFilePath = kind => `data/libreria/${kind}.js`;
+// Le azioni degli elite hanno una cartella loro
+const libraryFilePath = kind => kind === 'azioni_elite' ? 'data/azioni_elite/azioni_elite.js' : `data/libreria/${kind}.js`;
 
 // Immagini caricate che la campagna usa ancora (le altre non vengono scritte)
 function usedPendingAssets() {
     const used = new Set([camp.coverImage, ...camp.mapNodes.map(n => n.image),
         ...Object.values(lib.bestiario).flatMap(e => [e.image, e.video, e.sfxAttack, e.sfxHit, e.sfxDeath]),
         ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded]),
-        ...Object.values(lib.abilita || {}).map(a => a.icon)]);
+        ...Object.values(lib.abilita || {}).map(a => a.icon), ...Object.values(lib.azioni_elite || {}).map(a => a.icon)]);
     return [...pendingAssets].filter(([path]) => used.has(path));
 }
 

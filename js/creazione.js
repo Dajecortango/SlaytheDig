@@ -54,13 +54,93 @@
             `).join('');
         }
 
+        /* ---------- Rune (Alastorta B. Dignitas) ----------
+           Un eroe con "runeOptions" (id della libreria Abilità) e "runeSlots" sceglie quante rune dice
+           runeSlots tra quelle offerte, al posto dell'abilità; a ogni riposo può scambiarne una equipaggiata
+           con una che non ha (openRuneSwap). Equipaggiate in hero.equippedRunes. Le rune agiscono con i loro
+           "effects": hero_set (segnali delle passive, tolti quando la runa si toglie) e hero_stat. */
+        function runeData(id) {
+            return (LIBRERIA.abilita || {})[id] || null;
+        }
+
+        // sign 1 = equipaggia, -1 = toglie
+        function applyRune(hero, id, sign = 1) {
+            const rune = runeData(id);
+            if (!rune) return;
+            (rune.effects || []).forEach(e => {
+                if (e.effect === 'hero_set') {
+                    if (sign > 0) hero[e.stat] = e.val; else delete hero[e.stat];
+                } else if (e.effect === 'hero_stat') {
+                    hero[e.stat] = (hero[e.stat] || 0) + sign * e.val;
+                } else if (sign > 0) {
+                    applyEffects([e], hero);
+                }
+            });
+            refreshScaledBonuses(hero);
+        }
+
+        function heroHasRunes(hero) {
+            return !!(hero && hero.runeOptions && hero.runeOptions.length && hero.runeSlots > 0);
+        }
+
+        function renderRuneChoice() {
+            const hero = activeHeroForCreation;
+            const chosen = hero.equippedRunes || [];
+            const slots = Math.min(hero.runeSlots, hero.runeOptions.length);
+            document.getElementById('abilityButtons').innerHTML = `
+                <p class="rune-hint">Scegli <b>${slots}</b> rune (${chosen.length}/${slots}). A ogni riposo potrai scambiarne una con una di quelle che non hai.</p>
+                ${hero.runeOptions.map(runeData).filter(Boolean).map(r => `
+                <button class="armory-btn ${chosen.includes(r.id) ? 'selected' : ''}" ${azione('toggleCreationRune', r.id)} style="width:100%; margin:5px 0;">
+                    ${abilityIconHtml(r)}
+                    <span class="tile-text">
+                        <strong>${esc(r.name)}</strong>
+                        ${r.desc ? `<span class="tile-sub">${kw(r.desc)}</span>` : ''}
+                        ${chosen.includes(r.id) ? '<span class="tile-tag">Scelta</span>' : ''}
+                    </span>
+                </button>`).join('')}
+                <button class="btn-proceed" ${azione('confirmCreationRunes')} ${chosen.length === slots ? '' : 'disabled'}>Conferma le rune</button>`;
+        }
+
+        function toggleCreationRune(id) {
+            const hero = activeHeroForCreation;
+            const chosen = hero.equippedRunes = hero.equippedRunes || [];
+            if (chosen.includes(id)) chosen.splice(chosen.indexOf(id), 1);
+            else if (chosen.length < Math.min(hero.runeSlots, hero.runeOptions.length)) chosen.push(id);
+            renderRuneChoice();
+        }
+
+        function confirmCreationRunes() {
+            const hero = activeHeroForCreation;
+            if ((hero.equippedRunes || []).length !== Math.min(hero.runeSlots, hero.runeOptions.length)) return;
+            hero.equippedRunes.forEach(id => applyRune(hero, id, 1));
+            document.getElementById('abilityArea').classList.add('hidden');
+            document.getElementById('armoryArea').classList.remove('hidden');
+            document.getElementById('btnProceedHero').classList.remove('hidden');
+            loadArmoryOptions();
+        }
+
+        // Riposo: scambia una runa equipaggiata ("out") con una non equipaggiata ("into")
+        function swapRune(heroName, out, into) {
+            const hero = stato.party.find(h => h.name === heroName);
+            if (!heroHasRunes(hero) || !(hero.equippedRunes || []).includes(out) || hero.equippedRunes.includes(into)
+                || !hero.runeOptions.includes(into)) return false;
+            applyRune(hero, out, -1);
+            applyRune(hero, into, 1);
+            hero.equippedRunes = hero.equippedRunes.map(id => id === out ? into : id);
+            return true;
+        }
+
         let activeHeroForCreation = null;
         function selectHeroCard(heroName) {
             activeHeroForCreation = JSON.parse(JSON.stringify(campaignHeroes.find(h => h.name === heroName)));
             document.getElementById('heroCreationArea').classList.add('hidden');
 
             const heroAbilities = campaignAbilities[heroName] || [];
-            if(heroAbilities.length > 0) {
+            if (heroHasRunes(activeHeroForCreation)) {
+                activeHeroForCreation.equippedRunes = [];
+                document.getElementById('abilityArea').classList.remove('hidden');
+                renderRuneChoice();
+            } else if(heroAbilities.length > 0) {
                 document.getElementById('abilityArea').classList.remove('hidden');
                 document.getElementById('abilityButtons').innerHTML = heroAbilities.map((ab, idx) => `
                     <button class="armory-btn" ${azione('selectAbility', idx)} style="width:100%; margin:5px 0;">

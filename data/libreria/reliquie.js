@@ -61,5 +61,79 @@ window.LIBRERIA.reliquie = {
     "catena_di_norgrad": { "type": "relic", "name": "Catena di Norgrad", "desc": "+1 al tiro per colpire contro nemici elite e il capitano" },
     "scudo_dell_atamano": { "type": "relic", "name": "Scudo dell'Atamano", "desc": "Il primo colpo del nemico in ogni scontro viene assorbito del tutto" },
     "moneta_di_fredlos": { "type": "relic", "name": "Moneta di Fredlos", "desc": "I mercanti fanno pagare la metà" },
-    "unguento_dell_erborista": { "type": "relic", "name": "Unguento dell'erborista", "desc": "Al riposo ogni eroe recupera 1 HP in più" }
+    "unguento_dell_erborista": { "type": "relic", "name": "Unguento dell'erborista", "desc": "Al riposo ogni eroe recupera 1 HP in più" },
+    "cotta_dei_lungobarbi": {
+        "type": "relic",
+        "name": "Cotta dei Lungobarbi",
+        "desc": "+1 HP massimi a tutti",
+        "effects": [
+            { "effect": "party_max_hp", "val": 1 }
+        ]
+    },
+    "benedizione_del_primigenio": {
+        "type": "relic",
+        "name": "Benedizione del Primigenio",
+        "desc": "+1 Fede a tutti",
+        "effects": [
+            { "effect": "party_stat", "stat": "fth", "val": 1 }
+        ]
+    },
+    "sacca_del_contrabbandiere": {
+        "type": "relic",
+        "name": "Sacca del Contrabbandiere",
+        "desc": "+20 monete alla cassa della compagnia",
+        "effects": [
+            { "effect": "coins", "val": 20 }
+        ]
+    },
+    "prisma_rivelatore": {
+        "type": "relic",
+        "name": "Prisma Rivelatore",
+        "desc": "+1 Intelligenza all'eroe che ha superato la prova, +10 monete",
+        "effects": [
+            { "effect": "hero_stat", "stat": "int", "val": 1 },
+            { "effect": "coins", "val": 10 }
+        ]
+    },
+    "tomo_delle_verita": {
+        "type": "relic",
+        "name": "Tomo delle Verità",
+        "desc": "+1 Intelligenza e +1 Fede all'eroe che ha superato la prova",
+        "effects": [
+            { "effect": "hero_stat", "stat": "int", "val": 1 },
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
+        ]
+    },
+    "fiamma_perenne": {
+        "type": "relic",
+        "name": "Fiamma Perenne",
+        "desc": "+1 HP massimi a tutti",
+        "effects": [
+            { "effect": "party_max_hp", "val": 1 }
+        ]
+    },
+    "frammento_di_chiarezza": {
+        "type": "relic",
+        "name": "Frammento di Chiarezza",
+        "desc": "+1 ai tiri per colpire",
+        "effects": [
+            { "effect": "party_stat", "stat": "att_bonus", "val": 1 }
+        ]
+    },
+    "bussola_del_sopravvissuto": {
+        "type": "relic",
+        "name": "Bussola del Sopravvissuto",
+        "desc": "+1 Intelligenza a tutti",
+        "effects": [
+            { "effect": "party_stat", "stat": "int", "val": 1 }
+        ]
+    },
+    "reliquia_del_monolite": {
+        "type": "relic",
+        "name": "Reliquia del Monolite",
+        "desc": "+1 Danno a tutti",
+        "effects": [
+            { "effect": "party_stat", "stat": "dmg", "val": 1 }
+        ]
+    }
 };

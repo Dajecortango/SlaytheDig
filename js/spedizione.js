@@ -134,6 +134,7 @@
                             ${bonuses.join('')}
                         </span>
                         ${h.chosenAbility ? `<div class="journal-line">${abilityMarkHtml(h.chosenAbility)} <b>${h.chosenAbility.name}</b>${h.chosenAbility.desc ? ` — ${h.chosenAbility.desc}` : ''}</div>` : ''}
+                        ${(h.equippedRunes || []).map(runeData).filter(Boolean).map(r => `<div class="journal-line">${abilityMarkHtml(r)} <b>${r.name}</b>${r.desc ? ` — ${r.desc}` : ''}</div>`).join('')}
                         <div class="journal-items">${items}</div>
                     </div>`;
             }).join('');

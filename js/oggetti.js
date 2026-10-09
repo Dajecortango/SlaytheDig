@@ -83,7 +83,11 @@
             if (hero.factotum && start) {
                 const every = typeof hero.factotum === 'number' && hero.factotum >= 1 ? hero.factotum : FACTOTUM_EVERY;
                 FACTOTUM_CYCLE.forEach(([from, to]) => {
-                    const gained = (hero[from] || 0) - (prev[from] || 0) - (start[from] || 0);
+                    // Esclusi i bonus degli oggetti che scalano e i potenziamenti temporanei: altrimenti
+                    // (es. Stocco: Forza per Intelligenza) Factotum alimenterebbe sé stesso e resterebbe dopo
+                    const scaled = (hero.scaledBonus || {})[from] || 0;
+                    const temp = (hero.tempBuffs || []).filter(b => b.stat === from).reduce((s, b) => s + (b.val || 0), 0);
+                    const gained = (hero[from] || 0) - (prev[from] || 0) - (start[from] || 0) - scaled - temp;
                     const bonus = Math.floor(Math.max(0, gained) / every);
                     if (bonus) now[to] = (now[to] || 0) + bonus;
                 });
@@ -237,6 +241,15 @@
             }).join('')}</div>`;
         }
 
+        // Benedizioni della preghiera ancora da usare (hero.blessings, js/prove.js): icone dorate sulla carta dell'eroe,
+        // anche fuori dal combattimento; il numero è quante ne ha dello stesso tipo
+        function heroBlessingsHtml(h) {
+            const list = (h.blessings || []).map(x => ({ x, b: PRAYER_BLESSINGS[x.id] })).filter(e => e.b);
+            if (!list.length) return '';
+            return `<div class="hero-blessings">${list.map(({ x, b }) =>
+                `<span class="hero-blessing" data-tip="${esc(`🙏 ${b.name}||Benedizione della preghiera: ${b.desc}`)}"><img src="${esc(b.icon)}" alt="">${(x.n || 1) > 1 ? `<b>${x.n}</b>` : ''}</span>`).join('')}</div>`;
+        }
+
         // Testo della durata di un potenziamento (per tooltip e diario)
         function buffDurationText(item) {
             const r = item.buff_rounds || 0;
@@ -283,6 +296,7 @@
             consumeOne(hero, itemIdx);
             updatePartyStatusBars();
             triggerConsumableFeedback(hero, target, item);
+            refreshDiscardScreen();
             return true;
         };
 
@@ -291,6 +305,8 @@
         function healHero(target, amount) {
             const before = target.hp;
             target.hp = Math.min(target.maxHp, target.hp + amount);
+            // Un caduto rialzato (pozioni rare, medico) torna con la sua armatura: a terra era stata azzerata
+            if (before <= 0 && target.hp > 0) target.current_armor = target.base_armor || 0;
             const gained = target.hp - before;
             if (gained > 0) valgorenEcho(target);
             return gained;
@@ -396,8 +412,8 @@
             picker.classList.toggle('hidden', !full);
             if (!full) { picker.innerHTML = ''; return; }
             picker.innerHTML = `<label>Zaino pieno (${hero.items.length}/${BACKPACK_SIZE}): scarta
-                <select>${hero.items.map((it, idx) => `<option value="${idx}">${esc(it.name)}</option>`).join('')}
-                    <option value="">Decido dopo</option></select></label>`;
+                <select><option value="" selected>Decido dopo</option>
+                    ${hero.items.map((it, idx) => `<option value="${idx}">${esc(it.name)}${(it.qty || 1) > 1 ? ` x${it.qty}` : ''}</option>`).join('')}</select></label>`;
         }
 
         // Indice dell'oggetto da scartare scelto sotto la scelta dell'eroe (null = si sceglie dopo)
@@ -440,6 +456,17 @@
             } else {
                 callback();
             }
+        }
+
+        // Lo zaino è cambiato mentre si sceglie cosa scartare: se non è più troppo pieno si prosegue
+        // senza scartare, altrimenti si ridisegna (gli indici dei pulsanti sarebbero sbagliati)
+        function refreshDiscardScreen() {
+            if (currentScreenId !== 'screenDiscard' || !heroNeedingDiscard) return;
+            if (heroNeedingDiscard.items.length > BACKPACK_SIZE) { renderDiscardScreen(); return; }
+            const callback = discardCallback, back = discardReturnScreen;
+            heroNeedingDiscard = null; discardCallback = null; discardReturnScreen = null;
+            if (back && back !== 'screenDiscard') showScreen(back);
+            if (callback) callback();
         }
 
         function renderDiscardScreen() {

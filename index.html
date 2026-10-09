@@ -576,6 +576,29 @@
                             <div class="narrative-desc-box" id="restDescBox">
                                 <strong>Descrizione:</strong>
                             </div>
+
+                            <!-- Preghiera: prova di Fede come le sfide (js/prove.js, startPrayer / executePrayerRoll) -->
+                            <div id="prayerStage1" class="prayer-stage">
+                                <button data-action="startPrayer" class="btn-block prayer-start-btn"><img class="prayer-icon" src="immagini/icone/BTNPriest.png" alt=""> Uno di voi si raccoglie in preghiera</button>
+                            </div>
+
+                            <div id="prayerStage2" class="hidden" style="margin-top:10px;">
+                                <p class="panel-label">Scegli quale eroe prega:</p>
+                                <select id="prayerHeroSelect"></select>
+                                <button data-action="confirmPrayerHero" class="btn-proceed">Procedi al Tiro</button>
+                            </div>
+
+                            <div id="dicePrayerSection" class="hidden" style="text-align:center; margin-top: 8px;">
+                                <p id="prayerCdText" class="turn-label"></p>
+                                <p id="prayerChance" class="challenge-chance"></p>
+                                <div class="dice-pair">
+                                    <div id="dicePrayer" class="dice-box">6</div>
+                                </div>
+                                <button id="rollPrayerBtn" data-action="executePrayerRoll">Tira (D6)</button>
+                                <div id="prayerLog" class="log-box challenge-log hidden"></div>
+                            </div>
+
+                            <div id="restPrayerArea" class="rest-prayer"></div>
                         </div>
                         <button data-action="advanceNode" class="btn-proceed">Continua il Viaggio</button>
                     </div>
@@ -714,12 +737,14 @@
     <script src="data/libreria/maledizioni.js"></script>
     <script src="data/libreria/abilita.js"></script>
     <script src="data/libreria/eroi.js"></script>
+    <script src="data/azioni_elite/azioni_elite.js"></script>
     <script src="data/campagne/tutorial.js"></script>
     <script src="data/campagne/astarte_ch1.js"></script>
     <script src="data/campagne/astarte_ch2.js"></script>
     <script src="data/campagne/drakengrad.js"></script>
     <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
     <script src="js/azioni.js"></script>
+    <script src="data/campagne/prova di fede.js"></script>
     <script src="js/libreria.js"></script>
     <script src="js/regole.js"></script>
     <script src="js/comune.js"></script>

@@ -42,9 +42,12 @@ const HERO_FLAGS = {
     tenacityRevive: 'la prima volta a 0 HP torna con questi HP'
 };
 
-// Schemi e reazioni delle fasi dei nemici (fasi nel bestiario, interpretate in js/combattimento.js)
-const ENEMY_PHASE_SCHEMES = ['carica', 'travolge', 'predatore', 'furia'];
-const ENEMY_PHASE_REACTIONS = ['contrattacco', 'colpo_area'];
+// Bersagli delle azioni speciali degli elite (data/azioni_elite/azioni_elite.js, interpretate in js/combattimento.js):
+// ELITE_TARGETS per gli effetti alla soglia (colpo, stordisce, spezzaArmatura), ELITE_TURN_TARGETS per il turno del nemico
+const ELITE_TARGETS = { attaccante: "L'eroe che lo ha ferito", tutti: 'Tutta la compagnia', piu_debole: "L'eroe con meno HP + armatura",
+    piu_forte: "L'eroe con più HP + armatura", casuale: 'Un eroe a caso' };
+const ELITE_TURN_TARGETS = { scelto: 'Il bersaglio scelto dal giocatore', piu_debole: ELITE_TARGETS.piu_debole,
+    piu_forte: ELITE_TARGETS.piu_forte, casuale: 'Un eroe a caso (annunciato a inizio turno)', tutti: ELITE_TARGETS.tutti };
 
 // Ritratti degli eroi: inquadratura predefinita (soglia del ritratto da ferito: WOUNDED_HP in js/regole.js),
 // zoom della cinematica d'attacco (la banda è larga e bassa: si ingrandisce meno che nell'icona)
