@@ -363,3 +363,18 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-tip-preview-wrap { margin-top: 14px; }
 .ed-tip-preview-label { display: block; margin-bottom: 6px; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .wc3-tooltip.ed-tip-preview { position: static; opacity: 1; pointer-events: auto; max-width: 320px; }
+
+/* ---------- Scheda Elite: soglie di vita e azioni speciali (js/editor/elite.js) ---------- */
+.ed-elite-bar { position: relative; height: 14px; margin: 6px 0 26px; background: linear-gradient(90deg, #5a0d08, #b3261a); border: 1px solid #3a2a12; }
+.ed-elite-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--wc-yellow); transform: translateX(-1px); }
+.ed-elite-tick b { position: absolute; top: -16px; left: -4px; font-size: 0.7rem; color: var(--wc-yellow); }
+.ed-elite-tick small { position: absolute; top: 20px; left: -10px; font-size: 0.68rem; color: var(--text-dim); white-space: nowrap; }
+.ed-elite-phase { margin: 0 0 12px; padding: 10px 12px; text-align: left; background: linear-gradient(#1d1814, #120f0c); border: 1px solid #4a3a22; }
+.ed-elite-phase-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 6px; }
+.ed-elite-phase-head strong { font-family: var(--font-title); color: var(--gold); }
+.ed-elite-phase-head input { width: 64px; margin: 0 4px; }
+.ed-elite-phase-head small { color: var(--text-dim); flex: 1; }
+.ed-elite-phase-head button { margin: 0; }
+.ed-elite-phase textarea { width: 100%; box-sizing: border-box; }
+.ed-elite-label { display: block; margin: 8px 0 4px; font-size: 0.78rem; color: var(--text-dim); }
+.ed-elite-when { font-style: normal; font-size: 0.68rem; color: var(--wc-yellow); margin-left: 6px; }

@@ -105,10 +105,11 @@
 
         // Passiva "Libertas in furor" (hero_set firstActorStrBonus): +Forza al tiro (attacco, abilità, Difendi,
         // Aiuta) se l'eroe è il primo ad agire nel round.
-        // È il primo se nessun altro eroe vivo ha già agito (usare un oggetto non conta: non consuma l'azione).
+        // È il primo se nessun altro eroe ha già agito nel round, anche se poi è caduto
+        // (usare un oggetto non conta: non consuma l'azione).
         function firstActorBonus(hero) {
             if (!hero || !hero.firstActorStrBonus) return 0;
-            const first = stato.party.every(h => h === hero || h.hp <= 0 || !h.hasActed);
+            const first = stato.party.every(h => h === hero || !h.hasActed);
             return first ? hero.firstActorStrBonus : 0;
         }
 
@@ -366,6 +367,11 @@
                     target.tenacityUsed = true;
                     target.hp = Math.min(target.maxHp, target.tenacityRevive);
                     events.push({ type: 'tenacia', text: `💪 ${target.name} crolla a terra... ma si rialza con ${target.hp} HP: tanto ho tenacia!` });
+                } else if (target.hp - dmg <= 0 && hasBlessing(target, 'grazia')) {
+                    // Benedizione della preghiera "Grazia": una volta, torna in piedi
+                    spendBlessing(target, 'grazia');
+                    target.hp = Math.min(target.maxHp, PRAYER_BLESSINGS.grazia.val || 2);
+                    events.push({ type: 'grazia', text: `🙏 Grazia! ${target.name} sta per cadere, ma una luce lo rialza con ${target.hp} HP.` });
                 } else if (target.hp - dmg <= 0 && hasRelic('marchio_di_jag_antar')) {
                     target.hp = 1;
                     breakRelic('marchio_di_jag_antar');
@@ -386,28 +392,52 @@
         }
 
         /* ---------- Fasi dei nemici (elite e boss) ----------
-           Nel bestiario: "fasi": [{ soglia, testo, schema, reazione, bonusDanno, ruggito }].
+           Nel bestiario: "fasi": [{ soglia, testo, azioni: [id, ...] }].
            soglia: % di vita; la prima volta che il nemico scende a quel valore o sotto, la fase scatta
              (una volta sola; se un colpo ne supera più d'una scattano tutte, in ordine).
-           schema (da quel momento): "carica" (travolge il bersaglio e fa 1 danno agli eroi accanto:
-             subito al primo turno dopo la soglia, poi un turno raspa il terreno e quello dopo travolge), "travolge" (travolge
-             a ogni turno, senza pause), "predatore" (attacca da solo l'eroe con meno
-             HP + armatura), "furia" (+1 danno a ogni suo turno).
-           reazione (attacco in risposta, subito, fuori dal suo turno, contro l'eroe che ha fatto scattare
-             la soglia; al suo turno poi attacca come sempre): "contrattacco" (un colpo), "colpo_area" (un colpo
-             più 1 danno agli eroi accanto).
-           bonusDanno: + al danno del nemico. ruggito: { malus, fedeMin }: -malus al tiro per colpire
-             nel prossimo turno degli eroi, per chi ha Fede sotto fedeMin. */
-        const ENEMY_SCHEMES = {
-            carica: 'Carica: un turno raspa il terreno, il successivo travolge il bersaglio e fa 1 danno agli eroi accanto',
-            travolge: 'Travolge a ogni turno: colpo pieno al bersaglio e 1 danno agli eroi accanto',
-            predatore: "Predatore: sceglie da solo l'eroe con meno HP + armatura",
-            furia: '+1 danno a ogni suo turno'
-        };
-        const ENEMY_REACTIONS = {
-            contrattacco: "colpisce subito l'eroe che lo ha ferito",
-            colpo_area: "colpisce subito l'eroe che lo ha ferito e fa 1 danno agli eroi accanto"
-        };
+           azioni: id delle azioni speciali di data/azioni_elite/azioni_elite.js (LIBRERIA.azioni_elite), solo dati
+             interpretati qui; i campi sono descritti in testa a quel file. Due parti, anche nella stessa azione:
+             - subito, alla soglia (applyEliteAction, poi eliteReaction per l'attacco in risposta "colpo",
+               che arriva fuori dal turno del nemico; al suo turno il nemico poi attacca come sempre);
+             - "turno": true, da quel momento a ogni turno del nemico (resolveEnemyTurn): sostituisce il modo
+               di attaccare precedente; enemy.schema = id dell'azione, enemy.turnoAzione = l'azione.
+           Le fasi scritte nel formato di prima (schema, reazione, bonusDanno, ruggito) valgono ancora: schema e
+           reazione sono id di azioni, bonusDanno e ruggito diventano azioni scritte al volo (legacyPhaseActions). */
+
+        // Azione speciale: per id dalla libreria, oppure scritta per intero nella fase
+        function eliteAction(ref) {
+            if (!ref) return null;
+            if (typeof ref === 'object') return ref;
+            const a = ((window.LIBRERIA || {}).azioni_elite || {})[ref];
+            return a ? { id: ref, ...a } : null;
+        }
+
+        function legacyPhaseActions(f) {
+            const out = [];
+            if (f.bonusDanno) out.push({ name: 'Furore', desc: `+${f.bonusDanno} danno`, bonusDanno: f.bonusDanno });
+            if (f.schema) out.push(f.schema);
+            if (f.ruggito) out.push({ name: 'Ruggito primordiale', malus: f.ruggito.malus || 1, malusRound: 1, resisteFede: f.ruggito.fedeMin || 0,
+                desc: `ruggito: -${f.ruggito.malus || 1} al tiro nel turno dopo${f.ruggito.fedeMin ? ` (non per chi ha Fede ${f.ruggito.fedeMin}+)` : ''}` });
+            if (f.reazione) out.push(f.reazione);
+            return out;
+        }
+
+        // Azioni di una fase, già complete (quelle non trovate nella libreria vengono saltate)
+        function phaseActions(f) {
+            return [...(f.azioni || []), ...legacyPhaseActions(f)].map(eliteAction).filter(Boolean);
+        }
+
+        // Eroi vivi indicati da un bersaglio: "attaccante" (chi ha fatto scattare la soglia), "tutti",
+        // "piu_debole" / "piu_forte" (meno o più HP + armatura), "casuale"
+        function eliteTargets(mode, attacker) {
+            const alive = stato.party.filter(h => h.hp > 0);
+            if (mode === 'tutti') return alive;
+            if (mode === 'attaccante') return attacker && attacker.hp > 0 ? [attacker] : [];
+            const one = mode === 'piu_debole' ? predatorTarget()
+                : mode === 'piu_forte' ? strongestTarget()
+                : mode === 'casuale' ? alive[Math.floor(Math.random() * alive.length)] : null;
+            return one ? [one] : [];
+        }
 
         // Eroi vivi accanto al bersaglio nell'ordine della compagnia (travolgimento e colpo ad area)
         function heroesNextTo(target) {
@@ -415,25 +445,86 @@
             return [stato.party[idx - 1], stato.party[idx + 1]].filter(h => h && h.hp > 0);
         }
 
-        // Bersaglio dello schema "predatore": l'eroe vivo con meno HP + armatura (a parità, il primo)
+        // Bersaglio "piu_debole" (Predatore): l'eroe vivo con meno HP + armatura (a parità, il primo)
         function predatorTarget() {
             const alive = stato.party.filter(h => h.hp > 0);
             return alive.reduce((best, h) => (!best || h.hp + h.current_armor < best.hp + best.current_armor) ? h : best, null);
         }
 
-        // Colpo con travolgimento: il bersaglio subisce il colpo intero, gli eroi accanto 1 danno
-        function monsterStrikeWithSplash(enemy, target) {
-            const events = resolveMonsterAttack(enemy, target).events;
-            heroesNextTo(target).forEach(n => {
+        // Bersaglio "piu_forte": l'eroe vivo con più HP + armatura (a parità, il primo)
+        function strongestTarget() {
+            const alive = stato.party.filter(h => h.hp > 0);
+            return alive.reduce((best, h) => (!best || h.hp + h.current_armor > best.hp + best.current_armor) ? h : best, null);
+        }
+
+        // Colpo del nemico: pieno al bersaglio (opts.dmg = danno diverso da quello del nemico) e opts.vicini
+        // danni agli eroi accanto. Ritorna gli eventi e gli HP tolti in tutto (Sete di sangue).
+        function monsterStrike(enemy, target, opts = {}) {
+            const first = resolveMonsterAttack(enemy, target, opts.dmg != null ? { dmg: opts.dmg } : {});
+            const events = first.events;
+            let hpDamage = first.hpDamage;
+            if (opts.vicini) heroesNextTo(target).forEach(n => {
                 events.push({ type: 'splash', text: `Travolto anche ${n.name}!` });
-                events.push(...resolveMonsterAttack(enemy, n, { dmg: 1, splash: true }).events);
+                const res = resolveMonsterAttack(enemy, n, { dmg: opts.vicini, splash: true });
+                events.push(...res.events);
+                hpDamage += res.hpDamage;
             });
+            return { events, hpDamage };
+        }
+
+        // Parte "subito" di un'azione: statistiche del nemico, cura, nuovo modo di attaccare, malus, stordimento, armature
+        function applyEliteAction(enemy, a, attacker) {
+            const events = [];
+            const info = text => events.push({ type: 'phase_info', text });
+            [['bonusDanno', 'dmg', 'danno'], ['bonusAttacco', 'att', 'Attacco'], ['bonusCA', 'ca', 'CA']].forEach(([k, stat, label]) => {
+                if (!a[k]) return;
+                enemy[stat] = Math.max(0, enemy[stat] + a[k]);
+                info(`${enemy.name}: ${a[k] > 0 ? '+' : ''}${a[k]} ${label}.`);
+            });
+            if (a.cura && enemy.hp < enemy.maxHp) {
+                const before = enemy.hp;
+                enemy.hp = Math.min(enemy.maxHp, enemy.hp + a.cura);
+                info(`${enemy.name} recupera ${enemy.hp - before} HP.`);
+            }
+            if (a.turno) {
+                enemy.schema = a.id || a.name;
+                enemy.turnoAzione = a;
+                enemy.charging = !!a.turnoPreparazione;  // già pronta: al primo turno dopo la soglia colpisce subito
+                info(`Nuovo schema d'attacco: ${a.desc || a.name}.`);
+            }
+            if (a.malus) {
+                const rounds = a.malusRound || 1;
+                stato.party.filter(h => h.hp > 0).forEach(h => {
+                    if (a.resisteFede && (h.fth || 0) >= a.resisteFede) { info(`${h.name} resiste grazie alla Fede.`); return; }
+                    scheduleTempBuff(h, { stat: 'att_bonus', val: -a.malus, name: a.name || 'Malus del nemico', rounds });
+                    info(`${h.name} è scosso: -${a.malus} al tiro per colpire ${rounds > 1 ? `per ${rounds} turni` : 'nel prossimo turno'}.`);
+                });
+            }
+            if (a.spezzaArmatura) eliteTargets(a.spezzaArmatura, attacker).forEach(h => {
+                if (h.current_armor > 0) { h.current_armor = 0; info(`L'armatura di ${h.name} va in pezzi!`); }
+            });
+            if (a.stordisce) eliteTargets(a.stordisce, attacker).forEach(h => {
+                h.stunnedRounds = Math.max(h.stunnedRounds || 0, 1);
+                info(`💫 ${h.name} è stordito: salterà il prossimo turno.`);
+            });
+            return events;
+        }
+
+        // Attacco in risposta di un'azione ("colpo"): subito, fuori dal turno del nemico
+        function eliteReaction(enemy, a, attacker) {
+            if (enemy.isStunned) return [{ type: 'phase_info', text: `${enemy.name} è stordito: non riesce a rispondere al colpo.` }];
+            const targets = eliteTargets(a.colpo, attacker);
+            if (!targets.length) return [];
+            const events = [{ type: 'reaction', text: `⚔️ ${enemy.name} risponde al colpo e si scaglia contro ${targets.length > 1 ? 'tutta la compagnia' : targets[0].name}!` }];
+            // "Dente per dente" guarda solo il turno del nemico: la reazione non cambia l'ultimo colpo subito
+            const lastHits = stato.party.map(h => [h.lastHitRound, h.lastHitDamage]);
+            targets.forEach(h => { if (h.hp > 0) events.push(...monsterStrike(enemy, h, { dmg: a.colpoDanno, vicini: a.colpoVicini }).events); });
+            stato.party.forEach((h, i) => { [h.lastHitRound, h.lastHitDamage] = lastHits[i]; });
             return events;
         }
 
         // Controlla le soglie dopo un colpo dell'eroe "attacker". Applica le fasi scattate e ritorna gli eventi
         // (type 'phase' con il testo della fase, poi le informazioni e i colpi) per diario e interfaccia.
-        // La reazione è un attacco in risposta: colpisce subito chi ha fatto scattare la soglia.
         function checkEnemyPhases(enemy, attacker) {
             const events = [];
             const fasi = enemy.fasi || [];
@@ -444,49 +535,100 @@
                 if (enemy.hp > Math.floor(enemy.maxHp * f.soglia / 100)) return;
                 enemy.fasiFatte.push(i);
                 events.push({ type: 'phase', text: f.testo || `${enemy.name} cambia atteggiamento!` });
-                if (f.bonusDanno) { enemy.dmg += f.bonusDanno; events.push({ type: 'phase_info', text: `${enemy.name}: +${f.bonusDanno} danno.` }); }
-                // la carica della fase è già pronta: al primo turno del nemico travolge subito, poi alterna
-                if (f.schema) { enemy.schema = f.schema; enemy.charging = f.schema === 'carica'; events.push({ type: 'phase_info', text: `Nuovo schema d'attacco: ${ENEMY_SCHEMES[f.schema] || f.schema}.` }); }
-                if (f.ruggito) {
-                    stato.party.filter(h => h.hp > 0).forEach(h => {
-                        if ((h.fth || 0) >= (f.ruggito.fedeMin || 99)) { events.push({ type: 'phase_info', text: `${h.name} resiste al ruggito grazie alla Fede.` }); return; }
-                        scheduleTempBuff(h, { stat: 'att_bonus', val: -(f.ruggito.malus || 1), name: 'Ruggito primordiale', rounds: 1 });
-                        events.push({ type: 'phase_info', text: `${h.name} è scosso: -${f.ruggito.malus || 1} al tiro per colpire nel prossimo turno.` });
-                    });
-                }
-                if (f.reazione && attacker && attacker.hp > 0) {
-                    events.push({ type: 'reaction', text: `⚔️ ${enemy.name} risponde al colpo e si scaglia contro ${attacker.name}!` });
-                    events.push(...(f.reazione === 'colpo_area' ? monsterStrikeWithSplash(enemy, attacker) : resolveMonsterAttack(enemy, attacker).events));
-                }
+                const azioni = phaseActions(f);
+                azioni.forEach(a => events.push(...applyEliteAction(enemy, a, attacker)));
+                // Gli attacchi in risposta per ultimi: usano il danno già aumentato dalla fase
+                azioni.filter(a => a.colpo).forEach(a => events.push(...eliteReaction(enemy, a, attacker)));
             });
             return events;
         }
 
-        // Turno del nemico secondo il suo schema. chosenTarget = bersaglio scelto dal giocatore (o dal simulatore).
-        // Ritorna { events, attacked, target }. "attacked" è falso nel turno in cui carica.
+        // Modo di attaccare attuale del nemico (azione con "turno"), {} = attacco normale al bersaglio scelto
+        function enemyTurnRule(enemy) {
+            return (enemy && (enemy.turnoAzione || eliteAction(enemy.schema))) || {};
+        }
+
+        // Turno di preparazione (Carica): questo turno non attacca
+        function enemyIsPreparing(enemy) {
+            return !!enemyTurnRule(enemy).turnoPreparazione && !enemy.charging;
+        }
+
+        // Bersaglio che il nemico sceglie da solo al suo turno; null = lo sceglie il giocatore (o colpisce tutti)
+        function enemyChosenTarget(enemy) {
+            const mode = enemyTurnRule(enemy).turnoBersaglio;
+            if (!mode || mode === 'scelto' || mode === 'tutti') return null;
+            return eliteTargets(mode)[0] || null;
+        }
+
+        function preparationText(enemy) {
+            const r = enemyTurnRule(enemy);
+            return (r.turnoTestoPreparazione || '{nemico} si prepara: al prossimo turno colpirà con tutta la sua forza!').replace(/\{nemico\}/g, enemy.name);
+        }
+
+        // Turno del nemico secondo il suo modo di attaccare. chosenTarget = bersaglio scelto dal giocatore (o dal simulatore).
+        // Ritorna { events, attacked, target }. "attacked" è falso nel turno in cui si prepara.
         function resolveEnemyTurn(enemy, chosenTarget) {
             const events = [];
-            if (enemy.schema === 'furia') {
-                enemy.dmg += 1;
+            const r = enemyTurnRule(enemy);
+            if (r.turnoCrescitaDanno) {
+                enemy.dmg += r.turnoCrescitaDanno;
                 events.push({ type: 'fury', text: `${enemy.name} è sempre più furioso: ora fa ${enemy.dmg} danni.` });
             }
-            if (enemy.schema === 'carica' && !enemy.charging) {
+            if (r.turnoRigenera && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
+                const before = enemy.hp;
+                enemy.hp = Math.min(enemy.maxHp, enemy.hp + r.turnoRigenera);
+                events.push({ type: 'regen', text: `${enemy.name} rigenera ${enemy.hp - before} HP.` });
+            }
+            if (r.turnoPreparazione && !enemy.charging) {
                 enemy.charging = true;
-                events.push({ type: 'charge', text: `${enemy.name} raspa il terreno: al prossimo turno travolgerà la compagnia!` });
+                events.push({ type: 'charge', text: preparationText(enemy) });
                 return { events, attacked: false, target: null };
             }
-            // Predatore: il bersaglio annunciato a inizio turno (announcedPrey), se è ancora in piedi
+            enemy.charging = false;
+            if (r.turnoAura) {
+                events.push({ type: 'aura', text: `${enemy.name}: ${r.turnoAura} ${r.turnoAura === 1 ? 'danno' : 'danni'} a tutta la compagnia!` });
+                stato.party.filter(h => h.hp > 0).forEach(h => events.push(...resolveMonsterAttack(enemy, h, { dmg: r.turnoAura, splash: true }).events));
+            }
+            const mode = r.turnoBersaglio || 'scelto';
+            // Bersaglio scelto dal nemico: quello annunciato a inizio turno (announcedPrey), se è ancora in piedi
             const announced = enemy.announcedPrey && stato.party.find(h => h.name === enemy.announcedPrey && h.hp > 0);
             enemy.announcedPrey = null;
-            const target = enemy.schema === 'predatore' ? (announced || predatorTarget()) : chosenTarget;
-            if (!target) return { events, attacked: false, target: null };
-            if (enemy.schema === 'carica' || enemy.schema === 'travolge') {
-                enemy.charging = false;
-                events.push(...monsterStrikeWithSplash(enemy, target));
-            } else {
-                events.push(...resolveMonsterAttack(enemy, target).events);
+            let targets;
+            if (mode === 'tutti') targets = stato.party.filter(h => h.hp > 0);
+            else if (mode === 'scelto') targets = chosenTarget && chosenTarget.hp > 0 ? [chosenTarget] : (chosenTarget ? eliteTargets('piu_debole') : []);
+            else targets = announced ? [announced] : eliteTargets(mode);
+            if (!targets.length) return { events, attacked: !!r.turnoAura, target: null };
+
+            let hpTaken = 0;
+            const colpi = Math.max(1, r.turnoColpi || 1);
+            for (let c = 0; c < colpi; c++) {
+                const alive = targets.filter(t => t.hp > 0);
+                if (!alive.length) break;
+                if (c > 0) events.push({ type: 'extra_strike', text: `${enemy.name} colpisce ancora!` });
+                alive.forEach(t => {
+                    const res = monsterStrike(enemy, t, { dmg: r.turnoDanno, vicini: r.turnoVicini });
+                    events.push(...res.events);
+                    hpTaken += res.hpDamage;
+                });
             }
-            return { events, attacked: true, target };
+            if (r.turnoRubaVita && hpTaken > 0 && enemy.hp < enemy.maxHp) {
+                const before = enemy.hp;
+                enemy.hp = Math.min(enemy.maxHp, enemy.hp + hpTaken);
+                events.push({ type: 'lifesteal', text: `🩸 ${enemy.name} si nutre del sangue versato: +${enemy.hp - before} HP.` });
+            }
+            return { events, attacked: true, target: targets[0] };
+        }
+
+        // Eroi storditi da un'azione speciale (stordisce): a inizio round saltano il turno.
+        // Usata dal gioco (startHeroesTurnCycle) e dal simulatore; ritorna chi salta il turno
+        function applyHeroStuns() {
+            return stato.party.filter(h => {
+                if (!(h.stunnedRounds > 0)) return false;
+                h.stunnedRounds--;
+                if (h.hp <= 0) return false;
+                h.hasActed = true;
+                return true;
+            });
         }
 
         function startCombat(enemyKey) {
@@ -508,21 +650,21 @@
 
             expireTempBuffs(true);  // per sicurezza: nessun potenziamento rimasto da uno scontro precedente
             stato.party.forEach(h => {
-                if(h.hp > 0) {
-                    h.current_armor = h.base_armor;
-                    h.abilityUsedThisCombat = false;
-                } else {
-                    h.current_armor = 0;
-                }
+                // Anche chi è a terra: se viene rianimato durante lo scontro ha l'abilità disponibile
+                h.abilityUsedThisCombat = false;
+                h.current_armor = h.hp > 0 ? h.base_armor : 0;
                 delete h.lastHitRound;
                 delete h.lastHitDamage;
+                delete h.stunnedRounds;
             });
+            const blessed = applyCombatBlessings();
             fxResyncHeroes();
             stato.combatRound = 0;
             impostaAzione(document.getElementById('combatNextBtn'), 'proceedCombatPhase');  // nessun 'Avanti' rimasto da uno scontro precedente
             document.getElementById('combatLootBtn').classList.remove('btn-attention');
 
             document.getElementById('combatLog').innerHTML = `Combatti contro ${stato.activeEnemy.name}! (Armature e Abilità ripristinate)<br>`;
+            blessed.forEach(({ hero, b }) => logCombat(`🙏 ${hero.name}: ${b.name} (${b.desc.charAt(0).toLowerCase()}${b.desc.slice(1)})`));
             startHeroesTurnCycle();
         }
 
@@ -548,7 +690,7 @@
                 <div class="enemy-head">
                     <div class="icon-frame enemy-emblem">${svgIcon('skull')}</div>
                     <div class="enemy-main">
-                        <div class="enemy-name" data-tip="${esc(enemyPhasesTip(stato.activeEnemy))}">${stato.activeEnemy.name}${stunBadge}${stato.activeEnemy.schema ? `<span class="stun-badge phase-badge">${esc({ carica: 'Carica', travolge: 'Travolge', predatore: 'Predatore', furia: 'Furia' }[stato.activeEnemy.schema] || stato.activeEnemy.schema)}</span>` : ''}</div>
+                        <div class="enemy-name" data-tip="${esc(enemyPhasesTip(stato.activeEnemy))}">${stato.activeEnemy.name}${stunBadge}${stato.activeEnemy.schema ? `<span class="stun-badge phase-badge">${esc(enemyTurnRule(stato.activeEnemy).name || stato.activeEnemy.schema)}</span>` : ''}</div>
                         <div class="hp-bar-container big" id="enemyHpBar">
                             ${barGhostHtml(`enemy:${stato.activeEnemy.name}`, hpPercent, Math.max(0, stato.activeEnemy.hp))}
                             <div class="hp-bar-fill ${hpClass(hpPercent)}" style="width: ${hpPercent}%;"></div>
@@ -577,38 +719,51 @@
         // Tooltip del nome del nemico: schema attuale e fasi (fatte e da venire)
         function enemyPhasesTip(enemy) {
             const lines = [];
-            if (enemy.schema) lines.push(`<b>Ora:</b> ${ENEMY_SCHEMES[enemy.schema] || enemy.schema}`);
+            if (enemy.schema) { const r = enemyTurnRule(enemy); lines.push(`<b>Ora:</b> ${r.desc || r.name || enemy.schema}`); }
             (enemy.fasi || []).forEach((f, i) => {
                 const fatta = (enemy.fasiFatte || []).includes(i);
-                const parti = [];
-                if (f.reazione) parti.push(ENEMY_REACTIONS[f.reazione] || f.reazione);
-                if (f.bonusDanno) parti.push(`+${f.bonusDanno} danno`);
-                if (f.schema) parti.push(ENEMY_SCHEMES[f.schema] || f.schema);
-                if (f.ruggito) parti.push(`ruggito: -${f.ruggito.malus || 1} al tiro nel turno dopo (non per chi ha Fede ${f.ruggito.fedeMin}+)`);
-                lines.push(`${fatta ? '✓' : '◆'} Al ${f.soglia}% di vita: ${parti.join('; ')}`);
+                const parti = phaseActions(f).map(a => a.name ? `<b>${esc(a.name)}</b>${a.desc ? ': ' + esc(a.desc) : ''}` : esc(a.desc || ''));
+                lines.push(`${fatta ? '✓' : '◆'} Al ${f.soglia}% di vita: ${parti.join('; ') || 'cambia atteggiamento'}`);
             });
             return `${enemy.name}||${lines.length ? lines.join('<br>') : 'Nessuna fase particolare.'}`;
         }
 
-        // Intenzione del nemico: cosa farà al suo turno (secondo il suo schema d'attacco)
+        // Testo dell'intenzione, composto dal modo di attaccare attuale (enemyTurnRule)
+        function enemyIntentText(enemy) {
+            const r = enemyTurnRule(enemy);
+            if (enemyIsPreparing(enemy)) return 'Si prepara: questo turno non attacca, il prossimo colpirà';
+            const base = r.turnoDanno != null ? r.turnoDanno : enemy.dmg;
+            const dmg = base + (hasCurse('presagio_di_morte') ? 1 : 0) + (r.turnoCrescitaDanno || 0);
+            const danni = `<b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b>`;
+            const mode = r.turnoBersaglio || 'scelto';
+            const preda = mode === 'piu_debole' || mode === 'piu_forte' ? eliteTargets(mode)[0] : null;
+            const chi = mode === 'tutti' ? 'tutta la compagnia'
+                : mode === 'casuale' ? 'un eroe a caso'
+                : mode === 'piu_debole' ? `${preda ? `<b>${esc(preda.name)}</b>` : 'il più debole'} (meno HP + armatura)`
+                : mode === 'piu_forte' ? `${preda ? `<b>${esc(preda.name)}</b>` : 'il più forte'} (più HP + armatura)`
+                : 'il bersaglio';
+            const parti = [];
+            if (r.turnoRigenera) parti.push(`Rigenera ${r.turnoRigenera} HP`);
+            if (r.turnoAura) parti.push(`fa ${r.turnoAura} ${r.turnoAura === 1 ? 'danno' : 'danni'} a tutti`);
+            let colpo = `${r.turnoVicini ? 'Travolgerà' : 'Attaccherà'} ${chi} per ${danni}`;
+            if ((r.turnoColpi || 1) > 1) colpo += `, ${r.turnoColpi} volte`;
+            if (r.turnoVicini) colpo += ` e farà ${r.turnoVicini} ${r.turnoVicini === 1 ? 'danno' : 'danni'} agli eroi accanto`;
+            parti.push(parti.length ? colpo.charAt(0).toLowerCase() + colpo.slice(1) : colpo);
+            let testo = parti.join(', poi ');
+            if (r.turnoCrescitaDanno) testo += ` (+${r.turnoCrescitaDanno} a ogni turno)`;
+            if (r.turnoRubaVita) testo += '; si cura dei danni inflitti';
+            return testo;
+        }
+
+        // Intenzione del nemico: cosa farà al suo turno (secondo il suo modo di attaccare)
         function enemyIntentHtml(enemy) {
             if (!enemy || enemy.hp <= 0) return '';
             if (enemy.isStunned) {
                 return `<span class="intent-icon stunned">${svgIcon('skull')}</span>
                     <span class="intent-text"><small>Intenzione</small><span>Stordito: salta il prossimo attacco</span></span>`;
             }
-            const dmg = enemy.dmg + (hasCurse('presagio_di_morte') ? 1 : 0) + (enemy.schema === 'furia' ? 1 : 0);
-            const danni = `<b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b>`;
-            let cosa = `Attaccherà per ${danni}`;
-            if (enemy.schema === 'carica') cosa = enemy.charging
-                ? `Travolgerà il bersaglio per ${danni} e farà 1 danno agli eroi accanto`
-                : 'Raspa il terreno: questo turno non attacca, il prossimo travolgerà';
-            else if (enemy.schema === 'travolge') cosa = `Travolgerà il bersaglio per ${danni} e farà 1 danno agli eroi accanto`;
-            else if (enemy.schema === 'predatore') {
-                const preda = predatorTarget();
-                cosa = `Punta ${preda ? `<b>${esc(preda.name)}</b>` : 'il più debole'} (meno HP + armatura) per ${danni}`;
-            } else if (enemy.schema === 'furia') cosa = `In furia: attaccherà per ${danni} (+1 a ogni turno)`;
-            return `<span class="intent-icon ${enemy.schema === 'carica' && !enemy.charging ? 'stunned' : ''}">${svgIcon('sword')}</span>
+            const cosa = enemyIntentText(enemy);
+            return `<span class="intent-icon ${enemyIsPreparing(enemy) ? 'stunned' : ''}">${svgIcon('sword')}</span>
                 <span class="intent-text"><small>Intenzione</small><span>${cosa}</span>
                 <em>Difendi e Aiuta devono arrivare a ${enemy.att}</em></span>`;
         }
@@ -655,6 +810,7 @@
         function startHeroesTurnCycle() {
             // Anche i caduti: se una pozione li rialza in questo round possono agire
             stato.party.forEach(h => { h.hasActed = false; });
+            applyHeroStuns().forEach(h => logCombat(`💫 ${h.name} è stordito e salta il turno.`));
             stato.combatRound++;
             stato.helpDmgBonus = 0;  // il danno in più di un Aiuta (helpDmgBonus) vale solo nel round
             expireTempBuffs().forEach(({ hero, buff }) => logCombat(`⌛ Finisce l'effetto di ${buff.name} su ${hero.name}.`));
@@ -967,6 +1123,8 @@
         function executeCombatHeroRoll(externalRolls) {
             const rollBtn = document.getElementById('rollCombatBtn');
             if (rollBtn.disabled) return;
+            // Un tiro arrivato in ritardo dal telefono dopo "Indietro" o "Cambia eroe", o a scontro finito
+            if (!currentActiveHero || !chosenAction || currentActiveHero.hasActed || currentActiveHero.hp <= 0 || !stato.activeEnemy || stato.activeEnemy.hp <= 0) return;
 
             const diceBox = document.getElementById('diceCombat');
             const diceBox2 = document.getElementById('diceCombat2');
@@ -1151,11 +1309,12 @@
             }
 
             const enemy = stato.activeEnemy;
-            // Schema "carica", turno di preparazione: niente bersaglio da scegliere, si passa oltre
-            if (enemy.schema === 'carica' && !enemy.charging) {
+            // Turno di preparazione (Carica): niente bersaglio da scegliere, si passa oltre
+            if (enemyIsPreparing(enemy)) {
                 const res = resolveEnemyTurn(enemy, null);
                 res.events.forEach(ev => logCombat(ev.text));
-                document.getElementById('monsterTurnText').textContent = `${enemy.name} raspa il terreno: il prossimo turno travolgerà!`;
+                updatePartyStatusBars();
+                document.getElementById('monsterTurnText').textContent = preparationText(enemy);
                 updateEnemyInfoUI();
                 document.getElementById('monsterTargetArea').classList.add('hidden');
                 document.getElementById('combatNextBtn').classList.remove('hidden');
@@ -1166,18 +1325,26 @@
             document.getElementById('monsterTargetArea').classList.remove('hidden');
             document.getElementById('monsterTurnText').textContent = `Turno di ${enemy.name}!`;
             const select = document.getElementById('monsterTargetSelect');
-            // Schema "predatore": il bersaglio lo sceglie il nemico (l'eroe con meno HP + armatura)
-            const preda = enemy.schema === 'predatore' ? predatorTarget() : null;
+            // Bersaglio scelto dal nemico (più debole, più forte, a caso) o tutta la compagnia
+            const mode = enemyTurnRule(enemy).turnoBersaglio || 'scelto';
+            const preda = enemyChosenTarget(enemy);
             if (preda) enemy.announcedPrey = preda.name;  // resolveEnemyTurn colpisce lui
+            if (mode === 'tutti') {
+                select.innerHTML = '<option value="">Tutta la compagnia</option>';
+                select.disabled = true;
+                document.getElementById('monsterTurnText').textContent = `${enemy.name} si scaglia contro tutta la compagnia!`;
+                return;
+            }
             const candidati = preda ? [preda] : stato.party.filter(p => p.hp > 0);
             select.innerHTML = candidati.map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
             select.disabled = !!preda;
-            if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, il più debole!`;
+            const perche = { piu_debole: 'il più debole', piu_forte: 'il più forte', casuale: 'scelto a caso' }[mode];
+            if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, ${perche}!`;
         }
 
         function executeMonsterAttack() {
             const target = stato.party.find(p => p.name === document.getElementById('monsterTargetSelect').value);
-            logCombat(`--- ${stato.activeEnemy.name} attacca ${target.name}! ---`);
+            logCombat(`--- ${stato.activeEnemy.name} attacca ${target ? target.name : 'tutta la compagnia'}! ---`);
             playEnemySfx('sfxAttack');
 
             const result = resolveEnemyTurn(stato.activeEnemy, target);

@@ -5,6 +5,46 @@
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.abilita = {
+    "runa_rinascita": {
+        "id": "runa_rinascita",
+        "name": "Runa della Rinascita",
+        "desc": "Runa: la prima volta che andrebbe a 0 HP torna con 2 HP (una volta per campagna)",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "tenacityRevive", "val": 2 }
+        ],
+        "icon": "immagini/icone/BTNAnkh.png"
+    },
+    "runa_guarigione": {
+        "id": "runa_guarigione",
+        "name": "Runa della Guarigione",
+        "desc": "Runa: dopo ogni scontro vinto cura di 1 HP l'eroe vivo più ferito",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "postCombatHeal", "val": 1 }
+        ],
+        "icon": "immagini/icone/BTNHeal.png"
+    },
+    "runa_sapere": {
+        "id": "runa_sapere",
+        "name": "Runa del Sapere",
+        "desc": "Runa: una prova fallita si ritenta una volta, con -1 al tiro",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "challengeRerollMalus", "val": 1 }
+        ],
+        "icon": "immagini/icone/BTNTomeOfIntelligence.png"
+    },
+    "runa_vento": {
+        "id": "runa_vento",
+        "name": "Runa del Vento",
+        "desc": "Runa: senza armatura, quando viene colpita tira un d6: con 4 o più il colpo è ignorato",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "dodgeNoArmor", "val": 4 }
+        ],
+        "icon": "immagini/icone/BTNEvasion.png"
+    },
     "bonus_forza": {
         "id": "bonus_forza",
         "name": "+1 Forza",

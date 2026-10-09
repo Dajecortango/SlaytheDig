@@ -125,10 +125,18 @@ function validateCampaign() {
             if (!Array.isArray(e.fasi)) add('error', `Bestiario <b>${k}</b>: "fasi" deve essere un elenco`, 'bestiario', k);
             else e.fasi.forEach((f, i) => {
                 if (typeof f.soglia !== 'number') add('error', `Bestiario <b>${k}</b>: fase ${i + 1} senza "soglia" numerica`, 'bestiario', k);
-                if (f.schema && !ENEMY_PHASE_SCHEMES.includes(f.schema)) add('error', `Bestiario <b>${k}</b>: fase ${i + 1}, schema "${esc(f.schema)}" sconosciuto (${ENEMY_PHASE_SCHEMES.join(', ')})`, 'bestiario', k);
-                if (f.reazione && !ENEMY_PHASE_REACTIONS.includes(f.reazione)) add('error', `Bestiario <b>${k}</b>: fase ${i + 1}, reazione "${esc(f.reazione)}" sconosciuta (${ENEMY_PHASE_REACTIONS.join(', ')})`, 'bestiario', k);
+                [...(f.azioni || []), f.schema, f.reazione].filter(ref => typeof ref === 'string').forEach(ref => {
+                    if (!lib.azioni_elite[ref]) add('error', `Elite <b>${k}</b>: soglia ${i + 1}, azione "${esc(ref)}" non trovata in Azioni elite`, 'elite', k);
+                });
+                if (!(f.azioni || []).length && !f.schema && !f.reazione && !f.bonusDanno && !f.ruggito) add('warn', `Elite <b>${k}</b>: la soglia ${i + 1} (${f.soglia}%) non ha azioni`, 'elite', k);
             });
         }
+    });
+    Object.entries(lib.azioni_elite || {}).forEach(([k, a]) => {
+        if (!a.name) add('warn', `Azione elite <b>${k}</b>: nome mancante`, 'azioni_elite', k);
+        ['colpo', 'stordisce', 'spezzaArmatura'].forEach(f => { if (a[f] && !ELITE_TARGETS[a[f]]) add('error', `Azione elite <b>${k}</b>: bersaglio "${esc(a[f])}" sconosciuto in ${f}`, 'azioni_elite', k); });
+        if (a.turno && a.turnoBersaglio && !ELITE_TURN_TARGETS[a.turnoBersaglio]) add('error', `Azione elite <b>${k}</b>: bersaglio del turno "${esc(a.turnoBersaglio)}" sconosciuto`, 'azioni_elite', k);
+        if (describeEliteAction(a) === 'nessun effetto') add('warn', `Azione elite <b>${k}</b>: non fa niente`, 'azioni_elite', k);
     });
     Object.entries(lib.armeria).forEach(([k, it]) => {
         if (it.id !== k) add('error', `Armeria <b>${k}</b>: il campo id ("${esc(it.id)}") deve coincidere con la chiave`, 'armeria', k);

@@ -409,6 +409,16 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // Un telefono scambia una runa equipaggiata durante un riposo (il gioco controlla che si possa)
+    if (pathname === '/api/rune-swap' && req.method === 'POST') {
+        readJsonBody(req, (err, data) => {
+            if (err || !data.heroName || !data.out || !data.into) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            broadcast('rune-swap', { heroName: data.heroName, out: data.out, into: data.into });
+            sendJson(res, 200, { ok: true });
+        });
+        return;
+    }
+
     if (pathname === '/api/events') {
         res.writeHead(200, {
             'Content-Type': 'text/event-stream',

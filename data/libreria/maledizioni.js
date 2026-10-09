@@ -94,5 +94,90 @@ window.LIBRERIA.maledizioni = {
             { "effect": "add_curse", "text": "Ombra sul Cuore (-1 Fede)" },
             { "effect": "party_stat", "stat": "fth", "val": -1 }
         ]
+    },
+    "morsa_assiderante": {
+        "type": "curse",
+        "name": "Morsa Assiderante",
+        "desc": "-1 Forza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Morsa Assiderante (-1 Forza)" },
+            { "effect": "party_stat", "stat": "str", "val": -1 }
+        ]
+    },
+    "gelo_spirituale": {
+        "type": "curse",
+        "name": "Gelo Spirituale",
+        "desc": "-1 Fede a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Gelo Spirituale (-1 Fede)" },
+            { "effect": "party_stat", "stat": "fth", "val": -1 }
+        ]
+    },
+    "vertigine_lacerante": {
+        "type": "curse",
+        "name": "Vertigine Lacerante",
+        "desc": "-1 ai tiri per colpire",
+        "effects": [
+            { "effect": "add_curse", "text": "Vertigine Lacerante (-1 tiri per colpire)" },
+            { "effect": "party_stat", "stat": "att_penalty", "val": 1 }
+        ]
+    },
+    "paranoia_dell_ombra": {
+        "type": "curse",
+        "name": "Paranoia dell'Ombra",
+        "desc": "1 danno a tutti e -1 Intelligenza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Paranoia dell'Ombra (-1 Int)" },
+            { "effect": "party_damage", "val": 1 },
+            { "effect": "party_stat", "stat": "int", "val": -1 }
+        ]
+    },
+    "maledizione_dell_ignoranza": {
+        "type": "curse",
+        "name": "Maledizione dell'Ignoranza",
+        "desc": "-1 Intelligenza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Maledizione dell'Ignoranza (-1 Int)" },
+            { "effect": "party_stat", "stat": "int", "val": -1 }
+        ]
+    },
+    "anima_bruciata": {
+        "type": "curse",
+        "name": "Anima Bruciata",
+        "desc": "1 danno a tutti e -1 Fede a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Anima Bruciata (-1 Fede)" },
+            { "effect": "party_damage", "val": 1 },
+            { "effect": "party_stat", "stat": "fth", "val": -1 }
+        ]
+    },
+    "terrore_riflesso": {
+        "type": "curse",
+        "name": "Terrore Riflesso",
+        "desc": "-1 Fede e -1 Intelligenza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Terrore Riflesso (-1 Fede, -1 Int)" },
+            { "effect": "party_stat", "stat": "fth", "val": -1 },
+            { "effect": "party_stat", "stat": "int", "val": -1 }
+        ]
+    },
+    "venti_sferzanti": {
+        "type": "curse",
+        "name": "Venti Sferzanti",
+        "desc": "1 danno a tutti e -10 monete",
+        "effects": [
+            { "effect": "add_curse", "text": "Venti Sferzanti (risorse perdute)" },
+            { "effect": "party_damage", "val": 1 },
+            { "effect": "coins", "val": -10 }
+        ]
+    },
+    "maledizione_congelante": {
+        "type": "curse",
+        "name": "Maledizione Congelante",
+        "desc": "-1 Forza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Maledizione Congelante (-1 Forza)" },
+            { "effect": "party_stat", "stat": "str", "val": -1 }
+        ]
     }
 };

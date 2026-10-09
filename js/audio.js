@@ -137,6 +137,8 @@
             else if (currentAudioScreen === 'screenMerchant') setMusic(MERCHANT_THEME);
             else if (TREASURE_SCREENS.includes(currentAudioScreen)) setMusic(TREASURE_THEME);
             else if (currentAudioScreen === 'screenMap') { setMusic(MAP_THEME); preloadNextThemes(); }
+            // I nodi di trama sono solo racconto: continua il tema della mappa
+            else if (currentAudioScreen === 'screenStory') setMusic(MAP_THEME);
             else setMusic(null);
         }
 

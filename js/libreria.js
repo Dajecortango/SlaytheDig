@@ -18,7 +18,7 @@
    ========================================================================== */
 
 window.LIBRERIA = window.LIBRERIA || {};
-['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita'].forEach(k => { window.LIBRERIA[k] = window.LIBRERIA[k] || {}; });
+['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite'].forEach(k => { window.LIBRERIA[k] = window.LIBRERIA[k] || {}; });
 window.LIBRERIA.lootPredefinito = window.LIBRERIA.lootPredefinito || [];
 
 // Restituisce una copia della campagna con i riferimenti sostituiti dagli elementi della libreria.

@@ -129,10 +129,9 @@
 
             // Reliquia: Dente del grande lupo
             if (hasRelic('dente_del_grande_lupo')) {
-                let lowestHero = stato.party.filter(h => h.hp > 0).reduce((prev, curr) => prev.hp < curr.hp ? prev : curr);
-                if (lowestHero && lowestHero.hp < lowestHero.maxHp) {
-                    healHero(lowestHero, 1);
-                }
+                // Il vivo con meno HP tra i feriti (chi è già al massimo non conta)
+                const wounded = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp);
+                if (wounded.length) healHero(wounded.reduce((prev, curr) => prev.hp <= curr.hp ? prev : curr), 1);
             }
 
             battleSurgeonHeal().forEach(({ healer, hero, gained }) =>

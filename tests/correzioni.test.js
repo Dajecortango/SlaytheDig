@@ -48,7 +48,7 @@ module.exports = (t, carica) => {
         t.ok(g.resolveChallenge(stato.party[0], sfida, [2]).isFinal);
         g.finishLostFinal();
         t.uguale('screenDefeat', g.eval('currentScreenId'));
-        t.ok(stato.stsMapNodes[1].done);
+        t.ok(!stato.stsMapNodes[1].done && !stato.stsMapNodes[1].active, 'il finale perso non conta come superato');
         stato.currentNodeId = 0;
         t.ok(!g.resolveChallenge(stato.party[0], sfida, [2]).isFinal, 'nodo intermedio');
     });

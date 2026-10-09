@@ -65,4 +65,6 @@ function previewAbility(a) {
 }
 
 const previewSimple = o => previewTipHtml(esc(o.name || '(senza nome)'), o.desc ? [esc(o.desc)] : []);
-const PREVIEWS = { armeria: previewItem, abilita: previewAbility, reliquie: previewSimple, maledizioni: previewSimple };
+// Azione degli elite: come appare nel tooltip del nome del nemico
+const previewEliteAction = a => previewTipHtml(esc(a.name || '(senza nome)'), [a.desc ? esc(a.desc) : '', esc(describeEliteAction(a))].filter(Boolean));
+const PREVIEWS = { armeria: previewItem, abilita: previewAbility, reliquie: previewSimple, maledizioni: previewSimple, azioni_elite: previewEliteAction };

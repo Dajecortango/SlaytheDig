@@ -20,7 +20,7 @@
    Tipi di nodo e definizione dei campi di ogni modulo: generale, eroi, abilità,
    oggetti, nemici, reliquie, maledizioni, sfide, nodi della mappa, testi.
    Primo file dell'editor; dopo di lui, in quest'ordine: stato.js, progetto.js, moduli.js,
-   anteprime.js, raccolte.js, campagna.js, mappa.js, controlli.js, avvio.js (ultimo).
+   anteprime.js, raccolte.js, campagna.js, mappa.js, elite.js, controlli.js, avvio.js (ultimo).
    Parte dell'editor (js/editor/): stesso ambito globale, <script> classici in editor.html.
    ========================================================================== */
 
@@ -71,6 +71,11 @@ const HERO_FIELDS = [
 const HERO_LIB_FIELDS = [...HERO_FIELDS, {
     k: 'abilities', label: 'Abilità tra cui scegliere', type: 'reflist', lib: 'abilita', wide: true,
     help: 'Il giocatore ne sceglie una quando recluta l\'eroe. Le abilità si creano e si modificano nella scheda Abilità.'
+}, {
+    k: 'runeOptions', label: 'Rune tra cui scegliere', type: 'reflist', lib: 'abilita', wide: true,
+    help: 'Facoltativo, al posto delle abilità: il giocatore sceglie tante rune quante dice "Rune equipaggiate" e a ogni riposo può scambiarne una con una che non ha. Le rune sono passive della scheda Abilità (effetti hero_set o hero_stat).'
+}, {
+    k: 'runeSlots', label: 'Rune equipaggiate', type: 'number', omitEmpty: true
 }];
 
 // Statistiche che un'abilità attiva può aggiungere al tiro per colpire o al danno (campo "combat", vedi abilityCombat in js/game.js)
@@ -165,9 +170,6 @@ const ENEMY_FIELDS = [
     { k: 'ca', label: 'Classe armatura', type: 'number', help: 'Da superare per colpire' },
     { k: 'dmg', label: 'Danno', type: 'number' },
     { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true },
-    { k: 'fasi', label: 'Fasi (elite e boss)', type: 'json', wide: true, nullable: true,
-      help: 'Es. [{ "soglia": 50, "testo": "…", "schema": "carica" }]. soglia = % di vita. schema: carica, travolge, predatore, furia. ' +
-        'reazione: contrattacco, colpo_area. bonusDanno: numero. ruggito: { "malus": 1, "fedeMin": 4 }' },
     { k: 'video', label: 'Video (elite e boss)', type: 'video', folder: 'video/nemici', wide: true,
       help: 'Facoltativo (.mp4 o .webm, senza audio): nello scontro si vede al posto dell\'immagine, in ciclo' },
     { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true },
@@ -175,6 +177,66 @@ const ENEMY_FIELDS = [
     { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true,
       help: 'Vuoti = suoni generati del gioco. Se manca quello della morte, alla morte suona quello del colpo.' }
 ];
+
+// Azione speciale degli elite (data/azioni_elite/azioni_elite.js), interpretata da js/combattimento.js.
+// Si combinano i campi: una parte "alla soglia" (subito) e una "a ogni turno" (da quel momento).
+const eliteTargetOptions = () => [['', '—'], ...Object.entries(ELITE_TARGETS)];
+const hasTurn = a => !!a.turno;
+const ELITE_ACTION_FIELDS = [
+    { k: 'name', label: 'Nome', wide: true, help: 'Mostrato sul nemico (tooltip e, per le azioni a ogni turno, l\'etichetta accanto al nome)' },
+    { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
+    { k: 'icon', label: 'Icona (facoltativa)', type: 'image', folder: 'immagini/icone', wide: true },
+    { k: 'colpo', label: 'Alla soglia: attacco in risposta contro', type: 'select', omitEmpty: true, options: eliteTargetOptions, wide: true,
+      help: 'Colpisce subito, fuori dal suo turno; al suo turno poi attacca come sempre. Uno stordito non risponde' },
+    { k: 'colpoDanno', label: 'Danno dell\'attacco in risposta', type: 'number', omitEmpty: true, showIf: a => !!a.colpo, help: 'Vuoto = il danno del nemico' },
+    { k: 'colpoVicini', label: 'Danno agli eroi accanto al colpito', type: 'number', omitEmpty: true, showIf: a => !!a.colpo },
+    { k: 'bonusDanno', label: 'Alla soglia: danno del nemico (+/-)', type: 'number', omitEmpty: true },
+    { k: 'bonusAttacco', label: 'Alla soglia: Attacco del nemico (+/-)', type: 'number', omitEmpty: true, help: 'Più alto = più difficile difendersi e aiutare' },
+    { k: 'bonusCA', label: 'Alla soglia: CA del nemico (+/-)', type: 'number', omitEmpty: true, help: 'Più alta = più difficile colpirlo' },
+    { k: 'cura', label: 'Alla soglia: HP che il nemico recupera', type: 'number', omitEmpty: true },
+    { k: 'malus', label: 'Alla soglia: malus al tiro per colpire degli eroi', type: 'number', omitEmpty: true, help: 'Es. 1 = -1 al tiro (Ruggito)' },
+    { k: 'malusRound', label: 'Durata del malus (turni)', type: 'number', omitEmpty: true, showIf: a => !!a.malus, help: 'Vuoto = 1 turno' },
+    { k: 'resisteFede', label: 'Resiste al malus chi ha almeno questa Fede', type: 'number', omitEmpty: true, showIf: a => !!a.malus, help: 'Vuoto = nessuno resiste' },
+    { k: 'stordisce', label: 'Alla soglia: salta il prossimo turno', type: 'select', omitEmpty: true, options: eliteTargetOptions },
+    { k: 'spezzaArmatura', label: 'Alla soglia: perde tutta l\'armatura', type: 'select', omitEmpty: true, options: eliteTargetOptions },
+    { k: 'turno', label: 'Cambia il modo di attaccare: a ogni suo turno, da quel momento (sostituisce quello di prima)', type: 'checkbox', omitEmpty: true, wide: true },
+    { k: 'turnoBersaglio', label: 'A ogni turno: bersaglio', type: 'select', showIf: hasTurn, options: () => Object.entries(ELITE_TURN_TARGETS), wide: true },
+    { k: 'turnoDanno', label: 'A ogni turno: danno di ogni colpo', type: 'number', omitEmpty: true, showIf: hasTurn, help: 'Vuoto = il danno del nemico' },
+    { k: 'turnoColpi', label: 'A ogni turno: colpi', type: 'number', omitEmpty: true, showIf: hasTurn, help: 'Vuoto = 1' },
+    { k: 'turnoVicini', label: 'A ogni turno: danno agli eroi accanto al colpito', type: 'number', omitEmpty: true, showIf: hasTurn, help: 'Es. 1 = Travolge' },
+    { k: 'turnoPreparazione', label: 'Un turno si prepara, il successivo colpisce (il primo dopo la soglia colpisce subito)', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true },
+    { k: 'turnoTestoPreparazione', label: 'Testo del turno di preparazione', omitEmpty: true, wide: true, showIf: a => hasTurn(a) && !!a.turnoPreparazione,
+      help: '{nemico} = nome del nemico. Es. "{nemico} raspa il terreno: al prossimo turno travolgerà la compagnia!"' },
+    { k: 'turnoCrescitaDanno', label: 'A ogni turno: danno in più (cumulativo)', type: 'number', omitEmpty: true, showIf: hasTurn, help: 'Es. 1 = Furia' },
+    { k: 'turnoRigenera', label: 'A ogni turno: HP che recupera', type: 'number', omitEmpty: true, showIf: hasTurn },
+    { k: 'turnoAura', label: 'A ogni turno: danno a tutti prima dell\'attacco', type: 'number', omitEmpty: true, showIf: hasTurn },
+    { k: 'turnoRubaVita', label: 'A ogni turno: recupera gli HP che toglie agli eroi', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true }
+];
+
+// Descrizione in parole di cosa fa un'azione (scheda Elite e anteprima)
+function describeEliteAction(a) {
+    const who = k => (ELITE_TARGETS[k] || k).toLowerCase();
+    const n = (v, one, many) => `${v} ${v === 1 ? one : many}`;
+    const parts = [];
+    if (a.colpo) parts.push(`colpisce subito ${who(a.colpo)}${a.colpoDanno != null ? ` per ${n(a.colpoDanno, 'danno', 'danni')}` : ''}${a.colpoVicini ? ` (${a.colpoVicini} agli eroi accanto)` : ''}`);
+    [['bonusDanno', 'danno'], ['bonusAttacco', 'Attacco'], ['bonusCA', 'CA']].forEach(([k, l]) => { if (a[k]) parts.push(`${a[k] > 0 ? '+' : ''}${a[k]} ${l}`); });
+    if (a.cura) parts.push(`recupera ${a.cura} HP`);
+    if (a.malus) parts.push(`-${a.malus} al tiro per colpire degli eroi per ${n(a.malusRound || 1, 'turno', 'turni')}${a.resisteFede ? ` (non per chi ha Fede ${a.resisteFede}+)` : ''}`);
+    if (a.stordisce) parts.push(`${who(a.stordisce)} salta il prossimo turno`);
+    if (a.spezzaArmatura) parts.push(`${who(a.spezzaArmatura)} perde l'armatura`);
+    if (a.turno) {
+        const t = [];
+        if (a.turnoPreparazione) t.push('un turno si prepara e quello dopo colpisce');
+        if (a.turnoRigenera) t.push(`recupera ${a.turnoRigenera} HP`);
+        if (a.turnoAura) t.push(`${n(a.turnoAura, 'danno', 'danni')} a tutti`);
+        t.push(`attacca ${(ELITE_TURN_TARGETS[a.turnoBersaglio || 'scelto'] || '').toLowerCase()}${a.turnoDanno != null ? ` per ${n(a.turnoDanno, 'danno', 'danni')}` : ''}${(a.turnoColpi || 1) > 1 ? `, ${a.turnoColpi} volte` : ''}`);
+        if (a.turnoVicini) t.push(`${a.turnoVicini} agli eroi accanto`);
+        if (a.turnoCrescitaDanno) t.push(`+${a.turnoCrescitaDanno} danno ogni turno`);
+        if (a.turnoRubaVita) t.push('si cura dei danni inflitti');
+        parts.push(`a ogni turno: ${t.join(', ')}`);
+    }
+    return parts.length ? parts.join('; ') : 'nessun effetto';
+}
 
 const RELIC_FIELDS = [
     { k: 'name', label: 'Nome', wide: true, help: 'Molte reliquie hanno un effetto legato al nome esatto in js/game.js (hasRelic): rinominarle ne cambia il comportamento' },

@@ -288,6 +288,11 @@
             setTimeout(() => { banner.remove(); nodeBannerBusy = false; }, 1500);
         }
 
+        // Immagine della scena: quella del nodo o il segnaposto del tipo (senza, resterebbe l'immagine del nodo precedente)
+        function setSceneImage(imgId, src, kind) {
+            document.getElementById(imgId).src = src || `immagini/segnaposto/${kind}.svg`;
+        }
+
         function enterStsNode(id) {
             stato.currentNodeId = id;
             const node = stato.stsMapNodes.find(n => n.id === id);
@@ -295,24 +300,24 @@
             setCombatVideo(null);
             if(node.type === 'combat' || node.type === 'elite') {
                 chooseCombatTheme(node);
-                if(node.image) document.getElementById('combatImg').src = node.image;
+                setSceneImage('combatImg', node.image || (enemies[node.enemy] && enemies[node.enemy].image), node.type);
                 setCombatVideo(enemies[node.enemy] && enemies[node.enemy].video);
                 startCombat(node.enemy);
             }
             else if(node.type === 'challenge') {
-                if(node.image) document.getElementById('challengeImg').src = node.image;
+                setSceneImage('challengeImg', node.image, 'challenge');
                 startChallenge(node.challengeId);
             }
             else if(node.type === 'rest') {
-                if(node.image) document.getElementById('restImg').src = node.image;
+                setSceneImage('restImg', node.image, 'rest');
                 startRest(node.restId);
             }
             else if(node.type === 'merchant') {
-                if(node.image) document.getElementById('merchantImg').src = node.image;
+                setSceneImage('merchantImg', node.image, 'merchant');
                 startMerchant(node.merchantId);
             }
             else if(node.type === 'treasure') {
-                if(node.image) document.getElementById('treasureImg').src = node.image;
+                setSceneImage('treasureImg', node.image, 'treasure');
                 startTreasure(node.treasureId);
             }
             else if(node.type === 'story') {
@@ -328,7 +333,9 @@
             if(currentNode) {
                 currentNode.done = true;
                 currentNode.active = false;
-                stato.stsMapNodes.forEach(n => { if(n.level === currentNode.level && n.active) n.active = false; });
+                // Si chiudono tutti i nodi aperti, non solo quelli del livello: un collegamento che salta
+                // un livello lascerebbe aperto il nodo non scelto del livello intermedio
+                stato.stsMapNodes.forEach(n => { n.active = false; });
 
                 if(currentNode.next.length === 0) {
                     showScreen('screenVictory');

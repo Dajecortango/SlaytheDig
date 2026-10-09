@@ -65,7 +65,7 @@ module.exports = (t, carica) => {
         const a = { name: 'A', str: 3, dmg: 2, hp: 4, hasActed: false, current_armor: 0 };
         g.applyEffects(abilita('libertas_in_furor').effects, a);
         const b = { name: 'B', str: 3, dmg: 1, hp: 4, hasActed: false };
-        const morto = { name: 'M', hp: 0, hasActed: true };
+        const morto = { name: 'M', hp: 0, hasActed: false };  // a inizio round tutti tornano a hasActed false
         prepara([a, b, morto]);
         const primo = g.resolveAttack(a, { hp: 50, ca: 9 }, [5]);
         t.uguale(9, primo.total, 'primo ad agire: 5 + 3 + 1');

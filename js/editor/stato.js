@@ -11,7 +11,8 @@ let lib = JSON.parse(JSON.stringify(window.LIBRERIA));   // copia modificabile d
 const libDirty = new Set();                              // file della libreria modificati (armeria, bestiario, ...)
 let currentTab = 'general';
 const selection = { challenges: null, map: null, itemList: 'initialArmory',
-                    bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null, abilita: null };
+                    bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null, abilita: null,
+                    elite: null, azioni_elite: null };
 let dirty = false;
 
 const deepCopy = obj => JSON.parse(JSON.stringify(obj));

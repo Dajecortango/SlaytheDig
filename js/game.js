@@ -168,7 +168,7 @@ function breakRelic(relicId) {
             grid.innerHTML = campaigns.map((c, idx) => `
                 <div class="campaign-card" tabindex="0" role="button" data-index="${idx}" ${azione('onCampaignCardClick', idx, c.id)} ${azioneSu('enter', 'selectCampaign', c.id)}>
                     <div>
-                        <div class="campaign-cover"><img src="${c.coverImage}" alt="${c.title}" ${IMG_LAZY}></div>
+                        <div class="campaign-cover"><img src="${c.coverImage || 'immagini/segnaposto/cover.svg'}" alt="${c.title}" ${IMG_LAZY}></div>
                         <span class="campaign-badge">${c.badge}</span>
                         <h3>${c.title}</h3>
                         <p>${c.description}</p>
@@ -346,7 +346,7 @@ function breakRelic(relicId) {
             currentSaveSlot = null;  // nuova partita: nessuno slot finché non la si salva
 
             document.getElementById('campaignIntroTitle').textContent = stato.currentCampaign.title;
-            document.getElementById('campaignIntroImg').src = stato.currentCampaign.coverImage;
+            document.getElementById('campaignIntroImg').src = stato.currentCampaign.coverImage || 'immagini/segnaposto/cover.svg';
             document.getElementById('campaignIntroDesc').innerHTML = `<strong>Descrizione:</strong> ${stato.currentCampaign.introText}`;
             document.getElementById('mapCampaignHeader').textContent = `Mappa: ${stato.currentCampaign.title}`;
 
@@ -372,7 +372,7 @@ function breakRelic(relicId) {
         }
 
         // Versione del gioco, mostrata in basso a destra nel menu (aggiornarla a ogni release)
-        const GAME_VERSION = '1.7';
+        const GAME_VERSION = '1.8';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
         const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];

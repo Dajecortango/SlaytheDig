@@ -307,6 +307,12 @@ function simBuildHero(campaignData, heroName, abilityIdx, itemIdx) {
         }
     }
 
+    // Rune: le prime runeSlots offerte (il simulatore non le scambia al riposo)
+    if (heroHasRunes(hero)) {
+        hero.equippedRunes = hero.runeOptions.slice(0, hero.runeSlots);
+        hero.equippedRunes.forEach(id => applyRune(hero, id, 1));
+    }
+
     if (itemIdx != null && itemIdx >= 0 && campaignData.armory[itemIdx]) {
         const newItem = JSON.parse(JSON.stringify(campaignData.armory[itemIdx]));
         hero.items.push(newItem);
@@ -489,7 +495,9 @@ function simRunCombat(enemyData, profile, runCtx) {
         else h.current_armor = 0;
         delete h.lastHitRound;
         delete h.lastHitDamage;
+        delete h.stunnedRounds;
     });
+    applyCombatBlessings();
 
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
@@ -497,7 +505,8 @@ function simRunCombat(enemyData, profile, runCtx) {
         stato.helpDmgBonus = 0;
         expireTempBuffs();
         applyPendingBuffs();
-        stato.party.forEach(h => { if (h.hp > 0) h.hasActed = false; });
+        stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
+        applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);
         const order = profile.turnOrder ? profile.turnOrder(alive) : alive;
         const champion = simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0));
@@ -548,6 +557,24 @@ function simRunCombat(enemyData, profile, runCtx) {
     return { defeat: true }; // stallo oltre il limite di round: conta come sconfitta per non falsare il report
 }
 
+// Preghiera al riposo: prega l'eroe con più Fede; tra le benedizioni pescate tiene la prima utile in quest'ordine
+const SIM_BLESSING_ORDER = ['miracolo', 'grazia', 'fede_incrollabile', 'purificazione', 'scudo_della_fede', 'lama_consacrata', 'mano_guidata', 'veglia'];
+function simPray() {
+    const praying = simAliveMaxBy(stato.party, h => h.fth || 0);
+    if (!praying) return;
+    const res = prayerRoll(praying);
+    if (!res.success) return;
+    const choices = pickBlessings(res.major);
+    const b = SIM_BLESSING_ORDER.map(id => choices.find(c => c.id === id)).find(Boolean);
+    if (!b) return;
+    if (b.id === 'miracolo' && !stato.party.some(h => h.hp <= 0 || h.maxHp - h.hp >= 2)) return;
+    const alive = stato.party.filter(h => h.hp > 0);
+    const hero = b.effetto === 'fede' ? praying
+        : b.buff_stat === 'dmg' || b.buff_stat === 'att_bonus' ? simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0))
+        : simAliveMinBy(alive, h => h.hp + (h.current_armor || 0));
+    applyBlessing(b, hero);
+}
+
 function simResolveNode(campaignData, node, profile, runCtx) {
     stato.currentNodeId = node.id;
     runCtx.visitCounts[node.type] = (runCtx.visitCounts[node.type] || 0) + 1;
@@ -557,7 +584,7 @@ function simResolveNode(campaignData, node, profile, runCtx) {
         return { defeat: !!outcome.defeat, finalVictory: false };
     }
     if (node.type === 'challenge') return simResolveChallengeNode(campaignData, node, profile);
-    if (node.type === 'rest') { resolveRest(); return { defeat: false, finalVictory: false }; }
+    if (node.type === 'rest') { resolveRest(); simPray(); return { defeat: false, finalVictory: false }; }
     if (node.type === 'merchant') { simResolveMerchantNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'treasure') { simResolveTreasureNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'story') return { defeat: false, finalVictory: false };  // solo racconto
@@ -569,7 +596,7 @@ function simResolveNode(campaignData, node, profile, runCtx) {
 function simAdvance(node) {
     node.done = true;
     node.active = false;
-    stato.stsMapNodes.forEach(n => { if (n.level === node.level && n.active) n.active = false; });
+    stato.stsMapNodes.forEach(n => { n.active = false; });
     if (node.next.length === 0) return true;
     node.next.forEach(id => {
         const n = stato.stsMapNodes.find(x => x.id === id);

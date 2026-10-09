@@ -15,8 +15,11 @@
             return 1 + MERCHANT_PROGRESS_MARKUP * mapProgress();
         }
 
+        // Metà del prezzo base; un oggetto comprato non si rivende per più di metà di quanto è stato pagato
+        // (con Moneta di Fredlos, Lasciapassare e contrattazione comprare e rivendere darebbe un guadagno)
         function itemSellPrice(item) {
-            return Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
+            const half = Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
+            return item.paidPrice != null ? Math.min(half, Math.max(1, Math.floor(item.paidPrice / 2))) : half;
         }
 
         let merchantItemsWithPrices = [];
@@ -281,7 +284,7 @@
             }
 
             stato.partyCoins -= price;
-            currentMerchantItem = entry.item;
+            currentMerchantItem = { ...entry.item, paidPrice: price };
             merchantItemsWithPrices[idx] = null;
 
             document.getElementById('merchantItemsList').classList.add('hidden');
@@ -408,7 +411,10 @@
 
         function confirmLeaveMerchant() {
             const hidden = merchantItemsWithPrices.filter(entry => entry && !entry.revealed).length;
-            const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed && stato.partyCoins >= entry.price);
+            // Il medico conta solo se c'è qualcuno da curare e gli restano HP da dare
+            const medicUseful = medicHpLeft() > 0 && stato.party.some(h => h.hp < h.maxHp);
+            const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed
+                && (entry.kind !== 'medic' || medicUseful) && stato.partyCoins >= effectiveMerchantPrice(entry));
             if (!affordable && !hidden) { advanceNode(); return; }
             const reasons = [];
             if (hidden) reasons.push(hidden === 1 ? 'c\'è ancora <b>1</b> carta da scoprire' : `ci sono ancora <b>${hidden}</b> carte da scoprire`);

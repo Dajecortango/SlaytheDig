@@ -14,7 +14,7 @@ window.CAMPAIGNS["drakengrad"] = {
     "coverImage": "immagini/sentiero_rune.webp",
     "introText": "Nessuna mappa conosce la strada per il Drakengrad. Chi l'ha percorsa racconta di sentieri che cambiano a ogni stagione, di bestie e briganti sempre più feroci man mano che ci si avvicina alla meta. Stringete le cinghie, compagni: ogni passo sarà più duro del precedente.",
     "procedurale": { "livelli": 16 },
-    "heroes": ["icaro", "astarte", "ascadeo", "dioforo", "curio_dignitas", "prometeo_dignitas", "temistocle_dignitas", "caino_dignitas", "ottavio_dignitas"],
+    "heroes": ["icaro", "astarte", "ascadeo", "dioforo", "curio_dignitas", "prometeo_dignitas", "temistocle_dignitas", "caino_dignitas", "ottavio_dignitas", "alastorta_dignitas"],
     "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {},
     "merchants": {},
