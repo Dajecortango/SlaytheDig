@@ -220,6 +220,7 @@
             return `
                 <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)}" data-hero="${esc(h.name)}">
                     ${heroBuffsHtml(h)}
+                    ${heroBlessingsHtml(h)}
                     <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</div>
                     <div class="hero-bars">
                         <div class="hero-card-name" title="${esc(h.name)}">${h.name}</div>

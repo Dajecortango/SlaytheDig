@@ -69,9 +69,13 @@ function procPools(selfId) {
 
 // Genera la campagna giocabile (forma delle campagne risolte) dal modello "raw" e dal seme
 function generateProceduralCampaign(raw, seed) {
+    // Due sequenze separate: la forma della mappa (livelli, tipi, posizioni, collegamenti) non dipende
+    // dal materiale delle altre campagne, così un nemico o una sfida aggiunti altrove non cambiano
+    // la mappa di una partita salvata (il salvataggio tiene solo done/active dei nodi per id)
     const rng = procRng(seed);
-    const pick = list => list[Math.floor(rng() * list.length)];
-    const shuffle = list => { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const contentRng = procRng((seed ^ 0x9E3779B9) >>> 0 || 1);
+    const pick = list => list[Math.floor(contentRng() * list.length)];
+    const shuffle = list => { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(contentRng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
     const camp = resolveCampaign({ ...raw, mapNodes: [], challenges: {}, merchants: {}, rests: {}, treasures: {} });
     const pools = procPools(raw.id);
     const cfg = raw.procedurale || {};

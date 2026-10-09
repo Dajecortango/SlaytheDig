@@ -43,6 +43,34 @@ const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno qu
 // Bottino degli scontri: quanti oggetti si vedono (se ne tiene uno)
 const LOOT_CHOICES = 2;
 
+// Preghiera ai riposi (js/prove.js): un eroe per riposo tira d6 + Fede contro PRAYER_CD, con le regole di sempre
+// (6 riesce, 1 fallisce, reliquie dei tiri). Con PRAYER_MAJOR_TOTAL o più, o con un 6, la benedizione è maggiore.
+// Se riesce si pescano PRAYER_CHOICES benedizioni del livello e se ne sceglie una. Nessun malus se fallisce.
+const PRAYER_CD = 7;
+const PRAYER_MAJOR_TOTAL = 9;
+const PRAYER_CHOICES = 3;
+// bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti). effetto: "prossimo_scontro" (buff_stat + buff_val per tutto
+// il prossimo scontro, come un potenziamento), "cura_party" (val HP ai vivi), "togli_maledizione" (la più recente),
+// "fede" (+val Fede per sempre), "grazia" (la prima volta che andrebbe a 0 HP torna con val HP), "miracolo" (cura completa, rialza i caduti)
+const PRAYER_BLESSINGS = {
+    mano_guidata: { name: 'Mano guidata', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNInnerFire.png',
+        desc: '+1 al tiro per colpire per tutto il prossimo scontro', effetto: 'prossimo_scontro', buff_stat: 'att_bonus', buff_val: 1 },
+    lama_consacrata: { name: 'Lama consacrata', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNHolyBolt.png',
+        desc: '+1 danno per tutto il prossimo scontro', effetto: 'prossimo_scontro', buff_stat: 'dmg', buff_val: 1 },
+    scudo_della_fede: { name: 'Scudo della fede', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNDevotion.png',
+        desc: '+2 Armatura all\'inizio del prossimo scontro', effetto: 'prossimo_scontro', buff_stat: 'current_armor', buff_val: 2 },
+    veglia: { name: 'Veglia', livello: 'minore', bersaglio: 'party', icon: 'immagini/icone/BTNHealingWave.png',
+        desc: 'Tutti gli eroi in piedi recuperano 1 HP', effetto: 'cura_party', val: 1 },
+    purificazione: { name: 'Purificazione', livello: 'minore', bersaglio: 'party', icon: 'immagini/icone/BTNDispelMagic.png',
+        desc: 'Toglie la maledizione più recente', effetto: 'togli_maledizione' },
+    fede_incrollabile: { name: 'Fede incrollabile', livello: 'maggiore', bersaglio: 'eroe', icon: 'immagini/icone/BTNElunesBlessing.png',
+        desc: '+1 Fede per sempre', effetto: 'fede', val: 1 },
+    grazia: { name: 'Grazia', livello: 'maggiore', bersaglio: 'eroe', icon: 'immagini/icone/BTNDivineIntervention.png',
+        desc: 'La prima volta che andrebbe a 0 HP torna in piedi con 2 HP', effetto: 'grazia', val: 2 },
+    miracolo: { name: 'Miracolo', livello: 'maggiore', bersaglio: 'party', icon: 'immagini/icone/BTNResurrection.png',
+        desc: 'Cura completa di tutti gli eroi, anche dei caduti', effetto: 'miracolo' }
+};
+
 // Pozioni di cura da questa rarità in su rialzano anche gli eroi caduti (0 HP)
 const REVIVE_MIN_RARITY = 'raro';
 

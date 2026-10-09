@@ -6,7 +6,7 @@
    ========================================================================== */
 
 /* ---------- Navigazione ---------- */
-const TABS = ['general', 'map', 'heroes', 'items', 'challenges', 'other', ...LIB_KINDS];
+const TABS = ['general', 'map', 'heroes', 'items', 'challenges', 'other', 'elite', ...LIB_KINDS];
 
 function switchTab(tab) {
     currentTab = tab;
@@ -26,6 +26,7 @@ function render() {
     else if (currentTab === 'heroes') renderHeroesTab();
     else if (currentTab === 'items') renderItemsTab();
     else if (currentTab === 'other') renderOtherTab();
+    else if (currentTab === 'elite') renderEliteTab();
     else renderCollection(currentTab);  // sfide e librerie
     renderIssues();
 }

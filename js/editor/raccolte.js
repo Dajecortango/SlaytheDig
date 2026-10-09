@@ -19,7 +19,9 @@ const COLLECTIONS = {
         library: true, fields: ENEMY_FIELDS, label: e => e.name, keyHint: 'nuovo_nemico',
         create: () => ({ name: 'Nuovo nemico', hp: 8, maxHp: 8, att: 7, dmg: 1, ca: 7, desc: '' }),
         sub: e => `HP ${e.maxHp} · CA ${e.ca} · Att ${e.att} · Danno ${e.dmg}`,
-        renameRefs: (oldKey, key) => camp.mapNodes.forEach(n => { if (n.enemy === oldKey) n.enemy = key; })
+        renameRefs: (oldKey, key) => camp.mapNodes.forEach(n => { if (n.enemy === oldKey) n.enemy = key; }),
+        note: (e, key) => `<p class="ed-lib-note">${Array.isArray(e.fasi) ? `${e.fasi.length} soglie di vita con azioni speciali` : 'Nessuna soglia di vita'}:
+            <a href="#" ${azione('gotoLibrary', 'elite', key)}>modifica nella scheda Elite</a>.</p>`
     },
     armeria: {
         library: true, fields: ITEM_FIELDS, label: i => i.name, keyHint: 'nuovo_oggetto',
@@ -71,6 +73,24 @@ const COLLECTIONS = {
             const list = h.abilities || [];
             if (list.includes(oldKey)) { list[list.indexOf(oldKey)] = key; markLibDirty('eroi'); }
         })
+    },
+    azioni_elite: {
+        library: true, fields: ELITE_ACTION_FIELDS, label: a => a.name, keyHint: 'nuova_azione',
+        create: () => ({ name: 'Nuova azione', desc: '', colpo: 'attaccante' }),
+        sub: a => `${a.turno ? 'A ogni turno' : 'Alla soglia'} · ${a.desc || describeEliteAction(a)}`,
+        afterChange: (a, key) => {
+            // Senza "turno" i campi del turno non servono più
+            if (key === 'turno') {
+                if (a.turno) a.turnoBersaglio = a.turnoBersaglio || 'scelto';
+                else Object.keys(a).filter(k => k.startsWith('turno')).forEach(k => delete a[k]);
+            }
+            if (['turno', 'colpo', 'malus', 'turnoPreparazione'].includes(key)) setTimeout(render);
+        },
+        // Le fasi che la usano stanno tutte nel bestiario: si aggiornano anche loro
+        renameRefs: (oldKey, key) => Object.values(lib.bestiario).forEach(e => (e.fasi || []).forEach(f => {
+            const list = f.azioni || [];
+            if (list.includes(oldKey)) { list[list.indexOf(oldKey)] = key; markLibDirty('bestiario'); }
+        }))
     },
     maledizioni: {
         library: true, fields: CURSE_FIELDS, label: c => c.name, keyHint: 'nuova_maledizione',
@@ -129,6 +149,7 @@ function renderCollection(name) {
             updatePreview();
         });
         detail.insertAdjacentHTML('afterbegin', `<p class="ed-usage-box"><b>Id:</b> <code>${esc(sel)}</code> · <b>Usato in:</b> ${esc(usageText(uses))}</p>`);
+        if (col.note) detail.insertAdjacentHTML('afterbegin', col.note(items[sel], sel));
         if (preview) {
             detail.insertAdjacentHTML('beforeend', '<div class="ed-tip-preview-wrap"><span class="ed-tip-preview-label">Anteprima del tooltip nel gioco</span><div id="edTipPreview"></div></div>');
             updatePreview();

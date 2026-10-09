@@ -2953,3 +2953,37 @@ body.no-anim .phase-banner { animation: none; }
 .run-summary-hero { display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center; padding: 6px; background: rgba(0, 0, 0, 0.45); border: 1px solid #000; box-shadow: 0 0 0 1px #3a2e1c; }
 .run-summary-hero .hero-portrait { width: 40px; height: 40px; }
 .run-summary-hero.dead { filter: grayscale(1) brightness(0.6); }
+
+/* Rune (Alastorta): scelta alla creazione del party e scambio al riposo */
+.rune-hint { margin: 4px 0 8px; }
+.rest-rune-area { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.rest-rune-area:empty { display: none; }
+
+/* Preghiera ai riposi (renderRestPrayer in js/prove.js) e benedizioni sulla carta dell'eroe (heroBlessingsHtml) */
+.rest-prayer { margin-top: 8px; }
+.prayer-stage { margin-top: 10px; }
+.prayer-start-btn { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.prayer-start-btn .prayer-icon { width: 28px; height: 28px; flex-basis: 28px; }
+.prayer-icon { width: 36px; height: 36px; flex: 0 0 36px; box-shadow: 0 0 0 1px #000, 0 0 0 2px #b8902e, 0 0 8px rgba(255, 215, 110, 0.45); vertical-align: middle; }
+.prayer-heroes { display: flex; flex-wrap: wrap; gap: 6px; }
+.prayer-hero-btn small { display: block; font-size: 0.7rem; opacity: 0.8; }
+.prayer-result { margin: 4px 0 8px; color: #e8d9a8; }
+.prayer-result.fail { color: var(--text-dim); font-style: italic; }
+.prayer-result.major { color: #ffd76e; text-shadow: 0 0 8px rgba(255, 215, 110, 0.6); }
+.prayer-result.done { display: flex; align-items: center; gap: 8px; }
+.prayer-choices { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 6px 0; }
+.armory-btn.prayer-choice.major { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 12px rgba(255, 215, 110, 0.35), inset 0 0 12px rgba(0, 0, 0, 0.7); }
+.armory-btn.prayer-choice:disabled { opacity: 0.35; }
+.hero-blessings { position: absolute; top: 4px; left: 4px; display: flex; gap: 3px; z-index: 4; }
+.hero-blessing {
+    position: relative; width: 18px; height: 18px; background: #0a0807;
+    box-shadow: 0 0 0 1px #000, 0 0 0 2px #d4a93a, 0 0 7px rgba(255, 215, 110, 0.7);
+    animation: blessing-glow 2.4s ease-in-out infinite;
+}
+.hero-blessing img { width: 100%; height: 100%; display: block; }
+.hero-blessing b {
+    position: absolute; right: -3px; bottom: -4px; font-family: var(--font-numbers); font-size: 0.64rem; line-height: 1; color: #fff;
+    text-shadow: 0 0 2px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000;
+}
+@keyframes blessing-glow { 50% { box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffe08a, 0 0 12px rgba(255, 225, 140, 0.95); } }
+body.no-anim .hero-blessing { animation: none; }

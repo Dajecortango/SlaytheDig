@@ -261,7 +261,8 @@
                 // I nodi vengono dalla campagna attuale: del salvataggio si tiene solo lo stato
                 stato.stsMapNodes = stato.currentCampaign.mapNodes.map(node => {
                     const saved = (s.stsMapNodes || []).find(n => n.id === node.id);
-                    return saved ? { ...node, done: saved.done, active: saved.active } : node;
+                    // Un nodo aggiunto alla campagna dopo il salvataggio resta chiuso (non riapre un livello già passato)
+                    return saved ? { ...node, done: saved.done, active: saved.active } : { ...node, done: false, active: false };
                 });
                 enemies = stato.currentCampaign.enemies;
                 challengesData = stato.currentCampaign.challenges;

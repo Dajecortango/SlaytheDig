@@ -66,6 +66,7 @@
     .bag-title { font-family: var(--font-title); font-size: 0.8rem; color: var(--wc-yellow); margin-bottom: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
     .bag-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(226,185,81,0.12); }
     .bag-item:last-child { border-bottom: none; }
+    .bag-icon.blessing-icon { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 8px rgba(255, 215, 110, 0.6); }
     .bag-icon { width: 40px; height: 40px; flex: 0 0 40px; border: 2px solid #8d8a84; box-shadow: 0 0 0 1px #000; background: #0a0605; object-fit: cover; }
     .bag-icon[class*="rar-"] { border-color: var(--rar); box-shadow: 0 0 0 1px #000, 0 0 8px var(--rar-glow); }
     .bag-text b { color: var(--rar, #f3e2b0); }
@@ -203,6 +204,52 @@
             }).catch(() => { bagMessage = 'Connessione persa.'; if (lastState) renderHero(lastState); });
         }
 
+        // Rune (Alastorta): equipaggiate e disponibili; durante un riposo si scambia una runa
+        let runeSwapOut = null;   // indice della runa equipaggiata da togliere, scelta in attesa del sostituto
+        let runeMessage = '';
+        function renderRunes(hero) {
+            const r = hero.runes;
+            if (!r) return '';
+            const row = (rune, extra) => `<div class="bag-item">${rune.icon ? `<img class="bag-icon" src="/${rune.icon}" alt="">` : '<span class="bag-icon"></span>'}<div class="bag-text"><b>${rune.name}</b><small>${rune.desc}</small></div>${extra || ''}</div>`;
+            const equipped = r.equipped.map((rune, i) => row(rune, r.canSwap
+                ? `<button class="use-btn" onclick="pickRuneOut(${i})" ${runeSwapOut === i ? 'disabled' : ''}>${runeSwapOut === i ? 'Scelta' : 'Togli'}</button>` : '')).join('');
+            const others = r.others.map((rune, i) => row(rune, r.canSwap && runeSwapOut !== null
+                ? `<button class="use-btn" onclick="swapRuneTo(${i})">Metti</button>` : '')).join('');
+            const note = r.canSwap
+                ? (runeSwapOut === null ? 'Riposo: puoi scambiare una runa. Scegli quella da togliere.' : 'Scegli la runa da mettere al suo posto.')
+                : 'Le rune si scambiano durante un riposo, una volta per riposo.';
+            return `<div class="panel items"><div class="bag-title">Rune equipaggiate</div>${equipped}
+                <div class="bag-title">Rune disponibili</div>${others}
+                <div class="bag-note">${runeMessage || note}</div></div>`;
+        }
+
+        // Benedizioni della preghiera ancora da usare
+        function renderBlessings(hero) {
+            const list = hero.blessings || [];
+            if (!list.length) return '';
+            return `<div class="panel items"><div class="bag-title">Benedizioni</div>${list.map(b =>
+                `<div class="bag-item"><img class="bag-icon blessing-icon" src="/${b.icon}" alt=""><div class="bag-text"><b>${b.name}${b.n > 1 ? ` x${b.n}` : ''}</b><small>${b.desc}</small></div></div>`).join('')}</div>`;
+        }
+
+        function pickRuneOut(i) { runeSwapOut = i; runeMessage = ''; if (lastState) renderHero(lastState); }
+
+        function swapRuneTo(i) {
+            const r = currentHero && currentHero.runes;
+            if (!r || runeSwapOut === null || !r.equipped[runeSwapOut] || !r.others[i]) return;
+            const body = { heroName: currentHero.name, out: r.equipped[runeSwapOut].id, into: r.others[i].id };
+            runeSwapOut = null;
+            runeMessage = 'Scambio in corso...';
+            if (lastState) renderHero(lastState);
+            fetch('/api/rune-swap', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
+                body: JSON.stringify(body)
+            }).then(r => r.json()).then(data => {
+                runeMessage = data && data.ok ? '' : ((data && data.error) || 'Non è stato possibile scambiarla.');
+                if (lastState) renderHero(lastState);
+            }).catch(() => { runeMessage = 'Connessione persa.'; if (lastState) renderHero(lastState); });
+        }
+
         function renderHero(state) {
             lastState = state;
             const hero = (state.heroes || []).find(h => slugify(h.name) === slug);
@@ -219,6 +266,7 @@
             document.getElementById('heroName').textContent = hero.name;
             document.getElementById('statusText').textContent = state.campaignTitle ? `In viaggio: ${state.campaignTitle}` : 'Connesso';
 
+            if (!hero.runes || !hero.runes.canSwap) runeSwapOut = null;
             const hpPct = clampPct(hero.hp, hero.maxHp);
             const armorMax = Math.max(hero.base_armor, hero.current_armor);
             const armorPct = clampPct(hero.current_armor, armorMax);
@@ -246,6 +294,8 @@
                     </div>
                     ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>${hero.abilityDesc ? `<div class="hero-ability-desc">${hero.abilityDesc}</div>` : ''}` : ''}
                 </div>
+                ${renderBlessings(hero)}
+                ${renderRunes(hero)}
                 <div class="panel items">${renderBag(hero, state)}</div>`;
 
             document.getElementById('actionPanel').classList.remove('hidden');
