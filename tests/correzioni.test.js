@@ -87,12 +87,12 @@ module.exports = (t, carica) => {
         t.uguale('A', g.resolveEnemyTurn(nemico, null).target.name);
     });
 
-    t.test('bottino: due carte sempre diverse anche con un solo oggetto della rarità estratta', () => {
+    t.test('bottino: carte sempre diverse anche con un solo oggetto della rarità estratta', () => {
         prepara();
-        g.eval("globalThis.__salvati = gameItems; gameItems = [{ id: 'r1', name: 'R', rarity: 'raro' }, { id: 'c1', name: 'C', rarity: 'comune' }]");
+        g.eval("globalThis.__salvati = gameItems; gameItems = [{ id: 'r1', name: 'R', rarity: 'raro' }, { id: 'c1', name: 'C', rarity: 'comune' }, { id: 'c2', name: 'C2', rarity: 'comune' }]");
         for (let i = 0; i < 30; i++) {
             const s = g.pickLootChoices(true);
-            t.ok(s.length === 2 && s[0] !== s[1]);
+            t.ok(s.length === 3 && new Set(s).size === 3);
         }
         g.eval('gameItems = globalThis.__salvati');
     });

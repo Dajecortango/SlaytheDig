@@ -47,10 +47,11 @@ module.exports = (t, carica) => {
         t.uguale(3, a.hp);
     });
 
-    t.test('bottino: due oggetti diversi fra cui sceglierne uno', () => {
+    t.test('bottino: tre oggetti diversi fra cui sceglierne uno', () => {
         prepara();
         const scelte = g.pickLootChoices(false);
         t.uguale(g.eval('LOOT_CHOICES'), scelte.length);
-        t.ok(scelte[0] !== scelte[1], 'diversi');
+        t.uguale(3, scelte.length);
+        t.uguale(3, new Set(scelte).size, 'diversi');
     });
 };

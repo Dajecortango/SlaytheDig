@@ -190,9 +190,10 @@ const MIME = {
 let sharedState = { campaignTitle: '', coins: 0, heroes: [], updatedAt: 0 };
 
 // Turno di dado in attesa di un telefono: al massimo uno alla volta (il gioco
-// è a turni). Il server è l'arbitro che genera davvero i numeri, così nessuno
-// può "aggiustare" il proprio tiro da telefono.
+// è a turni). I numeri li decide il gioco (sacchetto dei dadi dell'eroe) o, se non li manda,
+// il server: mai il telefono, così nessuno può "aggiustare" il proprio tiro.
 let pendingRoll = null; // { requestId, heroName, diceCount, label, createdAt }
+let pendingRollValues = null; // dadi del sacchetto per pendingRoll, mandati dal gioco: mai trasmessi prima del tiro
 
 // Scelta dell'azione di combattimento (attacca/difendi/aiuta/abilità/oggetto) in attesa
 // da un telefono: precede l'eventuale pendingRoll, che parte solo dopo che l'azione è nota.
@@ -329,13 +330,18 @@ const server = http.createServer((req, res) => {
                 label: data.label || 'Tira',
                 createdAt: Date.now()
             };
+            // Dadi già decisi dal gioco (sacchetto dell'eroe): restano nascosti finché il telefono non tira
+            const preset = Array.isArray(data.rolls) && data.rolls.length === pendingRoll.diceCount
+                && data.rolls.every(v => Number.isInteger(v) && v >= 1 && v <= 6);
+            pendingRollValues = preset ? data.rolls.slice() : null;
             broadcast('pending-roll', pendingRoll);
             sendJson(res, 200, { ok: true, requestId: pendingRoll.requestId });
         });
         return;
     }
 
-    // Un telefono tira per l'eroe in attesa: il server genera lui i numeri (è l'arbitro).
+    // Un telefono tira per l'eroe in attesa: valgono i dadi del sacchetto mandati dal gioco,
+    // altrimenti (gioco di una versione precedente) il server genera lui i numeri.
     if (pathname === '/api/roll' && req.method === 'POST') {
         readJsonBody(req, (err, data) => {
             if (err || !data.requestId) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
@@ -344,7 +350,8 @@ const server = http.createServer((req, res) => {
                 return;
             }
             const resolved = pendingRoll;
-            const rolls = Array.from({ length: resolved.diceCount }, () => 1 + Math.floor(Math.random() * 6));
+            const rolls = pendingRollValues || Array.from({ length: resolved.diceCount }, () => 1 + Math.floor(Math.random() * 6));
+            pendingRollValues = null;
             const result = { requestId: resolved.requestId, heroName: resolved.heroName, rolls };
             pendingRoll = null;
             broadcast('pending-roll', null);
@@ -404,6 +411,20 @@ const server = http.createServer((req, res) => {
             if (err || !data.heroName || typeof data.itemIndex !== 'number') { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
             if (sharedState.inCombat) { sendJson(res, 409, { error: 'In combattimento le pozioni si usano nel proprio turno.' }); return; }
             broadcast('item-use', { heroName: data.heroName, itemIndex: data.itemIndex, targetName: data.targetName || data.heroName });
+            sendJson(res, 200, { ok: true });
+        });
+        return;
+    }
+
+    // Un telefono prega al riposo, sceglie la benedizione, scopre o prende il bottino (il gioco controlla che si possa)
+    if (pathname === '/api/scene-action' && req.method === 'POST') {
+        readJsonBody(req, (err, data) => {
+            const actions = ['pray', 'blessing', 'blessing-target', 'loot-reveal', 'loot-take'];
+            if (err || !data.heroName || !actions.includes(data.action)) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            broadcast('scene-action', { heroName: data.heroName, action: data.action,
+                index: typeof data.index === 'number' ? data.index : null,
+                targetName: data.targetName || null,
+                discardIndex: typeof data.discardIndex === 'number' ? data.discardIndex : null });
             sendJson(res, 200, { ok: true });
         });
         return;

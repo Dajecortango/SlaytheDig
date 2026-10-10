@@ -6,7 +6,9 @@
         body {
             --top-h: 50px;
             --console-h: 188px;
-            --stage-h: clamp(260px, calc(100vh - var(--top-h) - var(--console-h) - 200px), 460px);
+            /* Spazio verticale del pannello centrale che non va alla scena: cornice, margini, titolo */
+            --stage-chrome: 172px;
+            --stage-h: clamp(260px, calc(100vh - var(--top-h) - var(--console-h) - var(--stage-chrome)), 460px);
             margin: 0;
             min-height: 100vh;
             font-family: var(--font-body);
@@ -22,6 +24,16 @@
         }
 
         body.no-party { --console-h: 0px; }
+
+        /* Schermi grandi: tutta l'interfaccia scala (le misure sono in rem) e la console cresce con le carte */
+        @media (min-width: 1680px) and (min-height: 880px) {
+            html { font-size: 17.5px; }
+            body { --console-h: 200px; }
+        }
+        @media (min-width: 2200px) and (min-height: 1100px) {
+            html { font-size: 19px; }
+            body { --console-h: 214px; }
+        }
 
         /* ---------- Braci fluttuanti di sfondo ---------- */
         .embers { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -225,10 +237,12 @@
         }
 
         /* Scheda eroe (ritratto + barre + zaino) */
+        /* Si allarga fino a 268px, scende a 228px quando gli eroi sono tanti: cinque stanno in fila a 1440px */
         .hero-mini-card {
-            flex: 0 0 236px;
+            flex: 0 1 268px;
+            min-width: 228px;
             display: grid;
-            grid-template-columns: 58px 1fr;
+            grid-template-columns: 60px 1fr;
             grid-template-rows: auto;
             align-content: start;
             gap: 4px 10px;
@@ -280,7 +294,8 @@
         .hero-card-name {
             font-family: var(--font-title);
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
             color: var(--wc-yellow);
             text-shadow: 0 1px 0 #000;
             white-space: nowrap;
@@ -293,8 +308,10 @@
             grid-column: 1 / -1;
             display: flex;
             justify-content: space-between;
-            padding: 3px 4px;
-            font-size: 0.72rem;
+            padding: 2px 6px;
+            font-family: var(--font-numbers);
+            font-size: 0.92rem;
+            line-height: 1.25;
             color: #f3e2b0;
             background: rgba(0, 0, 0, 0.4);
             border-top: 1px solid rgba(226, 185, 81, 0.18);
@@ -305,9 +322,10 @@
             font-style: normal;
             font-family: var(--font-title);
             font-weight: 700;
-            font-size: 0.58rem;
-            color: var(--text-dim);
-            margin-right: 3px;
+            font-size: 0.64rem;
+            letter-spacing: 0.04em;
+            color: #b9a77e;
+            margin-right: 4px;
         }
 
         /* Pulsante QR: presente solo quando il tunnel ngrok è attivo. Apre una modale col QR grande
@@ -382,7 +400,7 @@
             0%, 100% { box-shadow: inset 0 0 0 1px #3fbf4a, inset 0 0 8px rgba(0,0,0,.9), 0 0 4px rgba(63, 191, 74, 0.3); }
             50% { box-shadow: inset 0 0 0 1px #9dff8a, inset 0 0 8px rgba(0,0,0,.9), 0 0 10px rgba(120, 255, 110, 0.6); }
         }
-        .inv-label { margin-left: auto; font-size: 0.58rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+        .inv-label { margin-left: auto; font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
 
         /* Barre vita / armatura (stile WC3 segmentato) */
         .hp-bar-container {
@@ -405,16 +423,30 @@
             background: linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 45%, transparent 50%, rgba(0, 0, 0, 0.25));
             pointer-events: none;
         }
+        /* Colore registrato: passando da verde a giallo a rosso la barra sfuma invece di scattare */
+        @property --bar { syntax: '<color>'; inherits: true; initial-value: #1f9a1a; }
+        /* Riempimento in rilievo come le barre delle unità di WC3: bordo alto chiaro, ventre pieno,
+           fondo scuro; un filo di luce sul margine destro segna dove la vita finisce */
         .hp-bar-fill {
-            --bar: #10b010;
+            --bar: #1f9a1a;
             height: 100%;
             width: 100%;
-            background: var(--noise-fine), linear-gradient(90deg, rgba(0, 0, 0, 0.25), transparent 30%), var(--bar);
-            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.5), 1px 0 0 rgba(0, 0, 0, 0.8);
-            transition: width 0.35s ease, background-color 0.35s;
+            background:
+                var(--noise-fine),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent 22%),
+                linear-gradient(color-mix(in srgb, var(--bar), #fff 38%), var(--bar) 38%, color-mix(in srgb, var(--bar), #000 30%) 70%, color-mix(in srgb, var(--bar), #000 55%));
+            box-shadow:
+                inset 0 1px 0 color-mix(in srgb, var(--bar), #fff 60%),
+                inset -1px 0 0 color-mix(in srgb, var(--bar), #fff 45%),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+                1px 0 0 rgba(0, 0, 0, 0.85);
+            transition: width 0.35s cubic-bezier(.2, .8, .3, 1), --bar 0.35s;
         }
-        .hp-bar-fill.hp-mid { --bar: #c9a400; }
-        .hp-bar-fill.hp-low { --bar: #c41a0e; }
+        .hp-bar-fill.hp-mid { --bar: #c99a00; }
+        .hp-bar-fill.hp-low { --bar: #b8180c; }
+        /* Poca vita: il rosso pulsa piano, come l'allarme delle unità ferite */
+        .hp-bar-fill.hp-low { animation: hp-low-pulse 1.6s ease-in-out infinite; }
+        @keyframes hp-low-pulse { 50% { filter: brightness(1.35) saturate(1.2); } }
         .hp-bar-container.armor { height: 9px; }
         /* Senza armatura la barra non si mostra, ma tiene il suo spazio perché la console non salti */
         .hp-bar-container.armor.is-empty { visibility: hidden; }
@@ -431,7 +463,7 @@
             text-align: center;
             text-shadow: 0 1px 1px #000, 0 0 3px #000;
         }
-        .hp-bar-container.big .hp-bar-text { line-height: 14px; font-size: 0.7rem; }
+        .hp-bar-container.big .hp-bar-text { line-height: 14px; font-size: 0.72rem; letter-spacing: 0.06em; }
         .hp-bar-container.armor .hp-bar-text { line-height: 7px; font-size: 0.5rem; }
 
         /* =========================================================
@@ -445,16 +477,16 @@
             align-items: center;
             width: 100%;
             min-height: 100vh;
-            padding: calc(var(--top-h) + 26px) 16px calc(var(--console-h) + 16px);
+            padding: calc(var(--top-h) + 16px) 16px calc(var(--console-h) + 10px);
         }
 
+        /* Largo 1120px, di più sugli schermi ampi (82% della finestra, fino a 1600px) */
         .container {
             position: relative;
-            width: 1120px;
-            max-width: 100%;
-            max-height: calc(100vh - var(--top-h) - var(--console-h) - 46px);
+            width: min(100%, max(1120px, min(82vw, 1600px)));
+            max-height: calc(100vh - var(--top-h) - var(--console-h) - 30px);
             overflow-y: auto;
-            padding: 14px 30px 24px;
+            padding: 8px 28px 18px;
             text-align: center;
             border: 22px solid transparent;
             border-image: var(--frame) var(--frame-slice) / 22px stretch;
@@ -476,6 +508,7 @@
             display: flex;
             align-items: center;
             gap: 14px;
+            margin: 0.1em 0 0.4em;
             font-size: 1.45rem;
             font-weight: 900;
         }
@@ -879,7 +912,8 @@
             border: 1px solid #5a4520;
             box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255, 220, 130, 0.07), inset 0 0 26px rgba(0, 0, 0, 0.8);
         }
-        #combatDescBox { max-height: 130px; }
+        /* Più alta quando lo schermo lo permette; oltre si apre con "Leggi tutto" */
+        #combatDescBox { max-height: clamp(130px, 20vh, 230px); }
         .narrative-desc-box strong { color: var(--wc-yellow); font-family: var(--font-title); letter-spacing: 0.03em; }
 
         .sub-panel {
@@ -1181,8 +1215,8 @@
         }
         .hero-ability {
             grid-column: 1 / -1;
-            font-size: 0.62rem;
-            line-height: 14px;
+            font-size: 0.74rem;
+            line-height: 16px;
             color: #e0bcff;
             white-space: nowrap;
             overflow: hidden;
@@ -1401,6 +1435,52 @@
         }
         .sts-node.upcoming { filter: brightness(0.85) saturate(0.85); cursor: default; }
         .sts-node.excluded { opacity: 0.16; filter: grayscale(1) brightness(0.7); cursor: not-allowed; }
+        /* Più avanti ma non più raggiungibili dalla strada scelta: sbiaditi, ancora riconoscibili */
+        .sts-node.unreachable { filter: grayscale(0.7) brightness(0.75); opacity: 0.55; }
+
+        /* Strade ancora percorribili: inchiostro pieno a tratti, le altre restano a puntini leggeri */
+        .sts-map-svg line.path-reachable { stroke: #2e1a08; stroke-opacity: 0.8; stroke-width: 2.8; stroke-dasharray: 6 5; }
+
+        /* Nodo superato: croce a pennello d'inchiostro rosso, come sulle carte dei capitani */
+        .sts-node.completed::before, .sts-node.completed::after {
+            content: '';
+            position: absolute;
+            left: 50%; top: 50%;
+            z-index: 1;
+            width: 112%; height: 5px;
+            pointer-events: none;
+            border-radius: 40% 10% 50% 20%;
+            background: linear-gradient(90deg, transparent, #6a1209 9%, #8a1a0c 45%, #6a1209 88%, transparent);
+            box-shadow: 0 0 1px rgba(40, 6, 2, 0.9);
+            transform: translate(-50%, -50%) rotate(41deg);
+        }
+        .sts-node.completed::after { width: 100%; height: 4px; transform: translate(-46%, -54%) rotate(-47deg); }
+
+        /* Nebbia sui livelli lontani (renderStsMap): velo color pergamena con banchi che scorrono piano,
+           sfuma verso il basso sopra i prossimi livelli. Sotto i nodi (z-index 2), sopra le strade. */
+        .map-fog {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+            background: linear-gradient(rgba(208, 194, 164, 0.62), rgba(208, 194, 164, 0.42));
+            -webkit-mask-image: linear-gradient(#000 calc(100% - 150px), transparent);
+            mask-image: linear-gradient(#000 calc(100% - 150px), transparent);
+        }
+        .map-fog::before, .map-fog::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; left: -30%;
+            width: 160%;
+            background: rgb(250, 245, 232);
+            -webkit-mask: var(--noise-cloud) 0 0 / 600px 600px;
+            mask: var(--noise-cloud) 0 0 / 600px 600px;
+            animation: fog-drift 70s linear infinite alternate;
+        }
+        .map-fog::after { opacity: 0.85; -webkit-mask-position: 300px 210px; mask-position: 300px 210px; animation-duration: 110s; animation-direction: alternate-reverse; }
+        @keyframes fog-drift { to { transform: translateX(18%); } }
+        body.no-anim .map-fog::before, body.no-anim .map-fog::after { animation: none; }
 
         .map-legend {
             display: flex;
@@ -1540,7 +1620,13 @@
             .topbar-plate { display: none; }
             .res-label { display: none; }
             .topbar-actions span { display: none; }
-            .res { padding: 3px 8px 3px 4px; max-width: 120px; }
+            /* Tutte e quattro le risorse in vista anche su un telefono stretto */
+            .res { min-width: 0; gap: 3px; padding: 1px 4px 1px 1px; max-width: 120px; border-width: 3px; border-image-width: 3px; }
+            .res-ico.res-ico-img, .res-ico-img img { width: 20px; height: 20px; flex-basis: 20px; }
+            .res-val { font-size: 0.8rem; }
+            .topbar-side { gap: 4px; }
+            .topbar-actions { gap: 3px; }
+            .topbar-actions button { padding: 1px 2px; border-width: 3px; border-image-width: 3px; }
             .party-topbar { padding: 0 8px; }
             .party-console { padding: 14px 8px 8px; }
             .hero-mini-card { flex-basis: 220px; }
@@ -2668,6 +2754,65 @@
         #merchantItemsList .card-back { justify-content: center; }
         #merchantItemsList .card-back .card-back-emblem { flex-basis: auto; width: 48px; height: 48px; font-size: 1.5rem; }
         #merchantItemsList .taken { min-height: 110px; justify-content: center; }
+
+        /* Merce coperta: sagome scure sotto un telo rosso (cardBackHtml in js/loot.js), sigillo col "?" sul telo.
+           Passandoci sopra il telo si solleva un poco e le sagome prendono luce. */
+        .card-back-drape { position: relative; display: block; width: 116px; height: 78px; margin-bottom: 2px; }
+        .card-back-drape svg { width: 100%; height: 100%; overflow: visible; }
+        .card-back-drape .cb-shape {
+            fill: #0b0605;
+            stroke: rgba(240, 207, 115, 0.35);
+            stroke-width: 1;
+            filter: drop-shadow(0 0 5px rgba(255, 190, 90, 0.18));
+            transition: stroke 0.25s, filter 0.25s;
+        }
+        .card-back-drape .cb-cloth {
+            fill: #6a1a10;
+            stroke: #c9982f;
+            stroke-width: 1.2;
+            filter: drop-shadow(0 -2px 3px rgba(0, 0, 0, 0.7));
+            transition: transform 0.3s cubic-bezier(.2, .8, .3, 1);
+        }
+        .card-back-drape .cb-fold { fill: none; stroke: #3a0a05; stroke-width: 1.6; stroke-linecap: round; opacity: 0.8; transition: transform 0.3s cubic-bezier(.2, .8, .3, 1); }
+        .card-back:hover .cb-cloth, .card-back:hover .cb-fold { transform: translateY(5px); }
+        .card-back:hover .cb-shape { stroke: rgba(255, 224, 140, 0.75); filter: drop-shadow(0 0 7px rgba(255, 200, 100, 0.45)); }
+        .card-back-seal {
+            position: absolute;
+            left: 50%; bottom: -2px;
+            transform: translateX(-50%);
+            width: 24px; height: 24px;
+            display: grid;
+            place-items: center;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 0.8rem;
+            color: var(--wc-yellow);
+            text-shadow: 0 1px 0 #000;
+            background: radial-gradient(circle at 38% 34%, #ffb09a, #c41a14 35%, #300204);
+            border: 2px solid var(--rar, #e2b951);
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #000, 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Medico da campo: carta di servizio larga quanto la griglia, tela verde come una tenda da campo */
+        #merchantItemsList .armory-btn.medic-card {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            text-align: left;
+            gap: 12px;
+            padding: 10px 14px;
+            background:
+                repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 4px),
+                var(--noise-fine),
+                linear-gradient(#1f3a1c, #0f1f0d 70%, #0a1408);
+            border-color: #3f8f3a;
+            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(160, 230, 140, 0.1), inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+        #merchantItemsList .armory-btn.medic-card:hover:not(:disabled) { border-color: #8fe07a; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 4px), linear-gradient(#26461f, #12260f 70%, #0b170a); }
+        #merchantItemsList .medic-card .tile-text { align-items: flex-start; flex: 1; }
+        #merchantItemsList .medic-card .tile-text strong { color: #c8f5b0; }
+        #merchantItemsList .medic-card .tile-tag { color: #c8f5b0; border-color: #3f8f3a; background: rgba(20, 50, 18, 0.8); }
+        #merchantItemsList .medic-card .price { margin: 0 0 0 auto; align-self: center; }
         @media (max-width: 600px) { #merchantItemsList { grid-template-columns: 1fr !important; } }
 
         /* 22. Tooltip degli oggetti */
@@ -2766,6 +2911,58 @@
         .narrative-desc-box.typing::after { background: #3a2410; }
         .narrative-desc-box::-webkit-scrollbar-track { background: rgba(120, 85, 40, 0.25); box-shadow: none; }
 
+        /* Testo che non ci sta (updateDescOverflow in js/effetti.js): la pergamena sfuma in fondo e una
+           linguetta a cavallo del bordo la apre per intero. Altezza zero: non sposta nulla sotto. */
+        .narrative-desc-box.is-open { max-height: none !important; overflow: visible; }
+        .desc-more { position: relative; height: 0; z-index: 2; }
+        .desc-more::before {
+            content: '';
+            position: absolute;
+            left: 1px; right: 12px;
+            bottom: 13px;
+            height: 46px;
+            pointer-events: none;
+            background: linear-gradient(rgba(206, 178, 124, 0), rgba(206, 178, 124, 0.92) 70%, rgb(198, 168, 112));
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .desc-more.faded::before { opacity: 1; }
+        .desc-more > .desc-more-btn {
+            all: unset;
+            position: absolute;
+            right: 18px;
+            top: -12px;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 3px 12px 2px;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.66rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #4a2410;
+            cursor: pointer;
+            background: var(--noise-fine), linear-gradient(#f3e0ae, #cfae6c 60%, #a8823e);
+            border: 1px solid #5a3a10;
+            box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255, 250, 225, 0.7), 0 3px 6px rgba(0, 0, 0, 0.6);
+            transition: filter 0.15s, transform 0.15s;
+        }
+        /* Freccia disegnata col bordo: giù per aprire, su per richiudere */
+        .desc-more-btn::after {
+            content: '';
+            width: 5px; height: 5px;
+            margin-top: -3px;
+            border: solid #4a2410;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            transition: transform 0.2s, margin 0.2s;
+        }
+        .desc-more.open .desc-more-btn::after { transform: rotate(-135deg); margin-top: 3px; }
+        .desc-more > .desc-more-btn:hover { filter: brightness(1.12); transform: translateY(calc(-50% - 1px)); }
+        .desc-more > .desc-more-btn:focus-visible { outline: 2px solid var(--wc-yellow); outline-offset: 2px; }
+
         /* 6. Rarità: cornici e nomi delle carte, dorsi, righe del bottino */
         .card-back[class*="rar-back-"] { border-color: var(--rar) !important; box-shadow: 0 0 0 1px #000, 0 0 14px var(--rar-glow); }
         [class*="rar-back-"] .card-back-emblem { border-color: var(--rar); }
@@ -2841,7 +3038,7 @@
         .party-console { justify-content: center; }
         .party-heroes-container { flex: 0 0 auto; max-width: calc(100vw - 200px); min-width: 0; position: relative; z-index: 1; }
         .console-lion {
-            --lion-h: 180px;
+            --lion-h: 156px;
             /* Si restringono prima delle schede degli eroi, che non vanno mai coperte */
             flex: 0 4 auto;
             min-width: 64px;
@@ -2856,7 +3053,7 @@
         .console-lion.left { margin-right: -22px; }
         .console-lion.right { margin-left: -22px; transform: scaleX(-1); }
         body.no-party .console-lion { display: none; }
-        @media (max-width: 1500px) { .console-lion { --lion-h: 140px; } }
+        @media (max-width: 1500px) { .console-lion { --lion-h: 124px; } }
         /* Schermi stretti: niente leoni, la fila di eroi torna a occupare tutto lo spazio */
         @media (max-width: 1280px) { .console-lion { display: none; } .party-heroes-container { flex: 1 1 auto; max-width: none; } }
 
@@ -2866,9 +3063,46 @@
         .discard-picker select { margin-left: 6px; }
 
         /* ---------- Scontro: nemico grande, vita e statistiche sopra l'immagine, intenzione ---------- */
-        #screenCombat .event-grid-layout { grid-template-columns: minmax(0, 1.75fr) minmax(340px, 1fr); }
+        #screenCombat .event-grid-layout { grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr); }
         /* Mai più bassa delle altre scene (--stage-h), più alta quando lo schermo lo permette */
-        .event-left-image-box.combat-stage { height: max(var(--stage-h), min(640px, calc(100vh - var(--top-h) - var(--console-h) - 150px))); }
+        /* --stage-chrome = cornice, margini e titolo del pannello: così nome, vita e statistiche del nemico restano in vista senza scorrere */
+        .event-left-image-box.combat-stage { height: max(var(--stage-h), min(640px, calc(100vh - var(--top-h) - var(--console-h) - var(--stage-chrome)))); }
+
+        /* Elite e boss (classi messe da enterStsNode in js/mappa.js): cornice di brace o d'ombra,
+           alone che respira ai bordi della scena e targa sopra il nome */
+        .combat-stage.is-elite { --stage-glow: 200, 40, 20; --stage-rim: #b8321c; }
+        .combat-stage.is-boss { --stage-glow: 150, 50, 210; --stage-rim: #8a3ad0; }
+        .combat-stage.is-elite, .combat-stage.is-boss {
+            box-shadow: 0 0 0 2px var(--stage-rim), 0 0 0 3px #000, 0 0 0 5px #3a2806, 0 0 0 6px #000,
+                0 0 26px rgba(var(--stage-glow), 0.45), 0 12px 26px rgba(0, 0, 0, 0.85);
+        }
+        .combat-stage.is-elite::after, .combat-stage.is-boss::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            box-shadow: inset 0 0 70px rgba(var(--stage-glow), 0.5), inset 0 0 14px rgba(0, 0, 0, 0.9);
+            animation: stage-breathe 3.2s ease-in-out infinite;
+        }
+        @keyframes stage-breathe { 50% { opacity: 0.45; } }
+        body.no-anim .combat-stage::after { animation: none; }
+        .combat-stage.is-elite .enemy-name::before, .combat-stage.is-boss .enemy-name::before {
+            content: 'Elite';
+            display: table;
+            margin-bottom: 4px;
+            padding: 2px 10px 1px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: #ffe0b0;
+            text-shadow: 0 1px 0 #000;
+            background: linear-gradient(rgba(var(--stage-glow), 0.95), rgba(40, 6, 4, 0.95));
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px var(--stage-rim), 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+        .combat-stage.is-boss .enemy-name::before { content: 'Boss'; color: #f0dcff; background: linear-gradient(rgba(var(--stage-glow), 0.95), rgba(26, 6, 40, 0.95)); }
         .enemy-box.enemy-overlay {
             position: absolute;
             left: 0; right: 0; bottom: 0;
@@ -2946,7 +3180,8 @@ body.no-anim .phase-banner { animation: none; }
 .run-summary .dice-stats { height: 80px; }
 .run-summary-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #5a4520; }
 .run-summary-campaign { font-family: var(--font-title); font-weight: 700; color: var(--wc-yellow); font-size: 1.05rem; }
-.run-summary-outcome { font-family: var(--font-title); font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+.run-summary-campaign { text-wrap: balance; }
+.run-summary-outcome { flex: none; white-space: nowrap; font-family: var(--font-title); font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
 .run-summary-outcome.vittoria { color: var(--gold); }
 .run-summary-outcome.sconfitta { color: #ff5a4a; }
 .run-summary-heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
@@ -2987,3 +3222,201 @@ body.no-anim .phase-banner { animation: none; }
 }
 @keyframes blessing-glow { 50% { box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffe08a, 0 0 12px rgba(255, 225, 140, 0.95); } }
 body.no-anim .hero-blessing { animation: none; }
+
+/* Esito dei tiri (showRollBanner in js/interfaccia.js): annuncio breve sopra la scena, non blocca i clic */
+.roll-banner { position: fixed; left: 50%; top: calc(var(--top-h) + 64px); z-index: 2550; pointer-events: none; transform: translateX(-50%); animation: roll-banner 1.7s ease forwards; }
+.roll-banner-box {
+    min-width: 260px; padding: 10px 34px; text-align: center; font-family: var(--font-title);
+    background: radial-gradient(ellipse at center, rgba(12, 9, 7, 0.96), rgba(12, 9, 7, 0.75) 70%, rgba(12, 9, 7, 0));
+    border-top: 1px solid rgba(226, 185, 81, 0.6); border-bottom: 1px solid rgba(226, 185, 81, 0.6);
+}
+.roll-banner strong { display: block; font-size: 1.55rem; font-weight: 900; letter-spacing: 0.05em; }
+.roll-banner.ok strong { color: #ffd76e; text-shadow: 0 2px 0 #000, 0 0 16px rgba(255, 200, 80, 0.8); }
+.roll-banner.ko strong { color: #ff7a5c; text-shadow: 0 2px 0 #000, 0 0 16px rgba(255, 60, 30, 0.8); }
+.roll-banner small { display: block; margin-top: 2px; font-size: 0.85rem; color: #e6dcc4; letter-spacing: 0.04em; }
+@keyframes roll-banner { 0% { opacity: 0; transform: translate(-50%, -10px) scale(1.12); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1); } 78% { opacity: 1; } 100% { opacity: 0; } }
+body.no-anim .roll-banner { animation: none; }
+
+
+/* =========================================================
+   MOMENTI DELLA PARTITA: sconfitta e vittoria, nemico che brucia,
+   dadi d'osso, lampi sulle carte, fila di ritratti sul telefono
+   ========================================================= */
+
+/* ---------- Sconfitta: tutto si spegne, bordo di brace scura, cenere che cade ---------- */
+body:has(#screenDefeat:not(.hidden)) {
+    background-image:
+        radial-gradient(ellipse 90% 45% at 50% 115%, rgba(150, 20, 10, 0.32), transparent 70%),
+        radial-gradient(ellipse 70% 50% at 50% -10%, rgba(40, 40, 50, 0.3), transparent 70%),
+        var(--noise-cloud),
+        radial-gradient(circle at center, #1a0f0d 0%, #060405 78%);
+}
+.container:has(> #screenDefeat:not(.hidden)) {
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 60px rgba(150, 20, 10, 0.35), inset 0 0 90px rgba(90, 8, 4, 0.45);
+}
+#screenDefeat .event-left-image-box { box-shadow: 0 0 0 2px #7a1a10, 0 0 0 3px #000, 0 0 0 5px #2a0806, 0 0 0 6px #000, 0 12px 26px rgba(0, 0, 0, 0.85); }
+#screenDefeat .event-left-image-box img { filter: grayscale(0.55) brightness(0.8) contrast(1.05); }
+#screenDefeat .event-left-image-box::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(60, 4, 2, 0.75));
+}
+/* Le braci dello sfondo diventano cenere grigia che scende */
+body:has(#screenDefeat:not(.hidden)) .embers span {
+    background: radial-gradient(circle, #b8b2aa, #6a645e 55%, transparent 72%);
+    box-shadow: none;
+    animation-direction: reverse;
+}
+
+/* ---------- Vittoria: raggi d'oro dietro lo stendardo, cornice che splende, braci dorate ---------- */
+.container:has(> #screenVictory:not(.hidden)) {
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 70px rgba(255, 196, 60, 0.28), inset 0 0 90px rgba(120, 80, 10, 0.3);
+}
+#screenVictory .event-left-image-box {
+    background: radial-gradient(ellipse at 50% 50%, #3a2a0e, #0c0805 70%);
+    box-shadow: 0 0 0 2px #f0cf73, 0 0 0 3px #000, 0 0 0 5px #8a6418, 0 0 0 6px #000, 0 0 30px rgba(255, 200, 80, 0.4), 0 12px 26px rgba(0, 0, 0, 0.85);
+}
+#screenVictory .event-left-image-box img { position: relative; z-index: 1; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8)); }
+#screenVictory .event-left-image-box::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 180%;
+    aspect-ratio: 1;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    background: repeating-conic-gradient(from 0deg, rgba(255, 214, 110, 0.32) 0deg 6deg, transparent 6deg 18deg);
+    -webkit-mask-image: radial-gradient(circle, #000 8%, transparent 62%);
+    mask-image: radial-gradient(circle, #000 8%, transparent 62%);
+    animation: victory-rays 60s linear infinite;
+}
+@keyframes victory-rays { to { transform: translate(-50%, -50%) rotate(360deg); } }
+body.no-anim #screenVictory .event-left-image-box::before { animation: none; }
+body:has(#screenVictory:not(.hidden)) .embers span {
+    background: radial-gradient(circle, #fffbe0, #ffd24a 50%, transparent 72%);
+    box-shadow: 0 0 8px 3px rgba(255, 210, 80, 0.6);
+}
+
+/* ---------- Nemico sconfitto: la scena brucia dai bordi verso il centro (onEnemyDefeated) ----------
+   --burn è il raggio della parte ancora intatta: scende da 150% a 58%, con un orlo di brace che lo segue;
+   resta al centro un ritaglio carbonizzato della scena. */
+@property --burn { syntax: '<percentage>'; inherits: true; initial-value: 150%; }
+.combat-stage.enemy-slain {
+    background: radial-gradient(ellipse at 50% 60%, #2a1208, #070404 70%);
+    animation: stage-burn 1.8s cubic-bezier(.5, 0, .7, 1) 0.25s forwards;
+}
+@keyframes stage-burn { from { --burn: 150%; } to { --burn: 58%; } }
+.combat-stage.enemy-slain > img, .combat-stage.enemy-slain > video {
+    -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 42%, #000 calc(var(--burn) - 14%), transparent var(--burn));
+    mask-image: radial-gradient(ellipse 60% 70% at 50% 42%, #000 calc(var(--burn) - 14%), transparent var(--burn));
+    filter: grayscale(0.6) sepia(0.35) brightness(0.55);
+    transition: filter 1.6s;
+}
+/* Orlo di brace che segue il bordo che brucia, spezzato dal rumore */
+.combat-stage.enemy-slain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse 60% 70% at 50% 42%, transparent calc(var(--burn) - 16%), rgba(255, 150, 40, 0.95) calc(var(--burn) - 7%), rgba(140, 30, 6, 0.85) calc(var(--burn) - 2%), transparent var(--burn));
+    -webkit-mask: var(--noise-cloud) 0 0 / 300px 300px;
+    mask: var(--noise-cloud) 0 0 / 300px 300px;
+    mix-blend-mode: screen;
+}
+body.no-anim .combat-stage.enemy-slain { animation: none; }
+body.no-anim .combat-stage.enemy-slain::before { display: none; }
+
+/* ---------- Dadi d'osso con i punti incisi (data-face messo da syncDiceFace in js/effetti.js) ----------
+   Il numero resta nel testo (il gioco lo rilegge) ma non si vede: si vedono i punti. */
+.dice-box {
+    --pip: #3a160a 0 5.5px, #6b3418 6.4px, transparent 7.4px;
+    --pips: none;
+    color: transparent;
+    text-shadow: none;
+    border-radius: 12px;
+    background:
+        var(--pips),
+        var(--noise-fine),
+        radial-gradient(circle at 30% 22%, #fbf3dc, #e3d3ad 45%, #b39a6c 85%, #8c7650);
+    box-shadow:
+        0 0 0 1px #3a2a14,
+        0 0 0 3px #8a6418,
+        0 0 0 4px #000,
+        inset 0 2px 2px rgba(255, 255, 255, 0.7),
+        inset 0 -5px 9px rgba(90, 60, 25, 0.55),
+        0 8px 16px rgba(0, 0, 0, 0.7);
+    transition: box-shadow 0.25s;
+}
+.dice-box[data-face="1"] { --pips: radial-gradient(circle at 50% 50%, var(--pip)); }
+.dice-box[data-face="2"] { --pips: radial-gradient(circle at 28% 28%, var(--pip)), radial-gradient(circle at 72% 72%, var(--pip)); }
+.dice-box[data-face="3"] { --pips: radial-gradient(circle at 27% 27%, var(--pip)), radial-gradient(circle at 50% 50%, var(--pip)), radial-gradient(circle at 73% 73%, var(--pip)); }
+.dice-box[data-face="4"] { --pips: radial-gradient(circle at 28% 28%, var(--pip)), radial-gradient(circle at 72% 28%, var(--pip)), radial-gradient(circle at 28% 72%, var(--pip)), radial-gradient(circle at 72% 72%, var(--pip)); }
+.dice-box[data-face="5"] { --pips: radial-gradient(circle at 27% 27%, var(--pip)), radial-gradient(circle at 73% 27%, var(--pip)), radial-gradient(circle at 50% 50%, var(--pip)), radial-gradient(circle at 27% 73%, var(--pip)), radial-gradient(circle at 73% 73%, var(--pip)); }
+.dice-box[data-face="6"] { --pips: radial-gradient(circle at 29% 24%, var(--pip)), radial-gradient(circle at 71% 24%, var(--pip)), radial-gradient(circle at 29% 50%, var(--pip)), radial-gradient(circle at 71% 50%, var(--pip)), radial-gradient(circle at 29% 76%, var(--pip)), radial-gradient(circle at 71% 76%, var(--pip)); }
+.dice-box.rolling { color: transparent; animation: dice-tumble 0.42s linear infinite; }
+@keyframes dice-tumble {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(-5px, -7px) rotate(90deg) scale(0.92); }
+    50% { transform: translate(4px, -2px) rotate(180deg); }
+    75% { transform: translate(-2px, -6px) rotate(270deg) scale(0.92); }
+    100% { transform: translate(0, 0) rotate(360deg); }
+}
+.dice-box.landed { animation: dice-land 0.38s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes dice-land { from { transform: scale(1.25) rotate(-8deg); } to { transform: none; } }
+/* Dado naturale: il 6 riesce sempre (oro), l'1 fallisce sempre (rosso) */
+.dice-box.landed[data-face="6"]:not(.discarded) {
+    box-shadow: 0 0 0 1px #3a2a14, 0 0 0 3px #ffd24a, 0 0 0 4px #000, inset 0 2px 2px rgba(255, 255, 255, 0.7), inset 0 -5px 9px rgba(90, 60, 25, 0.55), 0 0 22px 4px rgba(255, 200, 60, 0.75);
+}
+.dice-box.landed[data-face="1"]:not(.discarded) {
+    box-shadow: 0 0 0 1px #3a2a14, 0 0 0 3px #c0281e, 0 0 0 4px #000, inset 0 2px 2px rgba(255, 255, 255, 0.7), inset 0 -5px 9px rgba(90, 60, 25, 0.55), 0 0 22px 4px rgba(220, 40, 30, 0.7);
+}
+body.no-anim .dice-box.rolling, body.no-anim .dice-box.landed { animation: none; }
+
+/* ---------- Lampo sulle carte degli eroi (fxCardFlash in js/effetti.js) ---------- */
+.fx-card-flash { position: absolute; inset: 0; z-index: 5; pointer-events: none; animation: card-flash 0.85s ease-out forwards; }
+.fx-card-flash.hurt {
+    background: radial-gradient(ellipse at 30% 40%, rgba(255, 60, 40, 0.55), rgba(160, 10, 5, 0.25) 60%, transparent 85%);
+    box-shadow: inset 0 0 0 2px rgba(255, 70, 50, 0.9), inset 0 0 22px rgba(255, 30, 10, 0.6);
+}
+.fx-card-flash.healed {
+    background: radial-gradient(ellipse at 30% 40%, rgba(120, 255, 110, 0.4), rgba(40, 160, 40, 0.18) 60%, transparent 85%);
+    box-shadow: inset 0 0 0 2px rgba(130, 255, 120, 0.85), inset 0 0 22px rgba(80, 230, 80, 0.5);
+}
+@keyframes card-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- Telefono: fila di ritratti con la vita, la carta intera si apre al tocco (toggleHeroCard) ---------- */
+@media (max-width: 700px) {
+    body { --console-h: 104px; }
+    body.hero-card-open { --console-h: 214px; }
+    body.no-party { --console-h: 0px; }
+    .party-console { padding: 12px 8px 6px; }
+    .party-heroes-container { gap: 6px; justify-content: flex-start; }
+    .hero-mini-card:not(.expanded) {
+        flex: 0 0 62px;
+        min-width: 0;
+        grid-template-columns: 1fr;
+        gap: 3px;
+        padding: 4px;
+        cursor: pointer;
+    }
+    .hero-mini-card:not(.expanded) .hero-portrait { width: 52px; height: 52px; margin: 0 auto; }
+    .hero-mini-card:not(.expanded) .hero-card-name,
+    .hero-mini-card:not(.expanded) .hero-stats,
+    .hero-mini-card:not(.expanded) .hero-ability,
+    .hero-mini-card:not(.expanded) .hero-inventory,
+    .hero-mini-card:not(.expanded) .hero-qr-btn { display: none; }
+    .hero-mini-card:not(.expanded) .hp-bar-container { height: 9px; margin: 1px 0; }
+    .hero-mini-card:not(.expanded) .hp-bar-text { font-size: 0.5rem; line-height: 7px; }
+    .hero-mini-card:not(.expanded) .hp-bar-container.armor { height: 5px; }
+    .hero-mini-card:not(.expanded) .hp-bar-container.armor .hp-bar-text { display: none; }
+    .hero-mini-card:not(.expanded) .hero-buffs { top: 2px; right: 2px; transform: scale(0.75); transform-origin: top right; }
+    .hero-mini-card.expanded {
+        flex: 0 0 min(270px, calc(100vw - 100px));
+        min-width: 0;
+        cursor: pointer;
+        box-shadow: 0 0 0 1px #c9982f, inset 0 0 18px rgba(0, 0, 0, 0.8);
+    }
+}

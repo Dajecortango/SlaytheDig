@@ -24,12 +24,51 @@
            in un contesto simulato deve prima impostare quei campi.
            ========================================================================== */
 
-        // Tiro di un d6: se "rolls[i]" è un numero 1-6 lo usa (tiro deciso da un telefono collegato via QR),
-        // altrimenti tira normalmente. Tutti i resolver sotto accettano "rolls" come ultimo parametro opzionale.
+        /* ---------- Sacchetto dei dadi, uno per eroe (DICE_BAG in js/regole.js) ----------
+           Ogni eroe pesca i suoi d6 da un sacchetto: in ogni blocco di DICE_BAG.size tiri escono esattamente
+           DICE_BAG.ones 1 e DICE_BAG.sixes 6, gli altri sono casuali tra 2 e 5. Nel lungo periodo 1 e 6 escono
+           come con un dado vero, ma niente lunghe serie senza 6 o con tanti 1.
+           hero.diceBag = i prossimi valori in ordine (blocchi interi uno dopo l'altro), salvato con la partita. */
+        function diceBagActive() {
+            return typeof DICE_BAG !== 'undefined' && DICE_BAG.size > 0;
+        }
+
+        function newDiceBlock() {
+            const { size, ones, sixes } = DICE_BAG;
+            const block = [...Array(ones).fill(1), ...Array(sixes).fill(6)];
+            while (block.length < size) block.push(2 + Math.floor(Math.random() * 4));
+            for (let i = block.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [block[i], block[j]] = [block[j], block[i]];
+            }
+            return block;
+        }
+
+        // Prossimi n valori del sacchetto dell'eroe, senza pescarli: il tiro dal telefono li manda al server
+        // (requestRemoteRoll in js/remote.js), che li mostra al giocatore. null se il sacchetto è spento.
+        function peekHeroDice(hero, n) {
+            if (!hero || !diceBagActive()) return null;
+            if (!Array.isArray(hero.diceBag)) hero.diceBag = [];
+            while (hero.diceBag.length < n) hero.diceBag.push(...newDiceBlock());
+            return hero.diceBag.slice(0, n);
+        }
+
+        // Tiro di un d6. Se "rolls[i]" è un numero 1-6 lo usa (tiro dal telefono collegato via QR, oppure
+        // valore imposto dai test): se è il prossimo del sacchetto dell'eroe, lo pesca. Altrimenti pesca dal
+        // sacchetto dell'eroe ("hero"), o tira un d6 casuale se non c'è un eroe o il sacchetto è spento.
+        // Tutti i resolver sotto accettano "rolls" come ultimo parametro opzionale.
         // Ogni dado degli eroi viene contato in expeditionStats.diceRolls (statistiche nel Diario).
-        function rollD6(rolls, i) {
+        function rollD6(rolls, i, hero) {
             const external = rolls && rolls[i];
-            const value = (typeof external === 'number' && external >= 1 && external <= 6) ? external : Math.floor(Math.random() * 6) + 1;
+            let value;
+            if (typeof external === 'number' && external >= 1 && external <= 6) {
+                value = external;
+                if (hero && Array.isArray(hero.diceBag) && hero.diceBag[0] === external) hero.diceBag.shift();
+            } else if (peekHeroDice(hero, 1)) {
+                value = hero.diceBag.shift();
+            } else {
+                value = Math.floor(Math.random() * 6) + 1;
+            }
             const st = stato.expeditionStats;
             if (st) (st.diceRolls = st.diceRolls || [0, 0, 0, 0, 0, 0])[value - 1]++;
             return value;
@@ -126,7 +165,7 @@
 
         // Tiro di attacco: muta enemy.hp, consuma helpBonus e helpDmgBonus. Ritorna l'esito per log/DOM.
         function resolveAttack(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
+            const roll = rollD6(rolls, 0, hero);
             const rb = relicCombatBonus();
             const first = firstActorBonus(hero);
             const helpDmg = helpDmgBonus();
@@ -153,7 +192,7 @@
         // Tiro di difesa: in caso di successo aggiunge armatura corrente all'eroe (vedi defendArmorGain).
         // Gli scudi più forti danno anche def_bonus, che si somma al tiro.
         function resolveDefend(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
+            const roll = rollD6(rolls, 0, hero);
             const sources = relicDiceSources();
             const first = firstActorBonus(hero);
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Scudo', val: hero.def_bonus || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
@@ -169,7 +208,7 @@
         // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità
         // (e, con la passiva helpDmgBonus, anche +danno fino alla fine del round).
         function resolveHelp(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0);
+            const roll = rollD6(rolls, 0, hero);
             const sources = relicDiceSources();
             const first = firstActorBonus(hero);
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Aiuto', val: hero.help_bonus_val || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
@@ -273,7 +312,7 @@
             }
             // Somma esatta (es. "7"): conta solo la somma dei due dadi, il bonus di Aiuta resta per il prossimo
             if (c.sumTarget) {
-                const dice = [rollD6(rolls, 0), rollD6(rolls, 1)];
+                const dice = [rollD6(rolls, 0, hero), rollD6(rolls, 1, hero)];
                 const sum = dice[0] + dice[1];
                 const hit = sum === c.sumTarget;
                 const eliteHalf = hit && currentEnemyIsEliteOrBoss();
@@ -297,7 +336,7 @@
                 return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: null,
                     dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
             }
-            const dice = c.dice === 2 ? [rollD6(rolls, 0), rollD6(rolls, 1)] : [rollD6(rolls, 0)];
+            const dice = c.dice === 2 ? [rollD6(rolls, 0, hero), rollD6(rolls, 1, hero)] : [rollD6(rolls, 0, hero)];
             const roll = Math.max(...dice);
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: firstBonus }, { label: STAT_LABELS[c.attackStat] || 'Stat.', val: attStat }, { label: hero.chosenAbility.name, val: c.attackBonus || 0 },
                 { label: 'Aiuto', val: stato.helpBonus }, { label: 'Mod.', val: attackMod(hero) }, { label: 'Reliquie', val: rb.att }];
@@ -337,7 +376,7 @@
             // Passiva "Neanche un graffio" (hero_set dodgeNoArmor: N): colpito senza armatura,
             // l'eroe tira un d6 e con N o più ignora del tutto il colpo
             if (dmg > 0 && target.current_armor <= 0 && target.dodgeNoArmor) {
-                const dodgeRoll = rollD6(null, 0);
+                const dodgeRoll = rollD6(null, 0, target);
                 if (dodgeRoll >= target.dodgeNoArmor) {
                     events.push({ type: 'dodge', roll: dodgeRoll, text: `🍃 Neanche un graffio! ${target.name} tira ${dodgeRoll} (serve ${target.dodgeNoArmor}+) ed evita il colpo.` });
                     dmg = 0;
@@ -983,6 +1022,7 @@
             } else {
                 document.getElementById('combatActionButtons').classList.add('hidden');
                 document.getElementById('combatDiceArea').classList.remove('hidden');
+                revealInView('combatDiceArea');
                 document.getElementById('combatDiceBackBtn').classList.remove('hidden');
                 document.getElementById('combatChangeHeroBtn').classList.add('hidden');
                 document.getElementById('diceCombatResult').textContent = "Tira il dado...";
@@ -1046,7 +1086,8 @@
             banner.className = 'phase-banner';
             banner.innerHTML = `<div class="phase-banner-text">${esc(text)}</div>`;
             document.body.appendChild(banner);
-            setTimeout(() => banner.remove(), 2600);
+            speedUpAnimations(banner);
+            setTimeout(() => banner.remove(), animTime(2600));
         }
 
         // Abilità senza tiro (armorGain): effetto immediato, poi il turno dell'eroe finisce come dopo un tiro
@@ -1142,7 +1183,7 @@
                 diceBox.textContent = Math.floor(Math.random() * 6) + 1;
                 if (twoDice) diceBox2.textContent = Math.floor(Math.random() * 6) + 1;
                 counter += 50;
-                if(counter >= 500) {
+                if(counter >= animTime(500)) {
                     clearInterval(interval);
                     diceBox.classList.remove('rolling');
                     diceBox2.classList.remove('rolling');
@@ -1150,6 +1191,7 @@
                     const hero = currentActiveHero;
                     const enemyHpBefore = stato.activeEnemy.hp;
                     const armorBefore = hero.current_armor;
+                    let rollOutcome = null;  // annuncio dell'esito (showRollBanner), dopo l'eventuale cinematica
 
                     if(chosenAction === 'attack') {
                         const res = resolveAttack(hero, stato.activeEnemy, externalRolls);
@@ -1159,6 +1201,7 @@
 
                         logCombat(`${hero.name} attacca: Tiro ${res.roll}${rollPartsText(res.parts)} = ${res.total} (CA: ${stato.activeEnemy.ca})`);
 
+                        rollOutcome = { ok: res.hit, title: res.hit ? `Colpito! ${res.dmg} ${res.dmg === 1 ? 'danno' : 'danni'}` : 'Mancato', detail: `${res.total} contro CA ${stato.activeEnemy.ca}` };
                         if(res.hit) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">SUCCESSO!</span> ${res.dmg} danni.`;
                             logCombat(`Colpo riuscito! Infliggi ${res.dmg} danni.${res.helpDmgBonus ? ` (Veleni: +${res.helpDmgBonus} dall'aiuto)` : ''}`);
@@ -1192,6 +1235,8 @@
                             } else if (res.autoHit) logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} Colpo automatico (vale come un 6).`);
                             else logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} ${diceText}${rollPartsText(res.parts)} = ${res.total} (CA: ${stato.activeEnemy.ca})`);
 
+                            rollOutcome = { ok: res.hit, title: res.hit ? `${ability.name}: ${res.dmg} ${res.dmg === 1 ? 'danno' : 'danni'}` : `${ability.name}: mancato`,
+                                detail: res.sumRoll ? `Somma ${res.roll}, serve esattamente ${c.sumTarget}` : res.autoHit ? 'Colpo automatico' : `${res.total} contro CA ${stato.activeEnemy.ca}` };
                             if (res.hit) {
                                 if (c.critical) fxNextEnemyHitCritical = true;
                                 const extra = [];
@@ -1216,6 +1261,7 @@
                         logNaturalRoll(res);
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} si difende: Tiro ${res.roll}${rollPartsText(res.parts)} = ${res.total} (Att. nemico: ${stato.activeEnemy.att})`);
+                        rollOutcome = { ok: res.success, title: res.success ? `Difesa riuscita! +${res.gained} Armatura` : 'Difesa fallita', detail: `${res.total} contro Attacco ${stato.activeEnemy.att}` };
                         if(res.success) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">DIFESA RIUSCITA!</span> +${res.gained} Armatura.`;
                             logCombat(`${hero.name} alza la guardia (+${res.gained} Armatura${res.gained > 1 ? ', scudo compreso' : ''}).`);
@@ -1229,6 +1275,7 @@
                         logNaturalRoll(res);
                         diceBox.textContent = res.roll;
                         logCombat(`${hero.name} aiuta: Tiro ${res.roll}${rollPartsText(res.parts)} = ${res.total} (Att. nemico: ${stato.activeEnemy.att})`);
+                        rollOutcome = { ok: res.success, title: res.success ? 'Aiuto riuscito! +1 al prossimo' : 'Aiuto fallito', detail: `${res.total} contro Attacco ${stato.activeEnemy.att}` };
                         if(res.success) {
                             document.getElementById('diceCombatResult').innerHTML = `<span style="color:var(--gold);">AIUTO RIUSCITO!</span> +1 al prossimo${res.dmgBonus ? `, +${res.dmgBonus} al danno fino a fine round` : ''}.`;
                         } else {
@@ -1239,6 +1286,7 @@
                     diceOutcomeSfx(twoDice ? Math.max(+diceBox.textContent, +diceBox2.textContent) : +diceBox.textContent);
 
                     const finishRoll = () => {
+                    if (rollOutcome) showRollBanner(rollOutcome.ok, rollOutcome.title, rollOutcome.detail);
                     hero.hasActed = true;
                     updateEnemyInfoUI();
                     updatePartyStatusBars();
@@ -1257,10 +1305,12 @@
                         logCombat(`Hai sconfitto ${stato.activeEnemy.name}! Vittoria!`);
                         document.getElementById('combatLootBtn').classList.remove('hidden');
                         document.getElementById('heroActionControlArea').classList.add('hidden');
+                        revealInView('combatLootBtn');
                         return;
                     }
                     if (handleEnemyPhasesUI(hero)) return;  // la reazione ha sconfitto la compagnia
                     document.getElementById('combatNextBtn').classList.remove('hidden');
+                    revealInView('combatNextBtn');
                     };
 
                     // Colpo a segno (attacco o abilità): prima la cinematica col ritratto, poi danni ed effetti
