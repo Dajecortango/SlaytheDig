@@ -104,6 +104,17 @@
             const currentActiveNode = stato.stsMapNodes.find(n => n.active);
             const currentLevel = currentActiveNode ? currentActiveNode.level : (stato.stsMapNodes.filter(n => n.done).length > 0 ? Math.max(...stato.stsMapNodes.filter(n => n.done).map(n => n.level)) + 1 : 0);
 
+            // Nodi ancora raggiungibili da quelli aperti (seguendo i next): le loro strade hanno l'inchiostro più deciso
+            const reachable = new Set();
+            const toVisit = stato.stsMapNodes.filter(n => n.active && !n.done).map(n => n.id);
+            while (toVisit.length) {
+                const id = toVisit.pop();
+                if (reachable.has(id)) continue;
+                reachable.add(id);
+                const n = stato.stsMapNodes.find(m => m.id === id);
+                if (n) toVisit.push(...n.next);
+            }
+
             let svgLinesHtml = '';
             stato.stsMapNodes.forEach(node => {
                 node.next.forEach(nextId => {
@@ -118,6 +129,7 @@
                         else if (node.done && targetNode.done) pathClass = "path-taken";
                         else if (node.done) pathClass = "path-closed";
                         else if (targetNode.level < currentLevel) pathClass = "path-closed";
+                        else if (reachable.has(node.id) && reachable.has(targetNode.id)) pathClass = "path-reachable";
 
                         svgLinesHtml += `<line class="${pathClass}" data-from="${node.id}" data-to="${targetNode.id}" x1="${node.x}" y1="${y1}" x2="${targetNode.x}" y2="${y2}" />`;
                     }
@@ -125,6 +137,15 @@
             });
             svgContainer.innerHTML = svgLinesHtml;
             renderMapLegend();
+
+            // Nebbia oltre il livello aperto: si dirada sul livello successivo, piena da lì in su.
+            // Copre terreno e strade, i nodi restano leggibili sopra (css .map-fog)
+            if (currentLevel + 1 <= maxLevel) {
+                const fog = document.createElement('div');
+                fog.className = 'map-fog';
+                fog.style.height = `${containerHeight - ((currentLevel + 0.55) * stepY + 70)}px`;
+                nodesContainer.appendChild(fog);
+            }
 
             stato.stsMapNodes.forEach(node => {
                 let statusClass = "upcoming";
@@ -134,6 +155,8 @@
                     statusClass = "available";
                 } else if (node.level < currentLevel && !node.done) {
                     statusClass = "excluded";
+                } else if (reachable.size && !reachable.has(node.id)) {
+                    statusClass = "upcoming unreachable";
                 }
 
                 const nodeEl = document.createElement('div');
@@ -300,6 +323,11 @@
             setCombatVideo(null);
             if(node.type === 'combat' || node.type === 'elite') {
                 chooseCombatTheme(node);
+                // Cornice della scena: elite (nodo elite) o boss (scontro dell'ultimo livello), vedi css/style.css
+                const stage = document.querySelector('#screenCombat .combat-stage');
+                const isBoss = node.type !== 'elite' && currentEnemyIsEliteOrBoss();
+                stage.classList.toggle('is-elite', node.type === 'elite');
+                stage.classList.toggle('is-boss', isBoss);
                 setSceneImage('combatImg', node.image || (enemies[node.enemy] && enemies[node.enemy].image), node.type);
                 setCombatVideo(enemies[node.enemy] && enemies[node.enemy].video);
                 startCombat(node.enemy);

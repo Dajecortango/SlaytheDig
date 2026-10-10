@@ -151,7 +151,14 @@ module.exports = (t, carica) => {
 
     t.test('Neanche un graffio: senza armatura, con 5+ il colpo è ignorato; con 4 no; con armatura non si tira', () => {
         const casuale = Math.random;
-        const conDado = (faccia, fn) => { Math.random = () => (faccia - 1) / 6 + 0.01; try { return fn(); } finally { Math.random = casuale; } };
+        // Dado truccato: senza sacchetto (DICE_BAG.size = 0) il tiro viene da Math.random
+        const bag = g.eval('DICE_BAG');
+        const conDado = (faccia, fn) => {
+            const size = bag.size;
+            bag.size = 0;
+            Math.random = () => (faccia - 1) / 6 + 0.01;
+            try { return fn(); } finally { Math.random = casuale; bag.size = size; }
+        };
         const eroe = { name: 'G', hp: 4, maxHp: 4, current_armor: 0 };
         g.applyEffects(abilita('neanche_un_graffio').effects, eroe);
         prepara([eroe]);
