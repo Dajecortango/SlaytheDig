@@ -202,6 +202,16 @@
             requestAnimationFrame(step);
         }
 
+        // Telefono: la fila degli eroi mostra solo ritratti e vita; toccandone uno si apre la sua carta intera
+        let expandedHeroCard = null;
+        function toggleHeroCard(card, ev) {
+            if (!window.matchMedia('(max-width: 700px)').matches) return;
+            if (ev && ev.target.closest('.inv-slot, button')) return;
+            expandedHeroCard = expandedHeroCard === card.dataset.hero ? null : card.dataset.hero;
+            document.querySelectorAll('.hero-mini-card').forEach(c => c.classList.toggle('expanded', c.dataset.hero === expandedHeroCard));
+            document.body.classList.toggle('hero-card-open', !!expandedHeroCard);
+        }
+
         function heroCardHtml(h) {
             const hpPct = clampPct(h.hp, h.maxHp);
             const armorMax = Math.max(h.base_armor, h.current_armor);
@@ -218,7 +228,7 @@
             }
 
             return `
-                <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)}" data-hero="${esc(h.name)}">
+                <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)} ${expandedHeroCard === h.name ? 'expanded' : ''}" data-hero="${esc(h.name)}" ${azione('toggleHeroCard', '$el', '$event')}>
                     ${heroBuffsHtml(h)}
                     ${heroBlessingsHtml(h)}
                     <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</div>
@@ -246,6 +256,29 @@
         }
 
         /* ---------- Finestra modale ---------- */
+        // Porta in vista un elemento appena comparso (dado, esito, scelte, pulsante per proseguire)
+        // senza cambiare il layout: scorre quanto basta la cornice della scena. el = elemento o id.
+        function revealInView(el) {
+            if (typeof el === 'string') el = document.getElementById(el);
+            if (!el || typeof el.scrollIntoView !== 'function') return;
+            requestAnimationFrame(() => {
+                if (el.offsetParent === null) return;  // nascosto
+                el.scrollIntoView({ block: 'nearest', behavior: animationsEnabled() ? 'smooth' : 'auto' });
+            });
+        }
+
+        // Annuncio breve dell'esito di un tiro, sopra la scena: "Successo!" / "Fallito" e il conto (es. "9 contro CD 7").
+        // Non blocca i clic e sparisce da solo.
+        function showRollBanner(ok, title, detail) {
+            document.querySelectorAll('.roll-banner').forEach(b => b.remove());
+            const banner = document.createElement('div');
+            banner.className = `roll-banner ${ok ? 'ok' : 'ko'}`;
+            banner.innerHTML = `<div class="roll-banner-box"><strong>${esc(title)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
+            document.body.appendChild(banner);
+            speedUpAnimations(banner);
+            setTimeout(() => banner.remove(), animTime(1700));
+        }
+
         function openModal(title, bodyHtml, actions, options = {}) {
             const box = document.querySelector('#wc3Modal .modal-box');
             box.classList.toggle('wide', !!options.wide);

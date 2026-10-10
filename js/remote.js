@@ -16,6 +16,7 @@
             coins: (typeof stato.partyCoins !== 'undefined') ? stato.partyCoins : 0,
             // In combattimento le pozioni si usano nel proprio turno; fuori (mappa, riposo, mercante...) dal telefono
             inCombat: typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat',
+            scene: remoteScene(),
             heroes: (typeof stato.party !== 'undefined' ? stato.party : []).map(h => ({
                 name: h.name,
                 hp: h.hp, maxHp: h.maxHp,
@@ -42,6 +43,30 @@
                     .map(x => ({ name: PRAYER_BLESSINGS[x.id].name, desc: PRAYER_BLESSINGS[x.id].desc, icon: PRAYER_BLESSINGS[x.id].icon, n: x.n || 1 }))
             }))
         };
+    }
+
+    // Scena in corso che i telefoni possono usare: preghiera al riposo e bottino dopo uno scontro
+    function remoteScene() {
+        const screen = typeof currentScreenId !== 'undefined' ? currentScreenId : '';
+        if (screen === 'screenRest' && typeof restPrayer !== 'undefined') {
+            const p = restPrayer;
+            return {
+                kind: 'rest', cd: PRAYER_CD, major: PRAYER_MAJOR_TOTAL, canPray: !p,
+                prayer: p ? { hero: p.hero, roll: p.roll, total: p.total, success: p.success, major: p.major, chosen: p.chosen, text: p.text,
+                    choices: p.choices.map(b => ({ name: b.name, desc: b.desc, icon: b.icon, bersaglio: b.bersaglio, maggiore: b.livello === 'maggiore' })) } : null
+            };
+        }
+        if (screen === 'screenLoot' && typeof lootChoices !== 'undefined') {
+            const back = document.getElementById('lootCardBack');
+            return {
+                kind: 'loot', coins: Number((document.getElementById('lootCoinsText') || {}).textContent) || 0,
+                revealed: !!back && back.classList.contains('hidden'), taken: lootTaken,
+                choices: lootChoices.map(it => ({ name: it.name, desc: it.desc || '', id: it.id, type: it.type || '',
+                    rarity: typeof itemRarity === 'function' ? itemRarity(it) : null,
+                    icon: typeof itemImageSrc === 'function' ? (itemImageSrc(it) || null) : null }))
+            };
+        }
+        return null;
     }
 
     // Rune (Alastorta): equipaggiate, disponibili e se adesso si può fare lo scambio del riposo
@@ -229,8 +254,9 @@
     }
 
     /* ---------- Tiro di dado remoto (combattimento + sfide) ----------
-       Quando un eroe con il telefono collegato deve tirare, il server genera
-       lui il tiro (fa da arbitro) e lo rimanda sia al telefono sia a questo
+       Quando un eroe con il telefono collegato deve tirare, questo tab manda
+       al server i prossimi dadi del sacchetto dell'eroe; il server li tiene
+       nascosti finché il telefono non tira, poi li rimanda sia al telefono sia a questo
        tab, che risolve il turno esattamente come un click su "Tira" in
        locale. Il pulsante locale resta sempre utilizzabile come ripiego: se
        il giocatore clicca prima che il telefono risponda, il risultato
@@ -244,7 +270,9 @@
         fetch(`${REMOTE_BASE}/api/roll-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ heroName, diceCount, label })
+            // I valori li decide il sacchetto dell'eroe (peekHeroDice in js/combattimento.js): il server li mostra
+            // al telefono e li rimanda indietro, così il tiro dal telefono e quello locale pescano gli stessi dadi
+            body: JSON.stringify({ heroName, diceCount, label, rolls: peekHeroDice(stato.party.find(h => h.name === heroName), diceCount) })
         }).then(r => r.json()).then(data => {
             if (data && data.requestId) currentRollRequestId = data.requestId;
         }).catch(() => {}); // nessun server/telefono: resta solo il pulsante locale
@@ -276,6 +304,18 @@
                     const data = JSON.parse(e.data);
                     if (typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat') return;
                     if (typeof useConsumable === 'function') useConsumable(data.heroName, data.itemIndex, data.targetName);
+                } catch (err) {}
+            });
+            // Preghiera e bottino dal telefono: solo le azioni elencate, il gioco controlla che si possano fare
+            rollEvents.addEventListener('scene-action', e => {
+                try {
+                    const d = JSON.parse(e.data);
+                    const prayingHere = () => typeof restPrayer !== 'undefined' && restPrayer && restPrayer.hero === d.heroName;
+                    if (d.action === 'pray') remotePray(d.heroName);
+                    else if (d.action === 'blessing' && prayingHere()) chooseBlessing(d.index);
+                    else if (d.action === 'blessing-target' && prayingHere()) giveBlessing(d.targetName);
+                    else if (d.action === 'loot-reveal') revealLootItem();
+                    else if (d.action === 'loot-take') takeLootChoice(d.index, d.heroName, d.discardIndex);
                 } catch (err) {}
             });
             // Scambio di una runa dal telefono durante un riposo

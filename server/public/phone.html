@@ -66,6 +66,10 @@
     .bag-title { font-family: var(--font-title); font-size: 0.8rem; color: var(--wc-yellow); margin-bottom: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
     .bag-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(226,185,81,0.12); }
     .bag-item:last-child { border-bottom: none; }
+    .scene-panel { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 14px rgba(255, 215, 110, 0.35); }
+    .scene-btn { display: block; width: 100%; margin-top: 8px; padding: 12px; font-size: 1rem; }
+    .scene-targets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .bag-item.blessing-major .bag-icon { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 8px rgba(255, 215, 110, 0.7); }
     .bag-icon.blessing-icon { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 8px rgba(255, 215, 110, 0.6); }
     .bag-icon { width: 40px; height: 40px; flex: 0 0 40px; border: 2px solid #8d8a84; box-shadow: 0 0 0 1px #000; background: #0a0605; object-fit: cover; }
     .bag-icon[class*="rar-"] { border-color: var(--rar); box-shadow: 0 0 0 1px #000, 0 0 8px var(--rar-glow); }
@@ -223,6 +227,79 @@
                 <div class="bag-note">${runeMessage || note}</div></div>`;
         }
 
+        /* ---------- Scena in corso: preghiera al riposo e bottino dopo uno scontro ---------- */
+        let lootDiscardFor = null;   // oggetto del bottino scelto, in attesa di sapere cosa scartare (zaino pieno)
+        let sceneMessage = '';
+
+        function sceneAction(action, extra) {
+            if (!currentHero) return;
+            sceneMessage = '';
+            fetch('/api/scene-action', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
+                body: JSON.stringify(Object.assign({ heroName: currentHero.name, action }, extra || {}))
+            }).then(r => r.json()).then(data => {
+                if (!data || !data.ok) { sceneMessage = (data && data.error) || 'Non è stato possibile.'; if (lastState) renderHero(lastState); }
+            }).catch(() => { sceneMessage = 'Connessione persa.'; if (lastState) renderHero(lastState); });
+        }
+
+        function takeLoot(i) {
+            const hero = currentHero;
+            const item = lastState && lastState.scene && lastState.scene.choices[i];
+            if (!hero || !item) return;
+            // Zaino pieno (e niente pila dello stesso consumabile): prima si sceglie cosa lasciare
+            const stack = item.type.startsWith('consumable') && hero.items.some(it => it.name === item.name && it.qty < 2);
+            if (hero.items.length >= 3 && !stack && lootDiscardFor !== i) { lootDiscardFor = i; renderHero(lastState); return; }
+            lootDiscardFor = null;
+            sceneAction('loot-take', { index: i });
+        }
+
+        function takeLootDiscarding(i, discardIndex) {
+            lootDiscardFor = null;
+            sceneAction('loot-take', { index: i, discardIndex });
+        }
+
+        function renderScene(state, hero) {
+            const s = state.scene;
+            if (!s) { lootDiscardFor = null; return ''; }
+            const panel = (title, html) => `<div class="panel items scene-panel"><div class="bag-title">${title}</div>${html}${sceneMessage ? `<div class="bag-note">${sceneMessage}</div>` : ''}</div>`;
+            const row = (icon, name, desc, extra, cls) => `<div class="bag-item ${cls || ''}">${icon ? `<img class="bag-icon" src="/${icon}" alt="">` : '<span class="bag-icon"></span>'}<div class="bag-text"><b>${name}</b><small>${desc}</small></div>${extra || ''}</div>`;
+            if (s.kind === 'rest') {
+                const p = s.prayer;
+                if (!p) {
+                    if (!s.canPray || hero.hp <= 0) return '';
+                    return panel('Preghiera', `<div class="bag-note">Prova di Fede: d6 + Fede ${hero.fth}, serve ${s.cd}. Con ${s.major} o un 6 benedizione maggiore. Un solo eroe per riposo.</div>
+                        <button class="scene-btn" onclick="sceneAction('pray')">🙏 Prega</button>`);
+                }
+                let html = `<div class="bag-note"><b>${p.hero}</b> prega: dado ${p.roll}, totale ${p.total} (serve ${s.cd}). ${p.success ? (p.major ? '<b>Benedizione maggiore!</b>' : 'La preghiera è ascoltata.') : 'Gli dei tacciono.'}</div>`;
+                if (p.text) html += `<div class="bag-note">${p.text}</div>`;
+                else if (p.success && p.hero !== hero.name) html += `<div class="bag-note">${p.hero} sta scegliendo la benedizione.</div>`;
+                else if (p.success && p.chosen === null) html += p.choices.map((b, i) => row(b.icon, b.name, `${b.desc} · ${b.bersaglio === 'eroe' ? 'su un eroe' : 'su tutta la compagnia'}`,
+                    `<button class="use-btn" onclick="sceneAction('blessing', { index: ${i} })">Scegli</button>`, b.maggiore ? 'blessing-major' : '')).join('');
+                else if (p.success) {
+                    const b = p.choices[p.chosen];
+                    html += `<div class="bag-note">A chi va ${b.name}?</div><div class="scene-targets">${(state.heroes || []).filter(h => h.hp > 0)
+                        .map(h => `<button class="use-btn" onclick='sceneAction("blessing-target", { targetName: ${JSON.stringify(h.name)} })'>${h.name}</button>`).join('')}</div>`;
+                }
+                return panel('Preghiera', html);
+            }
+            if (s.kind === 'loot') {
+                if (s.taken) return panel('Bottino', '<div class="bag-note">Il bottino è stato assegnato.</div>');
+                if (!s.revealed) return panel('Bottino', `<div class="bag-note">Monete trovate: ${s.coins}. Il bottino è ancora coperto.</div>
+                    <button class="scene-btn" onclick="sceneAction('loot-reveal')">Scopri il bottino</button>`);
+                if (hero.hp <= 0) return panel('Bottino', '<div class="bag-note">Gli eroi caduti non possono prendere oggetti.</div>');
+                let html = '<div class="bag-note">Se ne tiene uno solo: chi lo prende per primo lo mette nel suo zaino.</div>' +
+                    s.choices.map((it, i) => row(it.icon, it.name, it.desc, `<button class="use-btn" onclick="takeLoot(${i})">Lo prendo io</button>`, it.rarity ? `rar-${it.rarity}` : '')).join('');
+                if (lootDiscardFor !== null && s.choices[lootDiscardFor]) {
+                    html += `<div class="bag-note">Zaino pieno: cosa lasci per prendere ${s.choices[lootDiscardFor].name}?</div><div class="scene-targets">${hero.items
+                        .map((it, j) => `<button class="use-btn" onclick="takeLootDiscarding(${lootDiscardFor}, ${j})">${it.name}</button>`).join('')}
+                        <button class="use-btn" onclick="takeLootDiscarding(${lootDiscardFor}, null)">Decido sul PC</button></div>`;
+                }
+                return panel('Bottino', html);
+            }
+            return '';
+        }
+
         // Benedizioni della preghiera ancora da usare
         function renderBlessings(hero) {
             const list = hero.blessings || [];
@@ -294,6 +371,7 @@
                     </div>
                     ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>${hero.abilityDesc ? `<div class="hero-ability-desc">${hero.abilityDesc}</div>` : ''}` : ''}
                 </div>
+                ${renderScene(state, hero)}
                 ${renderBlessings(hero)}
                 ${renderRunes(hero)}
                 <div class="panel items">${renderBag(hero, state)}</div>`;

@@ -11,7 +11,7 @@ window.CAMPAIGNS["prova di fede"] = {
     "description": "",
     "coverImage": "",
     "introText": "",
-    "heroes": ["ascadeo", "prometeo_dignitas"],
+    "heroes": ["ascadeo", "prometeo_dignitas", "alastorta_dignitas"],
     "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {},
     "merchants": { "default": "" },

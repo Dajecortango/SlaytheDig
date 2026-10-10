@@ -77,6 +77,7 @@
             selectedChallengeHero = stato.party.filter(p => p.hp > 0).find(p => p.name === document.getElementById('challengeHeroSelect').value);
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('diceChallengeSection').classList.remove('hidden');
+            revealInView('rollChallengeBtn');
 
             const statLabel = STAT_LABELS[stato.challengeState.stat] || 'Statistica';
             document.getElementById('challengeCdText').textContent = `Prova di ${statLabel} (Classe di Difficoltà: ${stato.challengeState.cd})`;
@@ -175,10 +176,10 @@
             // tentativo: il ritiro di Dioforo è lo stesso tiro ripetuto, non un tiro nuovo.
             const attempt = (offset, malus) => {
                 const reroll = malus > 0;
-                const roll = rollD6(rolls, offset);
+                const roll = rollD6(rolls, offset, hero);
                 let roll2 = null, kept = roll;
                 if (twoDice) {
-                    roll2 = rollD6(rolls, offset + 1);
+                    roll2 = rollD6(rolls, offset + 1, hero);
                     kept = rollMode.mode === 'best' ? Math.max(roll, roll2) : Math.min(roll, roll2);
                     events.push({ type: 'roll2', text: `🎲 Dadi [${roll}, ${roll2}]: tiene <b>${kept}</b> (${rollMode.source})` });
                 } else {
@@ -287,7 +288,7 @@
                 diceBox.textContent = Math.floor(Math.random() * 6) + 1;
                 if (twoDice) diceBox2.textContent = Math.floor(Math.random() * 6) + 1;
                 counter += 50;
-                if(counter >= 500) {
+                if(counter >= animTime(500)) {
                     clearInterval(interval);
 
                     const res = resolveChallenge(selectedChallengeHero, stato.challengeState, externalRolls);
@@ -310,6 +311,7 @@
 
                     diceOutcomeSfx(res.kept);
                     res.events.forEach(ev => addChallengeLog(ev.text));
+                    showRollBanner(res.success, res.success ? 'Successo!' : 'Fallimento', `${res.total} contro CD ${stato.challengeState.cd}`);
 
                     if(res.success) {
                         let rewardMsg = "";
@@ -332,6 +334,7 @@
 
                     updatePartyStatusBars();
                     document.getElementById('closeChallengeBtn').classList.remove('hidden');
+                    revealInView('closeChallengeBtn');
                 }
             }, 50);
         }
@@ -489,7 +492,7 @@
 
         // Tiro della preghiera, senza interfaccia (usato anche dal simulatore)
         function prayerRoll(hero) {
-            const roll = rollD6(null, 0);
+            const roll = rollD6(null, 0, hero);
             const relics = relicDiceBonus();
             const total = roll + (hero.fth || 0) + relics;
             const notes = spendNextRollRelics();
@@ -560,6 +563,7 @@
             restPrayer.chosen = idx;
             if (b.bersaglio === 'party') { giveBlessing(null); return; }
             renderRestPrayer();
+            updatePartyStatusBars();
         }
 
         function giveBlessing(heroName) {
@@ -586,6 +590,17 @@
             document.getElementById('restPrayerArea').innerHTML = '';
         }
 
+        // Preghiera dal telefono dell'eroe: stessa prova, con il dado che gira sullo schermo del gioco
+        function remotePray(heroName) {
+            // Niente se qualcuno ha già pregato o ha già scelto l'eroe sul PC (dado in vista)
+            if (currentScreenId !== 'screenRest' || restPrayer || !document.getElementById('dicePrayerSection').classList.contains('hidden')) return false;
+            if (!stato.party.some(h => h.hp > 0 && h.name === heroName)) return false;
+            document.getElementById('prayerStage1').classList.add('hidden');
+            confirmPrayerHero(heroName);
+            executePrayerRoll();
+            return true;
+        }
+
         // Come le sfide: prima si sceglie chi prega (con Fede e probabilità), poi si tira il dado
         function startPrayer() {
             if (restPrayer) return;
@@ -598,8 +613,10 @@
         const prayerChance = hero => chanceText(PRAYER_CD - (hero.fth || 0) - relicDiceBonus());
 
         let selectedPrayerHero = null;
-        function confirmPrayerHero() {
-            selectedPrayerHero = stato.party.find(h => h.hp > 0 && h.name === document.getElementById('prayerHeroSelect').value);
+        // heroName: chi prega quando arriva dal telefono (remotePray), altrimenti la scelta nel menu
+        function confirmPrayerHero(heroName) {
+            const name = typeof heroName === 'string' ? heroName : document.getElementById('prayerHeroSelect').value;
+            selectedPrayerHero = stato.party.find(h => h.hp > 0 && h.name === name);
             if (!selectedPrayerHero) return;
             document.getElementById('prayerStage2').classList.add('hidden');
             document.getElementById('dicePrayerSection').classList.remove('hidden');
@@ -610,6 +627,7 @@
             chanceEl.dataset.chance = info.pct >= 67 ? 'high' : (info.pct >= 34 ? 'mid' : 'low');
             document.getElementById('dicePrayer').textContent = '6';
             document.getElementById('rollPrayerBtn').disabled = false;
+            revealInView('rollPrayerBtn');
         }
 
         function addPrayerLog(text, cls = '') {
@@ -630,7 +648,7 @@
             const interval = setInterval(() => {
                 diceBox.textContent = Math.floor(Math.random() * 6) + 1;
                 counter += 50;
-                if (counter < 500) return;
+                if (counter < animTime(500)) return;
                 clearInterval(interval);
                 const p = prayAtRest(selectedPrayerHero.name);
                 diceBox.classList.remove('rolling');
@@ -643,7 +661,10 @@
                 if (p.naturalNote) addPrayerLog(esc(p.naturalNote));
                 addPrayerLog(p.success ? (p.major ? '✨ Gli dei rispondono con forza: benedizione maggiore!' : '🙏 La preghiera è ascoltata!')
                     : 'Gli dei tacciono. Nessuna benedizione questa volta.', p.success ? 'log-success' : 'log-fail');
+                showRollBanner(p.success, p.success ? (p.major ? 'Benedizione maggiore!' : 'Preghiera ascoltata!') : 'Gli dei tacciono', `${p.total} contro CD ${PRAYER_CD}`);
                 btn.classList.add('hidden');
+                revealInView(p.success ? 'restPrayerArea' : 'prayerLog');
+                updatePartyStatusBars();  // il telefono vede l'esito e le benedizioni
             }, 50);
         }
 
@@ -670,6 +691,7 @@
                     .map(h => `<button class="btn-proceed prayer-hero-btn" ${azione('giveBlessing', h.name)}>${esc(h.name)}</button>`).join('')}</div>`;
             }
             box.innerHTML = html;
+            revealInView(box.lastElementChild || box);
         }
 
         function startRest(restId) {
@@ -712,6 +734,7 @@
             selectedCaptainHero = stato.party.find(p => p.name === document.getElementById('captainHeroSelect').value);
             document.getElementById('captainHeroSelect').style.display = 'none';
             document.getElementById('diceCaptainSection').classList.remove('hidden');
+            revealInView('diceCaptainSection');
         }
 
         // Risolve l'azione del finale "capitano": 'force' dimezza gli HP, 'faith'/'int' tirano contro CD 6.
@@ -721,7 +744,7 @@
                 hero.hp = Math.max(1, Math.floor(hero.hp / 2));
                 return { type, roll, success: null };
             }
-            const roll = rollD6(null, 0);
+            const roll = rollD6(null, 0, hero);
             const statVal = type === 'faith' ? hero.fth : hero.int;
             // Anche qui valgono le reliquie dei tiri; la Catena di Norgrad vale contro il capitano
             const relicBonus = relicDiceBonus() + (hasRelic('catena_di_norgrad') ? 1 : 0);
@@ -740,12 +763,13 @@
             const interval = setInterval(() => {
                 diceBox.textContent = Math.floor(Math.random() * 6) + 1;
                 counter += 50;
-                if(counter >= 500) {
+                if(counter >= animTime(500)) {
                     clearInterval(interval);
                     const res = resolveCaptainAction(selectedCaptainHero, captainActionType);
                     diceBox.textContent = res.roll; diceBox.classList.remove('rolling');
                     diceOutcomeSfx(res.roll);
 
+                    showRollBanner(res.success !== false && res.type !== 'force', res.type === 'force' ? 'Ramanzina!' : res.success ? 'Vittoria!' : 'Fallito', `Dado ${res.roll}`);
                     if (res.type === 'force') {
                         document.getElementById('resultCaptainLog').innerHTML = `<span style="color:#ff4d4d;">RAMANZINA!</span> Perdi il 50% degli HP.`;
                     } else if (res.success) {
@@ -761,6 +785,7 @@
                     const lost = res.success === false;
                     endBtn.textContent = lost ? "Vedi Sconfitta / Fine Campagna" : "Vedi Vittoria / Fine Campagna";
                     impostaAzione(endBtn, lost ? 'finishLostFinal' : 'finishWonFinal');
+                    revealInView(endBtn);
                 }
             }, 50);
         }

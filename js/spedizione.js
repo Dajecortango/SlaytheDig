@@ -76,6 +76,9 @@
             combatPhase = 'won';
             stato.expeditionStats.combatsWon++;
             box.classList.add('defeated');
+            // La scena del nemico brucia dai bordi verso il centro (css .combat-stage.enemy-slain)
+            const stage = box.closest('.combat-stage');
+            if (stage) stage.classList.add('enemy-slain');
             const stamp = document.createElement('div');
             stamp.className = 'victory-stamp';
             stamp.textContent = 'Vittoria!';

@@ -41,7 +41,7 @@ const MEDIC_MAX_HP = 4;            // HP che il medico cura in tutto a ogni merc
 const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno questa parte delle monete
 
 // Bottino degli scontri: quanti oggetti si vedono (se ne tiene uno)
-const LOOT_CHOICES = 2;
+const LOOT_CHOICES = 3;
 
 // Preghiera ai riposi (js/prove.js): un eroe per riposo tira d6 + Fede contro PRAYER_CD, con le regole di sempre
 // (6 riesce, 1 fallisce, reliquie dei tiri). Con PRAYER_MAJOR_TOTAL o più, o con un 6, la benedizione è maggiore.
@@ -106,6 +106,12 @@ const LOOT_RARITY_RANGE = {
 // Elite (e boss): la stessa tabella, come se fossero più avanti nella mappa, senza scarsi e comuni
 const LOOT_ELITE_PROGRESS_BONUS = 0.4;
 const LOOT_ELITE_EXCLUDED = ['scarso', 'comune'];
+
+/* ---------- Dadi degli eroi: sacchetto (rollD6 in js/combattimento.js) ----------
+   Ogni eroe pesca i suoi d6 da un sacchetto di "size" tiri con esattamente "ones" 1 e "sixes" 6;
+   gli altri sono casuali tra 2 e 5. Finito il sacchetto se ne mescola uno nuovo.
+   size: 12, ones: 2, sixes: 2 = stesse probabilità, più difficile da contare. size: 0 = dado casuale puro. */
+const DICE_BAG = { size: 6, ones: 1, sixes: 1 };
 
 /* ---------- Campagne procedurali (js/procedurale.js) ----------
    Crescita della difficoltà (p = avanzamento da 0 al primo livello a 1 al boss) */

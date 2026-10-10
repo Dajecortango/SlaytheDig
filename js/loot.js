@@ -8,10 +8,29 @@
         /* ---------- Carte coperte: merce del mercante e bottino degli scontri si scoprono con un clic ---------- */
         let justRevealedMerchantIdx = null;
 
-        function cardBackHtml(actionAttrs, title, sub, extraClass = '') {
+        // Sagome sotto il telo delle carte coperte del mercante: equipaggiamento o consumabili
+        // (già noto dalla posizione: prima le armi e armature, poi i consumabili). SVG disegnati qui, colori nel CSS;
+        // il telo segue le sagome e finisce in basso con le frange.
+        const CARD_BACK_FRINGE = 'L86 61L80 66L72 61L64 66L56 61L48 66L40 61L32 66L24 61L16 66L10 61Z';
+        const CARD_BACK_SILHOUETTES = {
+            equipment: '<path class="cb-shape" d="M31 2.5a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4zM29.5 9h3v7h7.5v3h-6l-.6 34h-4.8L28 19h-6v-3h7.5z"/>'
+                + '<path class="cb-shape" d="M60 10c9 0 18 3 18 3v17c0 13-9 21-18 25-9-4-18-12-18-25V13s9-3 18-3z"/>'
+                + `<path class="cb-cloth" d="M2 64C4 56 8 50 14 46C20 42 26 36 31 36C36 36 38 43 42 43C47 43 52 34 60 34C68 34 76 38 82 44C88 50 92 56 94 64${CARD_BACK_FRINGE}"/>`
+                + '<path class="cb-fold" d="M31 38C30 47 33 55 32 61M60 36C58 46 62 54 60 61M44 45C45 52 43 57 44 61M80 46C79 53 82 57 81 61"/>',
+            consumable: '<path class="cb-shape" d="M30 6h7v3h-1v10c6 2 10 7 10 14a12.5 12.5 0 0 1-25 0c0-7 4-12 10-14V9h-1z"/>'
+                + '<path class="cb-shape" d="M56 4h8v3h-1v12c4 1 6 4 6 8v25H51V27c0-4 2-7 6-8V7h-1z"/>'
+                + '<path class="cb-shape" d="M75 22h6v3h-1v5c3 1 4 3 4 6v14H72V36c0-3 1-5 4-6v-5h-1z"/>'
+                + `<path class="cb-cloth" d="M2 64C5 57 9 52 14 48C20 43 27 40 34 40C40 40 44 46 49 46C53 46 55 36 60 36C65 36 67 44 71 44C74 44 75 42 78 42C84 42 90 52 94 64${CARD_BACK_FRINGE}"/>`
+                + '<path class="cb-fold" d="M34 42C33 50 36 56 34 61M60 38C59 47 62 54 60 61M49 48C50 54 48 58 49 61M78 44C77 51 80 56 79 61"/>'
+        };
+
+        function cardBackHtml(actionAttrs, title, sub, extraClass = '', silhouette = null) {
+            const emblem = silhouette
+                ? `<span class="card-back-drape" aria-hidden="true"><svg viewBox="0 0 96 64">${CARD_BACK_SILHOUETTES[silhouette]}</svg><span class="card-back-seal">?</span></span>`
+                : '<span class="card-back-emblem" aria-hidden="true">?</span>';
             return `
                 <button class="armory-btn card-back ${extraClass}" ${actionAttrs}>
-                    <span class="card-back-emblem" aria-hidden="true">?</span>
+                    ${emblem}
                     <span class="tile-text">
                         <strong>${title}</strong>
                         <span class="tile-sub">${sub}</span>
@@ -39,6 +58,7 @@
             });
         }
 
+        let lootTaken = false;        // il bottino di questo scontro è già stato assegnato (dal gioco o da un telefono)
         let currentLootItem = null;   // oggetto scelto fra quelli del bottino
         let lootChoices = [];         // oggetti del bottino fra cui scegliere (LOOT_CHOICES)
 
@@ -156,6 +176,7 @@
 
             lootChoices = pickLootChoices(isEliteCombat);
             currentLootItem = null;
+            lootTaken = false;
             stato.expeditionStats.itemsFound++;
 
             // Elite sconfitti: solo per il riepilogo della spedizione (gli elite non lasciano reliquie)
@@ -202,7 +223,24 @@
                 renderLootChoices(true);
                 // Con un solo oggetto (bottino povero) è già scelto
                 if (lootChoices.length === 1) selectLootChoice(0);
+                revealInView('lootChoices');
+                updatePartyStatusBars();  // i telefoni vedono gli oggetti scoperti
             });
+        }
+
+        // Dal telefono: l'eroe prende per sé uno degli oggetti del bottino (discardIdx = cosa scartare se lo zaino è pieno)
+        function takeLootChoice(idx, heroName, discardIdx = null) {
+            const item = lootChoices[idx];
+            const hero = stato.party.find(h => h.name === heroName && h.hp > 0);
+            if (currentScreenId !== 'screenLoot' || lootTaken || !item || !hero) return false;
+            lootTaken = true;
+            currentLootItem = item;
+            document.getElementById('lootCardBack').classList.add('hidden');
+            document.getElementById('lootChoices').classList.remove('hidden');
+            renderLootChoices(false);
+            uiMessage(`${hero.name} prende ${item.name}`);
+            assignItemToHero(item, hero, () => advanceNode(), Number.isInteger(discardIdx) ? discardIdx : null);
+            return true;
         }
 
         function selectLootChoice(idx) {
@@ -211,11 +249,15 @@
             renderLootChoices(false);
             fillHeroSelectForItem('lootHeroSelect', currentLootItem);
             document.getElementById('lootAssignArea').classList.remove('hidden');
+            revealInView('lootAssignArea');
         }
 
         function confirmLootAssignment() {
             if (!currentLootItem) { uiError('Scegli prima un oggetto'); return; }
+            if (lootTaken) return;
             const hero = stato.party.find(p => p.name === document.getElementById('lootHeroSelect').value);
+            if (!hero) return;
+            lootTaken = true;
             assignItemToHero(currentLootItem, hero, () => {
                 advanceNode();
             }, chosenDiscardIdx('lootHeroSelect'));
@@ -284,6 +326,7 @@
             document.getElementById('treasureItemsList').classList.add('hidden');
             document.getElementById('btnExitTreasure').classList.add('hidden');
             document.getElementById('treasureAssignArea').classList.remove('hidden');
+            revealInView('treasureAssignArea');
 
             document.getElementById('selectedTreasureName').textContent = selectedTreasureItem.name;
             document.getElementById('selectedTreasureDesc').innerHTML = kw(selectedTreasureItem.desc);

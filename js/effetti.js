@@ -45,6 +45,16 @@
             setTimeout(() => el.classList.remove('fx-hit'), 450);
         }
 
+        // Lampo sulla carta dell'eroe: rosso quando perde vita, verde quando la recupera.
+        // Uno strato a parte (la carta ha già le sue animazioni di turno su box-shadow).
+        function fxCardFlash(card, kind) {
+            if (!card || !animationsEnabled()) return;
+            const flash = document.createElement('span');
+            flash.className = `fx-card-flash ${kind}`;
+            card.appendChild(flash);
+            setTimeout(() => flash.remove(), 900);
+        }
+
         function heroCardEl(hero) {
             return document.querySelector(`.hero-mini-card[data-hero="${CSS.escape(hero.name)}"]`);
         }
@@ -63,6 +73,8 @@
                 const dHp = hero.hp - prev.hp;
                 const dArmor = hero.current_armor - prev.armor;
                 if (dHp < 0 || dArmor < 0) fxHit(card);
+                if (dHp < 0) fxCardFlash(card, 'hurt');
+                else if (dHp > 0) fxCardFlash(card, 'healed');
                 if (dArmor < 0) synthSfx('armor');
                 if (dHp < 0) setTimeout(() => synthSfx('hit'), dArmor < 0 ? 180 : 0);
                 if (dArmor < 0) fxFloatOn(card, `${dArmor} Armatura`, 'armor');
@@ -82,7 +94,11 @@
             const prev = fxEnemySeen.get(stato.activeEnemy);
             fxEnemySeen.set(stato.activeEnemy, { hp: stato.activeEnemy.hp, stunned: stato.activeEnemy.isStunned });
             const box = document.getElementById('enemyInfo');
-            if (stato.activeEnemy.hp > 0) box.classList.remove('defeated');
+            if (stato.activeEnemy.hp > 0) {
+                box.classList.remove('defeated');
+                const stage = box.closest('.combat-stage');
+                if (stage) stage.classList.remove('enemy-slain');
+            }
             if (!prev) return;
             if (stato.activeEnemy.hp <= 0 && prev.hp > 0) onEnemyDefeated(box);
             const dHp = stato.activeEnemy.hp - prev.hp;
@@ -109,6 +125,7 @@
             box.classList.remove('typing');
             box.removeAttribute('title');
             typingState.delete(box);
+            updateDescOverflow(box);
         }
 
         function startTypewriter(box) {
@@ -129,7 +146,7 @@
             typingState.set(box, state);
 
             const step = () => {
-                let budget = gameOptions.textSpeed;
+                let budget = gameOptions.textSpeed * (gameOptions.fastAnimations ? 2 : 1);
                 while (budget > 0 && state.index < parts.length) {
                     const p = parts[state.index];
                     const shown = p.node.data.length;
@@ -138,6 +155,8 @@
                     budget -= take;
                     if (p.node.data.length >= p.text.length) state.index++;
                 }
+                // Testo più lungo del riquadro: si segue la riga che si sta scrivendo
+                if (!box.classList.contains('is-open') && box.scrollHeight > box.clientHeight) box.scrollTop = box.scrollHeight;
                 if (state.index < parts.length) state.raf = requestAnimationFrame(step);
                 else stopTypewriter(box, true);
             };
@@ -148,6 +167,9 @@
         const typeObserver = new MutationObserver(mutations => {
             const boxes = new Set(mutations.map(m => m.target));
             boxes.forEach(box => {
+                // Testo nuovo: il riquadro torna chiuso e dall'inizio
+                box.classList.remove('is-open');
+                box.scrollTop = 0;
                 if (box.offsetParent === null) {
                     stopTypewriter(box, false);
                     box.dataset.typePending = '1';
@@ -157,6 +179,62 @@
             });
         });
         document.querySelectorAll('.narrative-desc-box').forEach(box => typeObserver.observe(box, { childList: true }));
+
+        /* ---------- Dadi d'osso con i punti ----------
+           Il gioco scrive il valore come testo nella .dice-box (e lo rilegge da lì): qui lo si copia in
+           data-face, che il CSS disegna come punti incisi. Quando il dado smette di rotolare prende
+           la classe "landed" (rimbalzo; bagliore d'oro sul 6 e rosso sull'1). */
+        const diceRolling = new WeakMap();
+        // Cambia le classi solo se serve: anche un add/remove senza effetto riscrive l'attributo
+        // e farebbe ripartire l'osservatore all'infinito
+        function syncDiceFace(box) {
+            const face = box.textContent.trim();
+            if (box.dataset.face !== face) box.dataset.face = face;
+            const rolling = box.classList.contains('rolling');
+            const landed = box.classList.contains('landed');
+            if (rolling && landed) box.classList.remove('landed');
+            else if (!rolling && !landed && diceRolling.get(box)) box.classList.add('landed');
+            diceRolling.set(box, rolling);
+        }
+        const diceObserver = new MutationObserver(mutations => {
+            new Set(mutations.map(m => m.target.nodeType === 1 ? m.target.closest('.dice-box') : m.target.parentElement))
+                .forEach(box => box && syncDiceFace(box));
+        });
+        document.querySelectorAll('.dice-box').forEach(box => {
+            syncDiceFace(box);
+            diceObserver.observe(box, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        });
+
+        /* ---------- Testi lunghi: sfumatura e "Leggi tutto" ----------
+           Sotto ogni riquadro narrativo c'è una linguetta (.desc-more), visibile solo se il testo non ci sta:
+           la sfumatura dice che il testo continua finché non si arriva in fondo, il pulsante apre il riquadro
+           per intero (classe is-open) e lo richiude. Sta fuori dal riquadro, che il gioco riscrive con innerHTML. */
+        function updateDescOverflow(box) {
+            const more = box.nextElementSibling;
+            if (!more || !more.classList.contains('desc-more')) return;
+            const open = box.classList.contains('is-open');
+            const overflows = box.scrollHeight > box.clientHeight + 4;
+            const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 4;
+            more.classList.toggle('hidden', !open && !overflows);
+            more.classList.toggle('faded', !open && overflows && !atEnd);
+            more.classList.toggle('open', open);
+            more.querySelector('.desc-more-label').textContent = open ? 'Riduci' : 'Leggi tutto';
+        }
+
+        function toggleDescBox(btn) {
+            const box = btn.closest('.desc-more').previousElementSibling;
+            stopTypewriter(box, true);
+            box.classList.toggle('is-open');
+            box.scrollTop = 0;
+            updateDescOverflow(box);
+        }
+
+        const descResize = new ResizeObserver(entries => entries.forEach(e => updateDescOverflow(e.target)));
+        document.querySelectorAll('.narrative-desc-box').forEach(box => {
+            box.insertAdjacentHTML('afterend', `<div class="desc-more hidden"><button type="button" class="desc-more-btn" ${azione('toggleDescBox', '$el')}><span class="desc-more-label">Leggi tutto</span></button></div>`);
+            box.addEventListener('scroll', () => updateDescOverflow(box), { passive: true });
+            descResize.observe(box);
+        });
 
         // Testi scritti mentre la schermata era nascosta: partono quando diventa visibile
         function startPendingTypewriters(screen) {

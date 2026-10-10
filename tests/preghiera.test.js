@@ -11,9 +11,9 @@ module.exports = (t, carica) => {
         stato.combatRound = 1;
         return party;
     };
-    // Dado truccato per il prossimo tiro
-    const dado = v => g.eval(`globalThis.__vero = Math.random; Math.random = () => ${(v - 1) / 6 + 0.01}`);
-    const dadoVero = () => g.eval('Math.random = globalThis.__vero');
+    // Dado truccato per il prossimo tiro: senza sacchetto (DICE_BAG.size = 0) il tiro viene da Math.random
+    const dado = v => g.eval(`globalThis.__vero = Math.random; globalThis.__bag = DICE_BAG.size; DICE_BAG.size = 0; Math.random = () => ${(v - 1) / 6 + 0.01}`);
+    const dadoVero = () => g.eval('Math.random = globalThis.__vero; DICE_BAG.size = globalThis.__bag');
 
     t.test('tiro: serve 7 con d6 + Fede; con 9 o un 6 la benedizione è maggiore', () => {
         const [a] = prepara([eroe('A', { fth: 2 })]);

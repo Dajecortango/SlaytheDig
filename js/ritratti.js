@@ -96,6 +96,7 @@
                 ${ability ? '<div class="strike-slash second"></div><div class="strike-sparks">' + sparks + '</div>' : ''}
                 <div class="strike-flash"></div>`;
             document.body.appendChild(overlay);
+            speedUpAnimations(overlay);
 
             let finished = false;
             const finish = () => {
@@ -105,7 +106,7 @@
                 overlay.remove();
                 onDone();
             };
-            const timer = setTimeout(finish, ability ? 1700 : 1150);
+            const timer = setTimeout(finish, animTime(ability ? 1700 : 1150));
             overlay.addEventListener('click', finish);
         }
 

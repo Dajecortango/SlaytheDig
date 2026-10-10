@@ -250,8 +250,8 @@
            Stanno sotto il testo (z-index -1 dentro il pulsante, che isola il proprio strato).
            Esclusi i "pulsanti" che sono carte, schede o frecce con una grafica propria. */
         button { isolation: isolate; }
-        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::before,
-        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::after {
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle):not(.desc-more-btn)::before,
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle):not(.desc-more-btn)::after {
             content: '';
             position: absolute;
             inset: 0;
@@ -259,7 +259,7 @@
             border-radius: inherit;
             pointer-events: none;
         }
-        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::before {
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle):not(.desc-more-btn)::before {
             background:
                 radial-gradient(ellipse 70% 55% at 50% 0%, rgba(255, 228, 160, 0.22), transparent 70%),
                 linear-gradient(180deg, rgba(255, 240, 200, 0.2) 0, rgba(255, 240, 200, 0.05) 42%, transparent 52%, rgba(0, 0, 0, 0.28) 100%);
@@ -268,7 +268,7 @@
                 inset 0 0 0 2px rgba(255, 214, 120, 0.14),
                 inset 0 1px 0 2px rgba(255, 240, 190, 0.1);
         }
-        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle)::after {
+        button:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-qr-btn):not(.codex-tab):not(.ed-lib-tab):not(.ed-subtab):not(.sim-detail-toggle):not(.desc-more-btn)::after {
             background: linear-gradient(105deg, transparent 38%, rgba(255, 236, 170, 0.35) 47%, rgba(255, 250, 225, 0.6) 50%, rgba(255, 236, 170, 0.35) 53%, transparent 62%) no-repeat;
             background-size: 260% 100%;
             background-position: 170% 0;

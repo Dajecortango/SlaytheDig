@@ -6,7 +6,7 @@
    ========================================================================== */
 
         /* ---------- 19. Opzioni di gioco ---------- */
-        const DEFAULT_OPTIONS = { textSpeed: 2, textSize: 1, musicVolume: 0.5, sfxVolume: 0.8, animations: true, floatingNumbers: true };
+        const DEFAULT_OPTIONS = { textSpeed: 2, textSize: 1, musicVolume: 0.5, sfxVolume: 0.8, animations: true, floatingNumbers: true, fastAnimations: false };
         let gameOptions = Object.assign({}, DEFAULT_OPTIONS);
         try { Object.assign(gameOptions, JSON.parse(localStorage.getItem('dignitas_options') || '{}')); } catch (e) {}
 
@@ -18,8 +18,20 @@
             return gameOptions.animations && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         }
 
+        // Animazioni rapide (opzione per chi rigioca): durate dimezzate per dadi, cinematiche, annunci e testo a macchina
+        function animTime(ms) {
+            return gameOptions.fastAnimations ? Math.round(ms / 2) : ms;
+        }
+
+        // Le animazioni CSS dentro "el" (cinematiche, annunci) vanno al doppio della velocità con le animazioni rapide
+        function speedUpAnimations(el) {
+            if (!gameOptions.fastAnimations || !el || typeof el.getAnimations !== 'function') return;
+            el.getAnimations({ subtree: true }).forEach(a => { a.playbackRate = 2; });
+        }
+
         function applyOptions() {
             document.body.classList.toggle('no-anim', !gameOptions.animations);
+            document.body.classList.toggle('fast-anim', !!gameOptions.fastAnimations);
             updateMenuVideo();
             document.body.style.setProperty('--text-scale', gameOptions.textSize);
             // Nuovo volume subito sul brano che suona (non su quello che sta sfumando)
@@ -157,6 +169,10 @@
                         <label class="option-toggle"><input type="checkbox" id="optAnim" ${gameOptions.animations ? 'checked' : ''}> Attivi</label>
                     </div>
                     <div class="option-row">
+                        <span class="option-label">Animazioni rapide<small>Dadi, cinematiche, annunci e testo a macchina in metà tempo</small></span>
+                        <label class="option-toggle"><input type="checkbox" id="optFast" ${gameOptions.fastAnimations ? 'checked' : ''}> Attive</label>
+                    </div>
+                    <div class="option-row">
                         <span class="option-label">Numeri fluttuanti<small>Danni, cure e armatura sopra i bersagli</small></span>
                         <label class="option-toggle"><input type="checkbox" id="optNumbers" ${gameOptions.floatingNumbers ? 'checked' : ''}> Attivi</label>
                     </div>
@@ -169,6 +185,7 @@
             const bind = (id, event, handler) => document.getElementById(id).addEventListener(event, e => { handler(e.target); saveOptions(); });
             bind('optTextSpeed', 'change', el => { gameOptions.textSpeed = Number(el.value); });
             bind('optTextSize', 'change', el => { gameOptions.textSize = Number(el.value); applyOptions(); });
+            bind('optFast', 'change', el => { gameOptions.fastAnimations = el.checked; applyOptions(); });
             document.getElementById('optMuted').addEventListener('change', e => setSoundMuted(e.target.checked));
             bind('optMusic', 'input', el => {
                 gameOptions.musicVolume = el.value / 100;

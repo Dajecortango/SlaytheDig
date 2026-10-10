@@ -164,7 +164,8 @@
                     return `<div class="armory-btn taken"><span class="tile-text"><strong>Venduto</strong></span></div>`;
                 }
                 if (!entry.revealed) {
-                    return cardBackHtml(azione('revealMerchantItem', idx), 'Merce coperta', 'Clicca per scoprire cosa offre il mercante', `rar-back-${itemRarity(entry.item)}`)
+                    return cardBackHtml(azione('revealMerchantItem', idx), 'Merce coperta', 'Clicca per scoprire cosa offre il mercante', `rar-back-${itemRarity(entry.item)}`,
+                        isConsumableItem(entry.item) ? 'consumable' : 'equipment')
                         .replace('<button ', `<button data-idx="${idx}" `);
                 }
                 const price = effectiveMerchantPrice(entry);
@@ -174,7 +175,7 @@
                 const oldPrice = price !== listPrice ? `<s class="price-old">${listPrice}</s>` : '';
                 const stealTag = entry.kind === 'item' && price === 0 && merchantThief() ? `<span class="tile-tag">Da rubare (${esc(merchantThief().name)})</span>` : '';
                 return `
-                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${canAfford ? '' : 'unaffordable'} ${flip}" ${azione('tryBuyMerchantItem', idx)} data-tip="${esc(entry.kind === 'item' ? itemTip(entry.item) : `${entry.item.name}||${entry.item.desc}`)}">
+                    <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${entry.kind === 'medic' ? 'medic-card' : ''} ${canAfford ? '' : 'unaffordable'} ${flip}" ${azione('tryBuyMerchantItem', idx)} data-tip="${esc(entry.kind === 'item' ? itemTip(entry.item) : `${entry.item.name}||${entry.item.desc}`)}">
                         ${itemIconHtml(entry.item)}
                         <span class="tile-text">
                             <strong>${entry.item.name}</strong>${entry.kind === 'medic' ? '<span class="tile-tag">Servizio</span>' : ''}${stealTag}
@@ -244,8 +245,8 @@
             closeModal();
             const cd = haggleCd();
             const mode = haggleRollMode(hero, stat);
-            const d1 = rollD6(null, 0);
-            const d2 = mode === 'single' ? null : rollD6(null, 1);  // il secondo dado si tira solo se serve
+            const d1 = rollD6(null, 0, hero);
+            const d2 = mode === 'single' ? null : rollD6(null, 1, hero);  // il secondo dado si tira solo se serve
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
             const sources = relicDiceSources();
             const total = roll + (hero[stat] || 0) + relicDiceBonus();
@@ -264,7 +265,7 @@
                      ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
                      <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} monete in più.`}</p>`);
                 renderMerchantShop();
-            }, 500);
+            }, animTime(500));
         }
 
         function tryBuyMerchantItem(idx) {
@@ -292,6 +293,7 @@
             document.getElementById('merchantTools').classList.add('hidden');
             document.getElementById('btnExitMerchant').classList.add('hidden');
             document.getElementById('merchantAssignArea').classList.remove('hidden');
+            revealInView('merchantAssignArea');
             fillHeroSelectForItem('merchantHeroSelect', currentMerchantItem);
 
             updatePartyStatusBars();
