@@ -32,6 +32,7 @@ function previewItem(it) {
         const durata = it.buff_stat === 'current_armor' ? '' : rounds > 0 ? (rounds === 1 ? ' per 1 round' : ` per ${rounds} round`) : ' per tutto lo scontro';
         lines.push(esc(`+${it.buff_val || 0} ${PREVIEW_STAT[it.buff_stat] || it.buff_stat || '?'}${durata}`));
     }
+    ITEM_SPECIALS.forEach(sp => { if (it[sp.k]) lines.push(esc(sp.tip(it[sp.k]))); });
     if (['consumable_damage', 'consumable_buff'].includes(it.type)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
     (Array.isArray(it.scaling) ? it.scaling : []).forEach(sc => lines.push(esc(`+1 ${PREVIEW_STAT[sc.stat] || sc.stat} ogni ${sc.every} ${PREVIEW_STAT[sc.per] || sc.per}${sc.max != null ? ` (max +${sc.max})` : ''}`)));
     if (it.desc) lines.push(`<span class="tip-desc">${esc(it.desc)}</span>`);

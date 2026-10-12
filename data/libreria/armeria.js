@@ -224,8 +224,21 @@ window.LIBRERIA.armeria = {
             { "stat": "def_bonus", "per": "fth", "every": 3 }
         ],
         "desc": "+1 Fede; +1 Forza ogni 2 Fede; +1 Difesa ogni 3 Fede"
-    }
+    },
+    // Non comuni con un effetto speciale (ITEM_SPECIALS in js/comune.js)
+    "corno_allman": {"id": "corno_allman", "name": "Corno da Guerra di Allmän", "rarity": "non_comune", "war_horn": 1, "desc": "Primo round di ogni scontro: +1 al tiro per colpire a tutta la compagnia. Il richiamo della Regina del campo di battaglia.", "icon": "immagini/icone/BTNLionHorn.png"},
+    "ascia_primo_sangue": {"id": "ascia_primo_sangue", "name": "Ascia del Primo Sangue", "rarity": "non_comune", "first_hit_dmg": 2, "desc": "+2 danni al primo colpo a segno di ogni scontro.", "icon": "immagini/icone/BTNCriticalStrike.png"},
+    "mazza_boia_seistad": {"id": "mazza_boia_seistad", "name": "Mazza del Boia di Seistad", "rarity": "non_comune", "execute_dmg": 2, "desc": "+2 danni se il nemico ha metà vita o meno. Arnese del Concistoro Mutilo.", "icon": "immagini/icone/BTNStormHammer.png"},
+    "scudo_spina_kranen": {"id": "scudo_spina_kranen", "name": "Scudo a Spina di Kranen", "rarity": "non_comune", "thorns": 1, "desc": "Se l'eroe ha difeso nel round, il nemico che lo colpisce subisce 1 danno. Irto di zanne di warg corrotto.", "icon": "immagini/icone/BTNThornShield.png"},
+    "catena_ghiacceterno": {"id": "catena_ghiacceterno", "name": "Catena di Ghiacceterno", "rarity": "non_comune", "first_hit_stun": 1, "desc": "Nessun danno in più: il primo colpo a segno di ogni scontro stordisce il nemico, che salta il suo turno.", "icon": "immagini/icone/BTNEnsnare.png"},
+    "talismano_corvo": {"id": "talismano_corvo", "name": "Talismano del Corvo", "rarity": "non_comune", "ally_down_str": 1, "desc": "Se cade un alleato: +1 Forza fino a fine scontro.", "icon": "immagini/icone/BTNTalisman.png"},
+    "mappa_contrabbandiere": {"id": "mappa_contrabbandiere", "name": "Mappa del Contrabbandiere", "rarity": "non_comune", "challenge_skip": 1, "desc": "Una prova fallita non dà punizione; poi la mappa si consuma. Non vale nella prova finale.", "icon": "immagini/icone/BTNScrollOfTownPortal.png"},
+    "dado_osso_gunnar": {"id": "dado_osso_gunnar", "name": "Dado d'Osso di Gunnar", "rarity": "non_comune", "combat_reroll": 1, "desc": "Una volta per scontro il primo tiro fallito dell'eroe (attacco, abilità, Difendi, Aiuta) si ritira da solo.", "icon": "immagini/icone/BTNBoneChimes.png"},
+    "lingua_argento": {"id": "lingua_argento", "name": "Lingua d'Argento", "rarity": "non_comune", "haggle_bonus": 1, "desc": "+1 al tiro per contrattare con il mercante.", "icon": "immagini/icone/BTNGoldRing.png"},
+    "occhio_gazza": {"id": "occhio_gazza", "name": "Occhio di Gazza", "rarity": "non_comune", "loot_extra_once": 1, "desc": "Al primo bottino di un elite si scopre una carta in più (una volta per capitolo).", "icon": "immagini/icone/BTNSnowOwl.png"},
+    "coperta_rurikstad": {"id": "coperta_rurikstad", "name": "Coperta di Lana di Rurikstad", "rarity": "non_comune", "rest_heal": 1, "desc": "+1 HP a ogni riposo per chi la porta.", "icon": "immagini/icone/BTNMantle.png"},
+    "erbario_fonnish": {"id": "erbario_fonnish", "name": "Erbario dei Fonnish", "rarity": "non_comune", "potion_heal_bonus": 1, "desc": "Le pozioni di cura usate da chi lo porta curano 1 HP in più.", "icon": "immagini/icone/BTNNaturesBlessing.png"}
 };
 
 // Bottino delle campagne con "lootItems": null
-window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "cristallo_flammaurea", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker"];
+window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "cristallo_flammaurea", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker", "corno_allman", "ascia_primo_sangue", "mazza_boia_seistad", "scudo_spina_kranen", "catena_ghiacceterno", "talismano_corvo", "mappa_contrabbandiere", "dado_osso_gunnar", "lingua_argento", "occhio_gazza", "coperta_rurikstad", "erbario_fonnish"];

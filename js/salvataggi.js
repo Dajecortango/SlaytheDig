@@ -106,7 +106,7 @@
                     party: stato.party,
                     // Segnali delle reliquie appesi all'elenco degli eroi (JSON.stringify non li salverebbe)
                     partyFlags: { atamanoUsed: !!stato.party.atamanoUsed, sigilloCharges: stato.party.sigilloCharges || 0,
-                        lootExtraChoices: stato.party.lootExtraChoices || 0 },
+                        lootExtraChoices: stato.party.lootExtraChoices || 0, gazzaUsed: !!stato.party.gazzaUsed },
                     partyCoins: stato.partyCoins,
                     unlockedRelics: stato.unlockedRelics.map(r => ({ id: r.id, name: r.name, desc: r.desc })),
                     activeCurses: stato.activeCurses,
@@ -297,6 +297,7 @@
                 if (flags.atamanoUsed) stato.party.atamanoUsed = true;
                 if (flags.sigilloCharges) stato.party.sigilloCharges = flags.sigilloCharges;
                 if (flags.lootExtraChoices) stato.party.lootExtraChoices = flags.lootExtraChoices;
+                if (flags.gazzaUsed) stato.party.gazzaUsed = true;
                 // Benedizioni che non esistono più (Grazia, tolta nella versione 1.10)
                 stato.party.forEach(h => { if (h.blessings) h.blessings = h.blessings.filter(x => PRAYER_BLESSINGS[x.id]); });
                 stato.partyCoins = s.partyCoins || 0;

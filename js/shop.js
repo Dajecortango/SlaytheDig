@@ -131,6 +131,11 @@
             merchantItemsWithPrices = generateMerchantStock().map(entry => ({ ...entry, basePrice: entry.price, price: entry.fixedPrice ? entry.price : merchantPrice(entry.price) }));
         }
 
+        // Totale del tiro per contrattare: dado + Intelligenza + reliquie + Lingua d'Argento (haggle_bonus). Gioco e simulatore
+        function haggleRollTotal(hero, roll) {
+            return roll + (hero.int || 0) + relicDiceBonus() + itemBonus(hero, 'haggle_bonus');
+        }
+
         // Stesse regole delle prove: Fede Inaridita toglie il dado migliore solo con la Fede
         // (oggi si contratta solo con l'Intelligenza, quindi un dado solo)
         function haggleRollMode(hero, stat) {
@@ -225,7 +230,7 @@
             const rows = stato.party.filter(h => h.hp > 0).map(h => {
                 const btn = (stat, label) => {
                     const mode = haggleRollMode(h, stat);
-                    const info = chanceText(cd - (h[stat] || 0) - relicDiceBonus(), mode === 'best', mode === 'worst');
+                    const info = chanceText(cd - haggleRollTotal(h, 0), mode === 'best', mode === 'worst');
                     return `<button class="btn-small" ${azione('haggle', h.name, stat)}>${label} ${h[stat] || 0} · ${info.short}</button>`;
                 };
                 return `<div class="haggle-row"><b>${esc(h.name)}</b>${btn('int', 'Intelligenza')}</div>`;
@@ -249,7 +254,8 @@
             const d2 = mode === 'single' ? null : rollD6(null, 1, hero);  // il secondo dado si tira solo se serve
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
             const sources = relicDiceSources();
-            const total = roll + (hero[stat] || 0) + relicDiceBonus();
+            const total = haggleRollTotal(hero, roll);
+            const tongue = itemBonus(hero, 'haggle_bonus');
             spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, cd);
             merchantHaggle = success ? 'ok' : 'fail';
@@ -261,7 +267,7 @@
                 const statLabel = 'Intelligenza';
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (Fede Inaridita)`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
-                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${r.name}`).join('')} = <b>${total}</b> contro CD ${cd}.</p>
+                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${r.name}`).join('')}${tongue ? ` + ${tongue} ${esc((hero.items.find(it => it.haggle_bonus) || {}).name || '')}` : ''} = <b>${total}</b> contro CD ${cd}.</p>
                      ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
                      <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} Scudi in più.`}</p>`);
                 renderMerchantShop();

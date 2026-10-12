@@ -158,6 +158,54 @@
             return stato.helpDmgBonus || 0;
         }
 
+        /* ---------- Oggetti con effetti speciali in combattimento (ITEM_SPECIALS in js/comune.js) ----------
+           Gioco e simulatore: startCombatItemEffects a inizio scontro, itemHitEffects quando un colpo va a segno,
+           itemReroll per il Dado d'Osso, le spine nel turno del nemico (resolveEnemyTurn) e il Talismano del Corvo
+           quando un eroe cade (resolveMonsterAttack). Le note finiscono nel diario con logRelicNotes. */
+
+        // Inizio scontro: azzera i segni di "una volta per scontro" e suona il Corno (tiro per colpire al primo round)
+        function startCombatItemEffects() {
+            const notes = [];
+            stato.party.forEach(h => { h.firstHitUsed = false; h.rerollUsed = false; delete h.defendRound; });
+            const alive = stato.party.filter(h => h.hp > 0);
+            const horn = Math.max(0, ...alive.map(h => itemBonus(h, 'war_horn')));
+            if (horn > 0) {
+                const source = alive.find(h => itemBonus(h, 'war_horn') === horn);
+                const item = source.items.find(it => it.war_horn);
+                alive.forEach(h => {
+                    h.att_bonus = (h.att_bonus || 0) + horn;
+                    (h.tempBuffs = h.tempBuffs || []).push({ stat: 'att_bonus', val: horn, name: item.name, icon: item.icon || '', expiresAfterRound: 1 });
+                });
+                notes.push(`📯 ${source.name} suona ${item.name}: +${horn} al tiro per colpire a tutta la compagnia nel primo round.`);
+            }
+            return notes;
+        }
+
+        // Colpo a segno: danni in più (primo colpo dello scontro, nemico a metà vita) e stordimento della Catena.
+        // enemyHpBefore = vita del nemico prima del colpo. Muta i segni dell'eroe e enemy.isStunned.
+        function itemHitEffects(hero, enemy, enemyHpBefore) {
+            const out = { dmg: 0, notes: [] };
+            if (!hero.firstHitUsed) {
+                hero.firstHitUsed = true;
+                const first = itemBonus(hero, 'first_hit_dmg');
+                if (first) { out.dmg += first; out.notes.push(`primo sangue +${first}`); }
+                if (itemBonus(hero, 'first_hit_stun') > 0) { enemy.isStunned = true; out.notes.push('nemico stordito dalla catena'); }
+            }
+            const execute = itemBonus(hero, 'execute_dmg');
+            if (execute && enemyHpBefore <= enemy.maxHp / 2) { out.dmg += execute; out.notes.push(`colpo del boia +${execute}`); }
+            return out;
+        }
+
+        // Dado d'Osso (combat_reroll): il primo tiro fallito dello scontro si ritira, tenendo il nuovo risultato.
+        // rolls[1] = dado già deciso per il ritiro (test), altrimenti dal sacchetto. Ritorna { roll, total, note }
+        function itemReroll(hero, roll, total, target, rolls) {
+            if (naturalRollSuccess(roll, total, target) || hero.rerollUsed || itemBonus(hero, 'combat_reroll') <= 0) return { roll, total, note: null };
+            hero.rerollUsed = true;
+            const nuovo = rollD6(rolls, 1, hero);
+            const item = hero.items.find(it => it.combat_reroll);
+            return { roll: nuovo, total: total - roll + nuovo, note: `${item.name}: ${hero.name} ritira il ${roll} e fa ${nuovo}` };
+        }
+
         // Voci di un tiro per il diario: " + Forza 3 + Aiuto 1 − 1 Mod." (le voci a 0 si saltano)
         function rollPartsText(parts) {
             return parts.filter(p => p.val).map(p => ` ${p.val > 0 ? '+' : '−'} ${p.label} ${Math.abs(p.val)}`).join('');
@@ -165,12 +213,14 @@
 
         // Tiro di attacco: muta enemy.hp, consuma helpBonus e helpDmgBonus. Ritorna l'esito per log/DOM.
         function resolveAttack(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0, hero);
             const rb = relicCombatBonus();
             const first = firstActorBonus(hero);
             const helpDmg = helpDmgBonus();
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Aiuto', val: stato.helpBonus }, { label: 'Mod.', val: attackMod(hero) }, { label: 'Reliquie', val: rb.att }];
-            const total = roll + hero.str + first + stato.helpBonus + attackMod(hero) + rb.att;
+            const firstRoll = rollD6(rolls, 0, hero);
+            const rr = itemReroll(hero, firstRoll, firstRoll + hero.str + first + stato.helpBonus + attackMod(hero) + rb.att, enemy.ca, rolls);
+            const { roll, total } = rr;
+            const itemNotes = rr.note ? [rr.note] : [];
             stato.helpBonus = 0;
             stato.helpDmgBonus = 0;
             const spent = spendNextRollRelics();
@@ -178,10 +228,12 @@
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             let dmg = 0;
             if (hit) {
-                dmg = hero.dmg + rb.dmg + helpDmg;
+                const ie = itemHitEffects(hero, enemy, enemy.hp);
+                itemNotes.push(...ie.notes);
+                dmg = hero.dmg + rb.dmg + helpDmg + ie.dmg;
                 enemy.hp -= dmg;
             }
-            return { roll, total, parts, hit, dmg, firstBonus: first, helpDmgBonus: helpDmg, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], naturalNote: naturalRollNote(roll, total, enemy.ca) };
+            return { roll, total, parts, hit, dmg, firstBonus: first, helpDmgBonus: helpDmg, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], itemNotes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
 
         // Armatura che un tiro di difesa riuscito dà all'eroe: 1, più quella degli scudi (def_armor)
@@ -192,27 +244,30 @@
         // Tiro di difesa: in caso di successo aggiunge armatura corrente all'eroe (vedi defendArmorGain).
         // Gli scudi più forti danno anche def_bonus, che si somma al tiro.
         function resolveDefend(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0, hero);
+            const firstRoll = rollD6(rolls, 0, hero);
             const sources = relicDiceSources();
             const first = firstActorBonus(hero);
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Scudo', val: hero.def_bonus || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
-            const total = roll + hero.str + first + (hero.def_bonus || 0) + relicDiceBonus();
+            const rr = itemReroll(hero, firstRoll, firstRoll + hero.str + first + (hero.def_bonus || 0) + relicDiceBonus(), enemy.att, rolls);
+            const { roll, total } = rr;
             const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
             const gained = success ? defendArmorGain(hero) : 0;
             hero.current_armor += gained;
-            return { roll, total, parts, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att),
+            hero.defendRound = stato.combatRound;  // Scudo a Spina di Kranen: ha difeso in questo round
+            return { roll, total, parts, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att), itemNotes: rr.note ? [rr.note] : [],
                 relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
         // Tiro di aiuto: in caso di successo imposta il bonus +1 al prossimo attacco/abilità
         // (e, con la passiva helpDmgBonus, anche +danno fino alla fine del round).
         function resolveHelp(hero, enemy, rolls) {
-            const roll = rollD6(rolls, 0, hero);
+            const firstRoll = rollD6(rolls, 0, hero);
             const sources = relicDiceSources();
             const first = firstActorBonus(hero);
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: first }, { label: 'Aiuto', val: hero.help_bonus_val || 0 }, { label: 'Reliquie', val: relicDiceBonus() }];
-            const total = roll + hero.str + first + (hero.help_bonus_val || 0) + relicDiceBonus();
+            const rr = itemReroll(hero, firstRoll, firstRoll + hero.str + first + (hero.help_bonus_val || 0) + relicDiceBonus(), enemy.att, rolls);
+            const { roll, total } = rr;
             const spent = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, enemy.att);
             let dmgBonus = 0;
@@ -221,7 +276,7 @@
                 dmgBonus = hero.helpDmgBonus || 0;
                 if (dmgBonus) stato.helpDmgBonus = dmgBonus;
             }
-            return { roll, total, parts, success, dmgBonus, naturalNote: naturalRollNote(roll, total, enemy.att),
+            return { roll, total, parts, success, dmgBonus, naturalNote: naturalRollNote(roll, total, enemy.att), itemNotes: rr.note ? [rr.note] : [],
                 relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
@@ -331,25 +386,37 @@
             stato.helpDmgBonus = 0;
             // Colpo automatico: niente tiro, vale come un 6 naturale (il bonus di Aiuta resta per il prossimo)
             if (c.autoHit) {
-                enemy.hp -= dmg;
+                const ie = itemHitEffects(hero, enemy, enemy.hp);
+                const total6 = dmg + ie.dmg;
+                enemy.hp -= total6;
                 if (c.stun) enemy.isStunned = true;
-                return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: null,
-                    dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
+                return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg: total6, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: null,
+                    dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes, itemNotes: ie.notes };
             }
+            // Con due dadi i dadi del ritiro (Dado d'Osso) partono dopo i due già tirati
             const dice = c.dice === 2 ? [rollD6(rolls, 0, hero), rollD6(rolls, 1, hero)] : [rollD6(rolls, 0, hero)];
-            const roll = Math.max(...dice);
             const parts = [{ label: 'Forza', val: hero.str }, { label: 'Libertas', val: firstBonus }, { label: STAT_LABELS[c.attackStat] || 'Stat.', val: attStat }, { label: hero.chosenAbility.name, val: c.attackBonus || 0 },
                 { label: 'Aiuto', val: stato.helpBonus }, { label: 'Mod.', val: attackMod(hero) }, { label: 'Reliquie', val: rb.att }];
-            const total = roll + hero.str + firstBonus + attStat + (c.attackBonus || 0) + stato.helpBonus + attackMod(hero) + rb.att;
+            const bonus = hero.str + firstBonus + attStat + (c.attackBonus || 0) + stato.helpBonus + attackMod(hero) + rb.att;
+            const kept = Math.max(...dice);
+            const rr = itemReroll(hero, kept, kept + bonus, enemy.ca, c.dice === 2 ? [null, rolls && rolls[2]] : rolls);
+            if (rr.note) dice[dice.indexOf(kept)] = rr.roll;
+            const roll = Math.max(...dice);
+            const total = roll + bonus;
+            const itemNotes = rr.note ? [rr.note] : [];
             stato.helpBonus = 0;
             rb.notes.push(...spendNextRollRelics());
             const hit = naturalRollSuccess(roll, total, enemy.ca);
+            let finalDmg = dmg;
             if (hit) {
-                enemy.hp -= dmg;
+                const ie = itemHitEffects(hero, enemy, enemy.hp);
+                itemNotes.push(...ie.notes);
+                finalDmg += ie.dmg;
+                enemy.hp -= finalDmg;
                 if (c.stun) enemy.isStunned = true;
             }
-            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, parts, hit, dmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: naturalRollNote(roll, total, enemy.ca),
-                dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes };
+            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, parts, hit, dmg: finalDmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: naturalRollNote(roll, total, enemy.ca),
+                dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes, itemNotes };
         }
 
         // Attacco del mostro su un bersaglio: applica maledizioni/reliquie, armatura, poi HP.
@@ -415,6 +482,14 @@
                     target.hp = Math.max(0, target.hp - dmg);
                     targetDied = target.hp <= 0;
                     events.push({ type: 'hp_damage', amount: dmg, text: `${target.name} subisce ${dmg} danni agli HP!` });
+                    // Talismano del Corvo (ally_down_str): chi resta in piedi si infuria fino a fine scontro
+                    if (targetDied) stato.party.filter(h => h !== target && h.hp > 0 && itemBonus(h, 'ally_down_str') > 0).forEach(h => {
+                        const val = itemBonus(h, 'ally_down_str');
+                        const item = h.items.find(it => it.ally_down_str);
+                        h.str += val;
+                        (h.tempBuffs = h.tempBuffs || []).push({ stat: 'str', val, name: item.name, icon: item.icon || '', expiresAfterRound: Infinity });
+                        events.push({ type: 'ally_down', text: `🐦‍⬛ ${item.name}: ${h.name} vede cadere ${target.name} e si infuria (+${val} Forza fino a fine scontro).` });
+                    });
                 }
             }
 
@@ -643,6 +718,13 @@
                     const res = monsterStrike(enemy, t, { dmg: r.turnoDanno, vicini: r.turnoVicini });
                     events.push(...res.events);
                     hpTaken += res.hpDamage;
+                    // Scudo a Spina di Kranen (thorns): chi ha difeso in questo round punge il nemico che lo colpisce
+                    const spine = t.defendRound === stato.combatRound ? itemBonus(t, 'thorns') : 0;
+                    if (spine > 0 && enemy.hp > 0) {
+                        enemy.hp -= spine;
+                        const item = t.items.find(it => it.thorns);
+                        events.push({ type: 'thorns', text: `🌵 ${item.name}: ${enemy.name} si ferisce colpendo ${t.name} (${spine} ${spine === 1 ? 'danno' : 'danni'}).` });
+                    }
                 });
             }
             if (r.turnoRubaVita && hpTaken > 0 && enemy.hp < enemy.maxHp) {
@@ -692,6 +774,7 @@
                 delete h.stunnedRounds;
             });
             const blessed = applyCombatBlessings();
+            const itemStart = startCombatItemEffects();
             fxResyncHeroes();
             stato.combatRound = 0;
             impostaAzione(document.getElementById('combatNextBtn'), 'proceedCombatPhase');  // nessun 'Avanti' rimasto da uno scontro precedente
@@ -699,11 +782,13 @@
 
             document.getElementById('combatLog').innerHTML = `Combatti contro ${stato.activeEnemy.name}! (Armature e Abilità ripristinate)<br>`;
             blessed.forEach(({ hero, b }) => logCombat(`🙏 ${hero.name}: ${b.name} (${b.desc.charAt(0).toLowerCase()}${b.desc.slice(1)})`));
+            itemStart.forEach(logCombat);
             startHeroesTurnCycle();
         }
 
         function logRelicNotes(res) {
             if (res && res.relicNotes && res.relicNotes.length) logCombat(`💎 Reliquie: ${res.relicNotes.join(', ')}`);
+            if (res && res.itemNotes && res.itemNotes.length) logCombat(`🎒 Oggetti: ${res.itemNotes.join(', ')}`);
         }
 
         function logNaturalRoll(res) {
@@ -806,12 +891,13 @@
         function expectedHitDamage(hero, action) {
             if (!hero || !stato.activeEnemy) return 0;
             const enemy = stato.activeEnemy;
-            let dmg = hero.dmg + relicCombatBonus().dmg + helpDmgBonus();
+            const itemDmg = (!hero.firstHitUsed ? itemBonus(hero, 'first_hit_dmg') : 0) + (enemy.hp <= enemy.maxHp / 2 ? itemBonus(hero, 'execute_dmg') : 0);
+            let dmg = hero.dmg + relicCombatBonus().dmg + helpDmgBonus() + itemDmg;
             const c = action === 'ability' ? abilityCombat(hero.chosenAbility) : null;
             if (c && c.armorGain) return 0;  // solo armatura: nessun danno al nemico
             // Somma esatta: sconfitto, o a metà vita se elite o boss
             if (c && c.sumTarget) return currentEnemyIsEliteOrBoss() ? Math.max(0, enemy.hp - Math.floor(enemy.maxHp / 2)) : Math.max(0, enemy.hp);
-            if (c) dmg = abilityHitDamage(hero, c, relicCombatBonus().dmg);
+            if (c) dmg = abilityHitDamage(hero, c, relicCombatBonus().dmg) + itemDmg;
             return Math.max(0, dmg);
         }
 
@@ -1404,6 +1490,15 @@
                 // La sconfitta è definitiva: il salvataggio non deve permettere di annullarla
                 deleteCurrentSave();
                 showScreen('screenDefeat');
+                return;
+            }
+
+            // Sconfitto nel suo turno (Scudo a Spina di Kranen)
+            if (stato.activeEnemy.hp <= 0) {
+                logCombat(`Hai sconfitto ${stato.activeEnemy.name}! Vittoria!`);
+                document.getElementById('monsterTurnSection').classList.add('hidden');
+                document.getElementById('combatLootBtn').classList.remove('hidden');
+                revealInView('combatLootBtn');
                 return;
             }
 
