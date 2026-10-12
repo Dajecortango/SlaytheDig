@@ -44,7 +44,10 @@ const ITEM_SPECIALS = [
     { k: 'haggle_bonus', label: 'Bonus al tiro per contrattare', tip: v => `+${v} al tiro per contrattare` },
     { k: 'loot_extra_once', label: 'Carte in più al primo bottino di un elite', tip: v => `Primo bottino di un elite: ${v === 1 ? 'una carta' : v + ' carte'} in più (una volta per capitolo)` },
     { k: 'rest_heal', label: 'HP in più a ogni riposo', tip: v => `+${v} HP a ogni riposo` },
-    { k: 'potion_heal_bonus', label: 'HP in più alle pozioni di cura che usa', tip: v => `Le pozioni di cura che usa curano ${v} HP in più` }
+    { k: 'potion_heal_bonus', label: 'HP in più alle pozioni di cura che usa', tip: v => `Le pozioni di cura che usa curano ${v} HP in più` },
+    { k: 'hit_heal_chance', label: 'Probabilità (%) di curare 1 HP a ogni colpo', tip: v => `Ogni colpo a segno: ${v}% di probabilità di curare 1 HP` },
+    { k: 'hit_chill', label: 'Attacco tolto al nemico a ogni colpo (max 2 per scontro)', tip: v => `Ogni colpo a segno: −${v} all'Attacco del nemico (al massimo −2 per scontro)` },
+    { k: 'last_stand_armor', label: 'Armatura subito a 2 HP o meno (una volta per scontro)', tip: v => `La prima volta nello scontro che scende a 2 HP o meno: +${v} armatura subito` }
 ];
 
 const HERO_FLAGS = {

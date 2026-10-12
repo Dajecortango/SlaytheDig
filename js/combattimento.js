@@ -166,7 +166,7 @@
         // Inizio scontro: azzera i segni di "una volta per scontro" e suona il Corno (tiro per colpire al primo round)
         function startCombatItemEffects() {
             const notes = [];
-            stato.party.forEach(h => { h.firstHitUsed = false; h.rerollUsed = false; delete h.defendRound; });
+            stato.party.forEach(h => { h.firstHitUsed = false; h.rerollUsed = false; h.lastStandUsed = false; delete h.defendRound; });
             const alive = stato.party.filter(h => h.hp > 0);
             const horn = Math.max(0, ...alive.map(h => itemBonus(h, 'war_horn')));
             if (horn > 0) {
@@ -193,6 +193,20 @@
             }
             const execute = itemBonus(hero, 'execute_dmg');
             if (execute && enemyHpBefore <= enemy.maxHp / 2) { out.dmg += execute; out.notes.push(`colpo del boia +${execute}`); }
+            // Lama di Ghiaccio di Hvid: −Attacco al nemico, al massimo ITEM_CHILL_MAX per scontro (enemy.chilled)
+            const chill = Math.min(itemBonus(hero, 'hit_chill'), ITEM_CHILL_MAX - (enemy.chilled || 0));
+            if (chill > 0 && enemy.att > 1) {
+                const tolto = Math.min(chill, enemy.att - 1);
+                enemy.att -= tolto;
+                enemy.chilled = (enemy.chilled || 0) + tolto;
+                out.notes.push(`gelo di Hvid: Attacco del nemico −${tolto}`);
+            }
+            // Pugnale Succhiasangue: probabilità di curare 1 HP all'eroe
+            const leech = itemBonus(hero, 'hit_heal_chance');
+            if (leech > 0 && hero.hp > 0 && hero.hp < hero.maxHp && Math.random() * 100 < leech) {
+                healHero(hero, 1);
+                out.notes.push(`${hero.name} si nutre del colpo: +1 HP`);
+            }
             return out;
         }
 
@@ -496,6 +510,15 @@
             // Per "Dente per dente": quanto ha perso l'eroe in questo colpo (armatura + HP) e in quale round
             target.lastHitDamage = Math.max(0, armorBefore - target.current_armor) + Math.max(0, hpBefore - target.hp);
             target.lastHitRound = stato.combatRound;
+
+            // Corazza dell'Ultimo Baluardo (last_stand_armor): a WOUNDED_HP o meno, armatura subito, una volta per scontro
+            const bastion = itemBonus(target, 'last_stand_armor');
+            if (bastion > 0 && target.hp > 0 && target.hp <= WOUNDED_HP && !target.lastStandUsed) {
+                target.lastStandUsed = true;
+                target.current_armor += bastion;
+                const item = target.items.find(it => it.last_stand_armor);
+                events.push({ type: 'last_stand', text: `🛡️ ${item.name}: ${target.name} stringe i denti (+${bastion} armatura).` });
+            }
 
             return { events, hpDamage, targetDied };
         }
