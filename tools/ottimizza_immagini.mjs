@@ -3,11 +3,11 @@
 // Uso (dalla cartella del progetto):
 //   node tools/ottimizza_immagini.mjs              mostra cosa cambierebbe e quanto si risparmia, senza toccare niente
 //   node tools/ottimizza_immagini.mjs --applica    riscrive le immagini
-//   aggiungere --max 1600 per il lato massimo (predefinito 1600 px) e --qualita 82 per WebP e JPG (predefinito 82)
+//   aggiungere --max 1280 per il lato massimo (predefinito 1280 px) e --qualita 75 per WebP e JPG (predefinito 75)
 // Regole: WebP e JPG/JFIF con il lato più lungo oltre il massimo vengono rimpiccioliti e tutti vengono
 // ricompressi (stesso formato, stesso nome); un file si riscrive solo se diventa almeno il 15% più leggero.
 // I PNG (trasparenze dell'interfaccia) si rimpiccioliscono solo se superano il massimo, senza ricomprimerli.
-// Un JPG nuovo va convertito in WebP (ffmpeg -i x.jpg -c:v libwebp -quality 82 x.webp) e va cambiato
+// Un JPG nuovo va convertito in WebP (ffmpeg -i x.jpg -c:v libwebp -quality 75 x.webp) e va cambiato
 // il percorso nei dati: questo strumento non cambia i nomi dei file.
 // Le immagini originali restano nella cronologia di git.
 import fs from 'node:fs';
@@ -20,8 +20,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const value = (n, d) => { const i = args.indexOf(n); return i >= 0 ? Number(args[i + 1]) : d; };
 const APPLY = args.includes('--applica');
-const MAX = value('--max', 1600);
-const QUALITY = value('--qualita', 82);
+const MAX = value('--max', 1280);
+const QUALITY = value('--qualita', 75);
 const MIN_GAIN = 0.15;
 // Immagini usate con border-image: il taglio (es. --frame-slice: 150) è in pixel dell'immagine,
 // quindi non si rimpiccioliscono (si ricomprimono soltanto)
@@ -104,7 +104,8 @@ function webpLines() {
 
 let before = 0, after = 0, changed = 0;
 const kb = n => `${Math.round(n / 1024)} KB`;
-for (const line of output.split(/\r?\n/).filter(Boolean)) {
+// Righe di PNG e JPG (PowerShell) e di WebP (ffmpeg): prima le WebP non venivano mai elaborate
+for (const line of [...output.split(/\r?\n/).filter(Boolean), ...webpLines()]) {
     const [file, w, h, nw, nh, size, newSize, out] = line.split('|');
     const s = Number(size), ns = Number(newSize);
     before += s;
@@ -118,5 +119,5 @@ for (const line of output.split(/\r?\n/).filter(Boolean)) {
 }
 fs.rmSync(tmp, { recursive: true, force: true });
 
-console.log(`\n${files.length} immagini, ${changed} ${APPLY ? 'riscritte' : 'da ridurre'}: ${kb(before)} → ${kb(after)} (-${Math.round((1 - after / before) * 100)}%)`);
+console.log(`\n${allFiles.length} immagini, ${changed} ${APPLY ? 'riscritte' : 'da ridurre'}: ${kb(before)} → ${kb(after)} (-${Math.round((1 - after / before) * 100)}%)`);
 if (!APPLY && changed) console.log('Aggiungi --applica per riscriverle.');
