@@ -104,6 +104,14 @@ function gestisci(req, res, pathname) {
     }
 
     // ----- Giocatori -----
+    if (pathname === '/online-client.js') {
+        fs.readFile(path.join(PUBLIC, 'online.js'), (err, buf) => {
+            if (err) { res.writeHead(404); res.end(); return; }
+            res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+            res.end(buf);
+        });
+        return true;
+    }
     if (pathname.startsWith('/online/')) {
         const code = pathname.slice(8).split('/')[0];
         if (!stanza || stanza.code !== code) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Stanza non trovata: chiedi al master un link nuovo.'); return true; }

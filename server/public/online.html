@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <title>Slay the Dig — Partita online</title>
+    <link rel="stylesheet" href="css/wc3-base.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        #onlineJoin { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; background: rgba(0,0,0,.85); }
+        #onlineJoin .wc-panel { padding: 24px; max-width: 360px; width: calc(100% - 32px); }
+        #onlineJoin input { width: 100%; margin: 12px 0; padding: 8px; font-size: 1.1em; }
+        #onlineBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 40; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center; max-width: calc(100% - 32px); }
+        #onlineBar .wc-panel { padding: 8px 14px; }
+        #onlineBar button.mio { outline: 2px solid var(--wc-yellow, gold); }
+        #onlineAvviso { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 45; }
+        #onlineTurno { color: var(--wc-yellow, gold); font-weight: bold; }
+        .online-hidden { display: none !important; }
+    </style>
+</head>
+<body class="online-guest">
+    <div id="onlineJoin" class="online-hidden">
+        <div class="wc-panel">
+            <h2 class="wc-heading">Unisciti alla spedizione</h2>
+            <p>Scrivi il tuo nome: il master ti assegnerà un eroe.</p>
+            <input id="onlineNome" maxlength="24" autocomplete="nickname">
+            <button class="btn-proceed" id="onlineEntraBtn">Entra</button>
+            <p id="onlineJoinErrore" class="kw-curse"></p>
+        </div>
+    </div>
+    <div id="partyTopBar" class="party-topbar"></div>
+    <div id="partyConsole" class="party-console"></div>
+    <div class="container" id="gameContainer"></div>
+    <div id="wc3Modal" class="modal-overlay hidden"></div>
+    <div id="onlineOverlays"></div>
+    <div id="onlineAvviso" class="online-hidden wc-panel"></div>
+    <div id="onlineBar"></div>
+    <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
+    <audio id="onlineMusica" loop preload="none"></audio>
+    <script src="js/online-regole.js"></script>
+    <script src="online-client.js"></script>
+</body>
+</html>

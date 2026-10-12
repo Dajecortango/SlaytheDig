@@ -280,7 +280,7 @@ const server = http.createServer((req, res) => {
     }
 
     // Partita online (server/online.js): stanza, giocatori, stream, clic
-    if (pathname.startsWith('/online/') || pathname.startsWith('/api/online/')) {
+    if (pathname.startsWith('/online/') || pathname.startsWith('/api/online/') || pathname === '/online-client.js') {
         if (online.gestisci(req, res, pathname)) return;
     }
 
