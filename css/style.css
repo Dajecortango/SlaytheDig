@@ -1414,6 +1414,8 @@
         .sts-node.node-challenge { --node-c1: #275a86; --node-c2: #09192b; color: #c4e0ff; }
         .sts-node.node-rest { --node-c1: #2f7236; --node-c2: #0b240f; color: #c8ffb8; }
         .sts-node.node-merchant { --node-c1: #8f6e1e; --node-c2: #2b1f05; color: #fff0b0; }
+        /* Partita online: nodo di cui i giocatori non sanno il contenuto (js/online.js, classiNodoGiocatore) */
+        .sts-node.node-ignoto { --node-c1: #5a4a36; --node-c2: #1a140d; color: #e6d6b4; }
         .sts-node.node-treasure { --node-c1: #a6761c; --node-c2: #362104; color: #fff0b0; }
         .sts-node.node-captain,
         .sts-node.node-goal { --node-c1: #5c2a86; --node-c2: #170826; color: var(--wc-yellow); width: 64px; height: 64px; }
