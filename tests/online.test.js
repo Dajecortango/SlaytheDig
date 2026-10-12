@@ -120,4 +120,16 @@ module.exports = (t, carica) => {
         t.uguale('b', h.eval('globalThis.__scelto'));
         t.uguale(null, h.eval('onlineState.voto'));
     });
+
+    t.test('voto della prova: "Lascia perdere" chiude la prova, un eroe la affronta', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Marco', connected: true }];
+            stato.party = [{ name: 'Icaro', hp: 3, maxHp: 4 }, { name: 'Astarte', hp: 0, maxHp: 4 }];
+            globalThis.__fatto = []; challengeChoose = a => __fatto.push('scelta:' + a); confirmChallengeHero = () => __fatto.push('eroe');
+            isFinalNode = () => false; onlineApriVotoProva();`);
+        const op = h.eval('onlineState.voto.opzioni.map(o => o.id)');
+        t.uguale(['Icaro', '__lascia'], op, 'solo gli eroi in piedi, più Lascia perdere');
+        h.onlineVota('Marco', h.eval('onlineState.voto.id'), 'Icaro');
+        t.uguale(['scelta:true', 'eroe'], h.eval('__fatto'));
+    });
 };
