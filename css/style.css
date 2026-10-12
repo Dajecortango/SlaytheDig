@@ -3170,6 +3170,11 @@ body.no-anim .phase-banner { animation: none; }
 .sts-node.node-story { --node-c1: #5d6d7e; --node-c2: #1c2833; color: #e8e2c8; }
 .story-text p { margin: 0 0 0.8em; }
 .story-text p:last-child { margin-bottom: 0; }
+/* Evento con scelte: una scelta per riga sotto il racconto, poi l'esito dentro il testo */
+.story-choices { display: flex; flex-direction: column; gap: 8px; }
+.story-choices:empty { display: none; }
+.story-choices .story-choice { width: 100%; margin: 0; }
+.story-outcome { margin-top: 0.8em; padding-top: 0.8em; border-top: 1px solid rgba(226, 185, 81, 0.35); }
 .event-left-image-box .combat-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .event-left-image-box .combat-video.hidden, .event-left-image-box img.hidden { display: none; }
 

@@ -24,8 +24,19 @@ const EFFECT_TYPES = {
     party_damage: ['val'],
     coins: ['val'],
     add_curse: ['text'],
-    hero_item: ['item', 'val']   // dà all'eroe "val" copie dell'oggetto con id "item" dell'armeria
+    hero_item: ['item', 'val'],  // dà all'eroe "val" copie dell'oggetto con id "item" dell'armeria
+    party_heal: ['val'],         // cura "val" HP a chi è in piedi
+    relic: ['id'],               // dà la reliquia della libreria con questo id (se la compagnia non ce l'ha)
+    curse: ['id']                // dà la maledizione della libreria con questo id (i suoi "effects")
 };
+// Nomi degli effetti per l'editor (elenco degli effetti di eventi e scelte)
+const EFFECT_LABELS = {
+    coins: 'Scudi (anche negativi)', party_heal: 'Cura tutti (HP)', party_damage: 'Danni a tutti (restano a 1 HP)',
+    party_max_hp: 'HP massimi a tutti', party_stat: 'Statistica a tutti', hero_stat: 'Statistica all\'eroe',
+    hero_item: 'Oggetto all\'eroe', relic: 'Reliquia', curse: 'Maledizione', add_curse: 'Maledizione scritta qui', hero_set: 'Segnale di una passiva'
+};
+// Statistiche che gli effetti hero_stat e party_stat possono cambiare
+const EFFECT_STATS = { str: 'Forza', dmg: 'Danno', int: 'Intelligenza', fth: 'Fede', att_bonus: 'Tiro per colpire' };
 
 /* ---------- Effetti speciali "quando → fai" ----------
    Campo "speciali" di oggetti (armeria), reliquie, maledizioni e abilità: un elenco di
