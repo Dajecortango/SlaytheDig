@@ -14,6 +14,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { spawn, execFile } = require('child_process');
+const online = require('./online');  // partita online: stanza, giocatori, stream, clic
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8787;
 const ROOT = path.join(__dirname, '..');
@@ -276,6 +277,11 @@ const server = http.createServer((req, res) => {
         });
         res.end();
         return;
+    }
+
+    // Partita online (server/online.js): stanza, giocatori, stream, clic
+    if (pathname.startsWith('/online/') || pathname.startsWith('/api/online/')) {
+        if (online.gestisci(req, res, pathname)) return;
     }
 
     if (pathname === '/api/state' && req.method === 'GET') {
