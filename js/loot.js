@@ -107,12 +107,8 @@
         function pickLootChoices(isElite) {
             let extra = stato.party.lootExtraChoices || 0;
             stato.party.lootExtraChoices = 0;
-            // Occhio di Gazza (loot_extra_once): carte in più al primo bottino di un elite, una volta per capitolo
-            const gazza = Math.max(0, ...stato.party.filter(h => h.hp > 0).map(h => itemBonus(h, 'loot_extra_once')));
-            if (isElite && gazza > 0 && !stato.party.gazzaUsed) {
-                stato.party.gazzaUsed = true;
-                extra += gazza;
-            }
+            // Effetti "bottino → carta_bottino" (Occhio di Gazza: primo bottino di un elite, una volta per capitolo)
+            extra += fireSpecials('bottino', null, { isElite }).cards;
             return pickDistinctLoot(LOOT_CHOICES + extra, isElite);
         }
 
@@ -158,33 +154,19 @@
             return Math.round(base * (1 + mapProgress()) * (isElite ? 1.5 : 1));
         }
 
-        // Passiva "Cerusico da Battaglia" (hero_set postCombatHeal: N): dopo ogni scontro vinto, ogni eroe
-        // vivo con la passiva cura N HP all'eroe vivo più ferito (più HP persi). Usata anche dal simulatore.
-        function battleSurgeonHeal() {
-            const out = [];
-            stato.party.filter(h => h.hp > 0 && h.postCombatHeal).forEach(healer => {
-                const wounded = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp);
-                if (!wounded.length) return;
-                const hero = wounded.reduce((a, b) => (b.maxHp - b.hp) > (a.maxHp - a.hp) ? b : a);
-                const gained = healHero(hero, healer.postCombatHeal);
-                if (gained > 0) out.push({ healer, hero, gained });
-            });
-            return out;
+        // Scontro vinto: effetti "fine_scontro" di eroi in piedi e reliquie (cure del Cerusico da Battaglia e del
+        // Dente del grande lupo, Scudi di "Fammi dare un'occhiata"...). Gioco e simulatore. Ritorna i risultati sommati
+        function combatVictorySpecials() {
+            return fireSpecialsAll('fine_scontro');
         }
 
         function triggerLoot() {
             expireTempBuffs(true);  // fine dello scontro: via tutti i potenziamenti temporanei
             showScreen('screenLoot');
 
-            // Reliquia: Dente del grande lupo
-            if (hasRelic('dente_del_grande_lupo')) {
-                // Il vivo con meno HP tra i feriti (chi è già al massimo non conta)
-                const wounded = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp);
-                if (wounded.length) healHero(wounded.reduce((prev, curr) => prev.hp <= curr.hp ? prev : curr), 1);
-            }
-
-            battleSurgeonHeal().forEach(({ healer, hero, gained }) =>
-                uiMessage(`${healer.name} (Cerusico da Battaglia) cura ${hero.name}: +${gained} HP`));
+            const victory = combatVictorySpecials();
+            const otherNotes = victory.notes.filter(n => !/\+\d+ Scudi$/.test(n));
+            if (otherNotes.length) uiMessage(otherNotes.join(' · '));
 
             const isEliteCombat = currentEnemyIsEliteOrBoss();  // elite, capitano e boss dell'ultimo livello
             let coins = scaledCoins([3, 5, 7, 9, 12], isEliteCombat);
@@ -193,13 +175,11 @@
                 coins = Math.floor(coins * 0.85);
             }
 
-            // Abilità di Icaro "Fammi dare un'occhiata": monete extra garantite dopo ogni scontro, se è vivo.
-            // L'id dell'abilità copre i salvataggi creati prima di questa versione.
-            const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && h.bonusLootCoins);
-            const lootBonus = lootBonusHeroes.reduce((sum, h) => sum + h.bonusLootCoins, 0);
-            coins += lootBonus;
+            // Scudi in più degli effetti "fine_scontro → monete" (già nella cassa): si mostrano nel totale
+            const bonusSources = victory.fired.filter(e => e.s.fai === 'monete');
+            const lootBonus = victory.coins;
             document.getElementById('lootCoinsBonus').textContent = lootBonus
-                ? `(di cui +${lootBonus} da ${lootBonusHeroes.map(h => h.name).join(', ')}: Fammi dare un'occhiata)` : '';
+                ? `(di cui +${lootBonus} da ${bonusSources.map(e => e.owner ? `${e.owner.name}: ${e.name}` : e.name).join(', ')})` : '';
 
             stato.partyCoins += coins;
 
@@ -212,7 +192,7 @@
             // Elite sconfitti: solo per il riepilogo della spedizione (gli elite non lasciano reliquie)
             if (isEliteCombat) stato.expeditionStats.elitesWon = (stato.expeditionStats.elitesWon || 0) + 1;
 
-            document.getElementById('lootCoinsText').textContent = coins;
+            document.getElementById('lootCoinsText').textContent = coins + lootBonus;
             revealAsCard(document.querySelector('#screenLoot .loot-panel'), 0);
             // Il dorso lascia intuire la rarità migliore (colori di WoW: grigio, bianco, verde, blu, viola, arancio)
             const lootBack = document.getElementById('lootCardBack');

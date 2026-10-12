@@ -181,14 +181,14 @@ module.exports = (t, carica) => {
     t.test('ritiro di Dioforo: il Sigillo runico vale e si consuma solo al primo tentativo', () => {
         const stato = prepara();
         const d = eroe('Dioforo', { int: 0, challengeRerollMalus: 1 });
-        stato.party = [d]; stato.party.sigilloCharges = 0;
+        stato.party = [d];
         stato.unlockedRelics = [{ id: 'sigillo_runico' }];
         const sfida = { stat: 'int', cd: 99, reward: null, punishment: null };
         stato.challengeState = sfida;
         const res = g.resolveChallenge(d, sfida, [2, null, 3]);
         t.ok(res.rerolled);
         t.uguale(2, res.total, 'secondo tiro: 3 - 1, senza il +2 del Sigillo');
-        t.uguale(1, stato.party.sigilloCharges, 'una carica sola');
+        t.uguale(1, stato.party.specialUses.capitolo['r:sigillo_runico#0'], 'una carica sola');
     });
 
     t.test('premi e punizioni hero_*: vanno all\'eroe della prova; senza eroe a tutti quelli in piedi', () => {

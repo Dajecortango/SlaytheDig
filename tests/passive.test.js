@@ -74,12 +74,13 @@ module.exports = (t, carica) => {
 
     t.test('Tanto ho tenacia: la prima volta a 0 HP torna con 2 HP, la seconda no', () => {
         const stato = prepara();
-        const eroe = { name: 'T', hp: 1, maxHp: 4, current_armor: 0, items: [], tenacityRevive: 2 };
+        const eroe = { name: 'T', hp: 1, maxHp: 4, current_armor: 0, items: [], chosenAbility: { id: 'tanto_ho_tenacia', name: 'Tanto ho tenacia' } };
         stato.party = [eroe];
         const nemico = { name: 'N', dmg: 3 };
         const r1 = g.resolveMonsterAttack(nemico, eroe);
         t.uguale(2, eroe.hp);
-        t.ok(!r1.targetDied && eroe.tenacityUsed, 'rialzato, segno scritto');
+        t.ok(!r1.targetDied && eroe.specialUses.capitolo['a:tanto_ho_tenacia#0'] === 1, 'rialzato, uso segnato per il capitolo');
+        g.startCombatSpecials();  // un nuovo scontro non lo rimette
         const r2 = g.resolveMonsterAttack(nemico, eroe);
         t.uguale(0, eroe.hp);
         t.ok(r2.targetDied, 'la seconda volta cade');
@@ -87,17 +88,17 @@ module.exports = (t, carica) => {
 
     t.test('Cerusico da Battaglia: dopo lo scontro cura 1 HP all\'eroe vivo più ferito', () => {
         const stato = prepara();
-        const cerusico = { name: 'C', hp: 4, maxHp: 4, postCombatHeal: 1 };
+        const cerusico = { name: 'C', hp: 4, maxHp: 4, items: [], chosenAbility: { id: 'cerusico_da_battaglia', name: 'Cerusico da Battaglia' } };
         const poco = { name: 'P', hp: 3, maxHp: 4 };
         const molto = { name: 'M', hp: 1, maxHp: 5 };
         const caduto = { name: 'X', hp: 0, maxHp: 4 };
         stato.party = [cerusico, poco, molto, caduto];
-        const res = g.battleSurgeonHeal();
+        const res = g.combatVictorySpecials();
         t.uguale(2, molto.hp);
         t.uguale(3, poco.hp);
         t.uguale(0, caduto.hp, 'i caduti non si curano');
-        t.uguale(1, res.length);
+        t.uguale(1, res.fired.length);
         cerusico.hp = 0;
-        t.uguale(0, g.battleSurgeonHeal().length, 'il cerusico caduto non cura');
+        t.uguale(0, g.combatVictorySpecials().fired.length, 'il cerusico caduto non cura');
     });
 };

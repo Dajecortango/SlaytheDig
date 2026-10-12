@@ -165,6 +165,86 @@ function portraitFrameEditor(hero, onChange) {
     return box;
 }
 
+/* ---------- Effetti speciali "quando → fai" ----------
+   Un riquadro per effetto: quando scatta e cosa fa (solo le azioni che hanno senso in quel momento,
+   SPECIALI_FAI in js/comune.js), i campi dell'azione, poi condizione, round, probabilità e limite.
+   Sotto, la riga che leggerà il giocatore (specialeTesto). Vuoto = campo "speciali" assente. */
+function specialiEditor(obj, f, onChange) {
+    const box = document.createElement('div');
+    box.className = 'ed-specials';
+    const list = () => (Array.isArray(obj.speciali) ? obj.speciali : (obj.speciali = []));
+    const save = () => { if (!list().length) delete obj.speciali; onChange(f.k); };
+    const opts = (map, value, empty) => (empty ? `<option value="">${esc(empty)}</option>` : '') + Object.entries(map)
+        .map(([k, l]) => `<option value="${esc(k)}" ${k === value ? 'selected' : ''}>${esc(typeof l === 'string' ? l : l.label)}</option>`).join('');
+    const faiFor = quando => Object.fromEntries(Object.entries(SPECIALI_FAI).filter(([, d]) => d.quando.includes(quando)));
+    const num = (k, label, s, extra = '') => `<label>${esc(label)}<input type="number" data-k="${k}" value="${s[k] ?? ''}" ${extra}></label>`;
+
+    const paint = () => {
+        box.innerHTML = '';
+        list().forEach((s, i) => {
+            const fai = faiFor(s.quando);
+            if (!fai[s.fai]) s.fai = Object.keys(fai)[0];
+            const campi = (SPECIALI_FAI[s.fai] || {}).campi || [];
+            const card = document.createElement('div');
+            card.className = 'ed-special';
+            card.innerHTML = `
+                <div class="ed-special-row">
+                    <label>Quando<select data-k="quando">${opts(SPECIALI_QUANDO, s.quando)}</select></label>
+                    <label>Fai<select data-k="fai">${opts(fai, s.fai)}</select></label>
+                    ${campi.includes('val') ? num('val', 'Valore', s) : ''}
+                    ${campi.includes('stat') ? `<label>Statistica<select data-k="stat">${opts(SPECIALI_STAT, s.stat)}</select></label>` : ''}
+                    ${campi.includes('stat_nemico') ? `<label>Statistica del nemico<select data-k="stat">${opts(SPECIALI_STAT_NEMICO, s.stat)}</select></label>` : ''}
+                    ${campi.includes('durata') ? num('durata', 'Round (vuoto = tutto lo scontro)', s, 'min="1"') : ''}
+                    ${campi.includes('bersaglio') ? `<label>A chi<select data-k="bersaglio">${opts(SPECIALI_BERSAGLI, s.bersaglio || 'eroe')}</select></label>` : ''}
+                </div>
+                <div class="ed-special-row">
+                    <label>Condizione<select data-k="se">${opts(SPECIALI_SE, s.se, 'Sempre')}</select></label>
+                    ${num('round', 'Solo nel round', s, 'min="1"')}
+                    ${num('prob', 'Probabilità %', s, 'min="1" max="100"')}
+                    <label>Limite<select data-k="limite">${opts({ scontro: 'Per scontro', capitolo: 'Per capitolo' }, s.limite, 'Nessuno')}</select></label>
+                    ${s.limite ? num('volte', 'Volte', s, 'min="1"') : ''}
+                    <label class="ed-special-check"><input type="checkbox" data-k="rompe" ${s.rompe ? 'checked' : ''}>Poi si esaurisce</label>
+                    <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
+                </div>
+                <div class="ed-special-text"></div>`;
+            const text = card.querySelector('.ed-special-text');
+            const refresh = () => { text.textContent = specialeTesto(s, f.tipo); };
+            refresh();
+            card.addEventListener('change', e => {
+                const el = e.target, k = el.dataset.k;
+                if (!k) return;
+                if (el.type === 'checkbox') { if (el.checked) s[k] = true; else delete s[k]; }
+                else if (el.type === 'number') { if (el.value === '') delete s[k]; else s[k] = Number(el.value); }
+                else if (el.value === '' || (k === 'bersaglio' && el.value === 'eroe')) delete s[k];
+                else s[k] = el.value;
+                // Campi che non servono più all'azione nuova (es. statistica dopo aver scelto "Cura")
+                if (k === 'quando' || k === 'fai') {
+                    const now = faiFor(s.quando);
+                    if (!now[s.fai]) s.fai = Object.keys(now)[0];
+                    const keep = (SPECIALI_FAI[s.fai] || {}).campi || [];
+                    if (!keep.includes('val')) delete s.val;
+                    if (!keep.includes('stat') && !keep.includes('stat_nemico')) delete s.stat;
+                    if (!keep.includes('durata')) delete s.durata;
+                    if (!keep.includes('bersaglio')) delete s.bersaglio;
+                }
+                if (k === 'limite' && !s.limite) delete s.volte;
+                save();
+                if (['quando', 'fai', 'limite'].includes(k)) paint(); else refresh();
+            });
+            card.querySelector('[data-act="del"]').addEventListener('click', () => { list().splice(i, 1); save(); paint(); });
+            box.appendChild(card);
+        });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'btn-small';
+        add.textContent = 'Aggiungi un effetto';
+        add.addEventListener('click', () => { list().push({ quando: 'colpo', fai: 'danni', val: 1 }); save(); paint(); });
+        box.appendChild(add);
+    };
+    paint();
+    return box;
+}
+
 function renderForm(container, obj, fields, onChange) {
     container.innerHTML = '';
     const form = document.createElement('div');
@@ -208,6 +288,14 @@ function renderForm(container, obj, fields, onChange) {
             } else if (mode) {
                 wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', f.lib, mode)}>Modifica in ${LIB_LABELS[f.lib]}</a>`);
             }
+            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Effetti speciali "quando → fai": elenco composto con i menu
+        if (f.type === 'speciali') {
+            wrap.appendChild(specialiEditor(obj, f, onChange));
             if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;

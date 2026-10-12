@@ -127,7 +127,7 @@
         // Modificatori di una prova per l'eroe scelto, senza consumare le reliquie
         function challengeModifiers(hero) {
             const statValue = (hero && hero[stato.challengeState.stat]) || 0;
-            const relics = relicDiceSources();
+            const relics = relicDiceSources('prova', hero);
             return {
                 statValue,
                 relics,
@@ -136,13 +136,13 @@
                 lastingRelicBonus: relics.filter(r => !r.nextRoll).reduce((sum, r) => sum + r.val, 0),
                 rollMode: challengeRollMode(hero).mode,
                 rerollMalus: (hero && hero.challengeRerollMalus) || 0,
-                safetyNet: hasRelic('frammento_di_matrice')
+                safetyNet: hasSpecial('prova_fallita', 'prova_riuscita', hero)
             };
         }
 
         function challengeChanceInfo(mods) {
             const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus;
-            if (mods.safetyNet) return { short: 'Sicuro', long: `Riuscita garantita: ${relicName('frammento_di_matrice')} trasforma un fallimento in successo`, pct: 100 };
+            if (mods.safetyNet) return { short: 'Sicuro', long: 'Riuscita garantita: un effetto speciale trasforma un fallimento in successo', pct: 100 };
             const info = chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
             if (!mods.rerollMalus) return info;
             // Era solo una prova!: un secondo tentativo con il malus se il primo fallisce,
@@ -188,11 +188,11 @@
                 events.push({ type: 'stat', text: `+${mods.statValue} ${statLabel} (${hero ? hero.name : '—'})` });
 
                 let relicBonus = 0;
-                relicDiceSources().filter(r => !reroll || !r.nextRoll).forEach(r => {
+                relicDiceSources('prova', hero).filter(r => !reroll || !r.nextRoll).forEach(r => {
                     relicBonus += r.val;
                     events.push({ type: 'relic', text: `+${r.val} ${r.name}` });
                 });
-                if (!reroll) spendNextRollRelics().forEach(text => events.push({ type: 'relic', text }));
+                if (!reroll) spendNextRollRelics('prova', hero).forEach(text => events.push({ type: 'relic', text }));
                 if (malus) events.push({ type: 'malus', text: `−${malus} secondo tentativo` });
 
                 const total = kept + mods.statValue + relicBonus - malus;
@@ -213,11 +213,14 @@
             const { roll, roll2, kept, relicBonus } = final;
             let { total, success } = final;
 
-            if (!success && hasRelic('frammento_di_matrice')) {
-                total = Math.max(total, challenge.cd);
-                success = true;
-                breakRelic('frammento_di_matrice');
-                events.push({ type: 'relic', text: `${relicName('frammento_di_matrice')}: il fallimento diventa un successo (la reliquia si rompe)` });
+            // Effetti "prova_fallita → prova_riuscita" (Fortuna degli Stolti): il fallimento diventa un successo
+            if (!success) {
+                const saved = fireSpecials('prova_fallita', hero, { fai: ['prova_riuscita'] });
+                if (saved.success) {
+                    total = Math.max(total, challenge.cd);
+                    success = true;
+                    saved.notes.forEach(text => events.push({ type: 'relic', text }));
+                }
             }
 
             events.push({ type: 'outcome', text: success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>' });
@@ -237,14 +240,10 @@
                 }
                 stato.expeditionStats.challengesPassed++;
             } else {
-                // Mappa del Contrabbandiere (challenge_skip): niente punizione, la mappa si consuma. Non nel finale
-                const smuggler = challenge.punishment && !isFinalNode() && stato.party.find(h => h.hp > 0 && itemBonus(h, 'challenge_skip') > 0);
-                if (smuggler) {
-                    const idx = smuggler.items.findIndex(it => it.challenge_skip);
-                    const map = smuggler.items[idx];
-                    revertItemEffects(map, smuggler);
-                    smuggler.items.splice(idx, 1);
-                    events.push({ type: 'item', text: `🗺️ ${map.name}: ${smuggler.name} trova una via d'uscita, niente punizione (la mappa è consumata)` });
+                // Effetti "prova_fallita → annulla_punizione" (Mappa del Contrabbandiere: non nel finale, poi si consuma)
+                const escape = challenge.punishment ? fireSpecials('prova_fallita', hero, { fai: ['annulla_punizione'] }) : null;
+                if (escape && escape.skipPunishment) {
+                    escape.notes.forEach(text => events.push({ type: 'item', text: `🗺️ ${text}` }));
                 } else if (challenge.punishment) {
                     const cursesBefore = stato.activeCurses.length;
                     // Quanto cambiano davvero le statistiche (party_stat non scende sotto 0): serve per
@@ -372,29 +371,34 @@
             stato.party.forEach(refreshScaledBonuses);
         }
 
-        // Risolve un riposo: cura party, rimuove Gelo nelle ossa e (a caso) 1 maledizione con Pietra del focolare.
+        // Risolve un riposo: cura party (1 HP più gli effetti "riposo → bonus_cura": Unguento dell'erborista,
+        // Coperta di Lana), rimuove Gelo nelle ossa, poi gli effetti del riposo (Pietra del focolare...).
         function resolveRest() {
-            const healAmount = 1 + (hasRelic('unguento_dell_erborista') ? 1 : 0);
+            const healAmount = 1 + specialSum('riposo', 'bonus_cura', null);  // uguale per tutti (reliquie)
             const healed = [];
+            const before = new Map(stato.party.map(h => [h, h.hp]));
             stato.party.forEach(h => {
                 // Un eroe caduto (0 HP) si rialza con 1 HP
                 if (h.hp <= 0) {
                     h.hp = 1;
-                    healed.push({ name: h.name, gained: 1, hp: h.hp, maxHp: h.maxHp, revived: true });
+                    healed.push({ hero: h, name: h.name, gained: 1, hp: h.hp, maxHp: h.maxHp, revived: true });
                     return;
                 }
-                const before = h.hp;
-                h.hp = Math.min(h.maxHp, h.hp + healAmount + itemBonus(h, 'rest_heal'));  // Coperta di Lana di Rurikstad
-                healed.push({ name: h.name, gained: h.hp - before, hp: h.hp, maxHp: h.maxHp });
+                h.hp = Math.min(h.maxHp, h.hp + 1 + specialSum('riposo', 'bonus_cura', h));
+                healed.push({ hero: h, name: h.name, gained: h.hp - before.get(h), hp: h.hp, maxHp: h.maxHp });
             });
 
-            // Favore di Valgoren: il riposo è una cura, quindi 1 HP in più a un eroe ancora ferito
-            const healedSomeone = healed.some(h => h.gained > 0);
-            const valgoren = healedSomeone ? valgorenEcho(null) : null;
-            if (valgoren) {
-                const line = healed.find(h => h.name === valgoren.name);
-                if (line) { line.gained += 1; line.hp = valgoren.hp; line.valgoren = true; }
+            // Il riposo è una cura: effetti "cura_ricevuta" (Favore di Valgoren: 1 HP in più a un eroe ancora ferito)
+            if (healed.some(h => h.gained > 0 && !h.revived)) {
+                const echo = fireSpecials('cura_ricevuta', null);
+                if (echo.fired.length) healed.forEach(line => {
+                    if (line.revived || line.hero.hp === line.hp) return;
+                    line.gained = line.hero.hp - before.get(line.hero);
+                    line.hp = line.hero.hp;
+                    line.valgoren = true;
+                });
             }
+            healed.forEach(line => { delete line.hero; });
 
             let geloRemoved = false;
             const geloIdx = stato.activeCurses.findIndex(c => c.id === 'gelo_nelle_ossa');
@@ -403,11 +407,9 @@
                 geloRemoved = true;
             }
 
-            if (hasRelic('pietra_del_focolare') && stato.activeCurses.length > 0) {
-                removeCurseAt(Math.floor(Math.random() * stato.activeCurses.length));
-            }
+            const notes = fireSpecialsAll('riposo').notes;  // Pietra del focolare: toglie una maledizione a caso
 
-            return { healAmount, healed, geloRemoved };
+            return { healAmount, healed, geloRemoved, notes };
         }
 
         /* ---------- Nodo di trama ----------
@@ -500,10 +502,10 @@
         // Tiro della preghiera, senza interfaccia (usato anche dal simulatore)
         function prayerRoll(hero) {
             const roll = rollD6(null, 0, hero);
-            const relics = relicDiceBonus();
+            const relics = relicDiceBonus('preghiera', hero);
             const items = itemPrayerBonus(hero);  // oggetti con prayer_bonus (Reliquiario Tascabile)
             const total = roll + (hero.fth || 0) + relics + items;
-            const notes = spendNextRollRelics();
+            const notes = spendNextRollRelics('preghiera', hero);
             const success = naturalRollSuccess(roll, total, PRAYER_CD);
             return { roll, total, relics, items, notes, success, major: success && (roll === 6 || total >= PRAYER_MAJOR_TOTAL),
                 naturalNote: naturalRollNote(roll, total, PRAYER_CD) };
@@ -611,7 +613,7 @@
                 `<option value="${esc(h.name)}">${esc(h.name)} (Fede ${h.fth || 0}) · ${prayerChance(h).short}</option>`).join('');
         }
 
-        const prayerChance = hero => chanceText(PRAYER_CD - (hero.fth || 0) - relicDiceBonus());
+        const prayerChance = hero => chanceText(PRAYER_CD - (hero.fth || 0) - relicDiceBonus('preghiera', hero) - itemPrayerBonus(hero));
 
         let selectedPrayerHero = null;
         // heroName: chi prega quando arriva dal telefono (remotePray), altrimenti la scelta nel menu
@@ -711,6 +713,7 @@
             if (res.geloRemoved) {
                 document.getElementById('restDescBox').innerHTML += `<br>Il calore del fuoco scioglie il <strong>Gelo nelle ossa</strong>: la penalità ai tiri per colpire svanisce.`;
             }
+            (res.notes || []).forEach(text => { document.getElementById('restDescBox').innerHTML += `<br>✨ ${esc(text)}`; });
             document.getElementById('restDescBox').innerHTML += '<div id="restRuneArea" class="rest-rune-area"></div>';
             renderRestRuneButtons();
             resetPrayerUI();
@@ -748,8 +751,8 @@
             const roll = rollD6(null, 0, hero);
             const statVal = type === 'faith' ? hero.fth : hero.int;
             // Anche qui valgono le reliquie dei tiri; la Catena di Norgrad vale contro il capitano
-            const relicBonus = relicDiceBonus() + (hasRelic('catena_di_norgrad') ? 1 : 0);
-            spendNextRollRelics();
+            const relicBonus = relicDiceBonus('capitano', hero);  // anche la Catena di Norgrad: "capitano → bonus_tiro"
+            spendNextRollRelics('capitano', hero);
             const success = naturalRollSuccess(roll, roll + statVal + relicBonus, 6);
             return { type, roll, statVal, relicBonus, success };
         }

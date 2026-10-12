@@ -1,5 +1,6 @@
 // Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.
 // Le campagne li richiamano per id in "initialArmory" e "lootItems".
+// "speciali": effetti "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.armeria = {
@@ -92,16 +93,18 @@ window.LIBRERIA.armeria = {
         ],
         "desc": "+1 Intelligenza; +1 Danno ogni 2 Intelligenza"
     },
-    "reliquiario_tascabile": {
-        "id": "reliquiario_tascabile",
-        "icon": "immagini/icone/BTNSacredRelic.png",
-        "name": "Reliquiario Tascabile",
+    "reliquiario_tascabile": { "id": "reliquiario_tascabile", "icon": "immagini/icone/BTNSacredRelic.png", "name": "Reliquiario Tascabile", "rarity": "raro", "fth": 1, "prayer_bonus": 1, "desc": "+1 Fede, +1 al tiro di Preghiera" },
+    "pozione_rigenerazione": {
+        "id": "pozione_rigenerazione",
+        "name": "Pozione di Rigenerazione",
         "rarity": "raro",
-        "fth": 1,
-        "prayer_bonus": 1,
-        "desc": "+1 Fede, +1 al tiro di Preghiera"
+        "type": "consumable_buff",
+        "buff_stat": "regen",
+        "buff_val": 1,
+        "buff_rounds": 0,
+        "desc": "Consumabile: +1 HP a inizio di ogni round, per tutto lo scontro",
+        "icon": "immagini/icone/BTNPotionOfRestoration.png"
     },
-    "pozione_rigenerazione": { "id": "pozione_rigenerazione", "name": "Pozione di Rigenerazione", "rarity": "raro", "type": "consumable_buff", "buff_stat": "regen", "buff_val": 1, "buff_rounds": 0, "desc": "Consumabile: +1 HP a inizio di ogni round, per tutto lo scontro", "icon": "immagini/icone/BTNPotionOfRestoration.png" },
     "unguento_fortificante": { "id": "unguento_fortificante", "name": "Unguento Fortificante", "rarity": "non_comune", "type": "consumable_heal", "heal_val": 3, "desc": "Consumabile: Cura 3 HP", "icon": "immagini/icone/BTNPotionGreen.png" },
     "lama_acciaio_lunare": { "id": "lama_acciaio_lunare", "name": "Lama d'Acciaio Lunare", "rarity": "epico", "str": 2, "dmg": 2, "desc": "+2 Forza, +2 Danno", "icon": "immagini/icone/BTNFrostMourne.png" },
     "martello_breccia": { "id": "martello_breccia", "name": "Martello della Breccia", "rarity": "epico", "dmg": 3, "desc": "+3 Danni, +2 Armatura", "icon": "immagini/icone/BTNHammer.png", "armor": 2 },
@@ -225,25 +228,179 @@ window.LIBRERIA.armeria = {
         ],
         "desc": "+1 Fede; +1 Forza ogni 2 Fede; +1 Difesa ogni 3 Fede"
     },
-    // Non comuni con un effetto speciale (ITEM_SPECIALS in js/comune.js)
-    "corno_allman": {"id": "corno_allman", "name": "Corno da Guerra di Allmän", "rarity": "non_comune", "war_horn": 1, "desc": "Primo round di ogni scontro: +1 al tiro per colpire a tutta la compagnia. Il richiamo della Regina del campo di battaglia.", "icon": "immagini/icone/BTNLionHorn.png"},
-    "ascia_primo_sangue": {"id": "ascia_primo_sangue", "name": "Ascia del Primo Sangue", "rarity": "non_comune", "first_hit_dmg": 2, "desc": "+2 danni al primo colpo a segno di ogni scontro.", "icon": "immagini/icone/BTNCriticalStrike.png"},
-    "mazza_boia_seistad": {"id": "mazza_boia_seistad", "name": "Mazza del Boia di Seistad", "rarity": "non_comune", "execute_dmg": 2, "desc": "+2 danni se il nemico ha metà vita o meno. Arnese del Concistoro Mutilo.", "icon": "immagini/icone/BTNStormHammer.png"},
-    "scudo_spina_kranen": {"id": "scudo_spina_kranen", "name": "Scudo a Spina di Kranen", "rarity": "non_comune", "thorns": 1, "desc": "Se l'eroe ha difeso nel round, il nemico che lo colpisce subisce 1 danno. Irto di zanne di warg corrotto.", "icon": "immagini/icone/BTNThornShield.png"},
-    "catena_ghiacceterno": {"id": "catena_ghiacceterno", "name": "Catena di Ghiacceterno", "rarity": "non_comune", "first_hit_stun": 1, "desc": "Nessun danno in più: il primo colpo a segno di ogni scontro stordisce il nemico, che salta il suo turno.", "icon": "immagini/icone/BTNEnsnare.png"},
-    "talismano_corvo": {"id": "talismano_corvo", "name": "Talismano del Corvo", "rarity": "non_comune", "ally_down_str": 1, "desc": "Se cade un alleato: +1 Forza fino a fine scontro.", "icon": "immagini/icone/BTNTalisman.png"},
-    "mappa_contrabbandiere": {"id": "mappa_contrabbandiere", "name": "Mappa del Contrabbandiere", "rarity": "non_comune", "challenge_skip": 1, "desc": "Una prova fallita non dà punizione; poi la mappa si consuma. Non vale nella prova finale.", "icon": "immagini/icone/BTNScrollOfTownPortal.png"},
-    "dado_osso_gunnar": {"id": "dado_osso_gunnar", "name": "Dado d'Osso di Gunnar", "rarity": "non_comune", "combat_reroll": 1, "desc": "Una volta per scontro il primo tiro fallito dell'eroe (attacco, abilità, Difendi, Aiuta) si ritira da solo.", "icon": "immagini/icone/BTNBoneChimes.png"},
-    "lingua_argento": {"id": "lingua_argento", "name": "Lingua d'Argento", "rarity": "non_comune", "haggle_bonus": 1, "desc": "+1 al tiro per contrattare con il mercante.", "icon": "immagini/icone/BTNGoldRing.png"},
-    "occhio_gazza": {"id": "occhio_gazza", "name": "Occhio di Gazza", "rarity": "non_comune", "loot_extra_once": 1, "desc": "Al primo bottino di un elite si scopre una carta in più (una volta per capitolo).", "icon": "immagini/icone/BTNSnowOwl.png"},
-    "coperta_rurikstad": {"id": "coperta_rurikstad", "name": "Coperta di Lana di Rurikstad", "rarity": "non_comune", "rest_heal": 1, "desc": "+1 HP a ogni riposo per chi la porta.", "icon": "immagini/icone/BTNMantle.png"},
-    "erbario_fonnish": {"id": "erbario_fonnish", "name": "Erbario dei Fonnish", "rarity": "non_comune", "potion_heal_bonus": 1, "desc": "Le pozioni di cura usate da chi lo porta curano 1 HP in più.", "icon": "immagini/icone/BTNNaturesBlessing.png"},
-    // Rari con un effetto speciale
-    "spadone_primo_sangue": {"id": "spadone_primo_sangue", "name": "Spadone del Primo Sangue", "rarity": "raro", "str": 1, "first_hit_dmg": 3, "desc": "+1 Forza; +3 danni al primo colpo a segno di ogni scontro.", "icon": "immagini/icone/BTNNagaWeaponUp3.png"},
-    "ascia_carnefice_glostok": {"id": "ascia_carnefice_glostok", "name": "Ascia del Carnefice di Glostok", "rarity": "raro", "dmg": 1, "execute_dmg": 2, "desc": "+1 Danno; +2 danni se il nemico ha metà vita o meno.", "icon": "immagini/icone/BTNBash.png"},
-    "pugnale_succhiasangue": {"id": "pugnale_succhiasangue", "name": "Pugnale Succhiasangue", "rarity": "raro", "hit_heal_chance": 50, "desc": "Ogni colpo a segno ha il 50% di probabilità di curare 1 HP a chi lo impugna.", "icon": "immagini/icone/BTNSacrificialDagger.png"},
-    "lama_ghiaccio_hvid": {"id": "lama_ghiaccio_hvid", "name": "Lama di Ghiaccio di Hvid", "rarity": "raro", "hit_chill": 1, "desc": "Ogni colpo a segno toglie 1 all'Attacco del nemico (al massimo 2 per scontro): Difendi e Aiuta diventano più facili.", "icon": "immagini/icone/BTNIceShard.png"},
-    "corazza_ultimo_baluardo": {"id": "corazza_ultimo_baluardo", "name": "Corazza dell'Ultimo Baluardo", "rarity": "raro", "armor": 1, "last_stand_armor": 2, "desc": "+1 Armatura; la prima volta nello scontro che l'eroe scende a 2 HP o meno riceve subito 2 armatura.", "icon": "immagini/icone/BTNArcaniteArmor.png"}
+    "corno_allman": {
+        "id": "corno_allman",
+        "name": "Corno da Guerra di Allmän",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "potenzia", "stat": "att_bonus", "val": 1, "durata": 1, "bersaglio": "compagnia" }
+        ],
+        "desc": "Primo round di ogni scontro: +1 al tiro per colpire a tutta la compagnia. Il richiamo della Regina del campo di battaglia.",
+        "icon": "immagini/icone/BTNLionHorn.png"
+    },
+    "ascia_primo_sangue": {
+        "id": "ascia_primo_sangue",
+        "name": "Ascia del Primo Sangue",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "colpo", "fai": "danni", "val": 2, "limite": "scontro" }
+        ],
+        "desc": "+2 danni al primo colpo a segno di ogni scontro.",
+        "icon": "immagini/icone/BTNCriticalStrike.png"
+    },
+    "mazza_boia_seistad": {
+        "id": "mazza_boia_seistad",
+        "name": "Mazza del Boia di Seistad",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "colpo", "se": "nemico_meta", "fai": "danni", "val": 2 }
+        ],
+        "desc": "+2 danni se il nemico ha metà vita o meno. Arnese del Concistoro Mutilo.",
+        "icon": "immagini/icone/BTNStormHammer.png"
+    },
+    "scudo_spina_kranen": {
+        "id": "scudo_spina_kranen",
+        "name": "Scudo a Spina di Kranen",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "dopo_colpito", "se": "ha_difeso", "fai": "danni", "val": 1 }
+        ],
+        "desc": "Se l'eroe ha difeso nel round, il nemico che lo colpisce subisce 1 danno. Irto di zanne di warg corrotto.",
+        "icon": "immagini/icone/BTNThornShield.png"
+    },
+    "catena_ghiacceterno": {
+        "id": "catena_ghiacceterno",
+        "name": "Catena di Ghiacceterno",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "colpo", "fai": "stordisci", "limite": "scontro" }
+        ],
+        "desc": "Nessun danno in più: il primo colpo a segno di ogni scontro stordisce il nemico, che salta il suo turno.",
+        "icon": "immagini/icone/BTNEnsnare.png"
+    },
+    "talismano_corvo": {
+        "id": "talismano_corvo",
+        "name": "Talismano del Corvo",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "alleato_caduto", "fai": "potenzia", "stat": "str", "val": 1 }
+        ],
+        "desc": "Se cade un alleato: +1 Forza fino a fine scontro.",
+        "icon": "immagini/icone/BTNTalisman.png"
+    },
+    "mappa_contrabbandiere": {
+        "id": "mappa_contrabbandiere",
+        "name": "Mappa del Contrabbandiere",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "prova_fallita", "se": "non_finale", "fai": "annulla_punizione", "rompe": true }
+        ],
+        "desc": "Una prova fallita non dà punizione; poi la mappa si consuma. Non vale nella prova finale.",
+        "icon": "immagini/icone/BTNScrollOfTownPortal.png"
+    },
+    "dado_osso_gunnar": {
+        "id": "dado_osso_gunnar",
+        "name": "Dado d'Osso di Gunnar",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "tiro_fallito", "fai": "ritira", "limite": "scontro" }
+        ],
+        "desc": "Una volta per scontro il primo tiro fallito dell'eroe (attacco, abilità, Difendi, Aiuta) si ritira da solo.",
+        "icon": "immagini/icone/BTNBoneChimes.png"
+    },
+    "lingua_argento": {
+        "id": "lingua_argento",
+        "name": "Lingua d'Argento",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "contrattazione", "fai": "bonus_tiro", "val": 1 }
+        ],
+        "desc": "+1 al tiro per contrattare con il mercante.",
+        "icon": "immagini/icone/BTNGoldRing.png"
+    },
+    "occhio_gazza": {
+        "id": "occhio_gazza",
+        "name": "Occhio di Gazza",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "bottino", "se": "elite", "fai": "carta_bottino", "val": 1, "limite": "capitolo" }
+        ],
+        "desc": "Al primo bottino di un elite si scopre una carta in più (una volta per capitolo).",
+        "icon": "immagini/icone/BTNSnowOwl.png"
+    },
+    "coperta_rurikstad": {
+        "id": "coperta_rurikstad",
+        "name": "Coperta di Lana di Rurikstad",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "riposo", "fai": "bonus_cura", "val": 1 }
+        ],
+        "desc": "+1 HP a ogni riposo per chi la porta.",
+        "icon": "immagini/icone/BTNMantle.png"
+    },
+    "erbario_fonnish": {
+        "id": "erbario_fonnish",
+        "name": "Erbario dei Fonnish",
+        "rarity": "non_comune",
+        "speciali": [
+            { "quando": "pozione", "fai": "bonus_cura", "val": 1 }
+        ],
+        "desc": "Le pozioni di cura usate da chi lo porta curano 1 HP in più.",
+        "icon": "immagini/icone/BTNNaturesBlessing.png"
+    },
+    "spadone_primo_sangue": {
+        "id": "spadone_primo_sangue",
+        "name": "Spadone del Primo Sangue",
+        "rarity": "raro",
+        "str": 1,
+        "speciali": [
+            { "quando": "colpo", "fai": "danni", "val": 3, "limite": "scontro" }
+        ],
+        "desc": "+1 Forza; +3 danni al primo colpo a segno di ogni scontro.",
+        "icon": "immagini/icone/BTNNagaWeaponUp3.png"
+    },
+    "ascia_carnefice_glostok": {
+        "id": "ascia_carnefice_glostok",
+        "name": "Ascia del Carnefice di Glostok",
+        "rarity": "raro",
+        "dmg": 1,
+        "speciali": [
+            { "quando": "colpo", "se": "nemico_meta", "fai": "danni", "val": 2 }
+        ],
+        "desc": "+1 Danno; +2 danni se il nemico ha metà vita o meno.",
+        "icon": "immagini/icone/BTNBash.png"
+    },
+    "pugnale_succhiasangue": {
+        "id": "pugnale_succhiasangue",
+        "name": "Pugnale Succhiasangue",
+        "rarity": "raro",
+        "speciali": [
+            { "quando": "colpo", "prob": 50, "fai": "cura", "val": 1 }
+        ],
+        "desc": "Ogni colpo a segno ha il 50% di probabilità di curare 1 HP a chi lo impugna.",
+        "icon": "immagini/icone/BTNSacrificialDagger.png"
+    },
+    "lama_ghiaccio_hvid": {
+        "id": "lama_ghiaccio_hvid",
+        "name": "Lama di Ghiaccio di Hvid",
+        "rarity": "raro",
+        "speciali": [
+            { "quando": "colpo", "fai": "malus_nemico", "stat": "att", "val": 1, "limite": "scontro", "volte": 2 }
+        ],
+        "desc": "Ogni colpo a segno toglie 1 all'Attacco del nemico (al massimo 2 per scontro): Difendi e Aiuta diventano più facili.",
+        "icon": "immagini/icone/BTNIceShard.png"
+    },
+    "corazza_ultimo_baluardo": {
+        "id": "corazza_ultimo_baluardo",
+        "name": "Corazza dell'Ultimo Baluardo",
+        "rarity": "raro",
+        "armor": 1,
+        "speciali": [
+            { "quando": "dopo_colpito", "se": "ferito", "fai": "armatura", "val": 2, "limite": "scontro" }
+        ],
+        "desc": "+1 Armatura; la prima volta nello scontro che l'eroe scende a 2 HP o meno riceve subito 2 armatura.",
+        "icon": "immagini/icone/BTNArcaniteArmor.png"
+    }
 };
 
 // Bottino delle campagne con "lootItems": null

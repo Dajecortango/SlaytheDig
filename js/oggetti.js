@@ -178,7 +178,7 @@
                 .filter(r => r.gained > 0);
         }
 
-        // Somma di un campo degli oggetti nello zaino dell'eroe (effetti speciali: ITEM_SPECIALS in js/comune.js)
+        // Somma di un campo numerico degli oggetti nello zaino dell'eroe (es. prayer_bonus)
         function itemBonus(hero, key) {
             return ((hero && hero.items) || []).reduce((sum, it) => sum + (Number(it[key]) || 0), 0);
         }
@@ -188,9 +188,9 @@
             return itemBonus(hero, 'prayer_bonus');
         }
 
-        // Cura di una pozione: con l'Erbario dei Fonnish (potion_heal_bonus) chi la usa cura di più. Gioco e simulatore
+        // Cura di una pozione: con gli effetti "pozione → bonus_cura" (Erbario dei Fonnish) chi la usa cura di più. Gioco e simulatore
         function potionHealAmount(user, item) {
-            return (item.heal_val || 0) + itemBonus(user, 'potion_heal_bonus');
+            return (item.heal_val || 0) + specialSum('pozione', 'bonus_cura', user);
         }
 
         // Toglie una copia del consumabile: la pila scende di uno, l'ultima copia libera lo slot
@@ -324,25 +324,15 @@
         };
 
         // Cura un eroe di "amount" HP (Infinity = tutti) e restituisce quanti ne ha recuperati.
-        // Con il Favore di Valgoren ogni cura riuscita fa recuperare 1 HP a un altro eroe a caso.
+        // Ogni cura riuscita fa scattare gli effetti "cura_ricevuta" (Favore di Valgoren: 1 HP a un altro eroe a caso).
         function healHero(target, amount) {
             const before = target.hp;
             target.hp = Math.min(target.maxHp, target.hp + amount);
             // Un caduto rialzato (pozioni rare, medico) torna con la sua armatura: a terra era stata azzerata
             if (before <= 0 && target.hp > 0) target.current_armor = target.base_armor || 0;
             const gained = target.hp - before;
-            if (gained > 0) valgorenEcho(target);
+            if (gained > 0) fireSpecials('cura_ricevuta', target);
             return gained;
-        }
-
-        // Favore di Valgoren: 1 HP a un altro eroe vivo e ferito, scelto a caso. Restituisce l'eroe curato.
-        function valgorenEcho(source) {
-            if (!hasRelic('favore_di_valgoren')) return null;
-            const others = stato.party.filter(h => h !== source && h.hp > 0 && h.hp < h.maxHp);
-            if (!others.length) return null;
-            const lucky = others[Math.floor(Math.random() * others.length)];
-            lucky.hp += 1;
-            return lucky;
         }
 
         /* ---------- 22. Tooltip ricco degli oggetti ---------- */
@@ -358,7 +348,7 @@
             if (itemRevives(item)) lines.push(kw('Rialza anche un eroe caduto'));
             if (item.type === 'consumable_damage') lines.push(kw(`Infligge ${item.dmg_val || 0} danni al nemico`));
             if (item.type === 'consumable_buff') lines.push(kw(`+${item.buff_val || 0} ${BUFF_STATS[item.buff_stat] || item.buff_stat}${item.buff_stat === 'current_armor' ? '' : ' ' + buffDurationText(item)}`));
-            ITEM_SPECIALS.forEach(sp => { if (item[sp.k]) lines.push(kw(sp.tip(item[sp.k]))); });
+            specialTipLines(itemSpecials(item), 'oggetto').forEach(t => lines.push(kw(t)));
             if (isCombatConsumable(item)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
             if ((item.qty || 1) > 1) lines.push(`<span class="tip-hint">${item.qty} copie in questo slot</span>`);
             (item.scaling || []).forEach(sc => {

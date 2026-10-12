@@ -160,16 +160,16 @@ module.exports = (t, carica) => {
             try { return fn(); } finally { Math.random = casuale; bag.size = size; }
         };
         const eroe = { name: 'G', hp: 4, maxHp: 4, current_armor: 0 };
-        g.applyEffects(abilita('neanche_un_graffio').effects, eroe);
+        eroe.chosenAbility = { id: 'neanche_un_graffio', name: abilita('neanche_un_graffio').name };  // effetto speciale "colpito → schiva"
         prepara([eroe]);
         const schivato = conDado(5, () => g.resolveMonsterAttack({ dmg: 3 }, eroe));
         t.uguale(4, eroe.hp, 'con 5 nessun danno');
-        t.ok(schivato.events.some(e => e.type === 'dodge'));
+        t.ok(schivato.events.some(e => e.text.includes('evita il colpo')));
         conDado(4, () => g.resolveMonsterAttack({ dmg: 3 }, eroe));
         t.uguale(1, eroe.hp, 'con 4 il colpo passa');
         eroe.hp = 4; eroe.current_armor = 1;
         const r = conDado(6, () => g.resolveMonsterAttack({ dmg: 3 }, eroe));
-        t.ok(!r.events.some(e => e.type === 'dodge' || e.type === 'dodge_fail'), 'con armatura non si tira');
+        t.ok(!r.events.some(e => /schiv|evita/.test(e.text)), 'con armatura non si tira');
         t.uguale(2, eroe.hp);
     });
 

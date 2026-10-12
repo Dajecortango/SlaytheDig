@@ -4,27 +4,34 @@ module.exports = (t, carica) => {
     const stato = g.eval('stato');
     const eroe = (extra = {}) => ({ name: 'A', hp: 4, maxHp: 4, items: [], ...extra });
 
+    // Inganno del drago verde: effetto speciale "mercante → sconto_percento 20" dell'abilità scelta
+    const drago = (extra = {}) => eroe({ chosenAbility: { id: 'inganno_drago_verde', name: 'Inganno del drago verde' }, ...extra });
+
     t.test('Inganno del drago verde: -20% sui prezzi finché l\'eroe è vivo', () => {
-        const a = eroe();
-        g.applyEffects(g.LIBRERIA.abilita.inganno_drago_verde.effects, a);
+        stato.unlockedRelics = []; stato.activeCurses = [];
+        const a = drago();
         stato.party = [a, eroe({ name: 'B' })];
-        g.eval('merchantHaggle = null');
-        t.uguale(8, g.merchantPrice(10));
-        t.uguale(1, g.merchantPrice(1), 'mai sotto 1 moneta');
+        t.uguale(0.8, g.specialPriceFactor());
         a.hp = 0;
-        t.uguale(10, g.merchantPrice(10), 'eroe morto: niente sconto');
+        t.uguale(1, g.specialPriceFactor(), 'eroe morto: niente sconto');
     });
 
-    t.test('lo sconto si somma alla contrattazione riuscita, ma due eroi con lo sconto non si sommano', () => {
-        stato.party = [eroe({ merchantDiscount: 0.2 }), eroe({ name: 'B', merchantDiscount: 0.2 })];
+    t.test('due eroi con lo stesso sconto non si sommano; la Moneta di Fredlös sì (si moltiplicano)', () => {
+        stato.activeCurses = [];
+        stato.party = [drago(), drago({ name: 'B' })];
+        stato.unlockedRelics = [];
+        t.uguale(0.8, g.specialPriceFactor());
+        stato.unlockedRelics = [{ id: 'moneta_di_fredlos' }];
+        t.uguale(0.4, Math.round(g.specialPriceFactor() * 100) / 100);
+        stato.unlockedRelics = [];
+    });
+
+    t.test('la contrattazione vale sul prezzo già scontato; il costo di "Rinnova la merce" non cambia', () => {
+        stato.party = [drago()];
         g.eval("merchantHaggle = 'ok'");
-        t.uguale(6, g.merchantPrice(10), '10 -25% = 7, poi -20% = 5,6 → 6');
+        t.uguale(7, g.merchantPrice(10), '10 -25% = 7,5 → 7');
         g.eval('merchantHaggle = null');
-        t.uguale(8, g.merchantPrice(10));
-    });
-
-    t.test('il costo di "Rinnova la merce" non cambia con lo sconto', () => {
-        stato.party = [eroe({ merchantDiscount: 0.2 })];
+        t.uguale(10, g.merchantPrice(10));
         t.uguale(5, g.eval('MERCHANT_REROLL_COST'));
     });
 

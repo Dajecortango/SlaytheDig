@@ -20,7 +20,7 @@
            I nodi tengono solo lo stato: il contenuto viene dalla campagna attuale.
            Per cambiare il formato: alza SAVE_VERSION e aggiungi in SAVE_MIGRATIONS la funzione
            che porta un salvataggio dalla versione precedente a quella nuova. */
-        const SAVE_VERSION = 5;
+        const SAVE_VERSION = 6;
         const SAVE_MIGRATIONS = {
             // Versione 1 (senza "version"): campi della partita sparsi al primo livello, nodi completi
             1: old => ({
@@ -68,7 +68,31 @@
                 return { ...old, version: 4, stato: { ...s, activeCurses: curses } };
             },
             // Versione 4 -> 5: proprietari degli eroi nella partita online (vuoti per le partite di prima)
-            4: old => ({ ...old, version: 5, stato: { ...old.stato, onlineOwners: old.stato.onlineOwners || {} } })
+            4: old => ({ ...old, version: 5, stato: { ...old.stato, onlineOwners: old.stato.onlineOwners || {} } }),
+            // Versione 5 -> 6: effetti speciali "quando → fai" (js/speciali.js). I segni delle reliquie e degli
+            // oggetti diventano usi in specialUses; le passive convertite non scrivono più segnali sull'eroe.
+            5: old => {
+                const s = old.stato;
+                const flags = s.partyFlags || {};
+                const capitolo = {};
+                if (flags.sigilloCharges) capitolo['r:sigillo_runico#0'] = flags.sigilloCharges;
+                (s.party || []).forEach(h => {
+                    const uses = { scontro: {}, capitolo: {} };
+                    // Tanto ho tenacia / Runa della Rinascita: una volta per capitolo
+                    if (h.tenacityUsed) {
+                        uses.capitolo['a:runa_rinascita#0'] = 1;
+                        if (h.chosenAbility && h.chosenAbility.id) uses.capitolo[`a:${h.chosenAbility.id}#0`] = 1;
+                    }
+                    // Occhio di Gazza: il primo bottino di un elite era già stato usato dalla compagnia
+                    if (flags.gazzaUsed) (h.items || []).filter(it => it.loot_extra_once || it.id === 'occhio_gazza')
+                        .forEach(it => { uses.capitolo[`o:${it.id || it.name}#0`] = 1; });
+                    h.specialUses = uses;
+                    ['tenacityRevive', 'tenacityUsed', 'postCombatHeal', 'dodgeNoArmor', 'bonusLootCoins', 'merchantDiscount',
+                        'firstHitUsed', 'rerollUsed', 'lastStandUsed'].forEach(k => delete h[k]);
+                });
+                const partyFlags = { lootExtraChoices: flags.lootExtraChoices || 0, specialUses: { scontro: {}, capitolo } };
+                return { ...old, version: 6, stato: { ...s, partyFlags } };
+            }
         };
 
         // Porta un salvataggio di qualunque versione al formato attuale (null se non è un salvataggio valido)
@@ -105,8 +129,7 @@
                     procSeed: stato.procSeed || null,  // campagne procedurali: la mappa si rigenera da qui
                     party: stato.party,
                     // Segnali delle reliquie appesi all'elenco degli eroi (JSON.stringify non li salverebbe)
-                    partyFlags: { atamanoUsed: !!stato.party.atamanoUsed, sigilloCharges: stato.party.sigilloCharges || 0,
-                        lootExtraChoices: stato.party.lootExtraChoices || 0, gazzaUsed: !!stato.party.gazzaUsed },
+                    partyFlags: { lootExtraChoices: stato.party.lootExtraChoices || 0, specialUses: stato.party.specialUses || null },
                     partyCoins: stato.partyCoins,
                     unlockedRelics: stato.unlockedRelics.map(r => ({ id: r.id, name: r.name, desc: r.desc })),
                     activeCurses: stato.activeCurses,
@@ -294,10 +317,8 @@
                 // Salvataggio fatto durante uno scontro: si tolgono i potenziamenti temporanei rimasti
                 expireTempBuffs(true);
                 const flags = s.partyFlags || {};
-                if (flags.atamanoUsed) stato.party.atamanoUsed = true;
-                if (flags.sigilloCharges) stato.party.sigilloCharges = flags.sigilloCharges;
                 if (flags.lootExtraChoices) stato.party.lootExtraChoices = flags.lootExtraChoices;
-                if (flags.gazzaUsed) stato.party.gazzaUsed = true;
+                if (flags.specialUses) stato.party.specialUses = flags.specialUses;  // limiti degli effetti speciali delle reliquie
                 // Benedizioni che non esistono più (Grazia, tolta nella versione 1.10)
                 stato.party.forEach(h => { if (h.blessings) h.blessings = h.blessings.filter(x => PRAYER_BLESSINGS[x.id]); });
                 stato.partyCoins = s.partyCoins || 0;

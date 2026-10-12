@@ -40,10 +40,9 @@ module.exports = (t, carica) => {
             .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
         const relic = [...codice.matchAll(/(?:hasRelic|breakRelic)\('([^']+)'\)/g)].map(m => m[1]);
         const curse = [...codice.matchAll(/hasCurse\('([^']+)'\)/g)].map(m => m[1]);
-        // relicCombatBonus: add(quando, 'id', ...)
-        const daNomi = [...codice.matchAll(/\badd\((?:stato\.combatRound === \d+|isElite), '([^']+)'/g)].map(m => m[1]);
-        t.ok(daNomi.length >= 5, `trovate solo ${daNomi.length} reliquie in relicCombatBonus`);
-        for (const id of [...relic, ...daNomi]) t.ok(lib.reliquie[id] || ORFANE.includes(id), `reliquia sconosciuta: ${id}`);
+        // Le reliquie agiscono con gli effetti speciali (js/speciali.js): il codice non ne riconosce più nessuna per id
+        t.uguale([], relic, 'nessuna reliquia scritta nel codice');
+        for (const id of relic) t.ok(lib.reliquie[id] || ORFANE.includes(id), `reliquia sconosciuta: ${id}`);
         for (const id of curse) t.ok(lib.maledizioni[id], `maledizione sconosciuta: ${id}`);
         const orfaneTrovate = ORFANE.filter(id => !lib.reliquie[id]);
         if (orfaneTrovate.length) t.avviso(`reliquie con effetto nel codice ma senza scheda: ${orfaneTrovate.join(', ')}`);

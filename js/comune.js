@@ -27,40 +27,150 @@ const EFFECT_TYPES = {
     hero_item: ['item', 'val']   // dà all'eroe "val" copie dell'oggetto con id "item" dell'armeria
 };
 
+/* ---------- Effetti speciali "quando → fai" ----------
+   Campo "speciali" di oggetti (armeria), reliquie, maledizioni e abilità: un elenco di
+   { quando, fai, val, stat, durata, bersaglio, se, round, prob, limite, volte, rompe }, interpretato da js/speciali.js.
+   quando = il momento (SPECIALI_QUANDO), fai = cosa succede (SPECIALI_FAI), il resto è facoltativo:
+     se: una condizione (SPECIALI_SE); round: solo in quel round dello scontro; prob: probabilità in %;
+     durata: round del potenziamento (vuoto = fino a fine scontro);
+     limite: "scontro" o "capitolo" (al massimo "volte" volte, 1 se manca); rompe: finite le volte (o dopo
+     ogni uso, senza limite) la reliquia si rompe, l'oggetto si consuma, la maledizione sparisce.
+   Così un oggetto, una reliquia o una passiva nuova si crea dall'editor senza scrivere codice.
+   Un "quando" o un "fai" nuovo invece va scritto in js/speciali.js e aggiunto qui. */
+
+// I tiri di dado degli eroi, per bonus_tiro (tiro = tutti, tiro_scontro = attacco, difesa e aiuto)
+const SPECIALI_TIRI = ['tiro', 'tiro_scontro', 'attacco', 'difesa', 'aiuto', 'prova', 'contrattazione', 'preghiera', 'capitano'];
+
+const SPECIALI_QUANDO = {
+    inizio_scontro: 'Inizio scontro',
+    inizio_round: 'Inizio di ogni round',
+    colpo: 'Colpo a segno (attacco o abilità)',
+    tiro_fallito: 'Tiro fallito in scontro',
+    colpito: 'Colpito dal nemico (prima dell\'armatura)',
+    dopo_colpito: 'Dopo essere stato colpito',
+    colpo_mortale: 'Andrebbe a 0 HP',
+    alleato_caduto: 'Cade un alleato',
+    fine_scontro: 'Scontro vinto',
+    cura_ricevuta: 'Un eroe recupera HP',
+    riposo: 'Riposo',
+    prova_fallita: 'Prova fallita',
+    bottino: 'Bottino di uno scontro',
+    pozione: 'Pozione di cura usata',
+    mercante: 'Mercante',
+    tiro: 'Ogni tiro di dado',
+    tiro_scontro: 'Tiri in scontro (attacco, abilità, Difendi, Aiuta)',
+    attacco: 'Tiro per colpire (attacco e abilità)',
+    difesa: 'Tiro di Difendi',
+    aiuto: 'Tiro di Aiuta',
+    prova: 'Tiro delle prove',
+    contrattazione: 'Tiro per contrattare',
+    preghiera: 'Tiro di preghiera',
+    capitano: 'Tiro contro il capitano'
+};
+
+// Cosa succede. quando = i momenti in cui ha senso; campi = cosa si scrive (val, stat, stat_nemico, durata, bersaglio)
+const SPECIALI_SCONTRO = ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'alleato_caduto'];
+const SPECIALI_FAI = {
+    danni: { label: 'Danni al nemico', campi: ['val'], quando: SPECIALI_SCONTRO },
+    cura: { label: 'Cura HP', campi: ['val', 'bersaglio'], quando: [...SPECIALI_SCONTRO, 'fine_scontro', 'cura_ricevuta'] },
+    armatura: { label: 'Armatura subito', campi: ['val', 'bersaglio'], quando: SPECIALI_SCONTRO },
+    stordisci: { label: 'Stordisce il nemico', campi: [], quando: ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito'] },
+    malus_nemico: { label: 'Toglie una statistica al nemico', campi: ['stat_nemico', 'val'], quando: SPECIALI_SCONTRO },
+    potenzia: { label: 'Potenziamento', campi: ['stat', 'val', 'durata', 'bersaglio'], quando: SPECIALI_SCONTRO },
+    ritira: { label: 'Ritira il dado', campi: [], quando: ['tiro_fallito'] },
+    annulla_colpo: { label: 'Annulla il colpo', campi: [], quando: ['colpito'] },
+    schiva: { label: 'Schiva con un d6 pari o superiore a', campi: ['val'], quando: ['colpito'] },
+    rialza: { label: 'Resta in piedi con HP', campi: ['val'], quando: ['colpo_mortale'] },
+    annulla_punizione: { label: 'Niente punizione', campi: [], quando: ['prova_fallita'] },
+    prova_riuscita: { label: 'La prova riesce lo stesso', campi: [], quando: ['prova_fallita'] },
+    monete: { label: 'Scudi', campi: ['val'], quando: ['inizio_scontro', 'fine_scontro', 'riposo'] },
+    carta_bottino: { label: 'Carte in più al bottino', campi: ['val'], quando: ['bottino'] },
+    togli_maledizione: { label: 'Toglie una maledizione a caso', campi: [], quando: ['riposo', 'fine_scontro'] },
+    bonus_tiro: { label: 'Bonus al tiro', campi: ['val'], quando: SPECIALI_TIRI },
+    bonus_cura: { label: 'HP in più alla cura', campi: ['val'], quando: ['riposo', 'pozione'] },
+    sconto: { label: 'Sconto in Scudi su ogni articolo', campi: ['val'], quando: ['mercante'] },
+    sconto_percento: { label: 'Sconto in % su ogni articolo', campi: ['val'], quando: ['mercante'] }
+};
+
+const SPECIALI_SE = {
+    elite: 'contro elite e boss',
+    nemico_meta: 'con il nemico a metà vita o meno',
+    ferito: 'se l\'eroe è ferito (2 HP o meno)',
+    senza_armatura: 'se l\'eroe è senza armatura',
+    ha_difeso: 'se l\'eroe ha difeso nel round',
+    primo_ad_agire: 'se l\'eroe agisce per primo nel round',
+    colpo_pieno: 'solo il colpo principale, non quelli agli eroi accanto',
+    non_finale: 'non nella prova finale'
+};
+
+const SPECIALI_BERSAGLI = { eroe: 'l\'eroe', compagnia: 'tutta la compagnia', meno_hp: 'l\'eroe con meno HP',
+    piu_ferito: 'l\'eroe che ha perso più HP', altro_casuale: 'un altro eroe ferito a caso' };
+const SPECIALI_STAT = { str: 'Forza', dmg: 'Danno', att_bonus: 'tiro per colpire', def_bonus: 'Difesa', help_bonus_val: 'Aiuto', regen: 'HP a inizio round' };
+const SPECIALI_STAT_NEMICO = { att: 'Attacco', ca: 'CA', dmg: 'Danno' };
+
+// Riga del tooltip di un effetto speciale (gioco e anteprima dell'editor). tipo = 'oggetto', 'reliquia', 'maledizione'
+function specialeTesto(s, tipo) {
+    const v = s.val || 0;
+    const chi = SPECIALI_BERSAGLI[s.bersaglio || 'eroe'] || s.bersaglio;
+    const fai = {
+        danni: s.quando === 'colpo' ? `+${v} danni al colpo` : `${v} ${v === 1 ? 'danno' : 'danni'} al nemico`,
+        cura: `cura ${v} HP a ${chi}`,
+        armatura: `+${v} armatura subito a ${chi}`,
+        stordisci: 'il nemico è stordito e salta il suo prossimo attacco',
+        malus_nemico: `−${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat} al nemico`,
+        potenzia: `+${v} ${SPECIALI_STAT[s.stat] || s.stat} a ${chi} ${s.durata ? `per ${s.durata} round` : 'fino a fine scontro'}`,
+        ritira: 'il dado si ritira da solo',
+        annulla_colpo: 'il colpo è assorbito del tutto',
+        schiva: `tira un d6: con ${v} o più il colpo è ignorato`,
+        rialza: `resta in piedi con ${v} HP`,
+        annulla_punizione: 'niente punizione',
+        prova_riuscita: 'il fallimento diventa un successo',
+        monete: `+${v} Scudi`,
+        carta_bottino: `${v === 1 ? 'una carta' : `${v} carte`} in più fra cui scegliere`,
+        togli_maledizione: 'toglie una maledizione a caso',
+        bonus_tiro: `${v >= 0 ? '+' : ''}${v} al tiro`,
+        bonus_cura: `${v >= 0 ? '+' : ''}${v} HP alla cura`,
+        sconto: v >= 0 ? `−${v} Scudi su ogni articolo` : `+${-v} Scudi su ogni articolo`,
+        sconto_percento: `−${v}% sul prezzo di ogni articolo`
+    }[s.fai] || s.fai;
+    const cond = [s.se && SPECIALI_SE[s.se], s.round && `nel round ${s.round}`, s.prob && `${s.prob}% di probabilità`].filter(Boolean);
+    const volte = s.volte || 1;
+    const limite = s.limite ? (volte === 1 ? `una volta per ${s.limite}` : `${volte} volte per ${s.limite}`) : '';
+    const fine = s.rompe ? ({ reliquia: 'poi si rompe', oggetto: 'poi si consuma', maledizione: 'poi sparisce' }[tipo] || 'poi si esaurisce') : '';
+    const coda = [limite, fine].filter(Boolean).join(', ');
+    const testo = `${SPECIALI_QUANDO[s.quando] || s.quando}${cond.length ? ` (${cond.join(', ')})` : ''}: ${fai}`;
+    return coda ? `${testo} (${coda})` : testo;
+}
+
+// Oggetti scritti nel formato di prima (campi numerici dell'armeria, es. "thorns": 1): i salvataggi
+// tengono le copie degli oggetti, così valgono ancora. itemSpecials (js/speciali.js) li converte al volo.
+const LEGACY_ITEM_SPECIALS = {
+    war_horn: v => ({ quando: 'inizio_scontro', fai: 'potenzia', stat: 'att_bonus', val: v, durata: 1, bersaglio: 'compagnia' }),
+    first_hit_dmg: v => ({ quando: 'colpo', fai: 'danni', val: v, limite: 'scontro' }),
+    execute_dmg: v => ({ quando: 'colpo', se: 'nemico_meta', fai: 'danni', val: v }),
+    first_hit_stun: () => ({ quando: 'colpo', fai: 'stordisci', limite: 'scontro' }),
+    thorns: v => ({ quando: 'dopo_colpito', se: 'ha_difeso', fai: 'danni', val: v }),
+    ally_down_str: v => ({ quando: 'alleato_caduto', fai: 'potenzia', stat: 'str', val: v }),
+    combat_reroll: () => ({ quando: 'tiro_fallito', fai: 'ritira', limite: 'scontro' }),
+    challenge_skip: () => ({ quando: 'prova_fallita', se: 'non_finale', fai: 'annulla_punizione', rompe: true }),
+    haggle_bonus: v => ({ quando: 'contrattazione', fai: 'bonus_tiro', val: v }),
+    loot_extra_once: v => ({ quando: 'bottino', se: 'elite', fai: 'carta_bottino', val: v, limite: 'capitolo' }),
+    rest_heal: v => ({ quando: 'riposo', fai: 'bonus_cura', val: v }),
+    potion_heal_bonus: v => ({ quando: 'pozione', fai: 'bonus_cura', val: v }),
+    hit_heal_chance: v => ({ quando: 'colpo', prob: v, fai: 'cura', val: 1 }),
+    hit_chill: v => ({ quando: 'colpo', fai: 'malus_nemico', stat: 'att', val: v, limite: 'scontro', volte: 2 }),
+    last_stand_armor: v => ({ quando: 'dopo_colpito', se: 'ferito', fai: 'armatura', val: v, limite: 'scontro' })
+};
+
 // Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi CLAUDE.md).
 // Un segnale nuovo va aggiunto qui, altrimenti l'editor lo segnala come sconosciuto.
-// Effetti speciali degli oggetti (campi numerici dell'armeria, sommati fra gli oggetti nello zaino con itemBonus):
-// k = campo, label = etichetta nell'editor, tip = riga del tooltip (gioco e anteprima dell'editor).
-// Un campo nuovo va letto anche dal motore (js/combattimento.js, js/prove.js, js/shop.js, js/loot.js, js/oggetti.js)
-const ITEM_SPECIALS = [
-    { k: 'war_horn', label: 'Tiro per colpire a tutti al primo round', tip: v => `Primo round di ogni scontro: +${v} al tiro per colpire a tutta la compagnia` },
-    { k: 'first_hit_dmg', label: 'Danni in più al primo colpo dello scontro', tip: v => `+${v} danni al primo colpo a segno di ogni scontro` },
-    { k: 'execute_dmg', label: 'Danni in più col nemico a metà vita', tip: v => `+${v} danni se il nemico ha metà vita o meno` },
-    { k: 'first_hit_stun', label: 'Il primo colpo dello scontro stordisce', tip: () => 'Il primo colpo a segno di ogni scontro stordisce il nemico' },
-    { k: 'thorns', label: 'Danni al nemico che colpisce chi difende', tip: v => `Se ha difeso nel round, il nemico che lo colpisce subisce ${v} ${v === 1 ? 'danno' : 'danni'}` },
-    { k: 'ally_down_str', label: 'Forza in più se cade un alleato', tip: v => `Se cade un alleato: +${v} Forza fino a fine scontro` },
-    { k: 'combat_reroll', label: 'Ritira un tiro fallito per scontro', tip: () => 'Una volta per scontro un tiro fallito si ritira da solo' },
-    { k: 'challenge_skip', label: 'Evita la punizione di una prova (si consuma)', tip: () => 'Una prova fallita non dà punizione, poi si consuma (non vale nel finale)' },
-    { k: 'haggle_bonus', label: 'Bonus al tiro per contrattare', tip: v => `+${v} al tiro per contrattare` },
-    { k: 'loot_extra_once', label: 'Carte in più al primo bottino di un elite', tip: v => `Primo bottino di un elite: ${v === 1 ? 'una carta' : v + ' carte'} in più (una volta per capitolo)` },
-    { k: 'rest_heal', label: 'HP in più a ogni riposo', tip: v => `+${v} HP a ogni riposo` },
-    { k: 'potion_heal_bonus', label: 'HP in più alle pozioni di cura che usa', tip: v => `Le pozioni di cura che usa curano ${v} HP in più` },
-    { k: 'hit_heal_chance', label: 'Probabilità (%) di curare 1 HP a ogni colpo', tip: v => `Ogni colpo a segno: ${v}% di probabilità di curare 1 HP` },
-    { k: 'hit_chill', label: 'Attacco tolto al nemico a ogni colpo (max 2 per scontro)', tip: v => `Ogni colpo a segno: −${v} all'Attacco del nemico (al massimo −2 per scontro)` },
-    { k: 'last_stand_armor', label: 'Armatura subito a 2 HP o meno (una volta per scontro)', tip: v => `La prima volta nello scontro che scende a 2 HP o meno: +${v} armatura subito` }
-];
-
+// Le passive nuove si scrivono di solito con "speciali" (sopra), senza segnali.
 const HERO_FLAGS = {
-    bonusLootCoins: 'Scudi in più dopo ogni scontro',
     challengeRerollMalus: 'ripete una prova fallita con questo malus',
-    dodgeNoArmor: 'senza armatura evita il colpo con d6 >= valore',
     factotum: 'conversione delle statistiche (true o ogni N punti)',
     firstActorStrBonus: 'Forza in più ai tiri se agisce per primo nel round',
     freeFirstMerchantItem: 'primo oggetto di ogni mercante gratis',
-    helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round',
-    merchantDiscount: 'sconto dal mercante (frazione, es. 0.2)',
-    postCombatHeal: 'dopo ogni scontro cura l\'eroe più ferito',
-    tenacityRevive: 'la prima volta a 0 HP torna con questi HP'
+    helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round'
 };
 
 // Bersagli delle azioni speciali degli elite (data/azioni_elite/azioni_elite.js, interpretate in js/combattimento.js):
