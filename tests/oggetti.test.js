@@ -145,4 +145,11 @@ module.exports = (t, carica) => {
         g.applyEffects([{ effect: 'hero_item', item: 'spada', val: 1 }], c);
         t.uguale(3, c.str, 'un oggetto da equipaggiare applica le sue statistiche');
     });
+
+    t.test('Compendio: oggetti in ordine di rarità, dal più comune al leggendario', () => {
+        const ordine = Object.keys(g.eval('RARITY_LABELS'));
+        const r = g.compendiumCatalog().items.map(v => ordine.indexOf(g.itemRarity(v.item)));
+        t.ok(r.every((x, i) => i === 0 || r[i - 1] <= x), 'rarità in ordine crescente');
+        t.uguale(Object.keys(g.LIBRERIA.armeria).length, r.length, 'ci sono tutti');
+    });
 };
