@@ -77,6 +77,16 @@ try {
     ok(client.statusCode === 200 && /javascript/.test(client.headers['content-type'] || ''), 'lo script della pagina del giocatore arriva');
     const sbagliata = await new Promise(r => http.get({ host: '127.0.0.1', port: PORT, path: '/online/nonesiste', headers: { Host: fuori } }, res => { res.resume(); r(res); }));
     ok(sbagliata.statusCode === 404, 'stanza inesistente: 404');
+    const prendi = p => new Promise(r => http.get({ host: '127.0.0.1', port: PORT, path: p, headers: { Host: fuori } }, res => { res.resume(); r(res); }));
+    const img = await prendi('/leggero/immagini/segnaposto/combat.svg');
+    ok(img.statusCode === 200, "un'immagine non convertibile (SVG) arriva originale da /leggero/");
+    ok(/max-age=604800/.test(img.headers['cache-control'] || ''), 'i media leggeri hanno la cache del browser');
+    const statica = await prendi('/immagini/segnaposto/combat.svg');
+    ok(/max-age=604800/.test(statica.headers['cache-control'] || ''), 'anche i media normali hanno la cache del browser');
+    const codice = await prendi('/js/online-regole.js');
+    ok(/no-store/.test(codice.headers['cache-control'] || ''), 'il codice resta senza cache');
+    const fuga = await prendi('/leggero/../tools/chiave_gemini.txt');
+    ok(fuga.statusCode === 403 || fuga.statusCode === 404, 'niente file fuori da immagini/ e video/');
     master.chiudi();
 } finally {
     server.kill();
