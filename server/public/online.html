@@ -11,10 +11,15 @@
         #onlineJoin { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; background: rgba(0,0,0,.85); }
         #onlineJoin .wc-panel { padding: 24px; max-width: 360px; width: calc(100% - 32px); }
         #onlineJoin input { width: 100%; margin: 12px 0; padding: 8px; font-size: 1.1em; }
-        #onlineBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 40; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center; max-width: calc(100% - 32px); }
+        /* Barra del giocatore: compatta, nella barra in alto accanto alle icone, sopra barra e console del gioco
+           (z-index 1000): sempre raggiungibile e lontana dai pannelli centrali. Sui telefoni scende sotto la barra. */
+        #onlineBar { position: fixed; left: 210px; top: 6px; z-index: 1100; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: calc(50% - 360px); }
+        #onlineBar .wc-panel { padding: 3px 10px; font-size: 0.85em; }
+        #onlineBar .btn-small { padding: 2px 8px; }
+        @media (max-width: 1100px) { #onlineBar { left: 8px; top: calc(var(--top-h, 56px) + 6px); max-width: calc(100% - 16px); } }
         #onlineBar .wc-panel { padding: 8px 14px; }
         #onlineBar button.mio { outline: 2px solid var(--wc-yellow, gold); }
-        #onlineAvviso { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 45; }
+        #onlineAvviso { position: fixed; top: calc(var(--top-h, 56px) + 8px); left: 50%; transform: translateX(-50%); z-index: 1100; }
         #onlineTurno { color: var(--wc-yellow, gold); font-weight: bold; }
         .online-hidden { display: none !important; }
     </style>
@@ -31,7 +36,10 @@
     </div>
     <div id="partyTopBar" class="party-topbar"></div>
     <div id="partyConsole" class="party-console"></div>
-    <div class="container" id="gameContainer"></div>
+    <!-- Stessa struttura del gioco (index.html): .game-layout centra la schermata fra la barra in alto e la console -->
+    <div class="game-layout">
+        <div class="container" id="gameContainer"></div>
+    </div>
     <div id="wc3Modal" class="modal-overlay hidden"></div>
     <div id="onlineOverlays"></div>
     <div id="onlineAvviso" class="online-hidden wc-panel"></div>
