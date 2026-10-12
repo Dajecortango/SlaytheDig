@@ -84,7 +84,9 @@
                 enemies: Object.entries(LIBRERIA.bestiario).map(([id, e]) => ({ key: id, enemy: e, campaign: where('enemies', id) })),
                 relics: Object.entries(LIBRERIA.reliquie).map(([id, r]) => ({ key: r.name, entry: r, campaign: where('relics', id) })),
                 curses: Object.entries(LIBRERIA.maledizioni).map(([id, c]) => ({ key: c.name, entry: c, campaign: where('curses', id) })),
+                // Oggetti in ordine di rarità (scarso → leggendario, come RARITY_LABELS); a parità, l'ordine dell'armeria
                 items: Object.values(LIBRERIA.armeria).map(item => ({ key: item.id, item }))
+                    .sort((a, b) => Object.keys(RARITY_LABELS).indexOf(itemRarity(a.item)) - Object.keys(RARITY_LABELS).indexOf(itemRarity(b.item)))
             };
         }
 
