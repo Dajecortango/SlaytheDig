@@ -62,7 +62,48 @@ function pulisciNome(n) {
     return String(n || '').replace(/[<>"'&\u0000-\u001f]/g, '').trim().slice(0, NOME_MAX);
 }
 
+/* ---------- Media leggeri per i giocatori (/leggero/<percorso>) ---------- */
+const { execFile } = require('child_process');
+const ROOT = path.join(__dirname, '..');
+const CACHE = path.join(__dirname, 'cache-leggera');
+const MEDIA_CACHE = 'public, max-age=604800';
+const TIPI = { '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.mp4': 'video/mp4', '.webm': 'video/webm' };
+const inCorso = new Map();  // file leggero -> Promise (una conversione alla volta per file)
+
+function mandaFile(res, file) {
+    fs.readFile(file, (err, buf) => {
+        if (err) { res.writeHead(404); res.end(); return; }
+        res.writeHead(200, { 'Content-Type': TIPI[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': MEDIA_CACHE });
+        res.end(buf);
+    });
+}
+function converti(orig, dest) {
+    if (inCorso.has(dest)) return inCorso.get(dest);
+    const video = /\.(mp4|webm)$/i.test(orig);
+    const args = video
+        ? ['-y', '-i', orig, '-vf', "scale=-2:'min(480,ih)'", '-c:v', 'libx264', '-crf', '32', '-preset', 'veryfast', '-an', '-movflags', '+faststart', dest]
+        : ['-y', '-i', orig, '-vf', "scale='min(960,iw)':'min(960,ih)':force_original_aspect_ratio=decrease", '-c:v', 'libwebp', '-quality', '65', dest];
+    const p = new Promise(resolve => {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        execFile('ffmpeg', args, { timeout: 120000 }, err => { inCorso.delete(dest); resolve(!err && fs.existsSync(dest)); });
+    });
+    inCorso.set(dest, p);
+    return p;
+}
+function leggero(req, res, pathname) {
+    const rel = path.normalize(decodeURIComponent(pathname.slice('/leggero/'.length)));
+    if (rel.startsWith('..') || path.isAbsolute(rel) || !/^(immagini|video)[\\/]/.test(rel)) { res.writeHead(403); res.end(); return; }
+    const orig = path.join(ROOT, rel);
+    if (!fs.existsSync(orig)) { res.writeHead(404); res.end(); return; }
+    const ext = path.extname(rel).toLowerCase();
+    if (!['.webp', '.png', '.jpg', '.jpeg', '.mp4', '.webm'].includes(ext)) { mandaFile(res, orig); return; }
+    const dest = path.join(CACHE, rel.replace(/\.(png|jpe?g)$/i, '.webp').replace(/\.webm$/i, '.mp4'));
+    if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= fs.statSync(orig).mtimeMs) { mandaFile(res, dest); return; }
+    converti(orig, dest).then(fatto => mandaFile(res, fatto ? dest : orig));
+}
+
 function gestisci(req, res, pathname) {
+    if (pathname.startsWith('/leggero/')) { leggero(req, res, pathname); return true; }
     // ----- Master (Host locale) -----
     if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso'].includes(pathname.slice(12))) {
         if (!eLocale(req)) { json(res, 403, { error: 'Solo il master' }); return true; }

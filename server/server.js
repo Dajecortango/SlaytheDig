@@ -245,12 +245,13 @@ function serveStaticFile(res, filePath) {
             return;
         }
         const ext = path.extname(filePath).toLowerCase();
+        const media = /^\.(webp|png|jpe?g|gif|svg|mp4|webm|ogg|mp3|wav|ttf|otf|woff2?)$/.test(ext);
         res.writeHead(200, {
             'Content-Type': MIME[ext] || 'application/octet-stream',
-            // Niente cache: dopo un aggiornamento (git pull) il browser deve sempre
-            // ricaricare i file veri, non una copia vecchia salvata in precedenza.
-            'Cache-Control': 'no-store, must-revalidate',
-            'Pragma': 'no-cache'
+            // Media: in cache una settimana (meno banda per i giocatori online). Pagine e codice niente cache:
+            // dopo un aggiornamento (git pull) il browser deve sempre ricaricare i file veri.
+            'Cache-Control': media ? 'public, max-age=604800' : 'no-store, must-revalidate',
+            ...(media ? {} : { 'Pragma': 'no-cache' })
         });
         res.end(data);
     });
@@ -280,7 +281,7 @@ const server = http.createServer((req, res) => {
     }
 
     // Partita online (server/online.js): stanza, giocatori, stream, clic
-    if (pathname.startsWith('/online/') || pathname.startsWith('/api/online/') || pathname === '/online-client.js') {
+    if (pathname.startsWith('/online/') || pathname.startsWith('/api/online/') || pathname === '/online-client.js' || pathname.startsWith('/leggero/')) {
         if (online.gestisci(req, res, pathname)) return;
     }
 
