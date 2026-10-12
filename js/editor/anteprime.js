@@ -58,6 +58,8 @@ function previewAbility(a) {
             if (c.stun) regole.push('stordisce il nemico');
         }
         if (c.requiresHitLastTurn) regole.push('solo dopo essere stati colpiti nell\'ultimo turno del nemico');
+        if (c.senzaTiro) regole.push('nessun tiro');
+        (c.effetti || []).forEach(s => regole.push(specialeTesto(s, 'abilita').toLowerCase()));
         lines.push(`<span class="tip-hint">Attiva, 1 volta per scontro: ${esc(regole.join('; '))}</span>`);
     } else {
         lines.push('<span class="tip-hint">Passiva</span>');

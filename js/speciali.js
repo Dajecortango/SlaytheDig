@@ -272,10 +272,16 @@
         // revive = HP con cui restare in piedi (colpo_mortale). I bonus (bonus_tiro, bonus_cura, sconti) non scattano qui.
         const SPECIALI_BONUS = ['bonus_tiro', 'bonus_cura', 'sconto', 'sconto_percento', 'ritira'];
         function fireSpecials(quando, hero, ctx = {}) {
-            const res = { notes: [], dmg: 0, cancel: false, revive: null, skipPunishment: false, success: false, coins: 0, cards: 0, fired: [] };
-            const enemy = ctx.enemy || stato.activeEnemy;
             const entries = specialSources(quando, hero, ctx.scope).filter(e => e.s.quando === quando && !SPECIALI_BONUS.includes(e.s.fai)
                 && (!ctx.fai || ctx.fai.includes(e.s.fai)));
+            return runSpecialEntries(entries, quando, hero, ctx);
+        }
+
+        // Applica le azioni di un elenco di voci (fonti già scelte): usata da fireSpecials e dagli effetti
+        // delle abilità attive (abilitySpecialEffects). Stessi risultati di fireSpecials
+        function runSpecialEntries(entries, quando, hero, ctx = {}) {
+            const res = { notes: [], dmg: 0, cancel: false, revive: null, skipPunishment: false, success: false, coins: 0, cards: 0, fired: [] };
+            const enemy = ctx.enemy || stato.activeEnemy;
             for (const e of entries) {
                 if (res.cancel || res.revive != null) break;  // colpo già annullato o eroe già salvato
                 const s = e.s;
@@ -413,6 +419,109 @@
         function hasSpecial(quando, fai, hero, ctx = {}) {
             return specialSources(quando, hero).some(e => e.s.quando === quando && e.s.fai === fai && !e.s.prob
                 && specialAvailable(e) && specialConditionsMet(e, hero, ctx));
+        }
+
+        /* ---------- Effetti speciali dei nemici (NEMICO_QUANDO / NEMICO_FAI in js/comune.js) ----------
+           Fonti: "speciali" del nemico (bestiario) e "specialiFase" (aggiunti dalle azioni degli elite alla soglia).
+           Usi "una volta per scontro" in enemy.specialUses: il nemico è una copia nuova a ogni scontro. */
+        function enemySpecialList(enemy) {
+            return [...((enemy && enemy.speciali) || []), ...((enemy && enemy.specialiFase) || [])];
+        }
+
+        // Momento "quando" del nemico; hero = l'eroe coinvolto (chi lo colpisce o chi viene colpito). Ritorna le note
+        function fireEnemySpecials(quando, enemy, hero, ctx = {}) {
+            const notes = [];
+            if (!enemy || enemy.hp <= 0) return notes;
+            enemy.specialUses = enemy.specialUses || {};
+            enemySpecialList(enemy).forEach((s, i) => {
+                if (s.quando !== quando || enemy.hp <= 0) return;
+                const key = `${s.quando}#${i}`;
+                // "soglia" scatta una volta sola, quando l'azione dell'elite viene aggiunta
+                const limit = s.quando === 'soglia' ? 1 : (s.limite ? (s.volte || 1) : Infinity);
+                if ((enemy.specialUses[key] || 0) >= limit) return;
+                if (s.round && stato.combatRound !== s.round) return;
+                if (s.se === 'sotto_meta' && enemy.hp > enemy.maxHp / 2) return;
+                if (s.se === 'eroe_ferito' && !(hero && hero.hp > 0 && hero.hp <= WOUNDED_HP)) return;
+                if (s.prob && Math.random() * 100 >= s.prob) return;
+                const v = s.val || 0;
+                const mode = s.bersaglio || 'eroe';
+                const targets = mode === 'eroe' ? (hero && hero.hp > 0 ? [hero] : []) : eliteTargets(mode, hero);
+                let note = null;
+                switch (s.fai) {
+                    case 'danni': {
+                        if (!targets.length) return;
+                        // Come un colpo di contorno: l'armatura conta, niente reazioni a catena (spine, altri effetti del nemico)
+                        const ev = targets.flatMap(t => resolveMonsterAttack(enemy, t, { dmg: v, splash: true, reaction: true }).events.map(e => e.text));
+                        note = `${v} ${v === 1 ? 'danno' : 'danni'} a ${targets.map(t => t.name).join(', ')}. ${ev.join(' ')}`;
+                        break;
+                    }
+                    case 'cura': {
+                        const before = enemy.hp;
+                        enemy.hp = Math.min(enemy.maxHp, enemy.hp + v);
+                        if (enemy.hp === before) return;
+                        note = `recupera ${enemy.hp - before} HP`;
+                        break;
+                    }
+                    case 'potenzia':
+                        enemy[s.stat] = (enemy[s.stat] || 0) + v;
+                        note = `+${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat}`;
+                        break;
+                    case 'malus':
+                        if (!targets.length) return;
+                        targets.forEach(t => addSpecialBuff(t, { s: { stat: 'att_bonus', val: -v, durata: s.durata }, name: enemy.name, icon: '' }));
+                        note = `−${v} al tiro per colpire a ${targets.map(t => t.name).join(', ')}`;
+                        break;
+                    case 'stordisci':
+                        if (!targets.length) return;
+                        targets.forEach(t => { t.stunnedRounds = Math.max(t.stunnedRounds || 0, 1); });
+                        note = `${targets.map(t => t.name).join(', ')} ${targets.length > 1 ? 'sono storditi' : 'è stordito'}: salta il prossimo turno`;
+                        break;
+                    case 'veleno':
+                        if (!targets.length) return;
+                        targets.forEach(t => { t.poison = { val: Math.max(t.poison && t.poison.val || 0, v), rounds: Math.max(t.poison && t.poison.rounds || 0, s.durata || 3), from: enemy.name }; });
+                        note = `${targets.map(t => t.name).join(', ')} ${targets.length > 1 ? 'sono avvelenati' : 'è avvelenato'} (−${v} HP a ogni round per ${s.durata || 3} round)`;
+                        break;
+                    case 'spezza_armatura':
+                        if (!targets.some(t => t.current_armor > 0)) return;
+                        targets.forEach(t => { t.current_armor = 0; });
+                        note = `l'armatura di ${targets.map(t => t.name).join(', ')} va in pezzi`;
+                        break;
+                    case 'ruba_scudi': {
+                        const tolti = Math.min(v, stato.partyCoins || 0);
+                        if (!tolti) return;
+                        stato.partyCoins -= tolti;
+                        note = `ruba ${tolti} Scudi`;
+                        break;
+                    }
+                    default: return;
+                }
+                if (limit !== Infinity) enemy.specialUses[key] = (enemy.specialUses[key] || 0) + 1;
+                notes.push(`${enemy.name}: ${note}`);
+            });
+            return notes;
+        }
+
+        // Il nemico è stato colpito da un eroe (dopo il danno): effetti "colpito" del nemico
+        function enemyHitReaction(hero, enemy) {
+            return fireEnemySpecials('colpito', enemy, hero, {});
+        }
+
+        // Veleno (effetto "veleno" dei nemici): a inizio round gli eroi avvelenati perdono HP, senza armatura
+        function applyPoison() {
+            const notes = [];
+            stato.party.forEach(h => {
+                if (!h.poison || h.hp <= 0) return;
+                const lost = Math.min(h.hp, h.poison.val);
+                h.hp -= lost;
+                notes.push(`☠️ ${h.name} perde ${lost} HP per il veleno${h.hp <= 0 ? ' e cade' : ''}`);
+                if (--h.poison.rounds <= 0) delete h.poison;
+            });
+            return notes;
+        }
+
+        // Inizio di un round (gioco, simulatore, duelli di prova): veleno, effetti degli eroi, delle reliquie e del nemico
+        function startRoundSpecials() {
+            return [...applyPoison(), ...fireSpecialsAll('inizio_round').notes, ...fireEnemySpecials('inizio_round', stato.activeEnemy, null)];
         }
 
         // Righe dei tooltip: un testo per ogni effetto speciale

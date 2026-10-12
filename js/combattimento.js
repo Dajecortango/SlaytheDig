@@ -139,13 +139,21 @@
         function startCombatSpecials() {
             resetCombatSpecialUses();
             stato.party.forEach(h => { delete h.defendRound; });
-            return fireSpecialsAll('inizio_scontro').notes;
+            return [...fireSpecialsAll('inizio_scontro').notes, ...fireEnemySpecials('inizio_scontro', stato.activeEnemy, null)];
         }
 
         // Colpo a segno: danni in più, stordimento, malus al nemico, cure... enemyHpBefore = vita prima del colpo
         function specialHitEffects(hero, enemy, enemyHpBefore) {
             const r = fireSpecials('colpo', hero, { enemy, enemyHpBefore });
             return { dmg: r.dmg, notes: r.notes };
+        }
+
+        // Dopo che il colpo di un eroe ha tolto vita al nemico: reazioni del nemico ("colpito", js/speciali.js)
+        // ed effetti "nemico_sconfitto" dell'eroe se il nemico è caduto. Ritorna le note per il diario
+        function afterHeroHit(hero, enemy) {
+            const notes = enemyHitReaction(hero, enemy);
+            if (enemy.hp <= 0) notes.push(...fireSpecials('nemico_sconfitto', hero, { enemy }).notes);
+            return notes;
         }
 
         // Voci di un tiro per il diario: " + Forza 3 + Aiuto 1 − 1 Mod." (le voci a 0 si saltano)
@@ -174,6 +182,7 @@
                 itemNotes.push(...ie.notes);
                 dmg = hero.dmg + helpDmg + ie.dmg;
                 enemy.hp -= dmg;
+                itemNotes.push(...afterHeroHit(hero, enemy));
             }
             return { roll, total, parts, hit, dmg, firstBonus: first, helpDmgBonus: helpDmg, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], itemNotes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
@@ -291,10 +300,20 @@
             return ways / 36;
         }
 
-        // Abilità senza tiro di dado (es. armorGain): si risolve appena scelta, senza il pannello dei dadi
+        // Abilità senza tiro di dado (armorGain, senzaTiro): si risolve appena scelta, senza il pannello dei dadi
         function abilityIsInstant(hero) {
             const c = hero && abilityCombat(hero.chosenAbility);
-            return !!(c && c.armorGain);
+            return !!(c && (c.armorGain || c.senzaTiro));
+        }
+
+        // Effetti di un'abilità attiva (campo "effetti" di "combat": { quando: "uso" | "colpo" | "mancato", fai, ... },
+        // stesso vocabolario degli effetti speciali, js/speciali.js). Ritorna i risultati di runSpecialEntries:
+        // con "colpo" i danni in più (dmg) li somma chi chiama
+        function abilitySpecialEffects(hero, ability, quando, ctx = {}) {
+            const list = (abilityCombat(ability) || {}).effetti || [];
+            const entries = list.map((s, i) => ({ s, owner: hero, kind: 'abilita', name: ability.name, icon: ability.icon || '', ref: ability,
+                key: `c:${ability.id || ability.name}#${i}` })).filter(e => e.s.quando === quando);
+            return runSpecialEntries(entries, quando, hero, { enemy: stato.activeEnemy, ...ctx });
         }
 
         // Risolve l'abilità attiva in combattimento: muta enemy.hp (e isStunned), consuma helpBonus.
@@ -303,11 +322,13 @@
             const abId = hero.chosenAbility.id;
             const c = abilityCombat(hero.chosenAbility);
             if (!c) return { abId, hit: false, dmg: 0, noEffect: true, relicNotes: [] };
+            // Effetti "quando la usa" (cure, potenziamenti, danni...): prima di tutto il resto
+            const useNotes = abilitySpecialEffects(hero, hero.chosenAbility, 'uso', { enemy }).notes;
 
-            // Armatura immediata: nessun tiro, il bonus di Aiuta resta per il prossimo
-            if (c.armorGain) {
-                hero.current_armor += c.armorGain;
-                return { abId, instant: true, gained: c.armorGain, hit: false, dmg: 0, relicNotes: [] };
+            // Senza tiro (armatura immediata e/o solo effetti): il bonus di Aiuta resta per il prossimo
+            if (c.armorGain || c.senzaTiro) {
+                hero.current_armor += c.armorGain || 0;
+                return { abId, instant: true, gained: c.armorGain || 0, hit: false, dmg: 0, relicNotes: [], itemNotes: useNotes };
             }
             // Somma esatta (es. "7"): conta solo la somma dei due dadi, il bonus di Aiuta resta per il prossimo
             if (c.sumTarget) {
@@ -318,8 +339,11 @@
                 const before = enemy.hp;
                 // Metà vita arrotondata per difetto, come le soglie delle fasi: quella al 50% scatta
                 if (hit) enemy.hp = eliteHalf ? Math.min(enemy.hp, Math.floor(enemy.maxHp / 2)) : 0;
+                const after = abilitySpecialEffects(hero, hero.chosenAbility, hit ? 'colpo' : 'mancato', { enemy });
+                if (after.dmg) enemy.hp -= after.dmg;
+                const sumNotes = [...useNotes, ...after.notes, ...(hit ? afterHeroHit(hero, enemy) : [])];
                 return { abId, sumRoll: true, dice, d1: dice[0], d2: dice[1], roll: sum, total: sum, hit, eliteHalf,
-                    dmg: Math.max(0, before - enemy.hp), naturalNote: null, relicNotes: [] };
+                    dmg: Math.max(0, before - enemy.hp), naturalNote: null, relicNotes: [], itemNotes: sumNotes };
             }
             const rb = relicCombatBonus(hero);
             const attStat = abilityStatBonus(hero, c.attackStat);
@@ -330,12 +354,15 @@
             stato.helpDmgBonus = 0;
             // Colpo automatico: niente tiro, vale come un 6 naturale (il bonus di Aiuta resta per il prossimo)
             if (c.autoHit) {
-                const ie = specialHitEffects(hero, enemy, enemy.hp);
-                const total6 = dmg + ie.dmg;
+                const hpBefore = enemy.hp;
+                const ie = specialHitEffects(hero, enemy, hpBefore);
+                const ae = abilitySpecialEffects(hero, hero.chosenAbility, 'colpo', { enemy, enemyHpBefore: hpBefore });
+                const total6 = dmg + ie.dmg + ae.dmg;
                 enemy.hp -= total6;
                 if (c.stun) enemy.isStunned = true;
+                const autoNotes = [...useNotes, ...ie.notes, ...ae.notes, ...afterHeroHit(hero, enemy)];
                 return { abId, autoHit: true, dice: [6], d1: 6, roll: 6, total: 6, hit: true, dmg: total6, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: null,
-                    dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes, itemNotes: ie.notes };
+                    dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes, itemNotes: autoNotes };
             }
             // Con due dadi i dadi del ritiro (Dado d'Osso) partono dopo i due già tirati
             const dice = c.dice === 2 ? [rollD6(rolls, 0, hero), rollD6(rolls, 1, hero)] : [rollD6(rolls, 0, hero)];
@@ -347,17 +374,22 @@
             if (rr.note) dice[dice.indexOf(kept)] = rr.roll;
             const roll = Math.max(...dice);
             const total = roll + bonus;
-            const itemNotes = rr.note ? [rr.note] : [];
+            const itemNotes = [...useNotes, ...(rr.note ? [rr.note] : [])];
             stato.helpBonus = 0;
             rb.notes.push(...spendNextRollRelics('attacco', hero));
             const hit = naturalRollSuccess(roll, total, enemy.ca);
             let finalDmg = dmg;
             if (hit) {
-                const ie = specialHitEffects(hero, enemy, enemy.hp);
-                itemNotes.push(...ie.notes);
-                finalDmg += ie.dmg;
+                const hpBefore = enemy.hp;
+                const ie = specialHitEffects(hero, enemy, hpBefore);
+                const ae = abilitySpecialEffects(hero, hero.chosenAbility, 'colpo', { enemy, enemyHpBefore: hpBefore });
+                itemNotes.push(...ie.notes, ...ae.notes);
+                finalDmg += ie.dmg + ae.dmg;
                 enemy.hp -= finalDmg;
                 if (c.stun) enemy.isStunned = true;
+                itemNotes.push(...afterHeroHit(hero, enemy));
+            } else {
+                itemNotes.push(...abilitySpecialEffects(hero, hero.chosenAbility, 'mancato', { enemy }).notes);
             }
             return { abId, dice, d1: dice[0], d2: dice[1], roll, total, parts, hit, dmg: finalDmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: naturalRollNote(roll, total, enemy.ca),
                 dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes, itemNotes };
@@ -424,8 +456,12 @@
             target.lastHitDamage = Math.max(0, armorBefore - target.current_armor) + Math.max(0, hpBefore - target.hp);
             target.lastHitRound = stato.combatRound;
 
-            // Effetti "dopo_colpito": spine contro il nemico (Scudo a Spina), armatura da ferito (Ultimo Baluardo)...
+            // Effetti "perde_hp" (vendetta: chi viene ferito colpisce il nemico...) e "dopo_colpito" (spine dello Scudo
+            // a Spina, armatura da ferito dell'Ultimo Baluardo...)
+            if (hpDamage > 0) special(fireSpecials('perde_hp', target, { enemy, splash: !!opts.splash, reaction: !!opts.reaction }).notes);
             special(fireSpecials('dopo_colpito', target, { enemy, splash: !!opts.splash, reaction: !!opts.reaction }).notes);
+            // Effetti del nemico quando colpisce (solo il colpo principale: niente catene dai colpi di contorno)
+            if (!opts.splash && !opts.reaction) special(fireEnemySpecials('colpisce', enemy, target));
 
             return { events, hpDamage, targetDied };
         }
@@ -542,6 +578,11 @@
             if (a.spezzaArmatura) eliteTargets(a.spezzaArmatura, attacker).forEach(h => {
                 if (h.current_armor > 0) { h.current_armor = 0; info(`L'armatura di ${h.name} va in pezzi!`); }
             });
+            // Effetti speciali del nemico che valgono da questa soglia in poi (NEMICO_QUANDO / NEMICO_FAI)
+            if (Array.isArray(a.speciali) && a.speciali.length) {
+                enemy.specialiFase = [...(enemy.specialiFase || []), ...a.speciali];
+                a.speciali.forEach(s => info(`${enemy.name}: ${nemicoTesto(s).charAt(0).toLowerCase()}${nemicoTesto(s).slice(1)}.`));
+            }
             if (a.stordisce) eliteTargets(a.stordisce, attacker).forEach(h => {
                 h.stunnedRounds = Math.max(h.stunnedRounds || 0, 1);
                 info(`💫 ${h.name} è stordito: salterà il prossimo turno.`);
@@ -564,22 +605,31 @@
 
         // Controlla le soglie dopo un colpo dell'eroe "attacker". Applica le fasi scattate e ritorna gli eventi
         // (type 'phase' con il testo della fase, poi le informazioni e i colpi) per diario e interfaccia.
-        function checkEnemyPhases(enemy, attacker) {
+        function checkEnemyPhases(enemy, attacker, opts = {}) {
             const events = [];
             const fasi = enemy.fasi || [];
             if (!fasi.length || enemy.hp <= 0) return events;
             enemy.fasiFatte = enemy.fasiFatte || [];
             fasi.forEach((f, i) => {
                 if (enemy.fasiFatte.includes(i) || enemy.hp <= 0) return;
-                if (enemy.hp > Math.floor(enemy.maxHp * f.soglia / 100)) return;
+                // Fasi a tempo ("round": N): scattano a inizio round, non con la vita (checkEnemyRoundPhases)
+                if (f.round ? (opts.round == null || opts.round < f.round) : (opts.round != null || enemy.hp > Math.floor(enemy.maxHp * f.soglia / 100))) return;
                 enemy.fasiFatte.push(i);
                 events.push({ type: 'phase', text: f.testo || `${enemy.name} cambia atteggiamento!` });
                 const azioni = phaseActions(f);
                 azioni.forEach(a => events.push(...applyEliteAction(enemy, a, attacker)));
                 // Gli attacchi in risposta per ultimi: usano il danno già aumentato dalla fase
                 azioni.filter(a => a.colpo).forEach(a => events.push(...eliteReaction(enemy, a, attacker)));
+                // Effetti "alla soglia" delle azioni (speciali con quando "soglia"): subito
+                fireEnemySpecials('soglia', enemy, attacker && attacker.hp > 0 ? attacker : null).forEach(text => events.push({ type: 'phase_info', text }));
             });
             return events;
+        }
+
+        // Fasi a tempo: a inizio round scattano quelle con "round" arrivato (gioco e simulatore). Stessi eventi di checkEnemyPhases
+        function checkEnemyRoundPhases(enemy) {
+            if (!enemy || !(enemy.fasi || []).some(f => f.round)) return [];
+            return checkEnemyPhases(enemy, null, { round: stato.combatRound });
         }
 
         // Modo di attaccare attuale del nemico (azione con "turno"), {} = attacco normale al bersaglio scelto
@@ -750,17 +800,18 @@
 
         // Tacche delle soglie sulla barra della vita: piene finché la fase non è scattata
         function enemyPhaseTicksHtml(enemy) {
-            return (enemy.fasi || []).map((f, i) => `<span class="hp-phase-tick ${(enemy.fasiFatte || []).includes(i) ? 'done' : ''}" style="left:${f.soglia}%"></span>`).join('');
+            return (enemy.fasi || []).map((f, i) => f.round ? '' : `<span class="hp-phase-tick ${(enemy.fasiFatte || []).includes(i) ? 'done' : ''}" style="left:${f.soglia}%"></span>`).join('');
         }
 
         // Tooltip del nome del nemico: schema attuale e fasi (fatte e da venire)
         function enemyPhasesTip(enemy) {
             const lines = [];
             if (enemy.schema) { const r = enemyTurnRule(enemy); lines.push(`<b>Ora:</b> ${r.desc || r.name || enemy.schema}`); }
+            enemySpecialList(enemy).forEach(s => lines.push(`✦ ${esc(nemicoTesto(s))}`));
             (enemy.fasi || []).forEach((f, i) => {
                 const fatta = (enemy.fasiFatte || []).includes(i);
                 const parti = phaseActions(f).map(a => a.name ? `<b>${esc(a.name)}</b>${a.desc ? ': ' + esc(a.desc) : ''}` : esc(a.desc || ''));
-                lines.push(`${fatta ? '✓' : '◆'} Al ${f.soglia}% di vita: ${parti.join('; ') || 'cambia atteggiamento'}`);
+                lines.push(`${fatta ? '✓' : '◆'} ${f.round ? `Al round ${f.round}` : `Al ${f.soglia}% di vita`}: ${parti.join('; ') || 'cambia atteggiamento'}`);
             });
             return `${enemy.name}||${lines.length ? lines.join('<br>') : 'Nessuna fase particolare.'}`;
         }
@@ -854,7 +905,9 @@
             expireTempBuffs().forEach(({ hero, buff }) => logCombat(`⌛ Finisce l'effetto di ${buff.name} su ${hero.name}.`));
             applyPendingBuffs();
             applyRegen().forEach(({ hero, gained }) => logCombat(`🌿 ${hero.name} rigenera ${gained} HP.`));
-            fireSpecialsAll('inizio_round').notes.forEach(text => logCombat(`✨ ${text}`));
+            startRoundSpecials().forEach(text => logCombat(`✨ ${text}`));
+            if (handleEnemyPhasesUI(null, { round: true })) return;  // fasi a tempo degli elite
+            if (stato.party.every(p => p.hp <= 0)) { deleteCurrentSave(); showScreen('screenDefeat'); return; }  // caduti per il veleno
             updateEnemyInfoUI();
             showHeroSelectionPhase();
         }
@@ -970,11 +1023,11 @@
             const ability = hero.chosenAbility;
             if (ability && abilityUsable(hero).ok) {
                 const c = abilityCombat(ability) || {};
-                if (c.armorGain) {
+                if (c.armorGain || c.senzaTiro) {
                     const btn = document.getElementById('btnCombatAbility');
-                    btn.querySelector('.cmd-sub').textContent = `Sicuro · +${c.armorGain} Arm.`;
+                    btn.querySelector('.cmd-sub').textContent = c.armorGain ? `Sicuro · +${c.armorGain} Arm.` : 'Sicuro';
                     btn.querySelector('.cmd-sub').dataset.chance = 'high';
-                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Nessun tiro: +${c.armorGain} Armatura subito. Usa l'azione dell'eroe.</span>`;
+                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Nessun tiro${c.armorGain ? `: +${c.armorGain} Armatura subito` : ''}. Usa l'azione dell'eroe.</span>`;
                 } else if (c.sumTarget) {
                     const pct = Math.round(exactSumChance(c.sumTarget) * 100);
                     const btn = document.getElementById('btnCombatAbility');
@@ -1065,8 +1118,8 @@
 
         // Fasi del nemico dopo un colpo: diario, annuncio a schermo, barre aggiornate.
         // Ritorna true se la reazione del nemico ha sconfitto tutta la compagnia (partita persa).
-        function handleEnemyPhasesUI(attacker) {
-            const events = checkEnemyPhases(stato.activeEnemy, attacker);
+        function handleEnemyPhasesUI(attacker, opts) {
+            const events = opts && opts.round ? checkEnemyRoundPhases(stato.activeEnemy) : checkEnemyPhases(stato.activeEnemy, attacker);
             if (!events.length) return false;
             events.forEach(ev => logCombat(ev.type === 'phase' ? `🔥 <b>${ev.text}</b>` : ev.text));
             events.filter(ev => ev.type === 'phase').forEach(ev => showPhaseBanner(ev.text));
@@ -1098,7 +1151,8 @@
             const c = abilityCombat(ability) || {};
             const res = resolveAbility(hero, stato.activeEnemy);
             const fill = text => String(text).replace(/\{eroe\}/g, hero.name);
-            logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')} +${res.gained} Armatura.`);
+            logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')}${res.gained ? ` +${res.gained} Armatura.` : ''}`);
+            logRelicNotes(res);
             chosenAction = null;
             hero.hasActed = true;
             document.getElementById('combatActionButtons').classList.add('hidden');
@@ -1106,7 +1160,7 @@
             document.getElementById('heroActionControlArea').classList.add('hidden');
             updateEnemyInfoUI();
             updatePartyStatusBars();
-            fxFloatOnHero(hero, `+${res.gained} Armatura`, 'buff');
+            if (res.gained) fxFloatOnHero(hero, `+${res.gained} Armatura`, 'buff');
             document.getElementById('combatNextBtn').classList.remove('hidden');
         }
 

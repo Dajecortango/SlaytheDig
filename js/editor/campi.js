@@ -116,6 +116,9 @@ const ABILITY_FIELDS = [
     { k: 'combat.sumTarget', label: 'Due dadi: se la somma è esattamente questo numero, nemico sconfitto (elite e boss a metà vita)', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
       help: 'Vuoto = abilità normale. Es. 7 (17%), 2 o 12 (3%). Il tiro non usa Forza, bonus o reliquie' },
     { k: 'combat.damageTakenBonus', label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.senzaTiro', label: 'Senza tiro né attacco: agiscono solo gli effetti "quando la usa" (cure, potenziamenti...)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { k: 'combat.effetti', label: 'Effetti dell\'abilità (quando la usa, se colpisce, se manca)', type: 'speciali', vocab: 'abilita', tipo: 'abilita', wide: true, showIf: isActive,
+      help: 'Si aggiungono all\'attacco: es. se colpisce cura tutta la compagnia, quando la usa +2 armatura all\'eroe con meno HP. Con "Senza tiro" agiscono solo questi.' },
     { k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
       help: '{eroe} = nome dell\'eroe. Es. "✨ {eroe} infonde il colpo di fede sacra!"' },
     { k: 'combat.hitLabel', label: 'Scritta del colpo a segno', omitEmpty: true, showIf: isActive, help: 'Es. COLPO CRITICO! (vuoto = COLPO A SEGNO!)' },
@@ -183,7 +186,9 @@ const ENEMY_FIELDS = [
     { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true },
     { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true },
     { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true,
-      help: 'Vuoti = suoni generati del gioco. Se manca quello della morte, alla morte suona quello del colpo.' }
+      help: 'Vuoti = suoni generati del gioco. Se manca quello della morte, alla morte suona quello del colpo.' },
+    { k: 'speciali', label: 'Effetti speciali del nemico (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true,
+      help: 'Valgono per tutto lo scontro: es. spine quando lo colpiscono, veleno quando colpisce, rigenerazione a inizio round.' }
 ];
 
 // Azione speciale degli elite (data/azioni_elite/azioni_elite.js), interpretata da js/combattimento.js.
@@ -218,7 +223,9 @@ const ELITE_ACTION_FIELDS = [
     { k: 'turnoCrescitaDanno', label: 'A ogni turno: danno in più (cumulativo)', type: 'number', omitEmpty: true, showIf: hasTurn, help: 'Es. 1 = Furia' },
     { k: 'turnoRigenera', label: 'A ogni turno: HP che recupera', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoAura', label: 'A ogni turno: danno a tutti prima dell\'attacco', type: 'number', omitEmpty: true, showIf: hasTurn },
-    { k: 'turnoRubaVita', label: 'A ogni turno: recupera gli HP che toglie agli eroi', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true }
+    { k: 'turnoRubaVita', label: 'A ogni turno: recupera gli HP che toglie agli eroi', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true },
+    { k: 'speciali', label: 'Effetti speciali da questa soglia in poi (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true,
+      help: '"Alla soglia" agisce subito una volta (es. 2 danni a tutti, veleno, ruba Scudi); gli altri momenti valgono da lì fino a fine scontro (es. spine, rigenerazione).' }
 ];
 
 // Descrizione in parole di cosa fa un'azione (scheda Elite e anteprima)
@@ -231,6 +238,7 @@ function describeEliteAction(a) {
     if (a.cura) parts.push(`recupera ${a.cura} HP`);
     if (a.malus) parts.push(`-${a.malus} al tiro per colpire degli eroi per ${n(a.malusRound || 1, 'turno', 'turni')}${a.resisteFede ? ` (non per chi ha Fede ${a.resisteFede}+)` : ''}`);
     if (a.stordisce) parts.push(`${who(a.stordisce)} salta il prossimo turno`);
+    (a.speciali || []).forEach(s => parts.push(nemicoTesto(s).toLowerCase()));
     if (a.spezzaArmatura) parts.push(`${who(a.spezzaArmatura)} perde l'armatura`);
     if (a.turno) {
         const t = [];

@@ -117,7 +117,7 @@ function simDuelScore(special, extraDmg) {
                 stato.combatRound++;
                 expireTempBuffs();
                 applyRegen();
-                fireSpecialsAll('inizio_round');
+                startRoundSpecials();
                 stato.party.forEach(h => { h.hasActed = false; });
                 stato.party.forEach((h, i) => {
                     if (h.hp <= 0 || enemy.hp <= 0) return;
@@ -789,7 +789,9 @@ function simRunCombat(enemyData, profile, runCtx) {
         expireTempBuffs();
         applyPendingBuffs();
         applyRegen();
-        fireSpecialsAll('inizio_round');
+        startRoundSpecials();
+        checkEnemyRoundPhases(stato.activeEnemy);
+        if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
         stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
         applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);

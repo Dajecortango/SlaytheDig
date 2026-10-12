@@ -166,49 +166,102 @@ function portraitFrameEditor(hero, onChange) {
 }
 
 /* ---------- Effetti speciali "quando → fai" ----------
-   Un riquadro per effetto: quando scatta e cosa fa (solo le azioni che hanno senso in quel momento,
-   SPECIALI_FAI in js/comune.js), i campi dell'azione, poi condizione, round, probabilità e limite.
-   Sotto, la riga che leggerà il giocatore (specialeTesto). Vuoto = campo "speciali" assente. */
+   Un riquadro per effetto: quando scatta e cosa fa (solo le azioni che hanno senso in quel momento),
+   i campi dell'azione, poi condizione, round, probabilità e limite. Sotto, la riga che leggerà il giocatore.
+   f.vocab sceglie il vocabolario: "eroe" (oggetti, reliquie, maledizioni, passive, benedizioni: SPECIALI_* in
+   js/comune.js), "abilita" (effetti delle attive: quando la usa / se colpisce / se manca), "nemico" (bestiario e
+   azioni degli elite: NEMICO_*). f.k può essere un percorso (es. "combat.effetti"). Vuoto = campo assente.
+   "Aggiungi da un modello" mette un effetto già pronto (SPECIALI_MODELLI), da ritoccare. */
+const SPECIALI_MODELLI = {
+    eroe: {
+        'Spine: chi lo colpisce subisce 1 danno': { quando: 'dopo_colpito', fai: 'danni', val: 1 },
+        'Vendetta: se perde HP, 2 danni al nemico': { quando: 'perde_hp', fai: 'danni', val: 2 },
+        'Vampiro: 50% di curare 1 HP a ogni colpo': { quando: 'colpo', prob: 50, fai: 'cura', val: 1 },
+        'Primo sangue: +2 danni al primo colpo': { quando: 'colpo', fai: 'danni', val: 2, limite: 'scontro' },
+        'Boia: +2 danni col nemico a metà vita': { quando: 'colpo', se: 'nemico_meta', fai: 'danni', val: 2 },
+        'Stordimento: il primo colpo stordisce': { quando: 'colpo', fai: 'stordisci', limite: 'scontro' },
+        'Ultimo baluardo: +2 armatura da ferito': { quando: 'dopo_colpito', se: 'ferito', fai: 'armatura', val: 2, limite: 'scontro' },
+        'Seconda vita: resta a 1 HP (una volta per capitolo)': { quando: 'colpo_mortale', fai: 'rialza', val: 1, limite: 'capitolo' },
+        'Corno: +1 al tiro a tutti nel primo round': { quando: 'inizio_scontro', fai: 'potenzia', stat: 'att_bonus', val: 1, durata: 1, bersaglio: 'compagnia' },
+        'Rigenerazione: +1 HP a inizio round': { quando: 'inizio_round', fai: 'cura', val: 1 },
+        'Fortuna: +1 a ogni tiro di dado': { quando: 'tiro', fai: 'bonus_tiro', val: 1 },
+        'Taglia: +5 Scudi a ogni nemico sconfitto': { quando: 'nemico_sconfitto', fai: 'monete', val: 5 },
+        'Avido: +3 Scudi dopo ogni scontro': { quando: 'fine_scontro', fai: 'monete', val: 3 },
+        'Amico dei mercanti: -10% sui prezzi': { quando: 'mercante', fai: 'sconto_percento', val: 10 },
+        'Riposo profondo: +1 HP al riposo': { quando: 'riposo', fai: 'bonus_cura', val: 1 }
+    },
+    abilita: {
+        'Se colpisce, cura 1 HP a tutta la compagnia': { quando: 'colpo', fai: 'cura', val: 1, bersaglio: 'compagnia' },
+        'Se colpisce, stordisce il nemico': { quando: 'colpo', fai: 'stordisci' },
+        'Quando la usa, +2 armatura all\'eroe con meno HP': { quando: 'uso', fai: 'armatura', val: 2, bersaglio: 'meno_hp' },
+        'Quando la usa, +1 Forza a tutti per 2 round': { quando: 'uso', fai: 'potenzia', stat: 'str', val: 1, durata: 2, bersaglio: 'compagnia' },
+        'Se manca, l\'eroe si cura di 1 HP': { quando: 'mancato', fai: 'cura', val: 1 }
+    },
+    nemico: {
+        'Spine: chi lo colpisce subisce 1 danno': { quando: 'colpito', fai: 'danni', val: 1 },
+        'Rigenera 1 HP a inizio round': { quando: 'inizio_round', fai: 'cura', val: 1 },
+        'Veleno: chi viene colpito perde 1 HP per 3 round': { quando: 'colpisce', fai: 'veleno', val: 1, durata: 3 },
+        'Urlo: -1 al tiro a tutti per 2 round all\'inizio': { quando: 'inizio_scontro', fai: 'malus', val: 1, durata: 2, bersaglio: 'tutti' },
+        'Ladro: ruba 5 Scudi quando colpisce': { quando: 'colpisce', fai: 'ruba_scudi', val: 5 },
+        'Furia: +1 danno quando scende a metà vita': { quando: 'colpito', se: 'sotto_meta', fai: 'potenzia', stat: 'dmg', val: 1, limite: 'scontro' },
+        'Esplosione alla soglia: 2 danni a tutti': { quando: 'soglia', fai: 'danni', val: 2, bersaglio: 'tutti' }
+    }
+};
+
+function specialiVocab(vocab) {
+    if (vocab === 'nemico') return {
+        quando: NEMICO_QUANDO, fai: NEMICO_FAI, faiFor: () => NEMICO_FAI, se: NEMICO_SE, bersagli: NEMICO_BERSAGLI,
+        limiti: { scontro: 'Per scontro' }, rompe: false, testo: s => nemicoTesto(s), nuovo: { quando: 'colpito', fai: 'danni', val: 1 }
+    };
+    const quando = vocab === 'abilita' ? SPECIALI_QUANDO_ABILITA : SPECIALI_QUANDO;
+    return {
+        quando, fai: SPECIALI_FAI, se: SPECIALI_SE, bersagli: SPECIALI_BERSAGLI,
+        faiFor: q => Object.fromEntries(Object.entries(SPECIALI_FAI).filter(([, d]) => d.quando.includes(q))),
+        limiti: vocab === 'abilita' ? {} : { scontro: 'Per scontro', capitolo: 'Per capitolo' }, rompe: vocab !== 'abilita',
+        testo: (s, tipo) => specialeTesto(s, tipo), nuovo: vocab === 'abilita' ? { quando: 'colpo', fai: 'danni', val: 1 } : { quando: 'colpo', fai: 'danni', val: 1 }
+    };
+}
+
 function specialiEditor(obj, f, onChange) {
+    const V = specialiVocab(f.vocab || 'eroe');
     const box = document.createElement('div');
     box.className = 'ed-specials';
-    const list = () => (Array.isArray(obj.speciali) ? obj.speciali : (obj.speciali = []));
-    const save = () => { if (!list().length) delete obj.speciali; onChange(f.k); };
+    const list = () => { let l = getPath(obj, f.k); if (!Array.isArray(l)) { l = []; setPath(obj, f.k, l); } return l; };
+    const save = () => { if (!list().length) deletePath(obj, f.k); onChange(f.k); };
     const opts = (map, value, empty) => (empty ? `<option value="">${esc(empty)}</option>` : '') + Object.entries(map)
         .map(([k, l]) => `<option value="${esc(k)}" ${k === value ? 'selected' : ''}>${esc(typeof l === 'string' ? l : l.label)}</option>`).join('');
-    const faiFor = quando => Object.fromEntries(Object.entries(SPECIALI_FAI).filter(([, d]) => d.quando.includes(quando)));
     const num = (k, label, s, extra = '') => `<label>${esc(label)}<input type="number" data-k="${k}" value="${s[k] ?? ''}" ${extra}></label>`;
 
     const paint = () => {
         box.innerHTML = '';
         list().forEach((s, i) => {
-            const fai = faiFor(s.quando);
+            const fai = V.faiFor(s.quando);
             if (!fai[s.fai]) s.fai = Object.keys(fai)[0];
-            const campi = (SPECIALI_FAI[s.fai] || {}).campi || [];
+            const campi = (V.fai[s.fai] || {}).campi || [];
             const card = document.createElement('div');
             card.className = 'ed-special';
             card.innerHTML = `
                 <div class="ed-special-row">
-                    <label>Quando<select data-k="quando">${opts(SPECIALI_QUANDO, s.quando)}</select></label>
+                    <label>Quando<select data-k="quando">${opts(V.quando, s.quando)}</select></label>
                     <label>Fai<select data-k="fai">${opts(fai, s.fai)}</select></label>
                     ${campi.includes('val') ? num('val', 'Valore', s) : ''}
                     ${campi.includes('stat') ? `<label>Statistica<select data-k="stat">${opts(SPECIALI_STAT, s.stat)}</select></label>` : ''}
                     ${campi.includes('stat_nemico') ? `<label>Statistica del nemico<select data-k="stat">${opts(SPECIALI_STAT_NEMICO, s.stat)}</select></label>` : ''}
                     ${campi.includes('durata') ? num('durata', 'Round (vuoto = tutto lo scontro)', s, 'min="1"') : ''}
-                    ${campi.includes('bersaglio') ? `<label>A chi<select data-k="bersaglio">${opts(SPECIALI_BERSAGLI, s.bersaglio || 'eroe')}</select></label>` : ''}
+                    ${campi.includes('bersaglio') ? `<label>A chi<select data-k="bersaglio">${opts(V.bersagli, s.bersaglio || 'eroe')}</select></label>` : ''}
                 </div>
                 <div class="ed-special-row">
-                    <label>Condizione<select data-k="se">${opts(SPECIALI_SE, s.se, 'Sempre')}</select></label>
+                    <label>Condizione<select data-k="se">${opts(V.se, s.se, 'Sempre')}</select></label>
                     ${num('round', 'Solo nel round', s, 'min="1"')}
                     ${num('prob', 'Probabilità %', s, 'min="1" max="100"')}
-                    <label>Limite<select data-k="limite">${opts({ scontro: 'Per scontro', capitolo: 'Per capitolo' }, s.limite, 'Nessuno')}</select></label>
+                    ${Object.keys(V.limiti).length ? `<label>Limite<select data-k="limite">${opts(V.limiti, s.limite, 'Nessuno')}</select></label>` : ''}
                     ${s.limite ? num('volte', 'Volte', s, 'min="1"') : ''}
-                    <label class="ed-special-check"><input type="checkbox" data-k="rompe" ${s.rompe ? 'checked' : ''}>Poi si esaurisce</label>
+                    ${V.rompe ? `<label class="ed-special-check"><input type="checkbox" data-k="rompe" ${s.rompe ? 'checked' : ''}>Poi si esaurisce</label>` : ''}
                     <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
                 </div>
                 <div class="ed-special-text"></div>`;
             const text = card.querySelector('.ed-special-text');
-            const refresh = () => { text.textContent = specialeTesto(s, f.tipo); };
+            const refresh = () => { text.textContent = V.testo(s, f.tipo); };
             refresh();
             card.addEventListener('change', e => {
                 const el = e.target, k = el.dataset.k;
@@ -219,11 +272,13 @@ function specialiEditor(obj, f, onChange) {
                 else s[k] = el.value;
                 // Campi che non servono più all'azione nuova (es. statistica dopo aver scelto "Cura")
                 if (k === 'quando' || k === 'fai') {
-                    const now = faiFor(s.quando);
+                    const now = V.faiFor(s.quando);
                     if (!now[s.fai]) s.fai = Object.keys(now)[0];
-                    const keep = (SPECIALI_FAI[s.fai] || {}).campi || [];
+                    const keep = (V.fai[s.fai] || {}).campi || [];
                     if (!keep.includes('val')) delete s.val;
                     if (!keep.includes('stat') && !keep.includes('stat_nemico')) delete s.stat;
+                    if (keep.includes('stat_nemico') && !SPECIALI_STAT_NEMICO[s.stat]) s.stat = 'att';
+                    if (keep.includes('stat') && !SPECIALI_STAT[s.stat]) s.stat = 'str';
                     if (!keep.includes('durata')) delete s.durata;
                     if (!keep.includes('bersaglio')) delete s.bersaglio;
                 }
@@ -234,12 +289,18 @@ function specialiEditor(obj, f, onChange) {
             card.querySelector('[data-act="del"]').addEventListener('click', () => { list().splice(i, 1); save(); paint(); });
             box.appendChild(card);
         });
-        const add = document.createElement('button');
-        add.type = 'button';
-        add.className = 'btn-small';
-        add.textContent = 'Aggiungi un effetto';
-        add.addEventListener('click', () => { list().push({ quando: 'colpo', fai: 'danni', val: 1 }); save(); paint(); });
-        box.appendChild(add);
+        const row = document.createElement('div');
+        row.className = 'ed-special-row';
+        const modelli = SPECIALI_MODELLI[f.vocab || 'eroe'] || {};
+        row.innerHTML = `<button type="button" class="btn-small" data-act="add">Aggiungi un effetto</button>
+            <select data-act="model"><option value="">Aggiungi da un modello…</option>${Object.keys(modelli).map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>`;
+        row.querySelector('[data-act="add"]').addEventListener('click', () => { list().push({ ...V.nuovo }); save(); paint(); });
+        row.querySelector('[data-act="model"]').addEventListener('change', e => {
+            if (!e.target.value) return;
+            list().push(JSON.parse(JSON.stringify(modelli[e.target.value])));
+            save(); paint();
+        });
+        box.appendChild(row);
     };
     paint();
     return box;
