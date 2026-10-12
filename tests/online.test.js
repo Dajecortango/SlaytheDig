@@ -61,4 +61,13 @@ module.exports = (t, carica) => {
             g.rendiLeggero('<img src="immagini/a.webp"><video src="video/nemici/b.mp4">'));
         t.uguale('url(&quot;/leggero/immagini/c.webp&quot;)', g.rendiLeggero('url(&quot;immagini/c.webp&quot;)'));
     });
+
+    t.test('cancello delle azioni: se onlineGate dice no, la funzione non parte', () => {
+        const h = carica();
+        h.eval('globalThis.__chiamate = 0; globalThis.provaAzione = () => { globalThis.__chiamate++; }');
+        t.ok(h.chiamaAzione('provaAzione', [], null));
+        h.eval('window.onlineGate = () => false');
+        t.ok(!h.chiamaAzione('provaAzione', [], null));
+        t.uguale(1, h.eval('globalThis.__chiamate'));
+    });
 };

@@ -172,7 +172,7 @@
 
                 nodeEl.innerHTML = svgIcon(isBoss ? 'crown' : (NODE_ICON[node.type] || 'question'));
                 if(node.active && !node.done) {
-                    nodeEl.onclick = () => selectStsNode(node.id);
+                    impostaAzione(nodeEl, 'selectStsNode', node.id);  // passa dal cancello della partita online
                 }
                 nodesContainer.appendChild(nodeEl);
             });

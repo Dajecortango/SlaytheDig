@@ -55,6 +55,14 @@
         return !!(el.disabled || (el.closest && el.closest('fieldset:disabled')));
     }
 
+    // Partita online (js/online.js): window.onlineGate decide se l'azione può partire
+    // (permessi dei giocatori, voti). Senza partita online parte sempre.
+    function chiamaAzione(nome, args, el, tipo = 'click') {
+        if (typeof window.onlineGate === 'function' && !window.onlineGate(nome, args, el, tipo)) return false;
+        window[nome].apply(el, args);
+        return true;
+    }
+
     function esegui(tipo, evento) {
         const def = EVENTI[tipo];
         if (tipo === 'keydown' && evento.key !== 'Enter') return;
@@ -67,10 +75,9 @@
         while (el) {
             if (disattivato(el)) return;
             const nome = el.dataset[def.attr];
-            const fn = window[nome];
-            if (typeof fn === 'function') {
+            if (typeof window[nome] === 'function') {
                 if (el.tagName === 'A') evento.preventDefault();
-                fn.apply(el, leggiArgomenti(el, def.args, evento));
+                chiamaAzione(nome, leggiArgomenti(el, def.args, evento), el, tipo);
             } else {
                 console.error(`data-${def.attr}: funzione "${nome}" non trovata`);
             }
@@ -96,6 +103,7 @@
 
     window.azioneSu = azioneSu;
     window.azione = (nome, ...args) => azioneSu('click', nome, ...args);
+    window.chiamaAzione = chiamaAzione;
 
     // Cambia l'azione di un pulsante già nella pagina (es. "Avanti" del combattimento): impostaAzione(btn, 'showScreen', 'screenVictory')
     window.impostaAzione = function (el, nome, ...args) {

@@ -291,9 +291,10 @@
             document.getElementById('wc3ModalBody').innerHTML = bodyHtml;
             const actionsBox = document.getElementById('wc3ModalActions');
             actionsBox.innerHTML = '';
-            (actions || [{ label: 'OK' }]).forEach(action => {
+            (actions || [{ label: 'OK' }]).forEach((action, i) => {
                 const btn = document.createElement('button');
                 btn.textContent = action.label;
+                btn.dataset.modalBtn = String(i);  // partita online: il giocatore indica il pulsante per indice
                 if (action.className) btn.className = action.className;
                 if (action.disabled) btn.disabled = true;
                 btn.addEventListener('click', () => {
