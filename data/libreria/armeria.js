@@ -32,9 +32,9 @@ window.LIBRERIA.armeria = {
     "unguento": { "id": "unguento", "name": "Unguento lenitivo", "type": "consumable_heal", "heal_val": 2, "desc": "Consumabile: Cura 2 HP", "icon": "immagini/icone/BTNHealingSalve.png" },
     "spada_affilata": { "id": "spada_affilata", "name": "Spada affilata", "rarity": "non_comune", "str": 1, "dmg": 1, "desc": "+1 Forza, +1 Danno", "icon": "immagini/icone/BTNThoriumMelee.png" },
     "ascia_pesante": { "id": "ascia_pesante", "name": "Ascia pesante", "rarity": "non_comune", "dmg": 2, "desc": "+2 Danni", "icon": "immagini/icone/BTNOrcMeleeUpThree.png" },
-    "armatura_leggera_loot": { "id": "armatura_leggera_loot", "name": "Armatura leggera", "rarity": "comune", "armor": 1, "desc": "+1 Armatura", "icon": "immagini/icone/BTNReinforcedHides.png" },
+    "armatura_leggera_loot": { "id": "armatura_leggera_loot", "name": "Giaco di maglia", "rarity": "comune", "armor": 1, "def_bonus": 1, "desc": "+1 Armatura, +1 Tiro Difesa", "icon": "immagini/icone/BTNHumanArmorUpOne.png" },
     "armatura_pesante_loot": { "id": "armatura_pesante_loot", "name": "Armatura pesante", "rarity": "raro", "armor": 2, "desc": "+2 Armatura", "icon": "immagini/icone/BTNMoonArmor.png" },
-    "pozione": { "id": "pozione", "name": "Pozione di guarigione", "rarity": "raro", "type": "consumable_full", "desc": "Consumabile: Recupera 100% HP", "icon": "immagini/icone/BTNPotionRed.png" },
+    "pozione": { "id": "pozione", "name": "Pozione di cura", "rarity": "raro", "type": "consumable_heal", "heal_val": 4, "desc": "Consumabile: Cura 4 HP", "icon": "immagini/icone/BTNPotionRed.png" },
     "amuleto": { "id": "amuleto", "name": "Amuleto sacro", "rarity": "comune", "fth": 1, "desc": "+1 Fede", "icon": "immagini/icone/BTNAmulet.png" },
     "anello": { "id": "anello", "name": "Anello della concentrazione", "rarity": "comune", "int": 1, "desc": "+1 Intelligenza", "icon": "immagini/icone/BTNRingPurple.png" },
     "scudo_pesante": { "id": "scudo_pesante", "name": "Scudo pesante", "rarity": "non_comune", "def_armor": 1, "def_bonus": 1, "desc": "+1 Armatura con Difendi, +1 Tiro Difesa", "icon": "immagini/icone/BTNShieldOfHonor.png" },
@@ -66,7 +66,7 @@ window.LIBRERIA.armeria = {
         "desc": "+1 Intelligenza; +1 Aiuto ogni 3 Intelligenza"
     },
     "balsamo_curativo": { "id": "balsamo_curativo", "name": "Balsamo Lenitivo", "rarity": "comune", "type": "consumable_heal", "heal_val": 2, "desc": "Consumabile: Cura 2 HP", "icon": "immagini/icone/BTNSnazzyPotion.png" },
-    "spada_norgrad": { "id": "spada_norgrad", "name": "Spada in Lega di Kol", "rarity": "raro", "str": 1, "dmg": 1, "desc": "+1 Forza, +1 Danno", "icon": "immagini/icone/BTNArcaniteMelee.png" },
+    "spada_norgrad": { "id": "spada_norgrad", "name": "Spada in Lega di Kol", "rarity": "raro", "str": 2, "dmg": 1, "desc": "+2 Forza, +1 Danno", "icon": "immagini/icone/BTNArcaniteMelee.png" },
     "alabarda_guardia": {
         "id": "alabarda_guardia",
         "icon": "immagini/icone/BTNImpalingBolt.png",
@@ -98,12 +98,10 @@ window.LIBRERIA.armeria = {
         "name": "Reliquiario Tascabile",
         "rarity": "raro",
         "fth": 1,
-        "scaling": [
-            { "stat": "armor", "per": "fth", "every": 2 }
-        ],
-        "desc": "+1 Fede; +1 Armatura ogni 2 Fede"
+        "prayer_bonus": 1,
+        "desc": "+1 Fede, +1 al tiro di Preghiera"
     },
-    "pozione_rigenerazione": { "id": "pozione_rigenerazione", "name": "Pozione di Rigenerazione", "rarity": "raro", "type": "consumable_full", "desc": "Consumabile: Ripristina 100% HP", "icon": "immagini/icone/BTNPotionOfRestoration.png" },
+    "pozione_rigenerazione": { "id": "pozione_rigenerazione", "name": "Pozione di Rigenerazione", "rarity": "raro", "type": "consumable_buff", "buff_stat": "regen", "buff_val": 1, "buff_rounds": 0, "desc": "Consumabile: +1 HP a inizio di ogni round, per tutto lo scontro", "icon": "immagini/icone/BTNPotionOfRestoration.png" },
     "unguento_fortificante": { "id": "unguento_fortificante", "name": "Unguento Fortificante", "rarity": "non_comune", "type": "consumable_heal", "heal_val": 3, "desc": "Consumabile: Cura 3 HP", "icon": "immagini/icone/BTNPotionGreen.png" },
     "lama_acciaio_lunare": { "id": "lama_acciaio_lunare", "name": "Lama d'Acciaio Lunare", "rarity": "epico", "str": 2, "dmg": 2, "desc": "+2 Forza, +2 Danno", "icon": "immagini/icone/BTNFrostMourne.png" },
     "martello_breccia": { "id": "martello_breccia", "name": "Martello della Breccia", "rarity": "epico", "dmg": 3, "desc": "+3 Danni, +2 Armatura", "icon": "immagini/icone/BTNHammer.png", "armor": 2 },
@@ -125,7 +123,7 @@ window.LIBRERIA.armeria = {
     "simbolo_jag_antar": {
         "id": "simbolo_jag_antar",
         "icon": "immagini/icone/BTNPeriapt.png",
-        "name": "Simbolo Primordiale di Jag Antar",
+        "name": "Simbolo Primordiale di Jag Àntar",
         "rarity": "leggendario",
         "fth": 2,
         "scaling": [
@@ -208,11 +206,12 @@ window.LIBRERIA.armeria = {
         "icon": "immagini/icone/BTNScepterOfMastery.png",
         "name": "Scettro del Savio",
         "rarity": "leggendario",
-        "int": 1,
+        "int": 2,
         "scaling": [
-            { "stat": "dmg", "per": "int", "every": 2 }
+            { "stat": "dmg", "per": "int", "every": 2 },
+            { "stat": "help_bonus_val", "per": "int", "every": 3 }
         ],
-        "desc": "+1 Intelligenza; +1 Danno ogni 2 Intelligenza"
+        "desc": "+2 Intelligenza; +1 Danno ogni 2 Intelligenza; +1 Aiuto ogni 3 Intelligenza"
     },
     "corona_martire": {
         "id": "corona_martire",

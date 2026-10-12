@@ -129,7 +129,7 @@ const ABILITY_FIELDS = [
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 // Statistiche di un potenziamento temporaneo (le stesse di BUFF_STATS in js/game.js)
 const BUFF_STATS_EDITOR = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
-    def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito, non scade)' };
+    def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito, non scade)', regen: 'HP a inizio round' };
 const ITEM_FIELDS = [
     { k: 'name', label: 'Nome' },
     { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
@@ -155,6 +155,7 @@ const ITEM_FIELDS = [
     { k: 'help_bonus_val', label: 'Bonus aiuto', type: 'number', omitEmpty: true },
     { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true },
     { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true },
+    { k: 'prayer_bonus', label: 'Bonus al tiro di Preghiera', type: 'number', omitEmpty: true },
     { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', wide: true, nullable: true,
       help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true }
@@ -266,7 +267,7 @@ const CHALLENGE_FIELDS = [
     { k: 'failText', label: 'Testo di fallimento', type: 'textarea', wide: true },
     { k: 'reward', label: 'Ricompensa', type: 'libref', lib: 'reliquie', wide: true,
       custom: () => ({ type: 'coins', name: '', desc: '', effects: [{ effect: 'coins', val: 10 }] }),
-      help: 'Una reliquia della libreria, oppure "Personalizzata" per un premio immediato (es. monete)' },
+      help: 'Una reliquia della libreria, oppure "Personalizzata" per un premio immediato (es. Scudi)' },
     { k: 'punishment', label: 'Punizione', type: 'libref', lib: 'maledizioni', wide: true,
       custom: () => ({ type: 'injury', name: '', desc: '', effects: [{ effect: 'party_damage', val: 1 }] }),
       help: 'Una maledizione della libreria, oppure "Personalizzata" per un danno o una penalità immediata' }

@@ -474,11 +474,10 @@
         const blessingData = id => PRAYER_BLESSINGS[id] ? { id, ...PRAYER_BLESSINGS[id] } : null;
         const hasBlessing = (hero, id) => !!(hero.blessings || []).find(x => x.id === id);
 
-        // Benedizioni che adesso servono a qualcosa (niente Purificazione senza maledizioni, niente cure se nessuno è ferito)
+        // Benedizioni che adesso servono a qualcosa (niente Sentenza di Rattvisa senza maledizioni, niente cure se nessuno è ferito)
         function blessingUseful(b) {
             if (b.effetto === 'togli_maledizione') return stato.activeCurses.length > 0;
             if (b.effetto === 'cura_party') return stato.party.some(h => h.hp > 0 && h.hp < h.maxHp);
-            if (b.effetto === 'miracolo') return stato.party.some(h => h.hp < h.maxHp);
             return true;
         }
 
@@ -494,10 +493,11 @@
         function prayerRoll(hero) {
             const roll = rollD6(null, 0, hero);
             const relics = relicDiceBonus();
-            const total = roll + (hero.fth || 0) + relics;
+            const items = itemPrayerBonus(hero);  // oggetti con prayer_bonus (Reliquiario Tascabile)
+            const total = roll + (hero.fth || 0) + relics + items;
             const notes = spendNextRollRelics();
             const success = naturalRollSuccess(roll, total, PRAYER_CD);
-            return { roll, total, relics, notes, success, major: success && (roll === 6 || total >= PRAYER_MAJOR_TOTAL),
+            return { roll, total, relics, items, notes, success, major: success && (roll === 6 || total >= PRAYER_MAJOR_TOTAL),
                 naturalNote: naturalRollNote(roll, total, PRAYER_CD) };
         }
 
@@ -513,20 +513,12 @@
             }
             let text = `${b.name}: ${b.desc.charAt(0).toLowerCase()}${b.desc.slice(1)}.`;
             if (b.effetto === 'cura_party') stato.party.filter(h => h.hp > 0).forEach(h => healHero(h, b.val || 1));
-            if (b.effetto === 'miracolo') stato.party.forEach(h => healHero(h, h.maxHp));
+            if (b.effetto === 'bottino_extra') stato.party.lootExtraChoices = (stato.party.lootExtraChoices || 0) + (b.val || 1);
             if (b.effetto === 'togli_maledizione' && stato.activeCurses.length) {
                 text = `${b.name}: svanisce ${curseText(stato.activeCurses[stato.activeCurses.length - 1])}.`;
                 removeCurseAt(stato.activeCurses.length - 1);
             }
             return text;
-        }
-
-        // Toglie una carica della benedizione (Grazia usata); le altre restano
-        function spendBlessing(hero, id) {
-            const list = hero.blessings || [];
-            const i = list.findIndex(x => x.id === id);
-            if (i < 0) return;
-            if ((list[i].n || 1) > 1) list[i].n--; else list.splice(i, 1);
         }
 
         // Inizio di uno scontro (gioco e simulatore): le benedizioni "al prossimo scontro" diventano potenziamenti
@@ -537,7 +529,8 @@
                 h.blessings = h.blessings.filter(x => {
                     const b = blessingData(x.id);
                     if (!b || b.effetto !== 'prossimo_scontro') return true;
-                    applyTempBuff(h, { buff_stat: b.buff_stat, buff_val: b.buff_val * (x.n || 1), buff_rounds: 0, name: b.name, icon: b.icon });
+                    (b.buffs || [b]).forEach(buff =>
+                        applyTempBuff(h, { buff_stat: buff.buff_stat, buff_val: buff.buff_val * (x.n || 1), buff_rounds: 0, name: b.name, icon: b.icon }));
                     used.push({ hero: h, b });
                     return false;
                 });
@@ -655,8 +648,8 @@
                 if (!p) return;
                 diceBox.textContent = p.roll;
                 diceOutcomeSfx(p.roll);
-                const fth = p.total - p.roll - p.relics;
-                addPrayerLog(`${esc(p.hero)}: dado ${p.roll} + Fede ${fth}${p.relics ? ` + reliquie ${p.relics}` : ''} = <b>${p.total}</b> (CD ${PRAYER_CD})`);
+                const fth = p.total - p.roll - p.relics - (p.items || 0);
+                addPrayerLog(`${esc(p.hero)}: dado ${p.roll} + Fede ${fth}${p.relics ? ` + reliquie ${p.relics}` : ''}${p.items ? ` + oggetti ${p.items}` : ''} = <b>${p.total}</b> (CD ${PRAYER_CD})`);
                 if (p.notes.length) addPrayerLog(`💎 Reliquie: ${esc(p.notes.join(', '))}`);
                 if (p.naturalNote) addPrayerLog(esc(p.naturalNote));
                 addPrayerLog(p.success ? (p.major ? '✨ Gli dei rispondono con forza: benedizione maggiore!' : '🙏 La preghiera è ascoltata!')

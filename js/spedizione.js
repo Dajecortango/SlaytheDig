@@ -163,7 +163,7 @@
                         ${stat(stato.expeditionStats.combatsWon, 'Scontri vinti')}
                         ${stat(stato.expeditionStats.challengesPassed, 'Sfide superate')}
                         ${stat(stato.expeditionStats.challengesFailed, 'Sfide fallite')}
-                        ${stat(stato.expeditionStats.coinsEarned, 'Monete raccolte')}
+                        ${stat(stato.expeditionStats.coinsEarned, 'Scudi raccolti')}
                         ${stat(stato.expeditionStats.itemsFound, 'Oggetti trovati')}
                         ${stat(`${stato.party.filter(h => h.hp > 0).length} / ${stato.party.length}`, 'Eroi in piedi')}
                     </div>
@@ -255,7 +255,7 @@
                         ${stat(d.scontri.vinti, d.scontri.elite ? `Scontri vinti (${d.scontri.elite} elite)` : 'Scontri vinti')}
                         ${boss}
                         ${stat(`${d.sfide.superate} / ${d.sfide.superate + d.sfide.fallite}`, 'Sfide superate')}
-                        ${stat(d.monete.finali, `Monete (${d.monete.raccolte} raccolte)`)}
+                        ${stat(d.monete.finali, `Scudi (${d.monete.raccolte} raccolti)`)}
                         ${stat(d.oggetti, 'Oggetti trovati')}
                     </div>
                 </div>

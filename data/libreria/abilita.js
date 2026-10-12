@@ -80,7 +80,7 @@ window.LIBRERIA.abilita = {
     "icaro_oro": {
         "id": "icaro_oro",
         "name": "Fammi dare un’occhiata",
-        "desc": "Passiva: dopo ogni scontro la compagnia ottiene 3 monete in più garantite",
+        "desc": "Passiva: dopo ogni scontro la compagnia ottiene 3 Scudi in più garantiti",
         "isCombatActive": false,
         "effects": [
             {
@@ -140,7 +140,7 @@ window.LIBRERIA.abilita = {
     },
     "ascadeo_ghiaccio": {
         "id": "ascadeo_ghiaccio",
-        "name": "Abitante del GhiaccioEterno",
+        "name": "Abitante del Ghiacceterno",
         "desc": "Passiva: ottiene 1 punto di armatura naturale permanente",
         "isCombatActive": false,
         "effects": [

@@ -112,7 +112,8 @@ function simUseCombatConsumables(hero) {
             if (big || enemy.hp <= (item.dmg_val || 0)) { enemy.hp -= item.dmg_val || 0; consumeOne(hero, idx); }
         } else if (item.type === 'consumable_buff') {
             const armorNow = item.buff_stat === 'current_armor';
-            if ((big && stato.combatRound === 1) || (armorNow && hero.hp / hero.maxHp < 0.5)) { applyTempBuff(hero, item); consumeOne(hero, idx); }
+            const regenNow = item.buff_stat === 'regen' && hero.hp < hero.maxHp;  // rigenerazione: appena l'eroe è ferito
+            if ((big && stato.combatRound === 1) || (armorNow && hero.hp / hero.maxHp < 0.5) || regenNow) { applyTempBuff(hero, item); consumeOne(hero, idx); }
         }
     }
 }
@@ -133,7 +134,7 @@ function simUseConsumable(hero, itemIdx, target) {
 const SIM_PROFILES = {
     aggressivo: {
         key: 'aggressivo', label: 'Aggressivo',
-        description: 'Cerca scontri ed élite appena può ed evita il riposo. Attacca sempre e usa l\'abilità attiva alla prima occasione. In combattimento mette in prima linea l\'eroe con più armatura e cura solo chi scende sotto il 25% HP. Dal mercante compra solo oggetti offensivi o consumabili, spendendo tutte le monete disponibili.',
+        description: 'Cerca scontri ed élite appena può ed evita il riposo. Attacca sempre e usa l\'abilità attiva alla prima occasione. In combattimento mette in prima linea l\'eroe con più armatura e cura solo chi scende sotto il 25% HP. Dal mercante compra solo oggetti offensivi o consumabili, spendendo tutti gli Scudi disponibili.',
         nodePriority: ['elite', 'combat', 'treasure', 'challenge', 'merchant', 'rest'],
         consumableThreshold: 0.25,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : 'attack',
@@ -169,7 +170,7 @@ const SIM_PROFILES = {
     },
     prudente: {
         key: 'prudente', label: 'Prudente',
-        description: 'Ai bivi predilige riposo e mercante e tenta una sfida solo con almeno il 67% di probabilità di successo. In combattimento si difende quando un eroe scende sotto il 50% HP, cura in anticipo e mette in prima linea chi ha più armatura e HP insieme. Dal mercante compra solo armature e consumabili, tenendo sempre una riserva di monete.',
+        description: 'Ai bivi predilige riposo e mercante e tenta una sfida solo con almeno il 67% di probabilità di successo. In combattimento si difende quando un eroe scende sotto il 50% HP, cura in anticipo e mette in prima linea chi ha più armatura e HP insieme. Dal mercante compra solo armature e consumabili, tenendo sempre una riserva di Scudi.',
         nodePriority: ['rest', 'merchant', 'challenge', 'treasure', 'combat', 'elite'],
         consumableThreshold: 0.5,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : ((hero.hp / hero.maxHp) < 0.5 ? 'defend' : 'attack'),
@@ -235,7 +236,7 @@ const SIM_PROFILES = {
     },
     codardo: {
         key: 'codardo', label: 'Codardo',
-        description: 'Ai bivi predilige riposo e tesori ed evita scontri e sfide quando può: tenta una sfida solo con almeno l\'85% di probabilità di successo. In combattimento attacca solo se l\'eroe è a piena salute (75%+ HP), altrimenti si difende sempre, e cura ai primi segni di ferita. Mette in prima linea l\'eroe con più HP massimi e vende dal mercante ogni oggetto puramente offensivo, comprando solo armature e tenendo una grossa riserva di monete.',
+        description: 'Ai bivi predilige riposo e tesori ed evita scontri e sfide quando può: tenta una sfida solo con almeno l\'85% di probabilità di successo. In combattimento attacca solo se l\'eroe è a piena salute (75%+ HP), altrimenti si difende sempre, e cura ai primi segni di ferita. Mette in prima linea l\'eroe con più HP massimi e vende dal mercante ogni oggetto puramente offensivo, comprando solo armature e tenendo una grossa riserva di Scudi.',
         nodePriority: ['rest', 'treasure', 'merchant', 'challenge', 'combat', 'elite'],
         consumableThreshold: 0.75,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : ((hero.hp / hero.maxHp) >= 0.75 ? 'attack' : 'defend'),
@@ -264,7 +265,7 @@ const SIM_PROFILES = {
     },
     mercenario: {
         key: 'mercenario', label: 'Mercenario',
-        description: 'Ai bivi punta su scontri, élite e tesori (fonti dirette di monete) ed evita le sfide, che non danno oro e rischiano maledizioni. In combattimento attacca sempre senza mai curare (tiene i consumabili solo per rivenderli) e lascia incassare i colpi al membro meno utile in battaglia. Dal mercante vende subito ogni consumabile raccolto e reinveste tutto l\'oro in nuovo equipaggiamento.',
+        description: 'Ai bivi punta su scontri, élite e tesori (fonti dirette di Scudi) ed evita le sfide, che non danno oro e rischiano maledizioni. In combattimento attacca sempre senza mai curare (tiene i consumabili solo per rivenderli) e lascia incassare i colpi al membro meno utile in battaglia. Dal mercante vende subito ogni consumabile raccolto e reinveste tutto l\'oro in nuovo equipaggiamento.',
         nodePriority: ['combat', 'elite', 'treasure', 'merchant', 'rest', 'challenge'],
         consumableThreshold: 0,
         combatAction: (hero) => hasUsableAbility(hero) ? 'ability' : 'attack',
@@ -281,6 +282,189 @@ const SIM_PROFILES = {
             return stat > 0 ? (useFaith ? 'faith' : 'int') : 'force';
         }
     }
+};
+
+/* ==========================================================================
+   PROFILO ESPERTO: un giocatore attento, il metro della difficoltà
+   Gli altri profili hanno uno stile (anche sbagliato apposta); l'Esperto gioca come una persona
+   che conosce le regole: guarda chi colpirà il nemico, fa difendere chi rischia di cadere, fa
+   aiutare chi colpisce peggio a vantaggio di chi colpisce meglio, cura chi cadrebbe al prossimo
+   colpo, rialza i caduti con le pozioni che lo permettono, sceglie il bersaglio del nemico che perde
+   meno, affronta le prove con l'eroe più adatto, contratta e sceglie la strada guardando un passo avanti.
+   ========================================================================== */
+
+// Forza in attacco di un eroe: probabilità di colpire per danno
+function simHeroPower(hero) {
+    return simAttackChance(hero) * (hero.dmg || 0);
+}
+
+// Probabilità di colpire il nemico attuale (extra = bonus in più, es. +1 di un Aiuta)
+function simAttackChance(hero, extra = 0) {
+    const enemy = stato.activeEnemy;
+    if (!enemy) return 0;
+    const bonus = (hero.str || 0) + firstActorBonus(hero) + stato.helpBonus + attackMod(hero) + relicCombatBonus().att + extra;
+    return rollChance(enemy.ca - bonus, false);
+}
+
+// Probabilità di riuscire a Difendere o Aiutare (stesso tiro contro l'Attacco del nemico)
+function simDefendChance(hero, help = false) {
+    const enemy = stato.activeEnemy;
+    if (!enemy) return 0;
+    const bonus = (hero.str || 0) + firstActorBonus(hero) + (help ? (hero.help_bonus_val || 0) : (hero.def_bonus || 0)) + relicDiceBonus();
+    return rollChance(enemy.att - bonus, false);
+}
+
+// Bersaglio scelto dal giocatore per il colpo del nemico: chi perde meno HP senza cadere
+// (a parità, chi resta con più HP); se cadrebbero tutti, il meno utile in attacco
+function simExpertTarget(alive, dmg) {
+    if (!alive.length) return null;
+    const loss = h => Math.max(0, dmg - (h.current_armor || 0));
+    const survive = alive.filter(h => h.hp > loss(h));
+    if (survive.length) {
+        return survive.reduce((b, h) => (loss(h) < loss(b) || (loss(h) === loss(b) && h.hp - loss(h) > b.hp - loss(b))) ? h : b);
+    }
+    return alive.reduce((b, h) => simHeroPower(h) < simHeroPower(b) ? h : b);
+}
+
+// Prossimo turno del nemico, senza dadi: chi colpirà e con quanto. Fermo (stordito o in preparazione) = nessuno
+function simIncoming() {
+    const enemy = stato.activeEnemy;
+    const none = { targets: [], dmg: 0, aura: 0 };
+    if (!enemy || enemy.hp <= 0 || enemy.isStunned) return none;
+    const r = enemyTurnRule(enemy);
+    if (r.turnoPreparazione && !enemy.charging) return none;
+    const perHit = (r.turnoDanno != null ? r.turnoDanno : enemy.dmg) + (hasCurse('presagio_di_morte') ? 1 : 0);
+    const dmg = perHit * Math.max(1, r.turnoColpi || 1);
+    const mode = r.turnoBersaglio || 'scelto';
+    const alive = stato.party.filter(h => h.hp > 0);
+    const targets = mode === 'tutti' ? alive
+        : mode === 'scelto' ? [simExpertTarget(alive, dmg)].filter(Boolean)
+        : mode === 'casuale' ? [] : eliteTargets(mode);
+    return { targets, dmg, aura: r.turnoAura || 0 };
+}
+
+// HP che l'eroe perderebbe al prossimo turno del nemico (stima: l'armatura assorbe una volta)
+function simThreat(hero, inc) {
+    const raw = (inc.targets.includes(hero) ? inc.dmg : 0) + inc.aura;
+    return raw > 0 ? Math.max(0, raw - (hero.current_armor || 0)) : 0;
+}
+
+function simExpertAction(hero, enemy, ctx) {
+    const inc = simIncoming();
+    const loss = simThreat(hero, inc);
+    const hitDmg = (hero.dmg || 0) + relicCombatBonus().dmg + helpDmgBonus();
+    const pHit = simAttackChance(hero);
+    // Abilità attiva (una per scontro): l'armatura immediata solo quando serve, le altre subito
+    if (hasUsableAbility(hero)) {
+        const c = abilityCombat(hero.chosenAbility) || {};
+        if (!c.armorGain || loss > 0) return 'ability';
+    }
+    // Colpo che chiude lo scontro
+    if (enemy.hp <= hitDmg && pHit >= 0.5) return 'attack';
+    // Chi sta per essere colpito e cadrebbe (o resterebbe a 1 HP) si difende, se il tiro ha senso
+    if (loss > 0 && hero.hp - loss <= 1 && simDefendChance(hero) >= 0.34) return 'defend';
+    // Aiuta se un compagno che agisce dopo, con +1, rende più del proprio attacco
+    const later = (ctx.remaining || []).filter(h => h.hp > 0 && !h.hasActed);
+    if (!stato.helpBonus && later.length) {
+        const best = later.reduce((b, h) => simHeroPower(h) > simHeroPower(b) ? h : b);
+        const pHelp = simDefendChance(hero, true);
+        const gain = pHelp * ((simAttackChance(best, 1) - simAttackChance(best)) * (best.dmg || 0)
+            + simAttackChance(best, 1) * (hero.helpDmgBonus || 0));
+        if (gain > pHit * hitDmg) return 'help';
+    }
+    return 'attack';
+}
+
+// Cure in combattimento: prima i caduti (pozioni che rialzano), poi chi cadrebbe al prossimo colpo
+// o è sotto un terzo della vita. Una pozione per turno dell'eroe: come nel gioco non consuma l'azione
+function simExpertHeal(hero) {
+    const heals = hero.items.map((it, i) => i).filter(i => hero.items[i].type === 'consumable_heal' || hero.items[i].type === 'consumable_full');
+    if (!heals.length) return;
+    const fallen = stato.party.filter(h => h.hp <= 0);
+    const revive = heals.find(i => itemRevives(hero.items[i]));
+    if (fallen.length && revive != null) {
+        simUseConsumable(hero, revive, fallen.reduce((b, h) => (h.str || 0) + (h.dmg || 0) > (b.str || 0) + (b.dmg || 0) ? h : b));
+        return;
+    }
+    const inc = simIncoming();
+    const needy = stato.party.filter(h => h.hp > 0 && h.hp < h.maxHp && (h.hp <= simThreat(h, inc) || h.hp <= h.maxHp / 3))
+        .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
+    const plain = heals.find(i => !itemRevives(hero.items[i]));
+    if (needy.length) simUseConsumable(hero, plain != null ? plain : heals[0], needy[0]);
+}
+
+// Probabilità di riuscita di una prova (stato.challengeState già impostato) per un eroe
+function simChallengePct(hero) {
+    return challengeChanceInfo(challengeModifiers(hero)).pct;
+}
+
+// Contrattazione: con l'eroe che ha più Intelligenza, se riesce almeno una volta su due
+function simHaggle() {
+    const alive = stato.party.filter(h => h.hp > 0);
+    if (!alive.length || merchantHaggle !== null) return;
+    const cd = haggleCd();
+    const hero = alive.reduce((b, h) => (h.int || 0) > (b.int || 0) ? h : b);
+    if (rollChance(cd - (hero.int || 0) - relicDiceBonus(), false) < 0.5) return;
+    const roll = rollD6(null, 0, hero);
+    const total = roll + (hero.int || 0) + relicDiceBonus();
+    spendNextRollRelics();
+    merchantHaggle = naturalRollSuccess(roll, total, cd) ? 'ok' : 'fail';
+}
+
+// Valore di un nodo per la compagnia di adesso: riposo quando è ferita, elite solo quando è in forma,
+// mercante con le monete, prove secondo la probabilità di riuscita
+function simExpertNodeScore(node) {
+    const party = stato.party;
+    const hpRatio = party.reduce((s, h) => s + Math.max(0, h.hp), 0) / Math.max(1, party.reduce((s, h) => s + h.maxHp, 0));
+    const fallen = party.some(h => h.hp <= 0);
+    switch (node.type) {
+        case 'rest': return fallen || hpRatio < 0.5 ? 2.5 + 3 * (1 - hpRatio) : 0.6;
+        case 'merchant': return (stato.partyCoins >= 25 ? 2 : 0.5) + ((fallen || hpRatio < 0.7) && stato.partyCoins >= 10 ? 1 : 0);
+        case 'treasure': return 2.2;
+        case 'elite': return !fallen && hpRatio >= 0.75 ? 1.8 : (hpRatio >= 0.55 ? 0.6 : -1);
+        case 'combat': return hpRatio >= 0.5 ? 2 : 0.4;   // bottino e monete: gli scontri fanno crescere la compagnia
+        case 'challenge': {
+            const challenge = challengesData && challengesData[node.challengeId];
+            const alive = party.filter(h => h.hp > 0);
+            if (!challenge || !alive.length) return 0.5;
+            const prev = stato.challengeState;
+            stato.challengeState = challenge;
+            const best = Math.max(...alive.map(simChallengePct)) / 100;
+            stato.challengeState = prev;
+            return 2 * best - 0.5;
+        }
+        default: return 1;
+    }
+}
+
+// Strada: il nodo più utile adesso, più metà del migliore che apre dopo
+function simExpertChooseNode(available) {
+    const score = n => simExpertNodeScore(n) + 0.5 * Math.max(0, ...(n.next || [])
+        .map(id => stato.stsMapNodes.find(x => x.id === id)).filter(Boolean).map(simExpertNodeScore));
+    return available.reduce((b, n) => score(n) > score(b) ? n : b);
+}
+
+SIM_PROFILES.esperto = {
+    key: 'esperto', label: 'Esperto',
+    description: 'Gioca come una persona attenta: sceglie la strada guardando un passo avanti (riposo quando la compagnia è ferita, elite solo quando è in forma), fa difendere chi sta per essere colpito e cadrebbe, fa aiutare chi colpisce peggio a vantaggio di chi colpisce meglio, manda il colpo del nemico su chi perde meno, cura chi cadrebbe e rialza i caduti, affronta le prove con l\'eroe più adatto se riescono almeno una volta su due, contratta col mercante e contro il capitano usa la Forza, che vince sempre.',
+    nodePriority: [],
+    chooseNode: simExpertChooseNode,
+    consumableThreshold: 0.34,
+    combatHeal: simExpertHeal,
+    turnOrder: alive => [...alive].sort((a, b) => (b.firstActorStrBonus ? 1 : 0) - (a.firstActorStrBonus ? 1 : 0) || simHeroPower(a) - simHeroPower(b)),
+    combatAction: simExpertAction,
+    monsterTarget: members => {
+        const inc = simIncoming();
+        return simExpertTarget(members.filter(h => h.hp > 0), inc.dmg || (stato.activeEnemy ? stato.activeEnemy.dmg : 0));
+    },
+    challengeHero: alive => alive.reduce((b, h) => simChallengePct(h) > simChallengePct(b) ? h : b),
+    attemptChallenge: chance => chance >= 0.5,
+    lootRecipient: members => simAliveMaxBy(members, h => (h.str || 0) + (h.dmg || 0)),
+    merchantFilter: null,
+    merchantReserve: 0,
+    haggle: true,
+    captainHero: alive => simAliveMaxBy(alive, h => h.hp),
+    captainActionType: () => 'force'   // la Forza contro il capitano riesce sempre (lascia a metà vita)
 };
 
 /* ==========================================================================
@@ -332,6 +516,7 @@ function simBuildParty(campaignData, heroSelection) {
    ========================================================================== */
 function simChooseNextNode(available, profile, runCtx) {
     if (available.length === 1) return available[0];
+    if (profile.chooseNode) return profile.chooseNode(available, runCtx);
 
     if (profile.key === 'bilanciato') {
         let bestCount = Infinity;
@@ -352,13 +537,15 @@ function simResolveChallengeNode(campaignData, node, profile) {
     stato.challengeState = challenge; // richiesto da challengeModifiers/challengeRollMode (leggono la globale)
 
     const alive = stato.party.filter(h => h.hp > 0);
-    const hero = alive.reduce((best, h) => (h[challenge.stat] || 0) > (best[challenge.stat] || 0) ? h : best, alive[0]);
+    const hero = profile.challengeHero ? profile.challengeHero(alive)
+        : alive.reduce((best, h) => (h[challenge.stat] || 0) > (best[challenge.stat] || 0) ? h : best, alive[0]);
     const chance = challengeChanceInfo(challengeModifiers(hero)).pct / 100;
     const final = (node.next || []).length === 0;
     // La prova finale non si può lasciar perdere
-    if (!final && !profile.attemptChallenge(chance)) return { defeat: false, finalVictory: false };
+    if (!final && !profile.attemptChallenge(chance, node)) return { defeat: false, finalVictory: false };
 
-    const res = resolveChallenge(hero, challenge);
+    // La ricerca a simulazioni (simLookaheadProfile) rimette lo stato com'era: l'eroe si riprende dalla compagnia di adesso
+    const res = resolveChallenge(stato.party.find(h => h.name === hero.name) || hero, challenge);
     // Prova finale: riuscita = vittoria, fallimento = sconfitta (come nel gioco)
     if (final) return { defeat: !res.success, finalVictory: res.success };
     return { defeat: false, finalVictory: false };
@@ -383,7 +570,8 @@ function simSellSurplusItems(profile) {
 function simResolveMerchantNode(campaignData, node, profile, runCtx) {
     simSellSurplusItems(profile);
     const stock = generateMerchantStock();
-    merchantHaggle = null;  // il simulatore non contratta
+    merchantHaggle = null;
+    if (profile.haggle) simHaggle();  // solo l'Esperto contratta
     let stolen = false;  // come nel gioco: con la passiva del ladro il primo oggetto è gratis
     // Medico: rialza i caduti e cura chi ha perso almeno 2 HP (fino a 2 HP a eroe, prima i più gravi),
     // al massimo MEDIC_MAX_HP in tutto, finché le monete bastano senza scendere sotto la riserva del profilo
@@ -447,7 +635,7 @@ function simResolveVictoryLoot(profile, runCtx) {
     const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
     const isElite = currentEnemyIsEliteOrBoss();  // come nel gioco: anche il boss dell'ultimo livello
     let coins = scaledCoins([3, 5, 7, 9, 12], isElite);
-    if (hasCurse('15_ricompensa_monete')) coins = Math.floor(coins * 0.85);
+    if (hasCurse('15_scudi_di_ricompensa')) coins = Math.floor(coins * 0.85);
 
     const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && h.bonusLootCoins);
     coins += lootBonusHeroes.reduce((sum, h) => sum + h.bonusLootCoins, 0);
@@ -485,6 +673,8 @@ function simRunCombat(enemyData, profile, runCtx) {
     stato.party.forEach(refreshScaledBonuses);  // Fede/Int possono essere cambiate da reliquie, maledizioni o scarti
     stato.activeEnemy = JSON.parse(JSON.stringify(enemyData));
     stato.activeEnemy.isStunned = false;
+    // Come startCombat: l'Occhio del corvo toglie 1 all'Attacco del nemico
+    if (hasRelic('occhio_del_corvo')) stato.activeEnemy.att = Math.max(1, stato.activeEnemy.att - 1);
     stato.party.atamanoUsed = false;
     stato.helpBonus = 0;
     stato.helpDmgBonus = 0;
@@ -505,6 +695,7 @@ function simRunCombat(enemyData, profile, runCtx) {
         stato.helpDmgBonus = 0;
         expireTempBuffs();
         applyPendingBuffs();
+        applyRegen();
         stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
         applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);
@@ -517,7 +708,8 @@ function simRunCombat(enemyData, profile, runCtx) {
 
             // Uso proattivo di un consumabile sul membro più ferito, secondo la soglia del profilo
             const consumableIdx = hero.items.findIndex(it => it.type === 'consumable_heal' || it.type === 'consumable_full');
-            if (consumableIdx > -1) {
+            if (profile.combatHeal) profile.combatHeal(hero);
+            else if (consumableIdx > -1) {
                 const weakest = simAliveMinBy(stato.party, h => h.hp / h.maxHp);
                 // Come nel gioco: usare un oggetto non consuma l'azione, l'eroe poi agisce lo stesso
                 if (weakest && (weakest.hp / weakest.maxHp) <= profile.consumableThreshold) {
@@ -531,7 +723,7 @@ function simRunCombat(enemyData, profile, runCtx) {
             if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
 
             const remaining = order.slice(i + 1).filter(h => h.hp > 0 && !h.hasActed);
-            const action = profile.combatAction(hero, stato.activeEnemy, { combatRound: stato.combatRound, isLastActor: remaining.length === 0, champion });
+            const action = profile.combatAction(hero, stato.activeEnemy, { combatRound: stato.combatRound, isLastActor: remaining.length === 0, champion, remaining });
             simExecuteCombatAction(hero, action);
             hero.hasActed = true;
             if (stato.activeEnemy.hp <= 0) break;
@@ -558,7 +750,7 @@ function simRunCombat(enemyData, profile, runCtx) {
 }
 
 // Preghiera al riposo: prega l'eroe con più Fede; tra le benedizioni pescate tiene la prima utile in quest'ordine
-const SIM_BLESSING_ORDER = ['miracolo', 'grazia', 'fede_incrollabile', 'purificazione', 'scudo_della_fede', 'lama_consacrata', 'mano_guidata', 'veglia'];
+const SIM_BLESSING_ORDER = ['furia_sacra', 'fede_incrollabile', 'abbondanza', 'purificazione', 'scudo_della_fede', 'lama_consacrata', 'mano_guidata', 'veglia'];
 function simPray() {
     const praying = simAliveMaxBy(stato.party, h => h.fth || 0);
     if (!praying) return;
@@ -567,10 +759,9 @@ function simPray() {
     const choices = pickBlessings(res.major);
     const b = SIM_BLESSING_ORDER.map(id => choices.find(c => c.id === id)).find(Boolean);
     if (!b) return;
-    if (b.id === 'miracolo' && !stato.party.some(h => h.hp <= 0 || h.maxHp - h.hp >= 2)) return;
     const alive = stato.party.filter(h => h.hp > 0);
     const hero = b.effetto === 'fede' ? praying
-        : b.buff_stat === 'dmg' || b.buff_stat === 'att_bonus' ? simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0))
+        : b.buffs || b.buff_stat === 'dmg' || b.buff_stat === 'att_bonus' ? simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0))
         : simAliveMinBy(alive, h => h.hp + (h.current_armor || 0));
     applyBlessing(b, hero);
 }
@@ -655,15 +846,28 @@ function simRunOne(campaignData, heroSelection, profile) {
     stato.helpDmgBonus = 0;
     stato.expeditionStats = newExpeditionStats();
 
-    const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0 };
+    simRunCampaign = campaignData;
 
+    const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0 };
+    return simPlayFrom(campaignData, profile, runCtx);
+}
+
+// Gioca dalla situazione attuale fino alla fine. first = { nodeId, profile }: il primo nodo è già deciso
+// (e si risolve con quel profilo); serve alla ricerca a simulazioni per provare una scelta
+function simPlayFrom(campaignData, profile, runCtx, first = null) {
     let visits = 0;
     while (visits++ < SIM_MAX_NODE_VISITS) {
-        const available = stato.stsMapNodes.filter(n => n.active && !n.done);
-        if (available.length === 0) return simCollectResult(false, null, campaignData);
-
-        const node = simChooseNextNode(available, profile, runCtx);
-        const outcome = simResolveNode(campaignData, node, profile, runCtx);
+        let node, nodeProfile = profile;
+        if (first) {
+            node = stato.stsMapNodes.find(n => n.id === first.nodeId);
+            nodeProfile = first.profile || profile;
+            first = null;
+        } else {
+            const available = stato.stsMapNodes.filter(n => n.active && !n.done);
+            if (available.length === 0) return simCollectResult(false, null, campaignData);
+            node = simChooseNextNode(available, profile, runCtx);
+        }
+        const outcome = simResolveNode(campaignData, node, nodeProfile, runCtx);
         if (outcome.defeat) return simCollectResult(false, node, campaignData);
         if (outcome.finalVictory) return simCollectResult(true, node, campaignData);
 
@@ -671,6 +875,102 @@ function simRunOne(campaignData, heroSelection, profile) {
         if (isEnd) return simCollectResult(true, node, campaignData);
     }
     return simCollectResult(false, null, campaignData); // difesa: non dovrebbe accadere con dati di mappa validi
+}
+
+/* ==========================================================================
+   RICERCA A SIMULAZIONI (Monte Carlo): un giocatore quasi ottimo
+   A ogni scelta importante (strada ai bivi, prova sì o no) prova ogni possibilità giocando
+   "rollouts" partite fino alla fine con il profilo di base, poi tiene quella che vince più spesso.
+   È lenta (ogni partita ne contiene centinaia): si usa da tools/difficolta.mjs, non nei test.
+   Dà un limite alto onesto: se anche lei vince poco, la campagna è davvero difficile.
+   ========================================================================== */
+let simRunCampaign = null;  // dati della campagna della partita in corso (le prove giocano sulla stessa mappa)
+
+// Fotografia della partita (stato e contatori del profilo), da rimettere dopo ogni prova
+function simSnapshot(runCtx) {
+    const p = stato.party;
+    return JSON.stringify({
+        party: p, partyFlags: { atamanoUsed: p.atamanoUsed, sigilloCharges: p.sigilloCharges, lootExtraChoices: p.lootExtraChoices },
+        partyCoins: stato.partyCoins, unlockedRelics: stato.unlockedRelics, activeCurses: stato.activeCurses,
+        stsMapNodes: stato.stsMapNodes, currentNodeId: stato.currentNodeId, expeditionStats: stato.expeditionStats,
+        challengeState: stato.challengeState || null, activeEnemy: stato.activeEnemy || null,
+        helpBonus: stato.helpBonus, helpDmgBonus: stato.helpDmgBonus, combatRound: stato.combatRound, runCtx
+    });
+}
+
+// Rimette la partita della fotografia; ritorna una copia dei contatori del profilo
+function simRestore(snap) {
+    const s = JSON.parse(snap);
+    stato.party = s.party;
+    Object.entries(s.partyFlags).forEach(([k, v]) => { if (v !== undefined) stato.party[k] = v; });
+    Object.assign(stato, {
+        partyCoins: s.partyCoins, unlockedRelics: s.unlockedRelics, activeCurses: s.activeCurses,
+        stsMapNodes: s.stsMapNodes, currentNodeId: s.currentNodeId, expeditionStats: s.expeditionStats,
+        challengeState: s.challengeState, activeEnemy: s.activeEnemy,
+        helpBonus: s.helpBonus, helpDmgBonus: s.helpDmgBonus, combatRound: s.combatRound
+    });
+    return s.runCtx;
+}
+
+// Profilo che decide strada e prove con le simulazioni; per tutto il resto gioca come "base"
+function simLookaheadProfile(base, rollouts = 8) {
+    // Vittorie su "rollouts" partite giocate da qui con la prima scelta già fatta; poi la partita torna com'era
+    const wins = (runCtx, first) => {
+        const snap = simSnapshot(runCtx);
+        let n = 0;
+        for (let i = 0; i < rollouts; i++) {
+            const ctx = simRestore(snap);
+            if (simPlayFrom(simRunCampaign, base, ctx, first).victory) n++;
+        }
+        simRestore(snap);
+        return n;
+    };
+    return {
+        ...base,
+        key: base.key + '_ricerca', label: base.label + ' con ricerca',
+        description: `${base.description} Ai bivi e davanti alle prove prova ogni scelta con ${rollouts} partite simulate e tiene la migliore.`,
+        chooseNode: (available, runCtx) => {
+            let best = available[0].id, bestWins = -1;
+            available.map(n => n.id).forEach(id => {
+                const w = wins(runCtx, { nodeId: id });
+                if (w > bestWins) { best = id; bestWins = w; }
+            });
+            return stato.stsMapNodes.find(n => n.id === best);
+        },
+        attemptChallenge: (chance, node) => {
+            if (!node || chance >= 0.95) return true;
+            const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0 };  // contatori nuovi: servono solo ai profili a rotazione
+            const yes = wins(runCtx, { nodeId: node.id, profile: { ...base, attemptChallenge: () => true } });
+            const no = wins(runCtx, { nodeId: node.id, profile: { ...base, attemptChallenge: () => false } });
+            return yes >= no;
+        }
+    };
+}
+
+// Scelte iniziali migliori (abilità e oggetto di ogni eroe) per un profilo: un giro per eroe, provando
+// ogni abilità e ogni oggetto con gli altri eroi fermi, e tenendo quello che vince di più su "runs" partite
+function simBestStart(campaignData, heroSelection, profile, runs = 30) {
+    const sel = heroSelection.map(s => ({ ...s }));
+    const rate = () => {
+        let w = 0;
+        for (let i = 0; i < runs; i++) if (simRunOne(campaignData, sel, profile).victory) w++;
+        return w;
+    };
+    let current = rate();
+    sel.forEach(s => {
+        const abilities = (campaignData.abilities[s.name] || []).length;
+        const items = campaignData.armory.length;
+        [['abilityIdx', abilities], ['itemIdx', items]].forEach(([field, count]) => {
+            for (let i = 0; i < count; i++) {
+                if (i === s[field]) continue;
+                const prev = s[field];
+                s[field] = i;
+                const r = rate();
+                if (r > current) current = r; else s[field] = prev;
+            }
+        });
+    });
+    return sel;
 }
 
 /* ==========================================================================
@@ -941,7 +1241,7 @@ function renderSimReport(results) {
                 </div>
                 <div class="journal-stats">
                     <div class="journal-stat"><b>${r.avgLevel} / ${r.totalLevels}</b><span>Livello medio raggiunto</span></div>
-                    <div class="journal-stat"><b>${r.avgCoins}</b><span>Monete medie</span></div>
+                    <div class="journal-stat"><b>${r.avgCoins}</b><span>Scudi medi</span></div>
                     <div class="journal-stat"><b>${r.avgSurvivors} / ${r.partySize}</b><span>Eroi sopravvissuti (media)</span></div>
                 </div>
                 <div class="journal-section"><h4>Cause di sconfitta</h4>${deathList}</div>
@@ -949,7 +1249,7 @@ function renderSimReport(results) {
                 <div class="sim-run-detail hidden" id="simDetail-${r.key}">
                     <h4>Dettaglio di tutte le run</h4>
                     <table class="sim-run-table">
-                        <thead><tr><th>#</th><th>Esito</th><th>Livello</th><th>Monete</th><th>Sopravvissuti</th><th>Causa sconfitta</th></tr></thead>
+                        <thead><tr><th>#</th><th>Esito</th><th>Livello</th><th>Scudi</th><th>Sopravvissuti</th><th>Causa sconfitta</th></tr></thead>
                         <tbody>${runRows}</tbody>
                     </table>
                 </div>

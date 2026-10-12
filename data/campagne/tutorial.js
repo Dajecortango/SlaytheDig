@@ -23,7 +23,7 @@ window.CAMPAIGNS["tutorial"] = {
             "stat": "fth",
             "cd": 7,
             "reward": "anello_d_arvale",
-            "punishment": "15_ricompensa_monete"
+            "punishment": "15_scudi_di_ricompensa"
         },
         "intel7": {
             "title": "Tracce nel fango",

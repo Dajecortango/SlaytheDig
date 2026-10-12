@@ -168,7 +168,20 @@
         const isCombatConsumable = item => item && (item.type === 'consumable_damage' || item.type === 'consumable_buff');
         // Statistiche che un potenziamento può alzare (etichette per tooltip, editor e diario)
         const BUFF_STATS = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
-            def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito)' };
+            def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito)', regen: 'HP a inizio round' };
+
+        // Rigenerazione (potenziamento "regen", es. Pozione di Rigenerazione): a inizio di ogni round gli eroi
+        // in piedi recuperano hero.regen HP. Gioco (startHeroesTurnCycle) e simulatore. Ritorna [{ hero, gained }]
+        function applyRegen() {
+            return stato.party.filter(h => h.hp > 0 && (h.regen || 0) > 0)
+                .map(h => ({ hero: h, gained: healHero(h, h.regen) }))
+                .filter(r => r.gained > 0);
+        }
+
+        // Bonus al tiro di Preghiera degli oggetti nello zaino (campo prayer_bonus, es. Reliquiario Tascabile)
+        function itemPrayerBonus(hero) {
+            return ((hero && hero.items) || []).reduce((sum, it) => sum + (it.prayer_bonus || 0), 0);
+        }
 
         // Toglie una copia del consumabile: la pila scende di uno, l'ultima copia libera lo slot
         function consumeOne(hero, itemIdx) {
@@ -323,7 +336,7 @@
         }
 
         /* ---------- 22. Tooltip ricco degli oggetti ---------- */
-        const ITEM_TIP_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_armor', 'Armatura con Difendi'], ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
+        const ITEM_TIP_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_armor', 'Armatura con Difendi'], ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza'], ['prayer_bonus', 'al tiro di Preghiera']];
         function itemTip(item, hero) {
             const rarity = itemRarity(item);
             const title = `<span class="tip-rar tip-rar-${rarity}">${esc(item.name)}</span>`;

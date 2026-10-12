@@ -22,8 +22,8 @@ module.exports = (t, carica) => {
 
     t.test('pesi del bottino: dal primo livello all\u2019ultimo in proporzione all\u2019avanzamento', () => {
         t.uguale({ scarso: 20, comune: 55, non_comune: 20, raro: 5 }, g.lootRarityWeights(false, 0));
-        t.uguale({ scarso: 10, comune: 30, non_comune: 20, raro: 20, epico: 15, leggendario: 5 }, g.lootRarityWeights(false, 0.5));
-        t.uguale({ comune: 5, non_comune: 20, raro: 35, epico: 30, leggendario: 10 }, g.lootRarityWeights(false, 1));
+        t.uguale({ scarso: 10, comune: 32.5, non_comune: 27.5, raro: 24.5, epico: 4, leggendario: 1.5 }, g.lootRarityWeights(false, 0.5));
+        t.uguale({ comune: 10, non_comune: 35, raro: 44, epico: 8, leggendario: 3 }, g.lootRarityWeights(false, 1));
         prepara(9);
         t.uguale(g.lootRarityWeights(false, 0.5), g.lootRarityWeights(false), 'livello 9 di 17 = metà mappa');
     });
@@ -37,11 +37,25 @@ module.exports = (t, carica) => {
     });
 
     t.test('elite: più avanti di 0,4 nella tabella, senza scarsi e comuni', () => {
-        t.uguale({ non_comune: 20, raro: 17, epico: 12, leggendario: 4 }, g.lootRarityWeights(true, 0));
-        t.uguale(g.lootRarityWeights(false, 1), { comune: 5, ...g.lootRarityWeights(true, 0.8) }, 'oltre la fine resta l\u2019ultimo livello');
+        t.uguale({ non_comune: 26, raro: 20.6, epico: 3.2, leggendario: 1.2 }, g.lootRarityWeights(true, 0));
+        t.uguale(g.lootRarityWeights(false, 1), { comune: 10, ...g.lootRarityWeights(true, 0.8) }, 'oltre la fine resta l\u2019ultimo livello');
         prepara(1);
         const c = rarita(true, 600);
         t.ok(!c.scarso && !c.comune, 'niente scarsi o comuni dagli elite');
+    });
+
+    t.test('tetto delle rarità: al massimo 8% di epici e 3% di leggendari', () => {
+        const tondi = o => Object.fromEntries(Object.entries(o).map(([r, v]) => [r, Math.round(v * 100) / 100]));
+        // Elite all'ultimo livello: senza i comuni gli epici passerebbero l'8%
+        const elite = g.capRarityShares(g.lootRarityWeights(true, 1));
+        t.uguale(8, Math.round(elite.epico * 100) / 100);
+        t.uguale(3, Math.round(elite.leggendario * 100) / 100);
+        t.uguale(100, Math.round(Object.values(elite).reduce((a, b) => a + b, 0)));
+        t.uguale({ raro: 92, epico: 8 }, tondi(g.capRarityShares({ raro: 50, epico: 50 })), 'il resto va alle altre rarità');
+        t.uguale({ epico: 50, leggendario: 50 }, tondi(g.capRarityShares({ epico: 1, leggendario: 1 })), 'solo rarità col tetto: restano come sono');
+        prepara(17);
+        const c = rarita(true, 6000);
+        t.ok((c.epico || 0) / 6000 < 0.1 && (c.leggendario || 0) / 6000 < 0.045, `elite: epici ${c.epico || 0}, leggendari ${c.leggendario || 0} su 6000`);
     });
 
     t.test('grantRelic dà una reliquia non posseduta e ne applica gli effetti', () => {

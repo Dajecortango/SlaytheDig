@@ -208,6 +208,24 @@ function broadcast(event, data) {
 
 function broadcastState() { broadcast('state', sharedState); }
 
+// Segnale di vita sullo stream: senza traffico la rete mobile o ngrok possono chiudere la connessione
+// senza avvisare. Il telefono conta i "ping": se non ne arrivano per un po' riapre lo stream da solo.
+const SSE_PING_MS = process.env.SSE_PING_MS ? parseInt(process.env.SSE_PING_MS, 10) : 15000;
+setInterval(() => broadcast('ping', { t: Date.now() }), SSE_PING_MS).unref();
+
+// Toglie la scelta d'azione o il tiro in attesa (se requestId è dato, solo se è ancora quello)
+function clearPendingAction(requestId) {
+    if (!pendingAction || (requestId && pendingAction.requestId !== requestId)) return;
+    pendingAction = null;
+    broadcast('pending-action', null);
+}
+function clearPendingRoll(requestId) {
+    if (!pendingRoll || (requestId && pendingRoll.requestId !== requestId)) return;
+    pendingRoll = null;
+    pendingRollValues = null;
+    broadcast('pending-roll', null);
+}
+
 function sendJson(res, statusCode, data) {
     const body = JSON.stringify(data);
     res.writeHead(statusCode, {
@@ -280,6 +298,7 @@ const server = http.createServer((req, res) => {
     if (pathname === '/api/action-request' && req.method === 'POST') {
         readJsonBody(req, (err, data) => {
             if (err || !data.heroName) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            clearPendingRoll();  // turno nuovo: un tiro rimasto in attesa (fatto sul PC) non vale più
             pendingAction = {
                 requestId: crypto.randomUUID(),
                 heroName: data.heroName,
@@ -323,6 +342,7 @@ const server = http.createServer((req, res) => {
     if (pathname === '/api/roll-request' && req.method === 'POST') {
         readJsonBody(req, (err, data) => {
             if (err || !data.heroName) { sendJson(res, 400, { error: 'Richiesta non valida' }); return; }
+            clearPendingAction();  // si tira: la scelta d'azione è già fatta (dal telefono o sul PC)
             pendingRoll = {
                 requestId: crypto.randomUUID(),
                 heroName: data.heroName,
@@ -404,6 +424,19 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // Il tab di gioco chiude un turno senza il telefono (azione scelta o dado tirato sul PC, fine dello scontro):
+    // kind = 'action' | 'roll' | 'all'; con requestId si toglie solo se è ancora quella richiesta
+    if (pathname === '/api/clear-pending' && req.method === 'POST') {
+        readJsonBody(req, (err, data) => {
+            if (err) { sendJson(res, 400, { error: 'JSON non valido' }); return; }
+            const kind = data.kind || 'all';
+            if (kind === 'action' || kind === 'all') clearPendingAction(data.requestId);
+            if (kind === 'roll' || kind === 'all') clearPendingRoll(data.requestId);
+            sendJson(res, 200, { ok: true });
+        });
+        return;
+    }
+
     // Un telefono usa una pozione dal proprio zaino fuori dal combattimento
     // (in combattimento si passa da "Usa oggetto" nel proprio turno, vedi /api/action).
     if (pathname === '/api/item-use' && req.method === 'POST') {
@@ -445,8 +478,10 @@ const server = http.createServer((req, res) => {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
             'Access-Control-Allow-Origin': '*'
         });
+        res.write('retry: 3000\n\n');  // se la connessione cade, il browser riprova dopo 3 secondi
         res.write(`event: state\ndata: ${JSON.stringify(sharedState)}\n\n`);
         res.write(`event: pending-roll\ndata: ${JSON.stringify(pendingRoll)}\n\n`);
         res.write(`event: pending-action\ndata: ${JSON.stringify(pendingAction)}\n\n`);

@@ -79,7 +79,7 @@ window.CAMPAIGNS["astarte_ch2"] = {
         "tomo_viaggiatore": {
             "title": "Tomo del Viaggiatore Perduto",
             "desc": "Presso una cascata perennemente ghiacciata sulla parete rocciosa della gola trovate uno scheletro incastrato nel ghiaccio che stringe un libro. Rompere la parete gelata a mani nude richiede uno sforzo, ma chissà che le pagine di quel libro racchiudano qualcosa di importante.",
-            "ignoreText": "Lasciate lo scheletro e il libro riposare in pace sotto il ghiaccio eterno.",
+            "ignoreText": "Lasciate lo scheletro e il libro riposare in pace sotto il Ghiacceterno.",
             "successText": "Individuate i punti deboli del ghiaccio, frantumandolo senza sforzo e recuperando il testo intatto.",
             "failText": "Sbattete violentemente contro la roccia gelata, ferendovi le mani e strappando gran parte delle pagine.",
             "stat": "int",

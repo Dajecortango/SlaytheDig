@@ -44,6 +44,10 @@
         /* ---------- Compendio: nemici, reliquie, maledizioni e oggetti scoperti in tutte le partite ---------- */
         const COMPENDIUM_KEY = 'dignitas_compendium';
         const COMPENDIUM_KINDS = ['enemies', 'relics', 'curses', 'items'];
+        // Tutto il Compendio visibile da subito; con false si vede solo ciò che è stato scoperto giocando
+        // (le scoperte si registrano comunque in dignitas_compendium)
+        const COMPENDIUM_ALL_UNLOCKED = true;
+        const compendiumKnown = (kind, key) => COMPENDIUM_ALL_UNLOCKED || compendium[kind].has(key);
         const compendium = (() => {
             let saved = {};
             try { saved = JSON.parse(localStorage.getItem(COMPENDIUM_KEY) || '{}'); } catch (e) {}
@@ -92,7 +96,7 @@
         ];
 
         function compendiumCardHtml(kind, v) {
-            const known = compendium[kind].has(v.key);
+            const known = compendiumKnown(kind, v.key);
             if (!known) {
                 return `<div class="codex-card unknown"><span class="icon-frame">${svgIcon('question')}</span><span class="tile-text"><strong>???</strong><span class="tile-sub">Non ancora scoperto</span></span></div>`;
             }
@@ -118,7 +122,7 @@
         function openCompendium(kind = 'enemies') {
             const catalog = compendiumCatalog();
             const tabs = COMPENDIUM_TABS.map(t => {
-                const found = catalog[t.kind].filter(v => compendium[t.kind].has(v.key)).length;
+                const found = catalog[t.kind].filter(v => compendiumKnown(t.kind, v.key)).length;
                 return `<button class="btn-small codex-tab ${t.kind === kind ? 'active' : ''}" ${azione('openCompendium', t.kind)}>${t.label} <span>${found}/${catalog[t.kind].length}</span></button>`;
             }).join('');
             const cards = catalog[kind].map(v => compendiumCardHtml(kind, v)).join('') || '<p class="panel-label">Nessuna voce.</p>';

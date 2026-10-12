@@ -38,7 +38,7 @@ const MERCHANT_EQUIPMENT_SLOTS = 4;
 const MERCHANT_CONSUMABLE_SLOTS = 2;
 const MEDIC_PRICE_PER_HP = 5;      // fisso: niente rincari, contrattazione o sconti
 const MEDIC_MAX_HP = 4;            // HP che il medico cura in tutto a ogni mercante
-const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno questa parte delle monete
+const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno questa parte degli Scudi
 
 // Bottino degli scontri: quanti oggetti si vedono (se ne tiene uno)
 const LOOT_CHOICES = 3;
@@ -46,29 +46,32 @@ const LOOT_CHOICES = 3;
 // Preghiera ai riposi (js/prove.js): un eroe per riposo tira d6 + Fede contro PRAYER_CD, con le regole di sempre
 // (6 riesce, 1 fallisce, reliquie dei tiri). Con PRAYER_MAJOR_TOTAL o più, o con un 6, la benedizione è maggiore.
 // Se riesce si pescano PRAYER_CHOICES benedizioni del livello e se ne sceglie una. Nessun malus se fallisce.
+// Ogni benedizione è il dono di uno degli Asi del Nord (lore/riassunti/Il Nord.md, ortografia del manuale).
 const PRAYER_CD = 7;
 const PRAYER_MAJOR_TOTAL = 9;
 const PRAYER_CHOICES = 3;
-// bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti). effetto: "prossimo_scontro" (buff_stat + buff_val per tutto
-// il prossimo scontro, come un potenziamento), "cura_party" (val HP ai vivi), "togli_maledizione" (la più recente),
-// "fede" (+val Fede per sempre), "grazia" (la prima volta che andrebbe a 0 HP torna con val HP), "miracolo" (cura completa, rialza i caduti)
+// bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti). effetto: "prossimo_scontro" (buff_stat + buff_val, oppure
+// buffs: [{ buff_stat, buff_val }], per tutto il prossimo scontro, come un potenziamento), "cura_party" (val HP ai vivi),
+// "togli_maledizione" (la più recente), "fede" (+val Fede per sempre), "bottino_extra" (val oggetti in più fra cui
+// scegliere al prossimo bottino di uno scontro)
 const PRAYER_BLESSINGS = {
-    mano_guidata: { name: 'Mano guidata', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNInnerFire.png',
+    mano_guidata: { name: 'Mira di Tillvaxt', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNInnerFire.png',
         desc: '+1 al tiro per colpire per tutto il prossimo scontro', effetto: 'prossimo_scontro', buff_stat: 'att_bonus', buff_val: 1 },
-    lama_consacrata: { name: 'Lama consacrata', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNHolyBolt.png',
+    lama_consacrata: { name: 'Zanna di Hvid', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNHolyBolt.png',
         desc: '+1 danno per tutto il prossimo scontro', effetto: 'prossimo_scontro', buff_stat: 'dmg', buff_val: 1 },
-    scudo_della_fede: { name: 'Scudo della fede', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNDevotion.png',
+    scudo_della_fede: { name: 'Pietra di Sluta', livello: 'minore', bersaglio: 'eroe', icon: 'immagini/icone/BTNDevotion.png',
         desc: '+2 Armatura all\'inizio del prossimo scontro', effetto: 'prossimo_scontro', buff_stat: 'current_armor', buff_val: 2 },
-    veglia: { name: 'Veglia', livello: 'minore', bersaglio: 'party', icon: 'immagini/icone/BTNHealingWave.png',
+    veglia: { name: 'Mani di Valgoren', livello: 'minore', bersaglio: 'party', icon: 'immagini/icone/BTNHealingWave.png',
         desc: 'Tutti gli eroi in piedi recuperano 1 HP', effetto: 'cura_party', val: 1 },
-    purificazione: { name: 'Purificazione', livello: 'minore', bersaglio: 'party', icon: 'immagini/icone/BTNDispelMagic.png',
+    purificazione: { name: 'Sentenza di Rattvisa', livello: 'minore', bersaglio: 'party', icon: 'immagini/icone/BTNDispelMagic.png',
         desc: 'Toglie la maledizione più recente', effetto: 'togli_maledizione' },
-    fede_incrollabile: { name: 'Fede incrollabile', livello: 'maggiore', bersaglio: 'eroe', icon: 'immagini/icone/BTNElunesBlessing.png',
+    fede_incrollabile: { name: 'Bisbiglio di Draken', livello: 'maggiore', bersaglio: 'eroe', icon: 'immagini/icone/BTNElunesBlessing.png',
         desc: '+1 Fede per sempre', effetto: 'fede', val: 1 },
-    grazia: { name: 'Grazia', livello: 'maggiore', bersaglio: 'eroe', icon: 'immagini/icone/BTNDivineIntervention.png',
-        desc: 'La prima volta che andrebbe a 0 HP torna in piedi con 2 HP', effetto: 'grazia', val: 2 },
-    miracolo: { name: 'Miracolo', livello: 'maggiore', bersaglio: 'party', icon: 'immagini/icone/BTNResurrection.png',
-        desc: 'Cura completa di tutti gli eroi, anche dei caduti', effetto: 'miracolo' }
+    furia_sacra: { name: 'Collera di Allmän', livello: 'maggiore', bersaglio: 'eroe', icon: 'immagini/icone/BTNBloodLust.png',
+        desc: '+1 al tiro per colpire e +1 danno per tutto il prossimo scontro', effetto: 'prossimo_scontro',
+        buffs: [{ buff_stat: 'att_bonus', buff_val: 1 }, { buff_stat: 'dmg', buff_val: 1 }] },
+    abbondanza: { name: 'Passero di Gomd', livello: 'maggiore', bersaglio: 'party', icon: 'immagini/icone/BTNChestOfGold.png',
+        desc: 'Al prossimo bottino di uno scontro si scopre un oggetto in più fra cui scegliere', effetto: 'bottino_extra', val: 1 }
 };
 
 // Pozioni di cura da questa rarità in su rialzano anche gli eroi caduti (0 HP)
@@ -78,17 +81,17 @@ const REVIVE_MIN_RARITY = 'raro';
 // dall'una all'altra in proporzione all'avanzamento nella mappa (merchantRarityWeights)
 const MERCHANT_RARITY_RANGE = {
     scarso: [10, 0],
-    comune: [38, 8],
-    non_comune: [27, 20],
-    raro: [20, 35],
-    epico: [5, 27],
-    leggendario: [0, 10]
+    comune: [38, 10],
+    non_comune: [27, 35],
+    raro: [20, 44],
+    epico: [5, 8],
+    leggendario: [0, 3]
 };
 
 // Rinnovo della merce e contrattazione (una sola proposta per mercante)
 const MERCHANT_REROLL_COST = 5;
 const HAGGLE_DISCOUNT = 0.25;   // successo: -25% su tutta la merce
-const HAGGLE_PENALTY = 2;       // fallimento: +2 monete su ogni articolo
+const HAGGLE_PENALTY = 2;       // fallimento: +2 Scudi su ogni articolo
 
 /* ---------- Rarità del bottino degli scontri e dei tesori (js/loot.js) ----------
    Probabilità (in %) al primo livello della mappa e all'ultimo: in mezzo si passa dall'una
@@ -97,15 +100,18 @@ const HAGGLE_PENALTY = 2;       // fallimento: +2 monete su ogni articolo
    (vedi pickByRarity). */
 const LOOT_RARITY_RANGE = {
     scarso: [20, 0],
-    comune: [55, 5],
-    non_comune: [20, 20],
-    raro: [5, 35],
-    epico: [0, 30],
-    leggendario: [0, 10]
+    comune: [55, 10],
+    non_comune: [20, 35],
+    raro: [5, 44],
+    epico: [0, 8],
+    leggendario: [0, 3]
 };
 // Elite (e boss): la stessa tabella, come se fossero più avanti nella mappa, senza scarsi e comuni
 const LOOT_ELITE_PROGRESS_BONUS = 0.4;
 const LOOT_ELITE_EXCLUDED = ['scarso', 'comune'];
+// Probabilità massima (in %) di ogni oggetto pescato, per bottino, tesori e mercante (pickByRarity):
+// vale anche per gli elite e quando la campagna non ha alcune rarità; il resto va alle altre
+const RARITY_MAX_SHARE = { epico: 8, leggendario: 3 };
 
 /* ---------- Dadi degli eroi: sacchetto (rollD6 in js/combattimento.js) ----------
    Ogni eroe pesca i suoi d6 da un sacchetto di "size" tiri con esattamente "ones" 1 e "sixes" 6;

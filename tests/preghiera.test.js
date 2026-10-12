@@ -28,13 +28,21 @@ module.exports = (t, carica) => {
         t.ok(!r4.success, 'un 1 fallisce sempre');
     });
 
+    t.test('Reliquiario Tascabile: +1 al tiro di Preghiera', () => {
+        const [a] = prepara([eroe('A', { fth: 2 })]);
+        a.items = [JSON.parse(JSON.stringify(g.LIBRERIA.armeria.reliquiario_tascabile))];
+        dado(4); const r = g.prayerRoll(a); dadoVero();
+        t.uguale(7, r.total, '4 + Fede 2 + Reliquiario 1');
+        t.ok(r.success);
+    });
+
     t.test('si pescano benedizioni del livello giusto, solo quelle utili adesso', () => {
         prepara([eroe('A', { hp: 6 })]);   // nessun ferito, nessuna maledizione
         for (let i = 0; i < 20; i++) {
             const minori = g.pickBlessings(false);
             t.uguale(g.eval('PRAYER_CHOICES'), minori.length);
             t.ok(minori.every(b => b.livello === 'minore' && b.id !== 'veglia' && b.id !== 'purificazione'));
-            t.ok(g.pickBlessings(true).every(b => b.livello === 'maggiore' && b.id !== 'miracolo'));
+            t.ok(g.pickBlessings(true).every(b => b.livello === 'maggiore'));
         }
     });
 
@@ -52,24 +60,32 @@ module.exports = (t, carica) => {
         t.uguale(1, a.dmg, 'finito lo scontro il danno torna come prima');
     });
 
-    t.test('Grazia: la prima volta che andrebbe a 0 HP torna con 2 HP, poi non più', () => {
-        const [a] = prepara([eroe('A', { hp: 1 })]);
-        stato.party.atamanoUsed = true;
-        g.applyBlessing(g.eval('blessingData')('grazia'), a);
-        const nemico = { name: 'N', dmg: 3 };
-        g.resolveMonsterAttack(nemico, a);
-        t.uguale(2, a.hp);
-        t.ok(!g.eval('hasBlessing')(a, 'grazia'));
-        g.resolveMonsterAttack(nemico, a);
-        t.uguale(0, a.hp);
+    t.test('Collera di Allmän: +1 al tiro per colpire e +1 danno per tutto il prossimo scontro', () => {
+        const [a] = prepara([eroe('A')]);
+        g.applyBlessing(g.eval('blessingData')('furia_sacra'), a);
+        t.ok(g.heroBlessingsHtml(a).includes('BTNBloodLust'), 'icona sulla carta');
+        g.applyCombatBlessings();
+        t.uguale([1, 2], [a.att_bonus, a.dmg]);
+        t.uguale([], a.blessings, 'usata');
+        g.expireTempBuffs(true);
+        t.uguale([0, 1], [a.att_bonus || 0, a.dmg], 'finito lo scontro torna come prima');
     });
 
-    t.test('Fede incrollabile: +1 Fede per sempre; Miracolo e Purificazione valgono per tutta la compagnia', () => {
-        const [a, b] = prepara([eroe('A'), eroe('B', { hp: 0 })]);
+    t.test('Passero di Gomd: al prossimo bottino un oggetto in più, poi di nuovo LOOT_CHOICES', () => {
+        prepara([eroe('A')]);
+        g.eval('gameItems = Object.values(LIBRERIA.armeria)');
+        stato.stsMapNodes = [{ id: 1, level: 0, type: 'combat' }, { id: 2, level: 4, type: 'combat' }];
+        stato.currentNodeId = 1;
+        const n = g.eval('LOOT_CHOICES');
+        g.applyBlessing(g.eval('blessingData')('abbondanza'));
+        t.uguale(n + 1, g.pickLootChoices(false).length);
+        t.uguale(n, g.pickLootChoices(false).length);
+    });
+
+    t.test('Bisbiglio di Draken: +1 Fede per sempre; Sentenza di Rattvisa toglie la maledizione più recente', () => {
+        const [a] = prepara([eroe('A')]);
         g.applyBlessing(g.eval('blessingData')('fede_incrollabile'), a);
         t.uguale(3, a.fth);
-        g.applyBlessing(g.eval('blessingData')('miracolo'));
-        t.uguale([6, 6], [a.hp, b.hp], 'anche il caduto');
         stato.activeCurses = [{ id: 'x', text: 'X (prova)' }];
         g.applyBlessing(g.eval('blessingData')('purificazione'));
         t.uguale(0, stato.activeCurses.length);
