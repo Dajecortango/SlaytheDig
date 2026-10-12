@@ -59,7 +59,9 @@ const SPECIALI_QUANDO = {
     tiro_fallito: 'Tiro fallito in scontro',
     colpito: 'Colpito dal nemico (prima dell\'armatura)',
     dopo_colpito: 'Dopo essere stato colpito',
+    perde_hp: 'Perde HP per un colpo del nemico',
     colpo_mortale: 'Andrebbe a 0 HP',
+    nemico_sconfitto: 'Sconfigge il nemico',
     alleato_caduto: 'Cade un alleato',
     fine_scontro: 'Scontro vinto',
     cura_ricevuta: 'Un eroe recupera HP',
@@ -79,13 +81,16 @@ const SPECIALI_QUANDO = {
     capitano: 'Tiro contro il capitano'
 };
 
+// Momenti degli effetti delle abilità attive (campo "effetti" di "combat", abilitySpecialEffects in js/combattimento.js)
+const SPECIALI_QUANDO_ABILITA = { uso: 'Quando la usa', colpo: 'Se colpisce', mancato: 'Se manca' };
+
 // Cosa succede. quando = i momenti in cui ha senso; campi = cosa si scrive (val, stat, stat_nemico, durata, bersaglio)
-const SPECIALI_SCONTRO = ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'alleato_caduto'];
+const SPECIALI_SCONTRO = ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'perde_hp', 'alleato_caduto', 'uso', 'mancato'];
 const SPECIALI_FAI = {
     danni: { label: 'Danni al nemico', campi: ['val'], quando: SPECIALI_SCONTRO },
-    cura: { label: 'Cura HP', campi: ['val', 'bersaglio'], quando: [...SPECIALI_SCONTRO, 'fine_scontro', 'cura_ricevuta'] },
+    cura: { label: 'Cura HP', campi: ['val', 'bersaglio'], quando: [...SPECIALI_SCONTRO, 'fine_scontro', 'cura_ricevuta', 'nemico_sconfitto'] },
     armatura: { label: 'Armatura subito', campi: ['val', 'bersaglio'], quando: SPECIALI_SCONTRO },
-    stordisci: { label: 'Stordisce il nemico', campi: [], quando: ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito'] },
+    stordisci: { label: 'Stordisce il nemico', campi: [], quando: ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'perde_hp', 'uso'] },
     malus_nemico: { label: 'Toglie una statistica al nemico', campi: ['stat_nemico', 'val'], quando: SPECIALI_SCONTRO },
     potenzia: { label: 'Potenziamento', campi: ['stat', 'val', 'durata', 'bersaglio'], quando: SPECIALI_SCONTRO },
     ritira: { label: 'Ritira il dado', campi: [], quando: ['tiro_fallito'] },
@@ -94,7 +99,7 @@ const SPECIALI_FAI = {
     rialza: { label: 'Resta in piedi con HP', campi: ['val'], quando: ['colpo_mortale'] },
     annulla_punizione: { label: 'Niente punizione', campi: [], quando: ['prova_fallita'] },
     prova_riuscita: { label: 'La prova riesce lo stesso', campi: [], quando: ['prova_fallita'] },
-    monete: { label: 'Scudi', campi: ['val'], quando: ['inizio_scontro', 'fine_scontro', 'riposo'] },
+    monete: { label: 'Scudi', campi: ['val'], quando: ['inizio_scontro', 'fine_scontro', 'riposo', 'nemico_sconfitto'] },
     carta_bottino: { label: 'Carte in più al bottino', campi: ['val'], quando: ['bottino'] },
     togli_maledizione: { label: 'Toglie una maledizione a caso', campi: [], quando: ['riposo', 'fine_scontro'] },
     bonus_tiro: { label: 'Bonus al tiro', campi: ['val'], quando: SPECIALI_TIRI },
@@ -149,8 +154,53 @@ function specialeTesto(s, tipo) {
     const limite = s.limite ? (volte === 1 ? `una volta per ${s.limite}` : `${volte} volte per ${s.limite}`) : '';
     const fine = s.rompe ? ({ reliquia: 'poi si rompe', oggetto: 'poi si consuma', maledizione: 'poi sparisce', benedizione: 'poi svanisce' }[tipo] || 'poi si esaurisce') : '';
     const coda = [limite, fine].filter(Boolean).join(', ');
-    const testo = `${SPECIALI_QUANDO[s.quando] || s.quando}${cond.length ? ` (${cond.join(', ')})` : ''}: ${fai}`;
+    const testo = `${SPECIALI_QUANDO[s.quando] || SPECIALI_QUANDO_ABILITA[s.quando] || s.quando}${cond.length ? ` (${cond.join(', ')})` : ''}: ${fai}`;
     return coda ? `${testo} (${coda})` : testo;
+}
+
+/* ---------- Effetti speciali dei nemici ----------
+   Campo "speciali" del bestiario (e delle azioni degli elite, che li aggiungono da quella soglia in poi):
+   { quando, fai, val, stat, durata, bersaglio, se, round, prob, limite, volte }, interpretato da fireEnemySpecials
+   in js/speciali.js. "eroe" come bersaglio = l'eroe coinvolto: chi colpisce il nemico o chi viene colpito. */
+const NEMICO_QUANDO = {
+    inizio_scontro: 'Inizio scontro',
+    inizio_round: 'Inizio di ogni round',
+    colpito: 'Un eroe lo colpisce',
+    colpisce: 'Colpisce un eroe',
+    soglia: 'Alla soglia (solo nelle azioni degli elite)'
+};
+const NEMICO_FAI = {
+    danni: { label: 'Danni agli eroi', campi: ['val', 'bersaglio'] },
+    cura: { label: 'Si cura (HP)', campi: ['val'] },
+    potenzia: { label: 'Aumenta una sua statistica', campi: ['stat_nemico', 'val'] },
+    malus: { label: 'Malus al tiro per colpire degli eroi', campi: ['val', 'durata', 'bersaglio'] },
+    stordisci: { label: 'Stordisce gli eroi (saltano il turno)', campi: ['bersaglio'] },
+    veleno: { label: 'Avvelena: HP persi a ogni round, senza armatura', campi: ['val', 'durata', 'bersaglio'] },
+    spezza_armatura: { label: 'Toglie l\'armatura agli eroi', campi: ['bersaglio'] },
+    ruba_scudi: { label: 'Ruba Scudi alla compagnia', campi: ['val'] }
+};
+const NEMICO_SE = { sotto_meta: 'con il nemico a metà vita o meno', eroe_ferito: 'se l\'eroe coinvolto è ferito (2 HP o meno)' };
+const NEMICO_BERSAGLI = { eroe: 'l\'eroe coinvolto', tutti: 'tutta la compagnia', piu_debole: 'l\'eroe con meno HP + armatura',
+    piu_forte: 'l\'eroe con più HP + armatura', casuale: 'un eroe a caso' };
+
+// Riga del tooltip di un effetto speciale di un nemico
+function nemicoTesto(s) {
+    const v = s.val || 0;
+    const chi = NEMICO_BERSAGLI[s.bersaglio || 'eroe'] || s.bersaglio;
+    const fai = {
+        danni: `${v} ${v === 1 ? 'danno' : 'danni'} a ${chi}`,
+        cura: `recupera ${v} HP`,
+        potenzia: `+${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat}`,
+        malus: `−${v} al tiro per colpire a ${chi} ${s.durata ? `per ${s.durata} round` : 'fino a fine scontro'}`,
+        stordisci: `stordisce ${chi}`,
+        veleno: `avvelena ${chi}: −${v} HP a ogni round per ${s.durata || 3} round`,
+        spezza_armatura: `toglie l'armatura a ${chi}`,
+        ruba_scudi: `ruba ${v} Scudi`
+    }[s.fai] || s.fai;
+    const cond = [s.se && NEMICO_SE[s.se], s.round && `nel round ${s.round}`, s.prob && `${s.prob}% di probabilità`].filter(Boolean);
+    const volte = s.volte || 1;
+    const limite = s.limite ? (volte === 1 ? ' (una volta per scontro)' : ` (${volte} volte per scontro)`) : '';
+    return `${NEMICO_QUANDO[s.quando] || s.quando}${cond.length ? ` (${cond.join(', ')})` : ''}: ${fai}${limite}`;
 }
 
 // Oggetti scritti nel formato di prima (campi numerici dell'armeria, es. "thorns": 1): i salvataggi

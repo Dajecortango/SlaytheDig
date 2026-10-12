@@ -78,7 +78,8 @@ function renderEliteDetail(detail, key) {
     });
     detail.innerHTML = `<p class="ed-usage-box"><b>Id:</b> <code>${esc(key)}</code> · <b>Usato in:</b> ${esc(usageText(libraryUsage('bestiario', key)))}</p>
         <h3>Soglie e azioni speciali</h3>
-        <p class="ed-help">Quando la vita scende alla soglia o sotto, la fase scatta una volta: si legge il testo e partono le azioni, in ordine.
+        <p class="ed-help">Quando la vita scende alla soglia o sotto (o, per le soglie a tempo, all'inizio di quel round), la fase scatta una volta: si legge il testo e partono le azioni, in ordine.
+            "Nuova azione" ne crea una nella libreria e la apre: lì si combinano i campi e gli effetti speciali (veleno, spine, rigenerazione, danni a tutti...).
             Le azioni "alla soglia" agiscono subito; quelle "a ogni turno" cambiano da quel momento il modo in cui il nemico attacca (l'ultima scattata vale).</p>
         <div id="edElitePhases"></div>
         <h3>Statistiche e immagini</h3>`;
@@ -96,7 +97,7 @@ function renderElitePhases() {
         const a = lib.azioni_elite[k];
         return `<option value="${esc(k)}">${esc(a.name || k)}${a.turno ? ' (a ogni turno)' : ''} — ${esc(a.desc || '')}</option>`;
     }).join('');
-    const bar = `<div class="ed-elite-bar">${e.fasi.map((f, i) => `<span class="ed-elite-tick" style="left:${Math.min(100, Math.max(0, f.soglia))}%">
+    const bar = `<div class="ed-elite-bar">${e.fasi.map((f, i) => f.round ? '' : `<span class="ed-elite-tick" style="left:${Math.min(100, Math.max(0, f.soglia))}%">
         <b>${i + 1}</b><small>${f.soglia}%</small></span>`).join('')}</div>`;
     const phases = e.fasi.map((f, i) => {
         const hpAt = Math.floor(maxHp * f.soglia / 100);
@@ -114,8 +115,12 @@ function renderElitePhases() {
         return `<div class="ed-elite-phase">
             <div class="ed-elite-phase-head">
                 <strong>Soglia ${i + 1}</strong>
-                <label>al <input type="number" min="1" max="99" value="${esc(f.soglia)}" ${azioneSu('change', 'eliteSetThreshold', i, '$value')}> % di vita</label>
-                <small>scatta a ${hpAt} HP su ${maxHp} o meno</small>
+                <select ${azioneSu('change', 'eliteSetPhaseKind', i, '$value')}><option value="vita" ${f.round ? '' : 'selected'}>Con la vita</option><option value="round" ${f.round ? 'selected' : ''}>A tempo</option></select>
+                ${f.round
+                    ? `<label>al round <input type="number" min="1" max="30" value="${esc(f.round)}" ${azioneSu('change', 'eliteSetRound', i, '$value')}></label>
+                       <small>scatta all'inizio di quel round</small>`
+                    : `<label>al <input type="number" min="1" max="99" value="${esc(f.soglia)}" ${azioneSu('change', 'eliteSetThreshold', i, '$value')}> % di vita</label>
+                       <small>scatta a ${hpAt} HP su ${maxHp} o meno</small>`}
                 <button type="button" class="btn-small ed-danger" ${azione('eliteRemovePhase', i)}>Elimina soglia</button>
             </div>
             <label class="ed-elite-label">Testo mostrato quando scatta</label>
@@ -125,6 +130,7 @@ function renderElitePhases() {
             <div class="ed-add-row">
                 <select id="edEliteAdd${i}">${actionOptions}</select>
                 <button type="button" class="btn-small" ${azione('eliteAddAction', i)} ${actionOptions ? '' : 'disabled'}>Aggiungi azione</button>
+                <button type="button" class="btn-small" ${azione('eliteNewAction', i)}>Nuova azione</button>
             </div>
         </div>`;
     }).join('');
@@ -195,6 +201,23 @@ function eliteSetThreshold(i, value) {
     eliteChanged();
 }
 
+// Fase con la vita (soglia %) o a tempo (round): quelle a tempo scattano a inizio round (checkEnemyRoundPhases)
+function eliteSetPhaseKind(i, kind) {
+    const e = selectedElite();
+    if (!e || !e.fasi[i]) return;
+    if (kind === 'round') { e.fasi[i].round = e.fasi[i].round || 3; e.fasi[i].soglia = e.fasi[i].soglia || 50; }
+    else delete e.fasi[i].round;
+    eliteChanged();
+}
+
+function eliteSetRound(i, value) {
+    const e = selectedElite();
+    const v = Math.round(Number(value));
+    if (!e || !e.fasi[i] || !Number.isFinite(v)) return;
+    e.fasi[i].round = Math.min(30, Math.max(1, v));
+    eliteChanged();
+}
+
 // Il testo si aggiorna mentre si scrive, senza ridisegnare (il riquadro perderebbe il cursore)
 function eliteSetPhaseText(i, value) {
     const e = selectedElite();
@@ -209,6 +232,19 @@ function eliteAddAction(i) {
     if (!e || !e.fasi[i] || !id) return;
     (e.fasi[i].azioni = e.fasi[i].azioni || []).push(id);
     eliteChanged();
+}
+
+// Crea un'azione nuova nella libreria Azioni elite, la mette nella soglia e la apre per modificarla
+function eliteNewAction(i) {
+    const e = selectedElite();
+    if (!e || !e.fasi[i]) return;
+    const key = askKey('azioni_elite', `${selection.elite}_${i + 1}`);
+    if (!key) return;
+    lib.azioni_elite[key] = { name: 'Nuova azione', desc: '' };
+    (e.fasi[i].azioni = e.fasi[i].azioni || []).push(key);
+    markLibDirty('azioni_elite');
+    markLibDirty('bestiario');
+    gotoLibrary('azioni_elite', key);
 }
 
 function eliteRemoveAction(i, j) {
