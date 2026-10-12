@@ -277,7 +277,7 @@
             Object.assign(stato, {
                 currentCampaign: null, stsMapNodes: [], currentNodeId: null, party: [], partyCoins: 0,
                 unlockedRelics: [], activeCurses: [], expeditionStats: newExpeditionStats(),
-                challengeState: null, activeEnemy: null, helpBonus: 0, helpDmgBonus: 0, combatRound: 0, procSeed: null
+                challengeState: null, activeEnemy: null, helpBonus: 0, helpDmgBonus: 0, combatRound: 0, procSeed: null, onlineOwners: {}
             });
             displayedCoins = 0;
             currentSaveSlot = null;

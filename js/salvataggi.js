@@ -14,13 +14,13 @@
         let currentSaveSlot = null;  // slot della partita in corso (per sovrascriverlo e cancellarlo alla sconfitta)
 
         /* ---------- Formato e migrazioni ----------
-           Versione 4 (come la 3, la valuta si chiama Scudi): { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
+           Versione 5 (come la 4, con stato.onlineOwners: eroe → giocatore della partita online; la 4 rinomina la valuta in Scudi): { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
            currentNodeId, party, partyFlags, partyCoins, unlockedRelics: [{ id, name, desc }],
            activeCurses: [{ id, text }], expeditionStats } }.
            I nodi tengono solo lo stato: il contenuto viene dalla campagna attuale.
            Per cambiare il formato: alza SAVE_VERSION e aggiungi in SAVE_MIGRATIONS la funzione
            che porta un salvataggio dalla versione precedente a quella nuova. */
-        const SAVE_VERSION = 4;
+        const SAVE_VERSION = 5;
         const SAVE_MIGRATIONS = {
             // Versione 1 (senza "version"): campi della partita sparsi al primo livello, nodi completi
             1: old => ({
@@ -66,7 +66,9 @@
                 const curses = (s.activeCurses || []).map(c => vecchia(c)
                     ? { id: '15_scudi_di_ricompensa', text: nuova ? `${nuova.name} (${nuova.desc})` : c.text } : c);
                 return { ...old, version: 4, stato: { ...s, activeCurses: curses } };
-            }
+            },
+            // Versione 4 -> 5: proprietari degli eroi nella partita online (vuoti per le partite di prima)
+            4: old => ({ ...old, version: 5, stato: { ...old.stato, onlineOwners: old.stato.onlineOwners || {} } })
         };
 
         // Porta un salvataggio di qualunque versione al formato attuale (null se non è un salvataggio valido)
@@ -108,7 +110,8 @@
                     partyCoins: stato.partyCoins,
                     unlockedRelics: stato.unlockedRelics.map(r => ({ id: r.id, name: r.name, desc: r.desc })),
                     activeCurses: stato.activeCurses,
-                    expeditionStats: stato.expeditionStats
+                    expeditionStats: stato.expeditionStats,
+                    onlineOwners: stato.onlineOwners || {}
                 }
             };
         }
@@ -298,6 +301,7 @@
                 stato.party.forEach(h => { if (h.blessings) h.blessings = h.blessings.filter(x => PRAYER_BLESSINGS[x.id]); });
                 stato.partyCoins = s.partyCoins || 0;
                 stato.activeCurses = s.activeCurses || [];
+                stato.onlineOwners = s.onlineOwners || {};
                 stato.expeditionStats = Object.assign(newExpeditionStats(), s.expeditionStats || {});
                 displayedCoins = stato.partyCoins;
                 stato.currentNodeId = s.currentNodeId;
