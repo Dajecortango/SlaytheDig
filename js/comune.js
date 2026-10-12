@@ -29,6 +29,24 @@ const EFFECT_TYPES = {
 
 // Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi CLAUDE.md).
 // Un segnale nuovo va aggiunto qui, altrimenti l'editor lo segnala come sconosciuto.
+// Effetti speciali degli oggetti (campi numerici dell'armeria, sommati fra gli oggetti nello zaino con itemBonus):
+// k = campo, label = etichetta nell'editor, tip = riga del tooltip (gioco e anteprima dell'editor).
+// Un campo nuovo va letto anche dal motore (js/combattimento.js, js/prove.js, js/shop.js, js/loot.js, js/oggetti.js)
+const ITEM_SPECIALS = [
+    { k: 'war_horn', label: 'Tiro per colpire a tutti al primo round', tip: v => `Primo round di ogni scontro: +${v} al tiro per colpire a tutta la compagnia` },
+    { k: 'first_hit_dmg', label: 'Danni in più al primo colpo dello scontro', tip: v => `+${v} danni al primo colpo a segno di ogni scontro` },
+    { k: 'execute_dmg', label: 'Danni in più col nemico a metà vita', tip: v => `+${v} danni se il nemico ha metà vita o meno` },
+    { k: 'first_hit_stun', label: 'Il primo colpo dello scontro stordisce', tip: () => 'Il primo colpo a segno di ogni scontro stordisce il nemico' },
+    { k: 'thorns', label: 'Danni al nemico che colpisce chi difende', tip: v => `Se ha difeso nel round, il nemico che lo colpisce subisce ${v} ${v === 1 ? 'danno' : 'danni'}` },
+    { k: 'ally_down_str', label: 'Forza in più se cade un alleato', tip: v => `Se cade un alleato: +${v} Forza fino a fine scontro` },
+    { k: 'combat_reroll', label: 'Ritira un tiro fallito per scontro', tip: () => 'Una volta per scontro un tiro fallito si ritira da solo' },
+    { k: 'challenge_skip', label: 'Evita la punizione di una prova (si consuma)', tip: () => 'Una prova fallita non dà punizione, poi si consuma (non vale nel finale)' },
+    { k: 'haggle_bonus', label: 'Bonus al tiro per contrattare', tip: v => `+${v} al tiro per contrattare` },
+    { k: 'loot_extra_once', label: 'Carte in più al primo bottino di un elite', tip: v => `Primo bottino di un elite: ${v === 1 ? 'una carta' : v + ' carte'} in più (una volta per capitolo)` },
+    { k: 'rest_heal', label: 'HP in più a ogni riposo', tip: v => `+${v} HP a ogni riposo` },
+    { k: 'potion_heal_bonus', label: 'HP in più alle pozioni di cura che usa', tip: v => `Le pozioni di cura che usa curano ${v} HP in più` }
+];
+
 const HERO_FLAGS = {
     bonusLootCoins: 'Scudi in più dopo ogni scontro',
     challengeRerollMalus: 'ripete una prova fallita con questo malus',

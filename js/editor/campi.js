@@ -156,6 +156,8 @@ const ITEM_FIELDS = [
     { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true },
     { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true },
     { k: 'prayer_bonus', label: 'Bonus al tiro di Preghiera', type: 'number', omitEmpty: true },
+    // Effetti speciali (ITEM_SPECIALS in js/comune.js): il motore li legge con itemBonus
+    ...ITEM_SPECIALS.map(sp => ({ k: sp.k, label: sp.label, type: 'number', omitEmpty: true })),
     { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', wide: true, nullable: true,
       help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true }

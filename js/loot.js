@@ -105,8 +105,14 @@
         // Oggetti del bottino di uno scontro fra cui sceglierne uno (LOOT_CHOICES, più quelli della benedizione
         // Passero di Gomd, che si consumano qui: gioco e simulatore)
         function pickLootChoices(isElite) {
-            const extra = stato.party.lootExtraChoices || 0;
+            let extra = stato.party.lootExtraChoices || 0;
             stato.party.lootExtraChoices = 0;
+            // Occhio di Gazza (loot_extra_once): carte in più al primo bottino di un elite, una volta per capitolo
+            const gazza = Math.max(0, ...stato.party.filter(h => h.hp > 0).map(h => itemBonus(h, 'loot_extra_once')));
+            if (isElite && gazza > 0 && !stato.party.gazzaUsed) {
+                stato.party.gazzaUsed = true;
+                extra += gazza;
+            }
             return pickDistinctLoot(LOOT_CHOICES + extra, isElite);
         }
 

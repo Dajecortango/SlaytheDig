@@ -50,7 +50,7 @@ function simItemValue(item) {
     // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): stimati per un eroe con 3 punti
     const scaled = (item.scaling || []).reduce((sum, sc) => sum + (SIM_ITEM_WEIGHTS[sc.stat] || 1) *
         Math.min(sc.max != null ? sc.max : 99, Math.floor(3 / Math.max(1, sc.every || 1))), 0);
-    const stats = Object.entries(SIM_ITEM_WEIGHTS).reduce((sum, [k, w]) => sum + w * (item[k] || 0), 0);
+    const stats = Object.entries(SIM_ITEM_WEIGHTS).reduce((sum, [k, w]) => sum + w * (Number(item[k]) || 0), 0);
     return stats - 2 * (item.att_penalty || 0) + scaled;
 }
 
@@ -121,7 +121,7 @@ function simUseCombatConsumables(hero) {
 function simUseConsumable(hero, itemIdx, target) {
     const item = hero.items[itemIdx];
     if (!item || !item.type || !item.type.startsWith('consumable')) return false;
-    if (item.type === 'consumable_heal') healHero(target, item.heal_val);
+    if (item.type === 'consumable_heal') healHero(target, potionHealAmount(hero, item));
     else if (item.type === 'consumable_full') healHero(target, Infinity);
     else return false;  // danno e potenziamenti: il simulatore non li usa (restano nello zaino)
     consumeOne(hero, itemIdx);
@@ -404,9 +404,9 @@ function simHaggle() {
     if (!alive.length || merchantHaggle !== null) return;
     const cd = haggleCd();
     const hero = alive.reduce((b, h) => (h.int || 0) > (b.int || 0) ? h : b);
-    if (rollChance(cd - (hero.int || 0) - relicDiceBonus(), false) < 0.5) return;
+    if (rollChance(cd - haggleRollTotal(hero, 0), false) < 0.5) return;
     const roll = rollD6(null, 0, hero);
-    const total = roll + (hero.int || 0) + relicDiceBonus();
+    const total = haggleRollTotal(hero, roll);
     spendNextRollRelics();
     merchantHaggle = naturalRollSuccess(roll, total, cd) ? 'ok' : 'fail';
 }
@@ -688,6 +688,7 @@ function simRunCombat(enemyData, profile, runCtx) {
         delete h.stunnedRounds;
     });
     applyCombatBlessings();
+    startCombatItemEffects();
 
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
@@ -744,6 +745,11 @@ function simRunCombat(enemyData, profile, runCtx) {
             const target = profile.monsterTarget(stato.party, runCtx);
             resolveEnemyTurn(stato.activeEnemy, target);
             if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
+            if (stato.activeEnemy.hp <= 0) {  // caduto sulle spine (Scudo a Spina di Kranen)
+                expireTempBuffs(true);
+                simResolveVictoryLoot(profile, runCtx);
+                return { defeat: false };
+            }
         }
     }
     return { defeat: true }; // stallo oltre il limite di round: conta come sconfitta per non falsare il report
@@ -890,7 +896,7 @@ let simRunCampaign = null;  // dati della campagna della partita in corso (le pr
 function simSnapshot(runCtx) {
     const p = stato.party;
     return JSON.stringify({
-        party: p, partyFlags: { atamanoUsed: p.atamanoUsed, sigilloCharges: p.sigilloCharges, lootExtraChoices: p.lootExtraChoices },
+        party: p, partyFlags: { atamanoUsed: p.atamanoUsed, sigilloCharges: p.sigilloCharges, lootExtraChoices: p.lootExtraChoices, gazzaUsed: p.gazzaUsed },
         partyCoins: stato.partyCoins, unlockedRelics: stato.unlockedRelics, activeCurses: stato.activeCurses,
         stsMapNodes: stato.stsMapNodes, currentNodeId: stato.currentNodeId, expeditionStats: stato.expeditionStats,
         challengeState: stato.challengeState || null, activeEnemy: stato.activeEnemy || null,

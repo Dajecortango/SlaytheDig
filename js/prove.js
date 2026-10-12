@@ -237,7 +237,15 @@
                 }
                 stato.expeditionStats.challengesPassed++;
             } else {
-                if (challenge.punishment) {
+                // Mappa del Contrabbandiere (challenge_skip): niente punizione, la mappa si consuma. Non nel finale
+                const smuggler = challenge.punishment && !isFinalNode() && stato.party.find(h => h.hp > 0 && itemBonus(h, 'challenge_skip') > 0);
+                if (smuggler) {
+                    const idx = smuggler.items.findIndex(it => it.challenge_skip);
+                    const map = smuggler.items[idx];
+                    revertItemEffects(map, smuggler);
+                    smuggler.items.splice(idx, 1);
+                    events.push({ type: 'item', text: `🗺️ ${map.name}: ${smuggler.name} trova una via d'uscita, niente punizione (la mappa è consumata)` });
+                } else if (challenge.punishment) {
                     const cursesBefore = stato.activeCurses.length;
                     // Quanto cambiano davvero le statistiche (party_stat non scende sotto 0): serve per
                     // restituire il giusto quando la maledizione viene tolta (removeCurseAt)
@@ -376,7 +384,7 @@
                     return;
                 }
                 const before = h.hp;
-                h.hp = Math.min(h.maxHp, h.hp + healAmount);
+                h.hp = Math.min(h.maxHp, h.hp + healAmount + itemBonus(h, 'rest_heal'));  // Coperta di Lana di Rurikstad
                 healed.push({ name: h.name, gained: h.hp - before, hp: h.hp, maxHp: h.maxHp });
             });
 
