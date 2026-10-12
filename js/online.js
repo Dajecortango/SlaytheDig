@@ -51,6 +51,14 @@ function onlineSerializza(el) {
         else c.setAttribute('value', o.value);
     });
     copia.querySelectorAll('script, audio').forEach(n => n.remove());
+    // Mappa: i giocatori non vedono cosa c'è nei nodi ancora da fare (solo il master lo sa)
+    copia.querySelectorAll('.sts-node').forEach(n => {
+        const classi = classiNodoGiocatore(n.className);
+        if (!classi || classi === n.className) return;
+        n.className = classi;
+        n.innerHTML = typeof svgIcon === 'function' ? svgIcon('question') : '?';
+        n.removeAttribute('data-tip');
+    });
     // Pannelli appesi che dondolano (js/wc3fx.js): il loro stile cambia a ogni fotogramma, ai giocatori basta la posizione di riposo
     const ANIMATI = '.wc-hang, .wc-sway, .wc-chains span';
     [copia, ...copia.querySelectorAll(ANIMATI)].forEach(n => { if (n.matches && n.matches(ANIMATI)) n.removeAttribute('style'); });

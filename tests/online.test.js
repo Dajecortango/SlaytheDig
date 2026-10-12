@@ -225,4 +225,12 @@ module.exports = (t, carica) => {
         const fuori = h.onlineSovrimpressioni([layout, barra, banner, script, nascosto, masterBar], new Set([layout, barra, script]));
         t.ok(fuori.length === 1 && fuori[0] === banner);
     });
+
+    t.test('mappa dei giocatori: i nodi futuri non dicono cosa contengono (niente tipo), quelli passati e il boss sì', () => {
+        const h = carica();
+        t.uguale('sts-node node-ignoto available', h.classiNodoGiocatore('sts-node node-merchant available'));
+        t.uguale('sts-node node-ignoto upcoming unreachable', h.classiNodoGiocatore('sts-node node-elite upcoming unreachable'));
+        t.uguale('sts-node node-combat completed', h.classiNodoGiocatore('sts-node node-combat completed'), 'già fatto: resta');
+        t.uguale(null, h.classiNodoGiocatore('sts-node node-combat upcoming node-goal'), 'il boss resta uguale');
+    });
 };

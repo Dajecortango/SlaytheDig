@@ -134,6 +134,16 @@ function capoSpedizione(ordine, giocatori) {
     return (ordine || []).find(n => collegati.has(n)) || null;
 }
 
+// Mappa vista dai giocatori: i nodi non ancora fatti perdono il tipo (node-combat, node-merchant...), così non si sa
+// se arriva uno scontro, una prova o un mercante. Ritorna le classi nuove; null se il nodo resta com'è (il boss:
+// la meta la conoscono tutti). I nodi già fatti restano uguali.
+function classiNodoGiocatore(classi) {
+    const c = String(classi || '').split(/\s+/).filter(Boolean);
+    if (c.includes('node-goal')) return null;
+    if (c.includes('completed')) return c.join(' ');
+    return c.map(x => /^node-(?!ignoto$)/.test(x) ? 'node-ignoto' : x).join(' ');
+}
+
 // Regioni da inviare: solo quelle cambiate; null per quelle sparite
 function changedRegions(prima, dopo) {
     const out = {};
@@ -155,5 +165,5 @@ function rendiLeggero(html) {
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
-        elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, changedRegions, leggeroUrl, rendiLeggero };
+        elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, classiNodoGiocatore, changedRegions, leggeroUrl, rendiLeggero };
 }
