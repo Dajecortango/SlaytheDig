@@ -41,13 +41,13 @@ function leggiJson(req, cb) {
 }
 
 // Stream SSE (gzip con flush se il browser lo accetta): scrivi(evento, dati), chiudi()
+// Stream SSE sempre in chiaro: ngrok (e altri proxy) trattengono una risposta con Content-Encoding gzip
+// finché non finisce, e uno stream non finisce mai (il giocatore restava collegato ma senza schermata).
+// La compressione è dentro gli eventi "parti" per chi la chiede (z=1, vedi scriviParti).
 function apriFlusso(req, res) {
-    const gzip = /\bgzip\b/.test(req.headers['accept-encoding'] || '');
-    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive',
-        'X-Accel-Buffering': 'no', ...(gzip ? { 'Content-Encoding': 'gzip' } : {}) });
-    const out = gzip ? zlib.createGzip({ flush: zlib.constants.Z_SYNC_FLUSH }) : null;
-    if (out) out.pipe(res);
-    const dest = out || res;
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no' });
+    const dest = res;
     const scrivi = (evento, dati) => { try { dest.write(`event: ${evento}\ndata: ${JSON.stringify(dati)}\n\n`); } catch (e) {} };
     dest.write('retry: 3000\n\n');
     const ping = setInterval(() => scrivi('ping', { t: Date.now() }), PING_MS);
@@ -60,6 +60,14 @@ function apriFlusso(req, res) {
 const elencoGiocatori = () => stanza ? [...stanza.giocatori.values()].map(gi => ({ name: gi.name, connected: gi.connected })) : [];
 const alMaster = (evento, dati) => masters.forEach(f => f.scrivi(evento, dati));
 const aiGiocatori = (evento, dati) => stanza && stanza.giocatori.forEach(gi => gi.flussi.forEach(f => f.scrivi(evento, dati)));
+// Regioni della schermata: compresse (deflate + base64) per i browser che sanno decomprimerle, in chiaro per gli altri
+const comprimi = parti => ({ z: zlib.deflateRawSync(Buffer.from(JSON.stringify(parti), 'utf8')).toString('base64') });
+function scriviParti(f, parti, compresse) { f.scrivi('parti', f.z ? (compresse || comprimi(parti)) : parti); }
+function partiAiGiocatori(parti) {
+    if (!stanza) return;
+    const compresse = comprimi(parti);
+    stanza.giocatori.forEach(gi => gi.flussi.forEach(f => scriviParti(f, parti, compresse)));
+}
 const avvisaStanza = () => alMaster('stanza', { giocatori: elencoGiocatori() });
 
 function giocatoreDaToken(code, token) {
@@ -142,7 +150,7 @@ function gestisci(req, res, pathname) {
             if (!data || !stanza) { json(res, 400, { error: 'Nessuna stanza' }); return; }
             if (cosa === 'parti') {
                 Object.entries(data.parti || {}).forEach(([k, v]) => { if (v === null) delete stanza.regioni[k]; else stanza.regioni[k] = v; });
-                aiGiocatori('parti', data.parti || {});
+                partiAiGiocatori(data.parti || {});
             } else if (cosa === 'stato') {
                 stanza.stato = data;
                 aiGiocatori('stato', data);
@@ -194,10 +202,11 @@ function gestisci(req, res, pathname) {
         const gi = giocatoreDaToken(u.searchParams.get('code'), u.searchParams.get('token'));
         if (!gi) { json(res, 403, { error: 'Token non valido' }); return true; }
         const f = apriFlusso(req, res);
+        f.z = u.searchParams.get('z') === '1';
         gi.flussi.add(f);
         clearTimeout(gi.timer);
         if (!gi.connected) { gi.connected = true; avvisaStanza(); }
-        f.scrivi('parti', stanza.regioni);
+        scriviParti(f, stanza.regioni);
         if (stanza.stato) f.scrivi('stato', stanza.stato);
         f.scrivi('master', { online: masters.size > 0 });
         req.on('close', () => {

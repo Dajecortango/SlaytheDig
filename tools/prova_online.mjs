@@ -60,10 +60,17 @@ try {
     const sara = (await req('POST', '/api/online/entra', { code, nome: 'Sara'.repeat(20) }, fuori)).body;
     ok(sara.nome.length <= 24, 'nome lunghissimo accorciato');
     await req('POST', '/api/online/parti', { parti: { screen: '<div id="screenMap">mappa</div>' } });
-    const fm = flusso(`/api/online/flusso?code=${code}&token=${marco.token}`, fuori, true);
+    const fm = flusso(`/api/online/flusso?code=${code}&token=${marco.token}&z=1`, fuori, true);
     await wait(300);
-    ok(fm.gzip, 'stream dei giocatori compresso');
-    ok(fm.some(([e, d]) => e === 'parti' && d.screen && d.screen.includes('mappa')), 'chi entra riceve subito tutte le regioni');
+    // ngrok trattiene le risposte con Content-Encoding gzip: lo stream va in chiaro, compresso è il contenuto degli eventi
+    ok(!fm.gzip, 'stream dei giocatori in chiaro anche se il browser accetta gzip');
+    const parti = fm.find(([e]) => e === 'parti');
+    const decomp = parti && parti[1].z ? JSON.parse(zlib.inflateRawSync(Buffer.from(parti[1].z, 'base64')).toString('utf8')) : null;
+    ok(decomp && decomp.screen && decomp.screen.includes('mappa'), "chi entra riceve subito tutte le regioni (compresse nell'evento)");
+    const fs0 = flusso(`/api/online/flusso?code=${code}&token=${sara.token}`, fuori, false);
+    await wait(300);
+    ok(fs0.some(([e, d]) => e === 'parti' && d.screen && d.screen.includes('mappa')), 'senza z=1 le regioni arrivano in chiaro');
+    fs0.chiudi();
     ok(fm.some(([e, d]) => e === 'master' && d.online), 'il giocatore sa che il master è collegato');
     await req('POST', '/api/online/clic', { code, token: marco.token, azione: 'selectStsNode', tipo: 'click', regione: 'screen', percorso: [0, 2], args: [3], valori: {} }, fuori);
     await wait(200);
