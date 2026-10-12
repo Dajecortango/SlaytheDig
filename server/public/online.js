@@ -95,6 +95,15 @@
             if (Math.abs(el.scrollLeft - x) > 2 || Math.abs(el.scrollTop - y) > 2) el.scrollTo({ left: x, top: y, behavior: 'smooth' });
         });
     }
+    // Video (sfondo del menu, nemici elite e boss): senza audio, partono da soli quando sono visibili.
+    // Il master li avvia dal codice (play()), che nella copia della pagina non c'è
+    function avviaVideo() {
+        document.querySelectorAll('video[src]').forEach(v => {
+            v.muted = true; v.playsInline = true;
+            if (v.closest('.hidden')) { if (!v.paused) v.pause(); return; }
+            if (v.paused) v.play().catch(() => {});
+        });
+    }
     function applicaParti(parti) {
         Object.entries(parti || {}).forEach(([k, html]) => {
             if (k === 'body') { document.body.className = 'online-guest ' + (html || ''); return; }
@@ -105,6 +114,11 @@
                 // Stessa schermata: si aggiorna; schermata nuova: si mette al posto della vecchia (parte la sua animazione d'ingresso)
                 if (nuovo && attuale && attuale.id && attuale.id === nuovo.id) applicaScorrimento(trasforma(attuale, nuovo));
                 else { box.replaceChildren(...(nuovo ? [nuovo] : [])); applicaScorrimento(nuovo); }
+                return;
+            }
+            if (k === 'scena') {
+                const scena = document.querySelector('.menu-scene');
+                if (scena && html) trasforma(scena, elementoDa(html));
                 return;
             }
             if (k === 'overlays') {
@@ -118,6 +132,7 @@
             if (!html) { vecchio.innerHTML = ''; if (k === 'modal') vecchio.classList.add('hidden'); return; }
             applicaScorrimento(trasforma(vecchio, elementoDa(html)));
         });
+        avviaVideo();
     }
 
     // Regione e percorso di un elemento (indici fra i figli, senza SCRIPT e AUDIO): il master trova lo stesso elemento

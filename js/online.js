@@ -71,12 +71,24 @@ function onlineSovrimpressioni(figli, statici) {
     return [...figli].filter(c => !statici.has(c) && c.id !== 'onlineMasterBar'
         && !['SCRIPT', 'AUDIO', 'VIDEO'].includes(c.tagName) && !c.classList.contains('hidden'));
 }
+// Scena dei menu (video di sfondo, paesaggio): fissa nella pagina, si manda una volta. Senza le gocce della pioggia,
+// che il gioco aggiunge di continuo (si rimanderebbe la scena a ogni goccia)
+function onlineScenaMenu() {
+    const scena = document.querySelector('.menu-scene');
+    if (!scena) return null;
+    const html = onlineSerializza(scena);
+    const t = document.createElement('template');
+    t.innerHTML = html;
+    t.content.querySelectorAll('#menuRain > *').forEach(n => n.remove());
+    return t.innerHTML;
+}
 function onlineRegioni() {
     const screen = document.querySelector('#gameContainer > div:not(.hidden)');
     const modal = document.getElementById('wc3Modal');
     const overlays = onlineSovrimpressioni(document.body.children, ONLINE_FIGLI_STATICI);
     return {
         body: document.body.className,
+        scena: onlineScenaMenu(),
         topbar: onlineSerializza(document.getElementById('partyTopBar')),
         console: onlineSerializza(document.getElementById('partyConsole')),
         screen: onlineSerializza(screen),
