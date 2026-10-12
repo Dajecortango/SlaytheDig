@@ -57,11 +57,14 @@
             pickDistinct(equipment, MERCHANT_EQUIPMENT_SLOTS);
             pickDistinct(consumables, MERCHANT_CONSUMABLE_SLOTS);
 
-            // Reliquie, maledizioni e rincaro valgono per gli oggetti, non per il medico
+            // Effetti speciali "mercante" (sconti di reliquie e passive: Moneta di Fredlös, Lasciapassare mercantile,
+            // Inganno del drago verde), maledizioni e rincaro valgono per gli oggetti, non per il medico
+            const factor = specialPriceFactor();
+            const flat = specialSum('mercante', 'sconto', null);
             const adjust = basePrice => {
                 basePrice = Math.round(basePrice * merchantProgressMultiplier());
-                if (hasRelic('moneta_di_fredlos')) basePrice = Math.floor(basePrice * 0.5);
-                if (hasRelic('lasciapassare_mercantile')) basePrice = Math.max(1, basePrice - 3);
+                if (factor < 1) basePrice = Math.max(1, Math.floor(basePrice * factor));
+                if (flat) basePrice = Math.max(1, basePrice - flat);
                 // Maledizione: Rancore del Mercante (+2 monete su ogni articolo)
                 if (hasCurse('rancore_del_mercante')) basePrice += 2;
                 return basePrice;
@@ -113,17 +116,10 @@
             return basePrice;
         }
 
-        // Sconto dalle passive degli eroi vivi (hero_set "merchantDiscount", es. 0.2 = -20%, "Inganno del drago verde").
-        // Più eroi con lo sconto non si sommano: vale il più alto. Il costo di "Rinnova la merce" non cambia.
-        function merchantDiscount() {
-            return Math.max(0, ...stato.party.filter(h => h.hp > 0).map(h => h.merchantDiscount || 0));
-        }
-
-        // Prezzo finale di un articolo: contrattazione, poi sconto delle passive
+        // Prezzo finale di un articolo: contrattazione (gli sconti delle reliquie e delle passive sono già nel
+        // prezzo base, generateMerchantStock). Il costo di "Rinnova la merce" non cambia.
         function merchantPrice(basePrice) {
-            const price = hagglePrice(basePrice);
-            const discount = merchantDiscount();
-            return discount > 0 ? Math.max(1, Math.round(price * (1 - discount))) : price;
+            return hagglePrice(basePrice);
         }
 
         // Nuova merce coperta, con il prezzo base conservato per la contrattazione
@@ -131,9 +127,9 @@
             merchantItemsWithPrices = generateMerchantStock().map(entry => ({ ...entry, basePrice: entry.price, price: entry.fixedPrice ? entry.price : merchantPrice(entry.price) }));
         }
 
-        // Totale del tiro per contrattare: dado + Intelligenza + reliquie + Lingua d'Argento (haggle_bonus). Gioco e simulatore
+        // Totale del tiro per contrattare: dado + Intelligenza + bonus "contrattazione" (reliquie, Lingua d'Argento). Gioco e simulatore
         function haggleRollTotal(hero, roll) {
-            return roll + (hero.int || 0) + relicDiceBonus() + itemBonus(hero, 'haggle_bonus');
+            return roll + (hero.int || 0) + relicDiceBonus('contrattazione', hero);
         }
 
         // Stesse regole delle prove: Fede Inaridita toglie il dado migliore solo con la Fede
@@ -253,10 +249,9 @@
             const d1 = rollD6(null, 0, hero);
             const d2 = mode === 'single' ? null : rollD6(null, 1, hero);  // il secondo dado si tira solo se serve
             const roll = mode === 'best' ? Math.max(d1, d2) : mode === 'worst' ? Math.min(d1, d2) : d1;
-            const sources = relicDiceSources();
+            const sources = relicDiceSources('contrattazione', hero);
             const total = haggleRollTotal(hero, roll);
-            const tongue = itemBonus(hero, 'haggle_bonus');
-            spendNextRollRelics();
+            spendNextRollRelics('contrattazione', hero);
             const success = naturalRollSuccess(roll, total, cd);
             merchantHaggle = success ? 'ok' : 'fail';
             merchantItemsWithPrices.forEach(entry => { if (entry && !entry.fixedPrice) entry.price = merchantPrice(entry.basePrice); });
@@ -267,7 +262,7 @@
                 const statLabel = 'Intelligenza';
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (Fede Inaridita)`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
-                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${r.name}`).join('')}${tongue ? ` + ${tongue} ${esc((hero.items.find(it => it.haggle_bonus) || {}).name || '')}` : ''} = <b>${total}</b> contro CD ${cd}.</p>
+                    `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${esc(r.name)}`).join('')} =<b>${total}</b> contro CD ${cd}.</p>
                      ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
                      <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} Scudi in più.`}</p>`);
                 renderMerchantShop();

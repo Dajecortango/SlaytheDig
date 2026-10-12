@@ -44,14 +44,117 @@ function simBestFaithIntHero(alive) {
 
 // Valore di un oggetto per il simulatore, pesato su quanto conta in combattimento: il danno vale più
 // di tutto (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura.
-// I consumabili valgono poco ma non zero. Pesi in SIM_ITEM_WEIGHTS (js/regole.js).
+// Gli effetti speciali si stimano da soli (simSpecialsValue). I consumabili valgono poco ma non zero.
+// Pesi in SIM_ITEM_WEIGHTS (js/regole.js).
 function simItemValue(item) {
     if (item.type && item.type.startsWith('consumable')) return 0.5;
     // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): stimati per un eroe con 3 punti
     const scaled = (item.scaling || []).reduce((sum, sc) => sum + (SIM_ITEM_WEIGHTS[sc.stat] || 1) *
         Math.min(sc.max != null ? sc.max : 99, Math.floor(3 / Math.max(1, sc.every || 1))), 0);
     const stats = Object.entries(SIM_ITEM_WEIGHTS).reduce((sum, [k, w]) => sum + w * (Number(item[k]) || 0), 0);
-    return stats - 2 * (item.att_penalty || 0) + scaled;
+    return stats - 2 * (item.att_penalty || 0) + scaled + simSpecialsValue(itemSpecials(item));
+}
+
+/* ---------- Valore automatico degli effetti speciali ----------
+   Gli effetti che agiscono in scontro si misurano giocando: una compagnia di prova (due eroi uguali) affronta
+   un nemico di prova SIM_SPECIAL_DUELS volte con l'effetto e senza, con gli stessi dadi (generatore con seme),
+   e la differenza si confronta con quella di +1 Danno. Così un oggetto nuovo creato dall'editor ha un valore
+   senza scrivere pesi a mano. Gli effetti fuori dallo scontro (riposo, mercante, prove, bottino) usano
+   SIM_SPECIAL_WEIGHTS di js/regole.js. Risultati in memoria per tutta la pagina. */
+const SIM_SPECIAL_DUELS = 200;
+const simSpecialCache = new Map();
+const SIM_SPECIAL_IN_COMBAT = [...SPECIALI_SCONTRO, 'tiro_fallito', 'colpito', 'colpo_mortale'];
+const SIM_ROLLS_IN_COMBAT = ['tiro', 'tiro_scontro', 'attacco', 'difesa', 'aiuto'];
+
+function simSpecialsValue(list) {
+    if (!list || !list.length) return 0;
+    const key = JSON.stringify(list);
+    if (simSpecialCache.has(key)) return simSpecialCache.get(key);
+    const inCombat = list.filter(s => SIM_SPECIAL_IN_COMBAT.includes(s.quando) || (s.fai === 'bonus_tiro' && SIM_ROLLS_IN_COMBAT.includes(s.quando)));
+    let value = inCombat.length ? simDuelValue(inCombat) : 0;
+    list.forEach(s => {
+        const n = Math.max(1, Math.abs(s.val || 0)) * (s.prob ? s.prob / 100 : 1);
+        if (s.fai === 'bonus_tiro' && ['tiro', 'prova', 'contrattazione', 'preghiera', 'capitano'].includes(s.quando)) value += SIM_SPECIAL_WEIGHTS.bonus_tiro_fuori * n;
+        else if (s.quando === 'fine_scontro') value += (s.fai === 'monete' ? SIM_SPECIAL_WEIGHTS.monete : SIM_SPECIAL_WEIGHTS.bonus_cura) * n;
+        else if (!inCombat.includes(s)) value += (SIM_SPECIAL_WEIGHTS[s.fai] || 0.5) * n;
+    });
+    simSpecialCache.set(key, value);
+    return value;
+}
+
+// Generatore con seme (mulberry32): gli stessi dadi per le prove con e senza l'effetto
+function simSeeded(seed) {
+    return () => {
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+// Punteggio medio della compagnia di prova; "special" = effetti sull'oggetto del primo eroe, "extraDmg" = Danno in più
+function simDuelScore(special, extraDmg) {
+    const saved = { random: Math.random, party: stato.party, activeEnemy: stato.activeEnemy, combatRound: stato.combatRound,
+        helpBonus: stato.helpBonus, helpDmgBonus: stato.helpDmgBonus, unlockedRelics: stato.unlockedRelics, activeCurses: stato.activeCurses,
+        stsMapNodes: stato.stsMapNodes, currentNodeId: stato.currentNodeId, expeditionStats: stato.expeditionStats, partyCoins: stato.partyCoins };
+    Math.random = simSeeded(12345);
+    let total = 0;
+    try {
+        Object.assign(stato, { unlockedRelics: [], activeCurses: [], expeditionStats: {}, partyCoins: 0, currentNodeId: 'a',
+            stsMapNodes: [{ id: 'a', level: 0, type: 'combat', next: ['b'] }, { id: 'b', level: 2, type: 'combat', next: [] }] });
+        for (let n = 0; n < SIM_SPECIAL_DUELS; n++) {
+            stato.stsMapNodes[0].type = n % 4 === 0 ? 'elite' : 'combat';  // un quarto degli scontri contro un elite
+            const hero = name => ({ name, hp: 6, maxHp: 6, str: 2, dmg: 2, base_armor: 1, current_armor: 1, att_bonus: 0, items: [] });
+            stato.party = [hero('A'), hero('B')];
+            if (special) stato.party[0].items.push({ name: 'Prova', speciali: special });
+            stato.party[0].dmg += extraDmg;
+            stato.activeEnemy = { name: 'Nemico', hp: 16, maxHp: 16, ca: 5, att: 5, dmg: 2 };
+            stato.combatRound = 0; stato.helpBonus = 0; stato.helpDmgBonus = 0;
+            startCombatSpecials();
+            const enemy = stato.activeEnemy;
+            let rounds = 0;
+            while (enemy.hp > 0 && stato.party.some(h => h.hp > 0) && rounds++ < 20) {
+                stato.combatRound++;
+                expireTempBuffs();
+                applyRegen();
+                fireSpecialsAll('inizio_round');
+                stato.party.forEach(h => { h.hasActed = false; });
+                stato.party.forEach((h, i) => {
+                    if (h.hp <= 0 || enemy.hp <= 0) return;
+                    // Le scelte dell'Esperto (attacca, difende chi cadrebbe, aiuta chi colpisce meglio)
+                    simExecuteCombatAction(h, simExpertAction(h, enemy, { remaining: stato.party.slice(i + 1) }));
+                    h.hasActed = true;
+                });
+                if (enemy.hp <= 0) break;
+                if (enemy.isStunned) { enemy.isStunned = false; continue; }
+                const alive = stato.party.filter(h => h.hp > 0);
+                resolveEnemyTurn(enemy, alive[Math.floor(Math.random() * alive.length)]);
+            }
+            const hpLeft = stato.party.reduce((sum, h) => sum + Math.max(0, h.hp), 0);
+            total += (enemy.hp <= 0 ? 10 + hpLeft : 4 * (1 - Math.max(0, enemy.hp) / enemy.maxHp)) - 0.1 * rounds;
+            expireTempBuffs(true);
+        }
+    } finally {
+        Math.random = saved.random;
+        delete saved.random;
+        Object.assign(stato, saved);
+    }
+    return total / SIM_SPECIAL_DUELS;
+}
+
+// Valore degli effetti in scontro, nella stessa scala dei pesi delle statistiche (+1 Danno = SIM_ITEM_WEIGHTS.dmg).
+// Un effetto "una volta per capitolo" vale per uno scontro su quattro, all'incirca.
+function simDuelValue(list) {
+    if (!simSpecialCache.has('__base')) {
+        simSpecialCache.set('__base', simDuelScore(null, 0));
+        simSpecialCache.set('__dmg', simDuelScore(null, 1));
+    }
+    const base = simSpecialCache.get('__base');
+    const unit = Math.max(0.01, simSpecialCache.get('__dmg') - base);
+    const perChapter = list.every(s => s.limite === 'capitolo') ? 0.25 : 1;
+    // Minimo per effetto: quelli che l'Esperto usa poco nei duelli (spine di chi difende, Attacco tolto al nemico)
+    // valgono poco ma non zero, sotto la soglia di "oggetto utile" del bottino (0,5)
+    return Math.max(0.2 * list.length, (simDuelScore(list, 0) - base) / unit * SIM_ITEM_WEIGHTS.dmg * perChapter);
 }
 
 // Quanto migliora l'eroe con questo oggetto: valore dell'oggetto meno quello che dovrebbe scartare
@@ -302,7 +405,7 @@ function simHeroPower(hero) {
 function simAttackChance(hero, extra = 0) {
     const enemy = stato.activeEnemy;
     if (!enemy) return 0;
-    const bonus = (hero.str || 0) + firstActorBonus(hero) + stato.helpBonus + attackMod(hero) + relicCombatBonus().att + extra;
+    const bonus = (hero.str || 0) + firstActorBonus(hero) + stato.helpBonus + attackMod(hero) + relicCombatBonus(hero).att + extra;
     return rollChance(enemy.ca - bonus, false);
 }
 
@@ -310,7 +413,7 @@ function simAttackChance(hero, extra = 0) {
 function simDefendChance(hero, help = false) {
     const enemy = stato.activeEnemy;
     if (!enemy) return 0;
-    const bonus = (hero.str || 0) + firstActorBonus(hero) + (help ? (hero.help_bonus_val || 0) : (hero.def_bonus || 0)) + relicDiceBonus();
+    const bonus = (hero.str || 0) + firstActorBonus(hero) + (help ? (hero.help_bonus_val || 0) : (hero.def_bonus || 0)) + relicDiceBonus(help ? 'aiuto' : 'difesa', hero);
     return rollChance(enemy.att - bonus, false);
 }
 
@@ -352,7 +455,7 @@ function simThreat(hero, inc) {
 function simExpertAction(hero, enemy, ctx) {
     const inc = simIncoming();
     const loss = simThreat(hero, inc);
-    const hitDmg = (hero.dmg || 0) + relicCombatBonus().dmg + helpDmgBonus();
+    const hitDmg = (hero.dmg || 0) + specialHitDamagePreview(hero, enemy) + helpDmgBonus();
     const pHit = simAttackChance(hero);
     // Abilità attiva (una per scontro): l'armatura immediata solo quando serve, le altre subito
     if (hasUsableAbility(hero)) {
@@ -407,7 +510,7 @@ function simHaggle() {
     if (rollChance(cd - haggleRollTotal(hero, 0), false) < 0.5) return;
     const roll = rollD6(null, 0, hero);
     const total = haggleRollTotal(hero, roll);
-    spendNextRollRelics();
+    spendNextRollRelics('contrattazione', hero);
     merchantHaggle = naturalRollSuccess(roll, total, cd) ? 'ok' : 'fail';
 }
 
@@ -636,16 +739,9 @@ function simResolveVictoryLoot(profile, runCtx) {
     const isElite = currentEnemyIsEliteOrBoss();  // come nel gioco: anche il boss dell'ultimo livello
     let coins = scaledCoins([3, 5, 7, 9, 12], isElite);
     if (hasCurse('15_scudi_di_ricompensa')) coins = Math.floor(coins * 0.85);
-
-    const lootBonusHeroes = stato.party.filter(h => h.hp > 0 && h.bonusLootCoins);
-    coins += lootBonusHeroes.reduce((sum, h) => sum + h.bonusLootCoins, 0);
     stato.partyCoins += coins;
 
-    if (hasRelic('dente_del_grande_lupo')) {
-        const lowest = simAliveMinBy(stato.party, h => h.hp);
-        if (lowest && lowest.hp < lowest.maxHp) healHero(lowest, 1);
-    }
-    battleSurgeonHeal();
+    combatVictorySpecials();  // come triggerLoot: cure e Scudi degli effetti "fine_scontro"
 
     stato.expeditionStats.combatsWon++;
     stato.expeditionStats.itemsFound++;
@@ -673,9 +769,6 @@ function simRunCombat(enemyData, profile, runCtx) {
     stato.party.forEach(refreshScaledBonuses);  // Fede/Int possono essere cambiate da reliquie, maledizioni o scarti
     stato.activeEnemy = JSON.parse(JSON.stringify(enemyData));
     stato.activeEnemy.isStunned = false;
-    // Come startCombat: l'Occhio del corvo toglie 1 all'Attacco del nemico
-    if (hasRelic('occhio_del_corvo')) stato.activeEnemy.att = Math.max(1, stato.activeEnemy.att - 1);
-    stato.party.atamanoUsed = false;
     stato.helpBonus = 0;
     stato.helpDmgBonus = 0;
     stato.combatRound = 0;
@@ -688,7 +781,7 @@ function simRunCombat(enemyData, profile, runCtx) {
         delete h.stunnedRounds;
     });
     applyCombatBlessings();
-    startCombatItemEffects();
+    startCombatSpecials();  // come startCombat: effetti speciali di inizio scontro (Calma del Margine, Corno...)
 
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
@@ -697,6 +790,7 @@ function simRunCombat(enemyData, profile, runCtx) {
         expireTempBuffs();
         applyPendingBuffs();
         applyRegen();
+        fireSpecialsAll('inizio_round');
         stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
         applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);
@@ -896,7 +990,7 @@ let simRunCampaign = null;  // dati della campagna della partita in corso (le pr
 function simSnapshot(runCtx) {
     const p = stato.party;
     return JSON.stringify({
-        party: p, partyFlags: { atamanoUsed: p.atamanoUsed, sigilloCharges: p.sigilloCharges, lootExtraChoices: p.lootExtraChoices, gazzaUsed: p.gazzaUsed },
+        party: p, partyFlags: { lootExtraChoices: p.lootExtraChoices, specialUses: p.specialUses },
         partyCoins: stato.partyCoins, unlockedRelics: stato.unlockedRelics, activeCurses: stato.activeCurses,
         stsMapNodes: stato.stsMapNodes, currentNodeId: stato.currentNodeId, expeditionStats: stato.expeditionStats,
         challengeState: stato.challengeState || null, activeEnemy: stato.activeEnemy || null,

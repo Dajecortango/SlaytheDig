@@ -1,6 +1,6 @@
 // Reliquie: ricompense delle sfide, condivise dalle campagne.
-// Le sfide le richiamano per id nel campo "reward". Molte reliquie hanno un effetto
-// scritto nel codice e riconosciuto per id (hasRelic('id')): il nome si può cambiare, la chiave no.
+// Le sfide le richiamano per id nel campo "reward". "effects" agisce quando si ottiene la reliquia,
+// "speciali" sono gli effetti "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.reliquie = {
@@ -36,18 +36,102 @@ window.LIBRERIA.reliquie = {
             { "effect": "party_stat", "stat": "int", "val": 1 }
         ]
     },
-    "corno_antico": { "type": "relic", "name": "Corno dell'Esodo", "desc": "Durante il terzo turno tutti gli eroi ottengono +1 al danno" },
-    "lasciapassare_mercantile": { "type": "relic", "name": "Lasciapassare mercantile", "desc": "Gli oggetti dai mercanti sono scontati di 3 Scudi" },
-    "pietra_del_focolare": { "type": "relic", "name": "Pietra del focolare", "desc": "Durante il riposo rimuove una maledizione casuale" },
-    "frammento_di_matrice": { "type": "relic", "name": "Fortuna degli Stolti", "desc": "La prossima sfida fallita diventa un successo, poi si rompe" },
-    "dente_del_grande_lupo": { "type": "relic", "name": "Dente del grande lupo", "desc": "Dopo ogni scontro l'eroe con meno HP recupera 1 HP" },
-    "frammento_di_yr_drazul": { "type": "relic", "name": "Bussola dell'Occhio Cieco", "desc": "+1 a tutti i tiri di dado" },
-    "favore_di_valgoren": { "type": "relic", "name": "Favore di Valgoren", "desc": "Quando un eroe recupera HP, cura 1 HP ad un altro eroe casuale" },
-    "idolo_del_cacciatore": { "type": "relic", "name": "Idolo del cacciatore", "desc": "+1 al danno durante gli scontri elite" },
-    "occhio_del_corvo": { "type": "relic", "name": "Calma del Margine", "desc": "Diminuisce di 1 la statistica attacco dei mostri" },
-    "anello_del_giuramento": { "type": "relic", "name": "Benedizione del Caos", "desc": "+3 al prossimo tiro di dado, poi la reliquia si rompe" },
-    "marchio_di_jag_antar": { "type": "relic", "name": "Marchio di Jag Àntar", "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe" },
-    "sigillo_runico": { "type": "relic", "name": "Sigillo runico", "desc": "+2 ai prossimi 2 tiri di dado, poi si rompe" },
+    "corno_antico": {
+        "type": "relic",
+        "name": "Corno dell'Esodo",
+        "desc": "Durante il terzo turno tutti gli eroi ottengono +1 al danno",
+        "speciali": [
+            { "quando": "colpo", "round": 3, "fai": "danni", "val": 1 }
+        ]
+    },
+    "lasciapassare_mercantile": {
+        "type": "relic",
+        "name": "Lasciapassare mercantile",
+        "desc": "Gli oggetti dai mercanti sono scontati di 3 Scudi",
+        "speciali": [
+            { "quando": "mercante", "fai": "sconto", "val": 3 }
+        ]
+    },
+    "pietra_del_focolare": {
+        "type": "relic",
+        "name": "Pietra del focolare",
+        "desc": "Durante il riposo rimuove una maledizione casuale",
+        "speciali": [
+            { "quando": "riposo", "fai": "togli_maledizione" }
+        ]
+    },
+    "frammento_di_matrice": {
+        "type": "relic",
+        "name": "Fortuna degli Stolti",
+        "desc": "La prossima sfida fallita diventa un successo, poi si rompe",
+        "speciali": [
+            { "quando": "prova_fallita", "fai": "prova_riuscita", "rompe": true }
+        ]
+    },
+    "dente_del_grande_lupo": {
+        "type": "relic",
+        "name": "Dente del grande lupo",
+        "desc": "Dopo ogni scontro l'eroe con meno HP recupera 1 HP",
+        "speciali": [
+            { "quando": "fine_scontro", "fai": "cura", "val": 1, "bersaglio": "meno_hp" }
+        ]
+    },
+    "frammento_di_yr_drazul": {
+        "type": "relic",
+        "name": "Bussola dell'Occhio Cieco",
+        "desc": "+1 a tutti i tiri di dado",
+        "speciali": [
+            { "quando": "tiro", "fai": "bonus_tiro", "val": 1 }
+        ]
+    },
+    "favore_di_valgoren": {
+        "type": "relic",
+        "name": "Favore di Valgoren",
+        "desc": "Quando un eroe recupera HP, cura 1 HP ad un altro eroe casuale",
+        "speciali": [
+            { "quando": "cura_ricevuta", "fai": "cura", "val": 1, "bersaglio": "altro_casuale" }
+        ]
+    },
+    "idolo_del_cacciatore": {
+        "type": "relic",
+        "name": "Idolo del cacciatore",
+        "desc": "+1 al danno durante gli scontri elite",
+        "speciali": [
+            { "quando": "colpo", "se": "elite", "fai": "danni", "val": 1 }
+        ]
+    },
+    "occhio_del_corvo": {
+        "type": "relic",
+        "name": "Calma del Margine",
+        "desc": "Diminuisce di 1 la statistica attacco dei mostri",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus_nemico", "stat": "att", "val": 1 }
+        ]
+    },
+    "anello_del_giuramento": {
+        "type": "relic",
+        "name": "Benedizione del Caos",
+        "desc": "+3 al prossimo tiro di dado, poi la reliquia si rompe",
+        "speciali": [
+            { "quando": "tiro", "fai": "bonus_tiro", "val": 3, "limite": "capitolo", "rompe": true }
+        ]
+    },
+    "marchio_di_jag_antar": {
+        "type": "relic",
+        "name": "Marchio di Jag Àntar",
+        "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe",
+        "speciali": [
+            { "quando": "colpo_mortale", "fai": "rialza", "val": 1, "rompe": true }
+        ]
+    },
+    "sigillo_runico": {
+        "type": "relic",
+        "name": "Sigillo runico",
+        "desc": "+2 ai prossimi 2 tiri di dado, poi si rompe",
+        "speciali": [
+            { "quando": "tiro", "fai": "bonus_tiro", "val": 2, "limite": "capitolo", "volte": 2, "rompe": true }
+        ]
+    },
     "lanterna_dei_morti": {
         "type": "relic",
         "name": "Lanterna dei morti",
@@ -56,12 +140,55 @@ window.LIBRERIA.reliquie = {
             { "effect": "party_stat", "stat": "fth", "val": 1 }
         ]
     },
-    "stendardo_da_battaglia": { "type": "relic", "name": "Stendardo da battaglia", "desc": "+1 al tiro per colpire nel primo round di ogni scontro" },
-    "zanna_del_leone_bianco": { "type": "relic", "name": "Zanna del leone bianco", "desc": "+2 danni nel secondo round di ogni scontro" },
-    "catena_di_norgrad": { "type": "relic", "name": "Catena di Norgrad", "desc": "+1 al tiro per colpire contro nemici elite e il capitano" },
-    "scudo_dell_atamano": { "type": "relic", "name": "Scudo dell'Atamano", "desc": "Il primo colpo del nemico in ogni scontro viene assorbito del tutto" },
-    "moneta_di_fredlos": { "type": "relic", "name": "Moneta di Fredlös", "desc": "I mercanti fanno pagare la metà" },
-    "unguento_dell_erborista": { "type": "relic", "name": "Unguento dell'erborista", "desc": "Al riposo ogni eroe recupera 1 HP in più" },
+    "stendardo_da_battaglia": {
+        "type": "relic",
+        "name": "Stendardo da battaglia",
+        "desc": "+1 al tiro per colpire nel primo round di ogni scontro",
+        "speciali": [
+            { "quando": "attacco", "round": 1, "fai": "bonus_tiro", "val": 1 }
+        ]
+    },
+    "zanna_del_leone_bianco": {
+        "type": "relic",
+        "name": "Zanna del leone bianco",
+        "desc": "+2 danni nel secondo round di ogni scontro",
+        "speciali": [
+            { "quando": "colpo", "round": 2, "fai": "danni", "val": 2 }
+        ]
+    },
+    "catena_di_norgrad": {
+        "type": "relic",
+        "name": "Catena di Norgrad",
+        "desc": "+1 al tiro per colpire contro nemici elite e il capitano",
+        "speciali": [
+            { "quando": "attacco", "se": "elite", "fai": "bonus_tiro", "val": 1 },
+            { "quando": "capitano", "fai": "bonus_tiro", "val": 1 }
+        ]
+    },
+    "scudo_dell_atamano": {
+        "type": "relic",
+        "name": "Scudo dell'Atamano",
+        "desc": "Il primo colpo del nemico in ogni scontro viene assorbito del tutto",
+        "speciali": [
+            { "quando": "colpito", "se": "colpo_pieno", "fai": "annulla_colpo", "limite": "scontro" }
+        ]
+    },
+    "moneta_di_fredlos": {
+        "type": "relic",
+        "name": "Moneta di Fredlös",
+        "desc": "I mercanti fanno pagare la metà",
+        "speciali": [
+            { "quando": "mercante", "fai": "sconto_percento", "val": 50 }
+        ]
+    },
+    "unguento_dell_erborista": {
+        "type": "relic",
+        "name": "Unguento dell'erborista",
+        "desc": "Al riposo ogni eroe recupera 1 HP in più",
+        "speciali": [
+            { "quando": "riposo", "fai": "bonus_cura", "val": 1 }
+        ]
+    },
     "cotta_dei_lungobarbi": {
         "type": "relic",
         "name": "Cotta dei Lungobarbi",

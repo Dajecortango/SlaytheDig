@@ -82,6 +82,11 @@ const HERO_LIB_FIELDS = [...HERO_FIELDS, {
 const COMBAT_STAT_OPTIONS = () => [['', 'Nessuna'], ['int', STAT_LABELS.int], ['fth', STAT_LABELS.fth], ['str', STAT_LABELS.str + ' (di nuovo)']];
 const isActive = a => !!a.isCombatActive;
 const isPassiveStat = a => !a.isCombatActive && a.type === 'passive_stat';
+
+// Effetti speciali "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js): si compongono
+// con i menu (specialiEditor in js/editor/moduli.js). tipo = come si esaurisce con "rompe" (si rompe, si consuma...)
+const specialiField = tipo => ({ k: 'speciali', label: 'Effetti speciali (quando → fai)', type: 'speciali', tipo, wide: true,
+    help: 'Ogni effetto: quando scatta, cosa fa e, se serve, una condizione, un round, una probabilità e un limite. Ricordati di scriverlo anche nella descrizione.' });
 // "Passiva" o "Attiva" più la descrizione, senza ripeterlo se la descrizione comincia già così
 const abilitySummary = a => /^(passiva|attiva)/i.test(a.desc || '') ? a.desc : [a.isCombatActive ? 'Attiva' : 'Passiva', a.desc].filter(Boolean).join(' · ');
 
@@ -123,7 +128,8 @@ const ABILITY_FIELDS = [
     { k: 'val', label: 'Bonus', type: 'number', showIf: isPassiveStat },
     { k: 'effects', label: 'Effetti alla scelta (JSON)', type: 'json', wide: true, nullable: true,
       showIf: a => !a.isCombatActive && a.type !== 'passive_stat',
-      help: 'Es. [{ "effect": "hero_stat", "stat": "dmg", "val": 1 }] = +1 Danno permanente. Tipi: ' + Object.keys(EFFECT_TYPES).join(', ') }
+      help: 'Es. [{ "effect": "hero_stat", "stat": "dmg", "val": 1 }] = +1 Danno permanente. Tipi: ' + Object.keys(EFFECT_TYPES).join(', ') },
+    { ...specialiField('abilita'), showIf: a => !a.isCombatActive && a.type !== 'passive_stat' }
 ];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
@@ -156,8 +162,7 @@ const ITEM_FIELDS = [
     { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true },
     { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true },
     { k: 'prayer_bonus', label: 'Bonus al tiro di Preghiera', type: 'number', omitEmpty: true },
-    // Effetti speciali (ITEM_SPECIALS in js/comune.js): il motore li legge con itemBonus
-    ...ITEM_SPECIALS.map(sp => ({ k: sp.k, label: sp.label, type: 'number', omitEmpty: true })),
+    specialiField('oggetto'),
     { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', wide: true, nullable: true,
       help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true }
@@ -242,17 +247,19 @@ function describeEliteAction(a) {
 }
 
 const RELIC_FIELDS = [
-    { k: 'name', label: 'Nome', wide: true, help: 'Molte reliquie hanno un effetto legato al nome esatto in js/game.js (hasRelic): rinominarle ne cambia il comportamento' },
+    { k: 'name', label: 'Nome', wide: true, help: 'Il nome si può cambiare: il gioco riconosce la reliquia dall\'id' },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
     { k: 'effects', label: 'Effetti all\'ottenimento (JSON)', type: 'json', wide: true, nullable: true,
-      help: 'Es. [{ "effect": "party_stat", "stat": "fth", "val": 1 }] — vuoto = nessun effetto immediato' }
+      help: 'Es. [{ "effect": "party_stat", "stat": "fth", "val": 1 }] — vuoto = nessun effetto immediato' },
+    specialiField('reliquia')
 ];
 
 const CURSE_FIELDS = [
     { k: 'name', label: 'Nome', wide: true },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
     { k: 'effects', label: 'Effetti (JSON)', type: 'json', wide: true, nullable: true,
-      help: 'Di solito { "effect": "add_curse", "text": "Nome (effetto)" } più eventuali penalità, es. { "effect": "party_stat", "stat": "fth", "val": -1 }' }
+      help: 'Di solito { "effect": "add_curse", "text": "Nome (effetto)" } più eventuali penalità, es. { "effect": "party_stat", "stat": "fth", "val": -1 }' },
+    specialiField('maledizione')
 ];
 
 const keysOf = obj => Object.keys(obj || {});

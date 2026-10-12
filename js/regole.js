@@ -131,13 +131,11 @@ const PROC_SCALA = {
 /* ---------- Simulatore (js/simulator.js) ----------
    Valore di un oggetto, pesato su quanto conta in combattimento: il danno vale più di tutto
    (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura. */
-const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75,
-    // Effetti speciali degli oggetti (ITEM_SPECIALS in js/comune.js): stima di quanto valgono rispetto alle statistiche
-    war_horn: 2, first_hit_dmg: 1.25, execute_dmg: 1.25, first_hit_stun: 3, thorns: 1.5, ally_down_str: 1, combat_reroll: 2,
-    challenge_skip: 1.5, haggle_bonus: 0.75, loot_extra_once: 1, rest_heal: 1.5, potion_heal_bonus: 1,
-    hit_heal_chance: 0.02, hit_chill: 1.5, last_stand_armor: 0.75 };
-// Lama di Ghiaccio di Hvid (hit_chill): Attacco massimo tolto al nemico in uno scontro
-const ITEM_CHILL_MAX = 2;
+const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75 };
+// Effetti speciali "quando → fai" (js/speciali.js) fuori dallo scontro, che la prova di scontro del simulatore
+// (simSpecialValue) non può misurare: valore per ogni punto di "val" (o per l'effetto, se non ha un valore)
+const SIM_SPECIAL_WEIGHTS = { annulla_punizione: 1.5, prova_riuscita: 2, monete: 0.05, carta_bottino: 1, togli_maledizione: 1,
+    bonus_cura: 1.25, sconto: 0.3, sconto_percento: 0.03, bonus_tiro_fuori: 0.75 };
 
 /* ---------- Partita online (js/online.js, server/online.js) ---------- */
 const VOTE_SECONDS = 30;               // durata di un voto

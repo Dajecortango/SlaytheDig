@@ -32,7 +32,7 @@ function previewItem(it) {
         const durata = it.buff_stat === 'current_armor' ? '' : rounds > 0 ? (rounds === 1 ? ' per 1 round' : ` per ${rounds} round`) : ' per tutto lo scontro';
         lines.push(esc(`+${it.buff_val || 0} ${PREVIEW_STAT[it.buff_stat] || it.buff_stat || '?'}${durata}`));
     }
-    ITEM_SPECIALS.forEach(sp => { if (it[sp.k]) lines.push(esc(sp.tip(it[sp.k]))); });
+    (Array.isArray(it.speciali) ? it.speciali : []).forEach(sp => lines.push(esc(specialeTesto(sp, 'oggetto'))));
     if (['consumable_damage', 'consumable_buff'].includes(it.type)) lines.push('<span class="tip-hint">Solo in combattimento, con il comando Oggetto</span>');
     (Array.isArray(it.scaling) ? it.scaling : []).forEach(sc => lines.push(esc(`+1 ${PREVIEW_STAT[sc.stat] || sc.stat} ogni ${sc.every} ${PREVIEW_STAT[sc.per] || sc.per}${sc.max != null ? ` (max +${sc.max})` : ''}`)));
     if (it.desc) lines.push(`<span class="tip-desc">${esc(it.desc)}</span>`);
@@ -61,11 +61,14 @@ function previewAbility(a) {
         lines.push(`<span class="tip-hint">Attiva, 1 volta per scontro: ${esc(regole.join('; '))}</span>`);
     } else {
         lines.push('<span class="tip-hint">Passiva</span>');
+        specialPreviewLines(a, 'abilita').forEach(l => lines.push(l));
     }
     return previewTipHtml(esc(a.name || '(senza nome)'), lines);
 }
 
-const previewSimple = o => previewTipHtml(esc(o.name || '(senza nome)'), o.desc ? [esc(o.desc)] : []);
+// Righe degli effetti speciali sotto l'anteprima (come le scrive specialeTesto in js/comune.js)
+const specialPreviewLines = (o, tipo) => (Array.isArray(o.speciali) ? o.speciali : []).map(sp => `<span class="tip-hint">${esc(specialeTesto(sp, tipo))}</span>`);
+const previewSimple = tipo => o => previewTipHtml(esc(o.name || '(senza nome)'), [...(o.desc ? [esc(o.desc)] : []), ...specialPreviewLines(o, tipo)]);
 // Azione degli elite: come appare nel tooltip del nome del nemico
 const previewEliteAction = a => previewTipHtml(esc(a.name || '(senza nome)'), [a.desc ? esc(a.desc) : '', esc(describeEliteAction(a))].filter(Boolean));
-const PREVIEWS = { armeria: previewItem, abilita: previewAbility, reliquie: previewSimple, maledizioni: previewSimple, azioni_elite: previewEliteAction };
+const PREVIEWS = { armeria: previewItem, abilita: previewAbility, reliquie: previewSimple('reliquia'), maledizioni: previewSimple('maledizione'), azioni_elite: previewEliteAction };

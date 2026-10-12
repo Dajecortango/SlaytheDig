@@ -26,7 +26,7 @@ module.exports = (t, carica) => {
 
     t.test('fotografia della partita: si rimette tutto, anche i segni appesi alla compagnia', () => {
         stato.party = [eroe('A')];
-        stato.party.atamanoUsed = true;
+        stato.party.specialUses = { scontro: {}, capitolo: { 'r:sigillo_runico#0': 1 } };
         stato.party.lootExtraChoices = 1;
         stato.partyCoins = 7; stato.unlockedRelics = []; stato.activeCurses = [];
         stato.stsMapNodes = [{ id: 1, level: 0, type: 'rest', next: [] }];
@@ -34,7 +34,7 @@ module.exports = (t, carica) => {
         const snap = g.simSnapshot({ visitCounts: { rest: 2 } });
         stato.party[0].hp = 0; stato.partyCoins = 0; stato.party = [];
         const ctx = g.simRestore(snap);
-        t.uguale([4, 7, true, 1], [stato.party[0].hp, stato.partyCoins, stato.party.atamanoUsed, stato.party.lootExtraChoices]);
+        t.uguale([4, 7, 1, 1], [stato.party[0].hp, stato.partyCoins, stato.party.specialUses.capitolo['r:sigillo_runico#0'], stato.party.lootExtraChoices]);
         t.uguale(2, ctx.visitCounts.rest);
     });
 
