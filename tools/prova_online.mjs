@@ -100,6 +100,8 @@ try {
     ok(/max-age=604800/.test(statica.headers['cache-control'] || ''), 'anche i media normali hanno la cache del browser');
     const codice = await prendi('/js/online-regole.js');
     ok(/no-store/.test(codice.headers['cache-control'] || ''), 'il codice resta senza cache');
+    const pezzo = await new Promise(r => http.get({ host: '127.0.0.1', port: PORT, path: '/leggero/video/nemici/sergente_tutorial.mp4', headers: { Host: fuori, Range: 'bytes=0-99' } }, res => { let n = 0; res.on('data', c => n += c.length); res.on('end', () => r({ status: res.statusCode, n, range: res.headers['content-range'], accetta: res.headers['accept-ranges'] })); }));
+    ok(pezzo.status === 206 && pezzo.n === 100 && /^bytes 0-99\/\d+$/.test(pezzo.range || ''), `video a pezzi (Range) come vogliono i browser dei telefoni (${pezzo.status}, ${pezzo.n} byte, ${pezzo.range})`);
     const fuga = await prendi('/leggero/../tools/chiave_gemini.txt');
     ok(fuga.statusCode === 403 || fuga.statusCode === 404, 'niente file fuori da immagini/ e video/');
     ok(!intruso.some(([e]) => e === 'clic'), 'lo stream del master senza segreto non riceve i clic');

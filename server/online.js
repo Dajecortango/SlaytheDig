@@ -87,10 +87,23 @@ const MEDIA_CACHE = 'public, max-age=604800';
 const TIPI = { '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.mp4': 'video/mp4', '.webm': 'video/webm' };
 const inCorso = new Map();  // file leggero -> Promise (una conversione alla volta per file)
 
-function mandaFile(res, file) {
+// Con "Range" si manda solo il pezzo chiesto (206): i browser dei telefoni (Safari) riproducono i video solo così
+function mandaFile(req, res, file) {
     fs.readFile(file, (err, buf) => {
         if (err) { res.writeHead(404); res.end(); return; }
-        res.writeHead(200, { 'Content-Type': TIPI[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': MEDIA_CACHE });
+        const tipo = TIPI[path.extname(file).toLowerCase()] || 'application/octet-stream';
+        const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+        if (m && (m[1] || m[2])) {
+            let inizio = m[1] ? parseInt(m[1], 10) : buf.length - parseInt(m[2], 10);
+            let fine = m[1] && m[2] ? parseInt(m[2], 10) : buf.length - 1;
+            inizio = Math.max(0, inizio); fine = Math.min(fine, buf.length - 1);
+            if (inizio > fine) { res.writeHead(416, { 'Content-Range': `bytes */${buf.length}` }); res.end(); return; }
+            res.writeHead(206, { 'Content-Type': tipo, 'Cache-Control': MEDIA_CACHE, 'Accept-Ranges': 'bytes',
+                'Content-Range': `bytes ${inizio}-${fine}/${buf.length}`, 'Content-Length': fine - inizio + 1 });
+            res.end(buf.subarray(inizio, fine + 1));
+            return;
+        }
+        res.writeHead(200, { 'Content-Type': tipo, 'Cache-Control': MEDIA_CACHE, 'Accept-Ranges': 'bytes', 'Content-Length': buf.length });
         res.end(buf);
     });
 }
@@ -114,10 +127,10 @@ function leggero(req, res, pathname) {
     const orig = path.join(ROOT, rel);
     if (!fs.existsSync(orig)) { res.writeHead(404); res.end(); return; }
     const ext = path.extname(rel).toLowerCase();
-    if (!['.webp', '.png', '.jpg', '.jpeg', '.mp4', '.webm'].includes(ext)) { mandaFile(res, orig); return; }
+    if (!['.webp', '.png', '.jpg', '.jpeg', '.mp4', '.webm'].includes(ext)) { mandaFile(req, res, orig); return; }
     const dest = path.join(CACHE, rel.replace(/\.(png|jpe?g)$/i, '.webp').replace(/\.webm$/i, '.mp4'));
-    if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= fs.statSync(orig).mtimeMs) { mandaFile(res, dest); return; }
-    converti(orig, dest).then(fatto => mandaFile(res, fatto ? dest : orig));
+    if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= fs.statSync(orig).mtimeMs) { mandaFile(req, res, dest); return; }
+    converti(orig, dest).then(fatto => mandaFile(req, res, fatto ? dest : orig));
 }
 
 function gestisci(req, res, pathname) {
