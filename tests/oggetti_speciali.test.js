@@ -171,4 +171,52 @@ module.exports = (t, carica) => {
             t.ok(g.simItemValue(it) > 0, `${id}: il simulatore gli dà un valore`);
         });
     });
+    t.test('rari: Spadone del Primo Sangue e Ascia del Carnefice usano gli effetti dei non comuni', () => {
+        const stato = prepara();
+        const spadone = lib.armeria.spadone_primo_sangue, ascia = lib.armeria.ascia_carnefice_glostok;
+        t.ok(spadone && spadone.rarity === 'raro' && spadone.str === 1 && spadone.first_hit_dmg === 3, 'spadone');
+        t.ok(ascia && ascia.rarity === 'raro' && ascia.dmg === 1 && ascia.execute_dmg === 2, 'ascia');
+        const a = eroe('A', { items: [oggetto('spadone_primo_sangue')] });
+        stato.party = [a];
+        g.startCombatItemEffects();
+        t.uguale(4, g.resolveAttack(a, nemico(), [5]).dmg, '1 + 3 al primo colpo');
+    });
+
+    t.test('Pugnale Succhiasangue: colpo a segno, una volta su due cura 1 HP', () => {
+        const stato = prepara();
+        const a = eroe('A', { hp: 2, items: [oggetto('pugnale_succhiasangue')] });
+        stato.party = [a];
+        g.startCombatItemEffects();
+        g.eval('Math.__r = Math.random; Math.random = () => 0.2');
+        g.resolveAttack(a, nemico(), [5]);
+        t.uguale(3, a.hp, 'curato');
+        g.eval('Math.random = () => 0.8');
+        g.resolveAttack(a, nemico(), [5]);
+        t.uguale(3, a.hp, 'non questa volta');
+        g.eval('Math.random = Math.__r');
+    });
+
+    t.test('Lama di Ghiaccio di Hvid: ogni colpo a segno toglie 1 all\'Attacco del nemico, al massimo 2', () => {
+        const stato = prepara();
+        const a = eroe('A', { items: [oggetto('lama_ghiaccio_hvid')] });
+        stato.party = [a];
+        g.startCombatItemEffects();
+        const n = nemico({ att: 5 });
+        g.resolveAttack(a, n, [5]); t.uguale(4, n.att);
+        g.resolveAttack(a, n, [5]); t.uguale(3, n.att);
+        g.resolveAttack(a, n, [5]); t.uguale(3, n.att, 'massimo -2');
+    });
+
+    t.test('Corazza dell\'Ultimo Baluardo: a 2 HP o meno +2 armatura subito, una volta per scontro', () => {
+        const stato = prepara();
+        const a = eroe('A', { items: [oggetto('corazza_ultimo_baluardo')] });
+        a.items[0].armor = 0;  // conta solo l'effetto speciale
+        stato.party = [a];
+        g.startCombatItemEffects();
+        g.resolveMonsterAttack(nemico({ dmg: 2 }), a);
+        t.uguale(2, a.hp); t.uguale(2, a.current_armor, 'scatta');
+        a.current_armor = 0; a.hp = 2;
+        g.resolveMonsterAttack(nemico({ dmg: 1 }), a);
+        t.uguale(0, a.current_armor, 'una volta sola');
+    });
 };

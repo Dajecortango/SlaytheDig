@@ -134,7 +134,10 @@ const PROC_SCALA = {
 const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75,
     // Effetti speciali degli oggetti (ITEM_SPECIALS in js/comune.js): stima di quanto valgono rispetto alle statistiche
     war_horn: 2, first_hit_dmg: 1.25, execute_dmg: 1.25, first_hit_stun: 3, thorns: 1.5, ally_down_str: 1, combat_reroll: 2,
-    challenge_skip: 1.5, haggle_bonus: 0.75, loot_extra_once: 1, rest_heal: 1.5, potion_heal_bonus: 1 };
+    challenge_skip: 1.5, haggle_bonus: 0.75, loot_extra_once: 1, rest_heal: 1.5, potion_heal_bonus: 1,
+    hit_heal_chance: 0.02, hit_chill: 1.5, last_stand_armor: 0.75 };
+// Lama di Ghiaccio di Hvid (hit_chill): Attacco massimo tolto al nemico in uno scontro
+const ITEM_CHILL_MAX = 2;
 
 /* ---------- Partita online (js/online.js, server/online.js) ---------- */
 const VOTE_SECONDS = 30;               // durata di un voto
