@@ -71,19 +71,52 @@
         return JSON.parse(testo);
     }
     const DOVE = { topbar: 'partyTopBar', console: 'partyConsole', modal: 'wc3Modal' };
+    // Si aggiornano solo i pezzi cambiati (morphdom, js/vendor/): animazioni CSS, immagini e scorrimento restano
+    // dove sono invece di ripartire a ogni aggiornamento del master. Senza morphdom si sostituisce tutto.
+    const OPZIONI_MORPH = { onBeforeElUpdated: (da, a) => !da.isEqualNode(a) };
+    function elementoDa(html) {
+        const t = document.createElement('template');
+        t.innerHTML = rendiLeggero(html);
+        return t.content.firstElementChild;
+    }
+    function trasforma(vecchio, nuovo) {
+        if (!nuovo) return vecchio;
+        if (typeof morphdom === 'function') return morphdom(vecchio, nuovo, OPZIONI_MORPH);
+        vecchio.replaceWith(nuovo);
+        return nuovo;
+    }
+    // Scorrimento del master (carosello dei capitoli, diario...): data-online-scroll="x,y" scritto da js/online.js
+    function applicaScorrimento(root) {
+        if (!root) return;
+        [root, ...root.querySelectorAll('[data-online-scroll]')].forEach(el => {
+            const v = el.getAttribute && el.getAttribute('data-online-scroll');
+            if (!v) return;
+            const [x, y] = v.split(',').map(Number);
+            if (Math.abs(el.scrollLeft - x) > 2 || Math.abs(el.scrollTop - y) > 2) el.scrollTo({ left: x, top: y, behavior: 'smooth' });
+        });
+    }
     function applicaParti(parti) {
         Object.entries(parti || {}).forEach(([k, html]) => {
             if (k === 'body') { document.body.className = 'online-guest ' + (html || ''); return; }
-            if (k === 'screen') { $('gameContainer').innerHTML = html ? rendiLeggero(html) : ''; return; }
-            if (k === 'overlays') { $('onlineOverlays').innerHTML = html ? rendiLeggero(html) : ''; return; }
+            if (k === 'screen') {
+                const box = $('gameContainer');
+                const nuovo = html ? elementoDa(html) : null;
+                const attuale = box.firstElementChild;
+                // Stessa schermata: si aggiorna; schermata nuova: si mette al posto della vecchia (parte la sua animazione d'ingresso)
+                if (nuovo && attuale && attuale.id && attuale.id === nuovo.id) applicaScorrimento(trasforma(attuale, nuovo));
+                else { box.replaceChildren(...(nuovo ? [nuovo] : [])); applicaScorrimento(nuovo); }
+                return;
+            }
+            if (k === 'overlays') {
+                const box = $('onlineOverlays');
+                trasforma(box, elementoDa(`<div id="onlineOverlays">${html || ''}</div>`));
+                return;
+            }
             const id = DOVE[k];
             if (!id) return;
             const vecchio = $(id);
             if (!html) { vecchio.innerHTML = ''; if (k === 'modal') vecchio.classList.add('hidden'); return; }
-            const t = document.createElement('template');
-            t.innerHTML = rendiLeggero(html);
-            const nuovo = t.content.firstElementChild;
-            if (nuovo) vecchio.replaceWith(nuovo);
+            applicaScorrimento(trasforma(vecchio, elementoDa(html)));
         });
     }
 

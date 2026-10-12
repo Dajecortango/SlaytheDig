@@ -38,6 +38,11 @@ function trovaElementoRemoto(root, percorso) {
 function onlineSerializza(el) {
     if (!el) return null;
     const copia = el.cloneNode(true);
+    // Scorrimento (non è un attributo): carosello dei capitoli, diario dello scontro... lo riapplica la pagina del giocatore
+    const tuttiOrig = [el, ...el.querySelectorAll('*')], tutteCopie = [copia, ...copia.querySelectorAll('*')];
+    tuttiOrig.forEach((o, i) => {
+        if ((o.scrollLeft || o.scrollTop) && tutteCopie[i]) tutteCopie[i].setAttribute('data-online-scroll', `${Math.round(o.scrollLeft)},${Math.round(o.scrollTop)}`);
+    });
     const orig = el.querySelectorAll('select, input, textarea');
     copia.querySelectorAll('select, input, textarea').forEach((c, i) => {
         const o = orig[i];
@@ -51,12 +56,17 @@ function onlineSerializza(el) {
     [copia, ...copia.querySelectorAll(ANIMATI)].forEach(n => { if (n.matches && n.matches(ANIMATI)) n.removeAttribute('style'); });
     return copia.outerHTML;
 }
-const ONLINE_OVERLAY_ESCLUSI = ['gameContainer', 'partyTopBar', 'partyConsole', 'wc3Modal', 'wc3Tooltip', 'embers', 'onlineMasterBar'];
+// Sovrimpressioni (titolo del capitolo, nodo scelto, cinematica d'attacco...): solo ciò che il gioco aggiunge al body
+// dopo il caricamento. Gli elementi fissi della pagina (barre, .game-layout con tutte le schermate) hanno le loro regioni.
+const ONLINE_FIGLI_STATICI = typeof document !== 'undefined' && document.body ? new Set(document.body.children) : new Set();
+function onlineSovrimpressioni(figli, statici) {
+    return [...figli].filter(c => !statici.has(c) && c.id !== 'onlineMasterBar'
+        && !['SCRIPT', 'AUDIO', 'VIDEO'].includes(c.tagName) && !c.classList.contains('hidden'));
+}
 function onlineRegioni() {
     const screen = document.querySelector('#gameContainer > div:not(.hidden)');
     const modal = document.getElementById('wc3Modal');
-    const overlays = [...document.body.children].filter(c => !ONLINE_OVERLAY_ESCLUSI.includes(c.id)
-        && !['SCRIPT', 'AUDIO', 'VIDEO'].includes(c.tagName) && !c.classList.contains('menu-scene') && !c.classList.contains('hidden'));
+    const overlays = onlineSovrimpressioni(document.body.children, ONLINE_FIGLI_STATICI);
     return {
         body: document.body.className,
         topbar: onlineSerializza(document.getElementById('partyTopBar')),
@@ -203,6 +213,7 @@ function onlineApri() {
         onlineMasterStream.addEventListener('stanza', e => { onlineState.giocatori = JSON.parse(e.data).giocatori; onlineStanzaCambiata(); });
         onlineMasterStream.addEventListener('clic', e => onlineEseguiClic(JSON.parse(e.data)));
         if (onlineOsservatore) onlineOsservatore.observe(document.body, ONLINE_OSSERVA);
+        document.addEventListener('scroll', onlinePianificaInvio, true);  // lo scorrimento non cambia il DOM
         onlineUltimeRegioni = {};
         onlinePianificaInvio();
         onlineInviaStato();
@@ -214,6 +225,7 @@ function onlineChiudi() {
     onlineState.attivo = false; onlineState.code = null; onlineState.segreto = null; onlineState.ordineCreazione = null; onlineState.giocatori = []; onlineState.voto = null; onlineState.pronti = null;
     if (onlineMasterStream) onlineMasterStream.close();
     if (onlineOsservatore) onlineOsservatore.disconnect();
+    document.removeEventListener('scroll', onlinePianificaInvio, true);
     onlineDisegnaBarraMaster();
 }
 function onlineLink() {

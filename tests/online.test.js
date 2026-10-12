@@ -226,4 +226,14 @@ module.exports = (t, carica) => {
         t.ok(!o.attributeFilter.includes('style'));
         t.ok(o.attributeFilter.includes('class'));
     });
+
+    t.test('sovrimpressioni: solo gli elementi aggiunti al body dopo il caricamento (mai le schermate del gioco)', () => {
+        const h = carica();
+        const el = (tag, extra = {}) => ({ tagName: tag, id: '', classList: { contains: c => (extra.classi || []).includes(c) }, ...extra });
+        const layout = el('DIV', { classi: ['game-layout'] }), barra = el('DIV', { id: 'partyTopBar' });
+        const banner = el('DIV', { classi: ['event-banner'] }), script = el('SCRIPT'), nascosto = el('DIV', { classi: ['hidden'] });
+        const masterBar = el('DIV', { id: 'onlineMasterBar' });
+        const fuori = h.onlineSovrimpressioni([layout, barra, banner, script, nascosto, masterBar], new Set([layout, barra, script]));
+        t.ok(fuori.length === 1 && fuori[0] === banner);
+    });
 };
