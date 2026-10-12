@@ -28,8 +28,8 @@ const ONLINE_PERMESSI = {
     triggerLoot: 'tutti', revealLootItem: 'tutti', selectLootChoice: 'tutti', openTreasure: 'tutti',
     selectTreasureItem: 'tutti', cancelTreasureItemSelection: 'tutti', confirmLeaveTreasure: 'tutti',
     revealMerchantItem: 'tutti', showMerchantTab: 'tutti', tryBuyMerchantItem: 'tutti', openMedic: 'tutti',
-    startPrayer: 'tutti', toggleHeroCard: 'tutti', toggleDescBox: 'tutti', openJournal: 'tutti',
-    finishLostFinal: 'tutti', finishWonFinal: 'tutti', challengeChoose: 'tutti',
+    toggleHeroCard: 'tutti', toggleDescBox: 'tutti', openJournal: 'tutti',
+    finishLostFinal: 'tutti', finishWonFinal: 'tutti',
     advanceNode: { screenRest: 'pronti', altrove: 'tutti' },
     confirmLeaveMerchant: 'pronti',
     showScreen: 'finale',
@@ -51,7 +51,7 @@ const ONLINE_PERMESSI = {
     executePrayerRoll: 'preghiera', chooseBlessing: 'preghiera', giveBlessing: 'preghiera',
     executeCaptainRoll: 'capitano',
     // Voti
-    selectStsNode: 'voto:mappa', openHaggle: 'voto:contratta', haggle: 'voto:contratta', rerollMerchantStock: 'voto:rinnova',
+    selectStsNode: 'voto:mappa', challengeChoose: 'voto:prova', startPrayer: 'voto:preghiera', openHaggle: 'voto:contratta', haggle: 'voto:contratta', rerollMerchantStock: 'voto:rinnova',
     // Pulsanti della finestra e voto dalla barra
     __modal: 'modale', __vota: 'tutti'
 };
@@ -86,6 +86,30 @@ function onlineCanRun(azione, args, giocatore, ctx) {
     if (regola === 'modale') return !ctx.modalOwner || ctx.modalOwner === giocatore ? { ok: true } : no('Questa finestra è di un altro giocatore');
     return no('Solo il master può farlo');
 }
+
+// Azioni che decidono la stessa cosa di un voto: se le esegue il master il voto si annulla
+const ONLINE_VOTO_AZIONI = {
+    mappa: ['selectStsNode'], prova: ['challengeChoose', 'confirmChallengeHero'], preghiera: ['startPrayer', 'confirmPrayerHero'],
+    bersaglio: ['executeMonsterAttack'], contratta: ['openHaggle', 'haggle'], rinnova: ['rerollMerchantStock']
+};
+function votoAnnullatoDa(azione, voto) {
+    return !!voto && (ONLINE_VOTO_AZIONI[voto.tipo] || []).includes(azione);
+}
+
+// Nome di un giocatore: non vuoto e mai con il prefisso dei nomi riservati (ONLINE_MASTER)
+function nomeGiocatoreValido(nome) {
+    return typeof nome === 'string' && nome.trim() !== '' && !nome.trim().startsWith('__');
+}
+
+// Un clic remoto vale solo su un elemento attivo e visibile (dentro nessun .hidden o [hidden])
+function elementoCliccabile(el) {
+    return !!el && !el.disabled && !(el.closest && el.closest('.hidden, [hidden]'));
+}
+
+// Cosa osserva il master per sapere che la schermata è cambiata: niente "style", che le animazioni
+// GSAP dei menu cambiano di continuo (si manderebbe la schermata ogni 100 ms)
+const ONLINE_OSSERVA = { subtree: true, childList: true, characterData: true, attributes: true,
+    attributeFilter: ['class', 'hidden', 'disabled', 'value', 'checked', 'selected', 'src', 'data-action', 'data-args', 'data-change', 'data-tip'] };
 
 // Esito di un voto: maggioranza fra i voti dei collegati; pareggio → l'opzione votata dal capo
 // (se è fra le pari), altrimenti la prima delle pari nell'ordine delle opzioni; nessun voto → la prima opzione
@@ -130,5 +154,6 @@ function rendiLeggero(html) {
 
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, onlineRegola, onlineCanRun, resolveVote, nextCaptain, changedRegions, leggeroUrl, rendiLeggero };
+    module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
+        elementoCliccabile, ONLINE_OSSERVA, resolveVote, nextCaptain, changedRegions, leggeroUrl, rendiLeggero };
 }

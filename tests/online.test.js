@@ -151,4 +151,79 @@ module.exports = (t, carica) => {
         h.onlineSalvaAutomatico();
         t.uguale({ A: 'Marco' }, h.readSave('online').stato.onlineOwners);
     });
+
+    // ----- Revisione finale -----
+    const conDue = h => h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Marco', connected: true }, { name: 'Sara', connected: true }];`);
+
+    t.test('revisione #1: un giocatore non può chiamarsi come il master', () => {
+        const h = carica();
+        t.ok(!h.nomeGiocatoreValido('__master__'));
+        t.ok(!h.nomeGiocatoreValido('__qualcosa'));
+        t.ok(!h.nomeGiocatoreValido(''));
+        t.ok(h.nomeGiocatoreValido('Marco'));
+    });
+
+    t.test('revisione #2: cambiando schermata un voto aperto si annulla senza eseguire', () => {
+        const h = carica();
+        conDue(h);
+        h.eval(`globalThis.__n = 0; onlineApriVoto({ tipo: 'bersaglio', domanda: '?', opzioni: [{ id: 'a', label: 'A' }], esegui: () => { __n++; } });
+            showScreen('screenLoot');`);
+        t.uguale(null, h.eval('onlineState.voto'));
+        t.uguale(0, h.eval('__n'));
+    });
+
+    t.test('revisione #2: un\'azione del master che risolve il voto lo annulla', () => {
+        const h = carica();
+        conDue(h);
+        h.eval(`onlineApriVoto({ tipo: 'bersaglio', domanda: '?', opzioni: [{ id: 'a', label: 'A' }], esegui: () => {} });`);
+        t.ok(h.eval(`window.onlineGate('executeMonsterAttack', [])`));
+        t.uguale(null, h.eval('onlineState.voto'));
+    });
+
+    t.test('revisione #2: affrontare la prova e pregare, per un giocatore, sono voti', () => {
+        const ctx = { screen: 'screenChallenge', owners: {}, selects: {} };
+        const h = carica();
+        t.uguale('prova', h.onlineCanRun('challengeChoose', [true], 'Marco', ctx).voto);
+        t.uguale('preghiera', h.onlineCanRun('startPrayer', [], 'Marco', { ...ctx, screen: 'screenRest' }).voto);
+    });
+
+    t.test('revisione #3: un elemento nascosto non si può cliccare da remoto', () => {
+        const h = carica();
+        const el = (dentroNascosto, disabled = false) => ({ disabled, closest: sel => (dentroNascosto && /hidden/.test(sel)) ? {} : null });
+        t.ok(h.elementoCliccabile(el(false)));
+        t.ok(!h.elementoCliccabile(el(true)));
+        t.ok(!h.elementoCliccabile(el(false, true)));
+        t.ok(!h.elementoCliccabile(null));
+    });
+
+    t.test('revisione #4: la finestra aperta da un clic del master è solo sua', () => {
+        const h = carica();
+        conDue(h);
+        h.eval(`window.onlineGate('openOptions', []); openModal('Prova', '<p>x</p>');`);
+        t.uguale(h.eval('ONLINE_MASTER'), h.eval('onlineState.modalOwner'));
+        t.ok(!h.onlineCanRun('__modal', [0], 'Marco', { modalOwner: h.eval('onlineState.modalOwner') }).ok);
+    });
+
+    t.test('revisione #5: la creazione a turno salta chi non era collegato alla conferma', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Anna', connected: false }, { name: 'Marco', connected: true }, { name: 'Sara', connected: true }];
+            stato.party = []; stato.onlineOwners = {}; currentScreenId = 'screenParty'; onlineState.ordineCreazione = onlineGiocatoriCollegati();`);
+        t.uguale('Marco', h.onlineTurnoCreazione());
+    });
+
+    t.test('revisione #6: senza giocatori collegati nessun voto e nessuna esecuzione automatica', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Marco', connected: false }]; globalThis.__n = 0;
+            onlineApriVoto({ tipo: 'bersaglio', domanda: '?', opzioni: [{ id: 'a', label: 'A' }], esegui: () => { __n++; } });`);
+        t.uguale(0, h.eval('__n'));
+        t.uguale(null, h.eval('onlineState.voto'));
+    });
+
+    t.test('revisione #8: le animazioni (stile) non fanno ripartire l\'invio della schermata', () => {
+        const h = carica();
+        const o = h.eval('ONLINE_OSSERVA');
+        t.ok(o.attributes && Array.isArray(o.attributeFilter));
+        t.ok(!o.attributeFilter.includes('style'));
+        t.ok(o.attributeFilter.includes('class'));
+    });
 };

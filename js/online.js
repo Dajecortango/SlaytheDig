@@ -7,7 +7,8 @@
    ========================================================================== */
 // Il master apre il gioco dal server (http://localhost:8787): stesse origine e porta per le chiamate
 const ONLINE_BASE = (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) ? location.origin : 'http://localhost:8787';
-const onlineState = { attivo: false, code: null, giocatori: [], voto: null, pronti: null, modalOwner: null, attore: null };
+const onlineState = { attivo: false, code: null, segreto: null, giocatori: [], voto: null, pronti: null, modalOwner: null, attore: null,
+    ultimoClicMaster: 0, ordineCreazione: null };
 const onlineDopoClic = [];
 let onlineMasterStream = null;
 
@@ -15,7 +16,8 @@ const onlineAttivo = () => onlineState.attivo;
 const onlineGiocatoriCollegati = () => onlineState.giocatori.filter(gi => gi.connected).map(gi => gi.name);
 
 function onlinePost(url, body) {
-    return fetch(ONLINE_BASE + url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+    const headers = { 'Content-Type': 'application/json', ...(onlineState.segreto ? { 'X-Online-Segreto': onlineState.segreto } : {}) };
+    return fetch(ONLINE_BASE + url, { method: 'POST', headers, body: JSON.stringify(body || {}) })
         .then(r => r.json()).catch(() => ({ error: 'Server non raggiungibile' }));
 }
 const onlineAvvisa = (giocatore, testo) => onlinePost('/api/online/avviso', { giocatore, testo });
@@ -44,6 +46,9 @@ function onlineSerializza(el) {
         else c.setAttribute('value', o.value);
     });
     copia.querySelectorAll('script, audio').forEach(n => n.remove());
+    // Pannelli appesi che dondolano (js/wc3fx.js): il loro stile cambia a ogni fotogramma, ai giocatori basta la posizione di riposo
+    const ANIMATI = '.wc-hang, .wc-sway, .wc-chains span';
+    [copia, ...copia.querySelectorAll(ANIMATI)].forEach(n => { if (n.matches && n.matches(ANIMATI)) n.removeAttribute('style'); });
     return copia.outerHTML;
 }
 const ONLINE_OVERLAY_ESCLUSI = ['gameContainer', 'partyTopBar', 'partyConsole', 'wc3Modal', 'wc3Tooltip', 'embers', 'onlineMasterBar'];
@@ -114,7 +119,13 @@ function contestoOnline() {
 
 // Cancello di js/azioni.js: il master locale passa sempre; i clic dei giocatori passano da onlineCanRun
 window.onlineGate = function (nome, args) {
-    if (!onlineState.attivo || !onlineState.attore) return true;
+    if (!onlineState.attivo) return true;
+    if (!onlineState.attore) {
+        // Clic del master (o del gioco): un'azione che decide un voto aperto lo annulla; le finestre che apre sono sue
+        onlineState.ultimoClicMaster = Date.now();
+        if (votoAnnullatoDa(nome, onlineState.voto)) onlineAnnullaVoto();
+        return true;
+    }
     const giocatore = onlineState.attore;
     const r = onlineCanRun(nome, args, giocatore, contestoOnline());
     if (r.ok) return true;
@@ -132,12 +143,13 @@ const ONLINE_RADICI = {
     modal: () => document.getElementById('wc3Modal')
 };
 function onlineEseguiClic(c) {
+    if (!nomeGiocatoreValido(c.giocatore)) return;  // nomi riservati (il master): mai dai giocatori
     if (c.azione === '__vota') { onlineVota(c.giocatore, c.args[0], c.args[1]); return; }
     const root = c.regione === 'overlays' ? null : (ONLINE_RADICI[c.regione] || (() => null))();
     const el = root && trovaElementoRemoto(root, c.percorso);
     const attr = { click: 'action', change: 'change', input: 'input', keydown: 'enter' }[c.tipo] || 'action';
     const atteso = c.azione === '__modal' ? (el && el.dataset.modalBtn === String(c.args[0])) : (el && el.dataset[attr] === c.azione);
-    if (!atteso) { onlineAvvisa(c.giocatore, 'La schermata è cambiata, riprova'); return; }
+    if (!atteso || !elementoCliccabile(el)) { onlineAvvisa(c.giocatore, 'La schermata è cambiata, riprova'); return; }
     if (c.azione === '__modal') {
         const r = onlineCanRun('__modal', c.args, c.giocatore, contestoOnline());
         if (!r.ok) { onlineAvvisa(c.giocatore, r.motivo); return; }
@@ -163,7 +175,11 @@ function onlineEseguiClic(c) {
 /* ---------- Finestre aperte da un giocatore ---------- */
 if (typeof openModal === 'function') {
     const apriOrig = openModal;
-    openModal = function (...a) { onlineState.modalOwner = onlineState.attore || null; return apriOrig.apply(this, a); };
+    openModal = function (...a) {
+        // Aperta da un giocatore: sua; da un clic del master (stesso giro): del master; dal gioco più tardi: di tutti
+        onlineState.modalOwner = onlineState.attore || (Date.now() - onlineState.ultimoClicMaster < 50 ? ONLINE_MASTER : null);
+        return apriOrig.apply(this, a);
+    };
 }
 // Medico: cura solo il proprio eroe (spec, sezione 5)
 if (typeof openMedicHeal === 'function') {
@@ -181,12 +197,12 @@ function onlineApri() {
     if (location.protocol === 'file:') { uiError('La partita online funziona solo dal server: avvia avvia-server.bat'); return; }
     onlinePost('/api/online/apri').then(r => {
         if (r.error || !r.code) { uiError(r.error || 'Server non raggiungibile'); return; }
-        onlineState.attivo = true; onlineState.code = r.code;
+        onlineState.attivo = true; onlineState.code = r.code; onlineState.segreto = r.segreto;
         if (onlineMasterStream) onlineMasterStream.close();
-        onlineMasterStream = new EventSource(`${ONLINE_BASE}/api/online/master`);
+        onlineMasterStream = new EventSource(`${ONLINE_BASE}/api/online/master?segreto=${encodeURIComponent(onlineState.segreto)}`);
         onlineMasterStream.addEventListener('stanza', e => { onlineState.giocatori = JSON.parse(e.data).giocatori; onlineStanzaCambiata(); });
         onlineMasterStream.addEventListener('clic', e => onlineEseguiClic(JSON.parse(e.data)));
-        if (onlineOsservatore) onlineOsservatore.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+        if (onlineOsservatore) onlineOsservatore.observe(document.body, ONLINE_OSSERVA);
         onlineUltimeRegioni = {};
         onlinePianificaInvio();
         onlineInviaStato();
@@ -195,7 +211,7 @@ function onlineApri() {
 }
 function onlineChiudi() {
     onlinePost('/api/online/chiudi');
-    onlineState.attivo = false; onlineState.code = null; onlineState.giocatori = []; onlineState.voto = null; onlineState.pronti = null;
+    onlineState.attivo = false; onlineState.code = null; onlineState.segreto = null; onlineState.ordineCreazione = null; onlineState.giocatori = []; onlineState.voto = null; onlineState.pronti = null;
     if (onlineMasterStream) onlineMasterStream.close();
     if (onlineOsservatore) onlineOsservatore.disconnect();
     onlineDisegnaBarraMaster();
@@ -221,7 +237,8 @@ const onlineOrdine = () => onlineState.giocatori.map(gi => gi.name);
 function onlineTurnoCreazione() {
     if (!onlineState.attivo || currentScreenId !== 'screenParty') return null;
     const conEroe = Object.values(stato.onlineOwners || {});
-    return onlineOrdine().find(n => !conEroe.includes(n)) || null;
+    // Ordine fissato quando il master conferma la compagnia: solo chi era collegato allora
+    return (onlineState.ordineCreazione || onlineGiocatoriCollegati()).find(n => !conEroe.includes(n)) || null;
 }
 
 // Chi deve agire adesso (per l'avviso "Tocca a te" dei giocatori)
@@ -270,6 +287,7 @@ if (typeof confirmPartySize === 'function') {
             if (![...sel.options].some(o => Number(o.value) === n)) sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n} Eroi</option>`);
             sel.value = String(n);
             stato.onlineOwners = {};
+            onlineState.ordineCreazione = onlineGiocatoriCollegati();
         }
         return confermaOrig.apply(this, arguments);
     };
@@ -298,7 +316,8 @@ function onlineCapo() {
 /* ---------- Voti ---------- */
 let onlineVotoTimer = null, onlineVotoSeq = 0;
 function onlineApriVoto({ tipo, domanda, opzioni, secondi = VOTE_SECONDS, esegui }) {
-    if (!onlineState.attivo || !onlineGiocatoriCollegati().length) { esegui(opzioni[0].id); return; }
+    // Senza giocatori collegati nessun voto: il master decide con i pulsanti del gioco
+    if (!onlineState.attivo || !onlineGiocatoriCollegati().length) return;
     clearTimeout(onlineVotoTimer);
     onlineState.voto = { id: `v${++onlineVotoSeq}`, tipo, domanda, opzioni, voti: {}, scadenza: Date.now() + secondi * 1000, esegui };
     onlineVotoTimer = setTimeout(() => onlineChiudiVoto(), secondi * 1000);
@@ -324,6 +343,13 @@ function onlineChiudiVoto(forzato) {
     onlineInviaStato();
 }
 function onlineForzaVoto(op) { onlineChiudiVoto(op); }
+// Voto annullato senza eseguire niente (schermata lasciata, o il master ha deciso con i pulsanti del gioco)
+function onlineAnnullaVoto() {
+    clearTimeout(onlineVotoTimer);
+    onlineState.voto = null;
+    onlineInviaStato();
+}
+let onlineSchermataPrima = null;
 
 // Clic di un giocatore che diventa un voto (regole 'voto:<tipo>' di js/online-regole.js)
 function onlineVotoDaClic(tipo, nome, args, giocatore) {
@@ -348,9 +374,10 @@ function onlineApriVotoMappa() {
 if (typeof showScreen === 'function') {
     const mostraOrig = showScreen;
     showScreen = function (id) {
+        onlineSchermataPrima = currentScreenId;
         const r = mostraOrig.apply(this, arguments);
         if (onlineState.attivo) {
-            if (onlineState.voto && id !== 'screenMap' && onlineState.voto.tipo === 'mappa') { clearTimeout(onlineVotoTimer); onlineState.voto = null; }
+            if (onlineState.voto && id !== onlineSchermataPrima) onlineAnnullaVoto();  // il voto riguardava la schermata lasciata
             if (onlineState.pronti) { onlineState.pronti = null; onlineProntiAzione = null; }  // nuova schermata: i pronti ripartono da zero
             if (id === 'screenMap') onlineSalvaAutomatico();  // si riprende da qui se il master chiude
             if (id === 'screenMap' && stato.stsMapNodes.filter(n => n.active && !n.done).length > 1) setTimeout(onlineApriVotoMappa, 600);
@@ -400,6 +427,11 @@ function onlineApriVotoBersaglio() {
 }
 
 function onlineVotoSpeciale(tipo, nome, args, giocatore) {
+    if (tipo === 'prova' || tipo === 'preghiera') {
+        if (!onlineState.voto) (tipo === 'prova' ? onlineApriVotoProva : onlineApriVotoPreghiera)();
+        onlineAvvisa(giocatore, 'Si decide insieme: vota nella barra in basso');
+        return;
+    }
     if (onlineState.voto && onlineState.voto.tipo === tipo) return;
     if (tipo === 'bersaglio') { onlineApriVotoBersaglio(); return; }
     if (tipo === 'contratta') {

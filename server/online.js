@@ -13,11 +13,20 @@ const PUBLIC = path.join(__dirname, 'public');
 const DISCONNECT_MS = process.env.ONLINE_DISCONNECT_MS ? parseInt(process.env.ONLINE_DISCONNECT_MS, 10) : 20000;
 const PING_MS = process.env.SSE_PING_MS ? parseInt(process.env.SSE_PING_MS, 10) : 15000;
 const NOME_MAX = 24;
+const { nomeGiocatoreValido } = require('../js/online-regole.js');
 
 let stanza = null;        // { code, giocatori: Map(token -> { name, connected, flussi: Set, timer }), regioni: {}, stato: null }
 const masters = new Set(); // stream SSE del master
 
-const eLocale = req => /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '');
+// Master: chiamata dal PC stesso (loopback; anche ngrok arriva da qui, ma con l'Host pubblico) e con Host locale.
+// Dopo l'apertura della stanza serve anche il segreto (intestazione X-Online-Segreto o ?segreto= per lo stream).
+const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
+const eLocale = req => LOOPBACK.includes(req.socket.remoteAddress) && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '');
+const haSegreto = req => {
+    if (!stanza) return false;
+    const q = new URL(req.url, 'http://x').searchParams.get('segreto');
+    return (req.headers['x-online-segreto'] || q) === stanza.segreto;
+};
 
 function json(res, code, data) {
     const body = JSON.stringify(data);
@@ -91,7 +100,8 @@ function converti(orig, dest) {
     return p;
 }
 function leggero(req, res, pathname) {
-    const rel = path.normalize(decodeURIComponent(pathname.slice('/leggero/'.length)));
+    let rel;
+    try { rel = path.normalize(decodeURIComponent(pathname.slice('/leggero/'.length))); } catch (e) { res.writeHead(400); res.end(); return; }
     if (rel.startsWith('..') || path.isAbsolute(rel) || !/^(immagini|video)[\\/]/.test(rel)) { res.writeHead(403); res.end(); return; }
     const orig = path.join(ROOT, rel);
     if (!fs.existsSync(orig)) { res.writeHead(404); res.end(); return; }
@@ -106,11 +116,11 @@ function gestisci(req, res, pathname) {
     if (pathname.startsWith('/leggero/')) { leggero(req, res, pathname); return true; }
     // ----- Master (Host locale) -----
     if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso'].includes(pathname.slice(12))) {
-        if (!eLocale(req)) { json(res, 403, { error: 'Solo il master' }); return true; }
         const cosa = pathname.slice(12);
+        if (!eLocale(req) || (cosa !== 'apri' && !haSegreto(req))) { json(res, 403, { error: 'Solo il master' }); return true; }
         if (cosa === 'apri' && req.method === 'POST') {
-            if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), giocatori: new Map(), regioni: {}, stato: null };
-            json(res, 200, { code: stanza.code });
+            if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), segreto: crypto.randomBytes(16).toString('hex'), giocatori: new Map(), regioni: {}, stato: null };
+            json(res, 200, { code: stanza.code, segreto: stanza.segreto });
             return true;
         }
         if (cosa === 'chiudi' && req.method === 'POST') {
@@ -170,6 +180,7 @@ function gestisci(req, res, pathname) {
             if (vecchio) { json(res, 200, { token: data.token, nome: vecchio.name }); return; }
             const nome = pulisciNome(data.nome);
             if (!nome) { json(res, 200, { error: 'Scrivi un nome' }); return; }
+            if (!nomeGiocatoreValido(nome)) { json(res, 200, { error: 'Questo nome è riservato' }); return; }
             if ([...stanza.giocatori.values()].some(gi => gi.name.toLowerCase() === nome.toLowerCase())) { json(res, 200, { error: 'Nome già usato da un altro giocatore' }); return; }
             const token = crypto.randomBytes(16).toString('hex');
             stanza.giocatori.set(token, { name: nome, connected: false, flussi: new Set(), timer: null });
