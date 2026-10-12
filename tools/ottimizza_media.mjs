@@ -3,9 +3,9 @@
 //   node tools/ottimizza_media.mjs              mostra cosa cambierebbe e quanto si risparmia, senza toccare niente
 //   node tools/ottimizza_media.mjs --applica    riscrive i file
 // Regole:
-//   audio (.ogg in audio/): Ogg Opus a 64 kbps stereo (AUDIO_KBPS), se oggi è sopra; il volume non cambia
+//   audio (.ogg in audio/): Ogg Opus a 48 kbps stereo (AUDIO_KBPS), se oggi è sopra; il volume non cambia
 //     (i temi sono già normalizzati a -15 LUFS). Un brano nuovo si converte direttamente così:
-//     ffmpeg -i brano.m4a -af loudnorm=I=-15:TP=-1.5:LRA=11 -ar 48000 -c:a libopus -b:a 64k audio/temi/x.ogg
+//     ffmpeg -i brano.m4a -af loudnorm=I=-15:TP=-1.5:LRA=11 -ar 48000 -c:a libopus -b:a 48k audio/temi/x.ogg
 //   video (.mp4 in video/): H.264 al massimo 720p (VIDEO_MAX_H), CRF 28, senza audio (i video del gioco
 //     sono muti), avvio rapido (faststart). Regola per i video nuovi: 720p, circa 10 secondi, sotto 2 MB.
 // Un file si riscrive solo se diventa almeno il 15% più leggero. Gli originali restano nella cronologia di git.
@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APPLY = process.argv.includes('--applica');
-const AUDIO_KBPS = 64;
+const AUDIO_KBPS = 48;
 const VIDEO_MAX_H = 720;
 const VIDEO_CRF = 28;
 const MIN_GAIN = 0.15;

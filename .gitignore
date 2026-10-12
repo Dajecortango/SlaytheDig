@@ -35,3 +35,6 @@ lore/
 
 # Media leggeri per i giocatori della partita online (creati da server/online.js con ffmpeg)
 server/cache-leggera/
+
+# Strumenti di Claude Code (skill, agenti, impostazioni locali): restano sul PC, fuori dal progetto
+.claude/
