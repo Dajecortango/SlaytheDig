@@ -71,6 +71,12 @@ try {
     ok(master.some(([e, d]) => e === 'stanza' && d.giocatori.some(gi => gi.name === 'Marco' && !gi.connected)), 'Marco disconnesso dopo il tempo massimo');
     const rientro = (await req('POST', '/api/online/entra', { code, nome: 'Marco', token: marco.token }, fuori)).body;
     ok(rientro.token === marco.token, 'Marco rientra con lo stesso token');
+    const pagina = await new Promise(r => http.get({ host: '127.0.0.1', port: PORT, path: `/online/${code}`, headers: { Host: fuori } }, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => r({ status: res.statusCode, d })); }));
+    ok(pagina.status === 200 && pagina.d.includes('online-client.js'), 'la pagina del giocatore si apre col codice giusto');
+    const client = await new Promise(r => http.get({ host: '127.0.0.1', port: PORT, path: '/online-client.js', headers: { Host: fuori } }, res => { res.resume(); r(res); }));
+    ok(client.statusCode === 200 && /javascript/.test(client.headers['content-type'] || ''), 'lo script della pagina del giocatore arriva');
+    const sbagliata = await new Promise(r => http.get({ host: '127.0.0.1', port: PORT, path: '/online/nonesiste', headers: { Host: fuori } }, res => { res.resume(); r(res); }));
+    ok(sbagliata.statusCode === 404, 'stanza inesistente: 404');
     master.chiudi();
 } finally {
     server.kill();
