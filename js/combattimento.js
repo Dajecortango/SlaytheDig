@@ -406,15 +406,10 @@
                     target.tenacityUsed = true;
                     target.hp = Math.min(target.maxHp, target.tenacityRevive);
                     events.push({ type: 'tenacia', text: `💪 ${target.name} crolla a terra... ma si rialza con ${target.hp} HP: tanto ho tenacia!` });
-                } else if (target.hp - dmg <= 0 && hasBlessing(target, 'grazia')) {
-                    // Benedizione della preghiera "Grazia": una volta, torna in piedi
-                    spendBlessing(target, 'grazia');
-                    target.hp = Math.min(target.maxHp, PRAYER_BLESSINGS.grazia.val || 2);
-                    events.push({ type: 'grazia', text: `🙏 Grazia! ${target.name} sta per cadere, ma una luce lo rialza con ${target.hp} HP.` });
                 } else if (target.hp - dmg <= 0 && hasRelic('marchio_di_jag_antar')) {
                     target.hp = 1;
                     breakRelic('marchio_di_jag_antar');
-                    events.push({ type: 'marchio', text: `✨ Il Marchio di Jag Antar si infrange, salvando ${target.name} da morte certa!` });
+                    events.push({ type: 'marchio', text: `✨ Il Marchio di Jag Àntar si infrange, salvando ${target.name} da morte certa!` });
                 } else {
                     hpDamage = dmg;
                     target.hp = Math.max(0, target.hp - dmg);
@@ -854,6 +849,7 @@
             stato.helpDmgBonus = 0;  // il danno in più di un Aiuta (helpDmgBonus) vale solo nel round
             expireTempBuffs().forEach(({ hero, buff }) => logCombat(`⌛ Finisce l'effetto di ${buff.name} su ${hero.name}.`));
             applyPendingBuffs();
+            applyRegen().forEach(({ hero, gained }) => logCombat(`🌿 ${hero.name} rigenera ${gained} HP.`));
             updateEnemyInfoUI();
             showHeroSelectionPhase();
         }
@@ -925,7 +921,7 @@
         }
 
         /* ---------- Anteprima dell'esito sui pulsanti azione ---------- */
-        // Modificatore fisso ai tiri per colpire: bonus (es. "Benedetti da Jag Antar") meno penalità (armature pesanti, maledizioni)
+        // Modificatore fisso ai tiri per colpire: bonus (es. "Benedetti da Jag Àntar") meno penalità (armature pesanti, maledizioni)
         function attackMod(hero) {
             return (hero.att_bonus || 0) - (hero.att_penalty || 0);
         }

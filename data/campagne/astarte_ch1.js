@@ -25,8 +25,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "cd": 7,
             "reward": {
                 "type": "coins",
-                "name": "15 Monete d'Oro",
-                "desc": "+15 monete alla cassa della compagnia",
+                "name": "15 Scudi",
+                "desc": "+15 Scudi alla cassa della compagnia",
                 "effects": [
                     { "effect": "coins", "val": 15 }
                 ]
@@ -103,7 +103,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "punishment": {
                 "type": "penalty",
                 "name": "Pedaggio forzato",
-                "desc": "Perdete immediatamente 12 monete d'oro dal fondo comune",
+                "desc": "Perdete immediatamente 12 Scudi dal fondo comune",
                 "effects": [
                     { "effect": "coins", "val": -12 }
                 ]
@@ -113,7 +113,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "title": "Il Seachtuir morto nella neve",
             "desc": "Ai piedi di un grande abete, quasi del tutto sepolto dalla neve fresca, giace il cadavere di un guerriero del clan Seachtuir di Aebeltoff, che riconoscete dai colori azzurro e bianco del clan e dal simbolo della testa di cane. La cotta di maglia è coperta di brina e le labbra sono rilassate in un sereno sorriso. Tra i guanti d'arme congelati stringe una bussola, mentre la spada è infilata nel terreno ghiacciato, come una tomba solitaria. L'aria sembra essere assolutamente immobile. La bussola è incrostata di fango e cenere, e contiene la falange di un dito ossificato che gira in modo irregolare.",
             "ignoreText": "È un semplice soldato del clan Seachtuir, probabilmente perso durante una spedizione. Non perdete tempo ad accompagnare la sua anima nel Margine, presi dalla vostra missione.",
-            "successText": "Vi inginocchiate nel fango gelato e intonate i canti sacri a Jag Antar come intercessione per l'anima del Seachtuir verso il Margine. Quando terminate la sacra litania, osservate meglio la bussola. Una bussola inservibile, che contiene al suo interno l'osso di un dito. Qualcuno, fra di voi, parla di un uomo che si cavò gli occhi per non essere costretto a seguire la strada tracciata da uno Jarl. La morale, nella storia, era che finché si ha una meta, si è schiavi del proprio viaggio. Solo chi è disperatamente perduto può dirsi del tutto libero dal destino.",
+            "successText": "Vi inginocchiate nel fango gelato e intonate i canti sacri a Jag Àntar come intercessione per l'anima del Seachtuir verso il Margine. Quando terminate la sacra litania, osservate meglio la bussola. Una bussola inservibile, che contiene al suo interno l'osso di un dito. Qualcuno, fra di voi, parla di un uomo che si cavò gli occhi per non essere costretto a seguire la strada tracciata da uno Jarl. La morale, nella storia, era che finché si ha una meta, si è schiavi del proprio viaggio. Solo chi è disperatamente perduto può dirsi del tutto libero dal destino.",
             "failText": "Tentate di prendere la bussola con impazienza, senza rendere onore al Seachtuir morto. Le dita dell'uomo sembrano serrare la presa, e un alito di vento spettrale cala sul gruppo. La bussola sembra incrinarsi ed il dito smette di girare.",
             "stat": "fth",
             "cd": 7,
@@ -151,7 +151,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
         },
         "cappella_viandante": {
             "title": "La cappella del Margine",
-            "desc": "Anche in luoghi remoti come questo, lungo i sentieri che si inerpicano fra i picchi, la fede trova la strada. Vi imbattete in un'edicola votiva, un piccolo altare a cui i pellegrini, coloro che si sono persi e gli esploratori fanno riferimento durante i loro viaggi. L'icona del trono di Jag Antar, Asi di questa edicola, è stata tolta dalla nicchia e gettata fra il pietrisco e il fango del sentiero. L'atmosfera intorno all'edicola è tetra ed opprimente, intrisa del fetore della profanazione.",
+            "desc": "Anche in luoghi remoti come questo, lungo i sentieri che si inerpicano fra i picchi, la fede trova la strada. Vi imbattete in un'edicola votiva, un piccolo altare a cui i pellegrini, coloro che si sono persi e gli esploratori fanno riferimento durante i loro viaggi. L'icona del trono di Jag Àntar, Asi di questa edicola, è stata tolta dalla nicchia e gettata fra il pietrisco e il fango del sentiero. L'atmosfera intorno all'edicola è tetra ed opprimente, intrisa del fetore della profanazione.",
             "ignoreText": "Non rientra nei vostri obiettivi ramazzare edicole abbandonate, dovrebbe essere compito dei Gothi del territorio. Accelerate il passo per recuperare il tempo perduto ad esaminare.",
             "successText": "Ripulite con devozione la nicchia, recitando formule indirizzate a Colui che Veglia. Una calda benedizione sembra rinfrancare le vostre stanche membra.",
             "failText": "Non sapete esattamente cosa fare. Rimettete l'icona al suo posto, recitate una formula raffazzonata a tutti gli Asi, sperando che vada bene. Una folata di vento rovescia l'icona, che cade andando in frantumi. Avete completato la profanazione, questo atto grava sulle vostre spalle.",

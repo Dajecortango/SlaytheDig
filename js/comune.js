@@ -30,7 +30,7 @@ const EFFECT_TYPES = {
 // Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi CLAUDE.md).
 // Un segnale nuovo va aggiunto qui, altrimenti l'editor lo segnala come sconosciuto.
 const HERO_FLAGS = {
-    bonusLootCoins: 'monete in più dopo ogni scontro',
+    bonusLootCoins: 'Scudi in più dopo ogni scontro',
     challengeRerollMalus: 'ripete una prova fallita con questo malus',
     dodgeNoArmor: 'senza armatura evita il colpo con d6 >= valore',
     factotum: 'conversione delle statistiche (true o ogni N punti)',

@@ -16,7 +16,7 @@
         }
 
         // Metà del prezzo base; un oggetto comprato non si rivende per più di metà di quanto è stato pagato
-        // (con Moneta di Fredlos, Lasciapassare e contrattazione comprare e rivendere darebbe un guadagno)
+        // (con Moneta di Fredlös, Lasciapassare e contrattazione comprare e rivendere darebbe un guadagno)
         function itemSellPrice(item) {
             const half = Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
             return item.paidPrice != null ? Math.min(half, Math.max(1, Math.floor(item.paidPrice / 2))) : half;
@@ -30,7 +30,7 @@
         // Le rarità alte diventano più probabili andando avanti nella mappa.
         // Le carte che non sono oggetti hanno un "item" di facciata per icona, nome e tooltip
         const MEDIC_CARD = { id: 'medico', name: 'Medico da campo', rarity: 'non_comune', icon: 'immagini/icone/BTNHeal.png',
-            desc: `Cura un eroe ferito o caduto: ${MEDIC_PRICE_PER_HP} monete per ogni HP, fino a ${MEDIC_MAX_HP} HP per mercante` };
+            desc: `Cura un eroe ferito o caduto: ${MEDIC_PRICE_PER_HP} Scudi per ogni HP, fino a ${MEDIC_MAX_HP} HP per mercante` };
         const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
         function merchantRarityWeights(progress) {
@@ -193,19 +193,19 @@
             const reroll = document.getElementById('btnMerchantReroll');
             const rerollBlock = merchantRerolled ? 'Hai già rinnovato la merce di questo mercante.'
                 : merchantBoughtSomething() ? 'Non si può più rinnovare: hai già comprato qualcosa.'
-                : stato.partyCoins < MERCHANT_REROLL_COST ? 'Non hai abbastanza monete.' : '';
+                : stato.partyCoins < MERCHANT_REROLL_COST ? 'Non hai abbastanza Scudi.' : '';
             reroll.disabled = !!rerollBlock;
-            reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} monete e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via). ` +
+            reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} Scudi e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via). ` +
                 `Una sola volta per mercante, e solo prima di comprare.${rerollBlock ? ' ' + rerollBlock : ''}`;
             const haggle = document.getElementById('btnMerchantHaggle');
             haggle.disabled = merchantHaggle !== null || !stato.party.some(h => h.hp > 0);
             haggle.dataset.tip = `Contratta||Una prova di Intelligenza (CD ${haggleCd()}, cresce andando avanti nella spedizione). ` +
-                `Successo: -${HAGGLE_DISCOUNT * 100}% su tutta la merce. Fallimento: +${HAGGLE_PENALTY} monete su ogni articolo. Una sola proposta per mercante.`;
+                `Successo: -${HAGGLE_DISCOUNT * 100}% su tutta la merce. Fallimento: +${HAGGLE_PENALTY} Scudi su ogni articolo. Una sola proposta per mercante.`;
             const note = document.getElementById('merchantHaggleNote');
             note.classList.toggle('hidden', merchantHaggle === null);
             note.className = `merchant-haggle-note ${merchantHaggle === 'ok' ? 'ok' : merchantHaggle === 'fail' ? 'fail' : 'hidden'}`;
             note.textContent = merchantHaggle === 'ok' ? `Contrattazione riuscita: -${HAGGLE_DISCOUNT * 100}% su tutta la merce.`
-                : merchantHaggle === 'fail' ? `Il mercante si è offeso: +${HAGGLE_PENALTY} monete su ogni articolo.` : '';
+                : merchantHaggle === 'fail' ? `Il mercante si è offeso: +${HAGGLE_PENALTY} Scudi su ogni articolo.` : '';
         }
 
         function rerollMerchantStock() {
@@ -233,7 +233,7 @@
             openModal('Contrattare con il mercante',
                 `<p>Il mercante ascolta una sola proposta. Prova di <b>Intelligenza</b>, Classe di Difficoltà <b>${cd}</b>.</p>
                  <p>Successo: <b style="color:var(--accent-green)">-${HAGGLE_DISCOUNT * 100}%</b> su tutta la merce (anche se la rinnovi).
-                    Fallimento: <b style="color:var(--curse-color)">+${HAGGLE_PENALTY}</b> monete su ogni articolo.</p>
+                    Fallimento: <b style="color:var(--curse-color)">+${HAGGLE_PENALTY}</b> Scudi su ogni articolo.</p>
                  <div class="haggle-rows">${rows}</div>`,
                 [{ label: 'Lascia stare', className: 'btn-danger' }], { wide: true });
         }
@@ -263,7 +263,7 @@
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
                     `<p>${dice} + ${statLabel} ${hero[stat] || 0} (${esc(hero.name)})${sources.map(r => ` + ${r.val} ${r.name}`).join('')} = <b>${total}</b> contro CD ${cd}.</p>
                      ${naturalRollNote(roll, total, cd) ? `<p>${naturalRollNote(roll, total, cd)}</p>` : ''}
-                     <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} monete in più.`}</p>`);
+                     <p>${success ? `Tutta la merce costa il ${HAGGLE_DISCOUNT * 100}% in meno.` : `Ogni articolo costa ${HAGGLE_PENALTY} Scudi in più.`}</p>`);
                 renderMerchantShop();
             }, animTime(500));
         }
@@ -275,7 +275,7 @@
             const thief = merchantThief();
             const price = effectiveMerchantPrice(entry);
             if(stato.partyCoins < price) {
-                uiError("Non hai abbastanza monete");
+                uiError("Non hai abbastanza Scudi");
                 return;
             }
             if (entry.kind === 'medic') return openMedic(idx);
@@ -312,7 +312,7 @@
             const wounded = stato.party.filter(h => h.hp < h.maxHp);
             if (!wounded.length) { uiError('Nessun eroe ferito da curare'); return; }
             openModal('Medico da campo',
-                `<p>Il medico cura eroi feriti o caduti per <b style="color:var(--wc-yellow)">${entry.price}</b> monete per ogni HP. Può curare ancora <b>${medicHpLeft()} HP</b>. Chi vuoi far curare?</p>`,
+                `<p>Il medico cura eroi feriti o caduti per <b style="color:var(--wc-yellow)">${entry.price}</b> Scudi per ogni HP. Può curare ancora <b>${medicHpLeft()} HP</b>. Chi vuoi far curare?</p>`,
                 wounded.map(h => ({
                     label: `${h.name} (HP ${h.hp}/${h.maxHp}${h.hp <= 0 ? ', caduto' : ''})`,
                     onClick: () => openMedicHeal(idx, h)
@@ -336,18 +336,18 @@
                     renderMerchantShop();
                 };
                 options.push({
-                    label: `+${hp} HP (${cost} monete)`,
+                    label: `+${hp} HP (${cost} Scudi)`,
                     disabled: stato.partyCoins < cost,
                     // Spesa grossa (almeno MEDIC_CONFIRM_SHARE delle monete): si chiede conferma
                     onClick: () => cost >= stato.partyCoins * MEDIC_CONFIRM_SHARE
                         ? openModal('Sei sicuro?',
-                            `<p>Curare ${esc(hero.name)} di ${hp} HP costa <b style="color:var(--wc-yellow)">${cost}</b> monete su ${stato.partyCoins}. Ne restano ${stato.partyCoins - cost}.</p>`,
+                            `<p>Curare ${esc(hero.name)} di ${hp} HP costa <b style="color:var(--wc-yellow)">${cost}</b> Scudi su ${stato.partyCoins}. Ne restano ${stato.partyCoins - cost}.</p>`,
                             [{ label: 'Paga il medico', onClick: heal }, { label: 'Indietro', onClick: () => openMedicHeal(idx, hero) }])
                         : heal()
                 });
             }
             openModal('Medico da campo',
-                `<p>${esc(hero.name)}: HP ${hero.hp}/${hero.maxHp}. Quanti HP vuoi far curare (${entry.price} monete l'uno)?</p>`,
+                `<p>${esc(hero.name)}: HP ${hero.hp}/${hero.maxHp}. Quanti HP vuoi far curare (${entry.price} Scudi l'uno)?</p>`,
                 options.concat([{ label: 'Indietro', onClick: () => openMedic(idx) }, { label: 'Annulla', className: 'btn-danger' }]));
         }
 
@@ -400,7 +400,7 @@
             if (!item) return;
             const price = itemSellPrice(item);
             openModal('Vendere l\'oggetto?',
-                `<p>Vendi ${(item.qty || 1) > 1 ? 'una copia di ' : ''}<b>${item.name}</b> di ${esc(hero.name)} per <b style="color:var(--wc-yellow)">${price}</b> monete?</p>`,
+                `<p>Vendi ${(item.qty || 1) > 1 ? 'una copia di ' : ''}<b>${item.name}</b> di ${esc(hero.name)} per <b style="color:var(--wc-yellow)">${price}</b> Scudi?</p>`,
                 [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Vendi', className: 'btn-danger', onClick: () => {
                     // Di una pila di consumabili se ne vende una copia alla volta
                     if ((item.qty || 1) > 1) item.qty -= 1;
@@ -420,7 +420,7 @@
             if (!affordable && !hidden) { advanceNode(); return; }
             const reasons = [];
             if (hidden) reasons.push(hidden === 1 ? 'c\'è ancora <b>1</b> carta da scoprire' : `ci sono ancora <b>${hidden}</b> carte da scoprire`);
-            if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${stato.partyCoins}</b> monete e ci sono oggetti che puoi permetterti`);
+            if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${stato.partyCoins}</b> Scudi e ci sono oggetti che puoi permetterti`);
             openModal('Lasciare il mercante?',
                 `<p>${reasons.join(' e ').replace(/^./, c => c.toUpperCase())}.</p>`,
                 [{ label: 'Resta nel negozio', className: 'btn-proceed' }, { label: 'Esci comunque', className: 'btn-danger', onClick: advanceNode }]);

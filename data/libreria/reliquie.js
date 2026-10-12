@@ -22,7 +22,7 @@ window.LIBRERIA.reliquie = {
     },
     "benedetti_da_jag_antar": {
         "type": "relic",
-        "name": "Benedetti da Jag Antar",
+        "name": "Benedetti da Jag Àntar",
         "desc": "+1 ai tiri di attacco",
         "effects": [
             { "effect": "party_stat", "stat": "att_bonus", "val": 1 }
@@ -37,7 +37,7 @@ window.LIBRERIA.reliquie = {
         ]
     },
     "corno_antico": { "type": "relic", "name": "Corno dell'Esodo", "desc": "Durante il terzo turno tutti gli eroi ottengono +1 al danno" },
-    "lasciapassare_mercantile": { "type": "relic", "name": "Lasciapassare mercantile", "desc": "Gli oggetti dai mercanti sono scontati di 3 monete" },
+    "lasciapassare_mercantile": { "type": "relic", "name": "Lasciapassare mercantile", "desc": "Gli oggetti dai mercanti sono scontati di 3 Scudi" },
     "pietra_del_focolare": { "type": "relic", "name": "Pietra del focolare", "desc": "Durante il riposo rimuove una maledizione casuale" },
     "frammento_di_matrice": { "type": "relic", "name": "Fortuna degli Stolti", "desc": "La prossima sfida fallita diventa un successo, poi si rompe" },
     "dente_del_grande_lupo": { "type": "relic", "name": "Dente del grande lupo", "desc": "Dopo ogni scontro l'eroe con meno HP recupera 1 HP" },
@@ -46,7 +46,7 @@ window.LIBRERIA.reliquie = {
     "idolo_del_cacciatore": { "type": "relic", "name": "Idolo del cacciatore", "desc": "+1 al danno durante gli scontri elite" },
     "occhio_del_corvo": { "type": "relic", "name": "Calma del Margine", "desc": "Diminuisce di 1 la statistica attacco dei mostri" },
     "anello_del_giuramento": { "type": "relic", "name": "Benedizione del Caos", "desc": "+3 al prossimo tiro di dado, poi la reliquia si rompe" },
-    "marchio_di_jag_antar": { "type": "relic", "name": "Marchio di Jag Antar", "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe" },
+    "marchio_di_jag_antar": { "type": "relic", "name": "Marchio di Jag Àntar", "desc": "Se un eroe viene ridotto a 0 HP, rimane a 1 HP, poi si rompe" },
     "sigillo_runico": { "type": "relic", "name": "Sigillo runico", "desc": "+2 ai prossimi 2 tiri di dado, poi si rompe" },
     "lanterna_dei_morti": {
         "type": "relic",
@@ -60,7 +60,7 @@ window.LIBRERIA.reliquie = {
     "zanna_del_leone_bianco": { "type": "relic", "name": "Zanna del leone bianco", "desc": "+2 danni nel secondo round di ogni scontro" },
     "catena_di_norgrad": { "type": "relic", "name": "Catena di Norgrad", "desc": "+1 al tiro per colpire contro nemici elite e il capitano" },
     "scudo_dell_atamano": { "type": "relic", "name": "Scudo dell'Atamano", "desc": "Il primo colpo del nemico in ogni scontro viene assorbito del tutto" },
-    "moneta_di_fredlos": { "type": "relic", "name": "Moneta di Fredlos", "desc": "I mercanti fanno pagare la metà" },
+    "moneta_di_fredlos": { "type": "relic", "name": "Moneta di Fredlös", "desc": "I mercanti fanno pagare la metà" },
     "unguento_dell_erborista": { "type": "relic", "name": "Unguento dell'erborista", "desc": "Al riposo ogni eroe recupera 1 HP in più" },
     "cotta_dei_lungobarbi": {
         "type": "relic",
@@ -81,7 +81,7 @@ window.LIBRERIA.reliquie = {
     "sacca_del_contrabbandiere": {
         "type": "relic",
         "name": "Sacca del Contrabbandiere",
-        "desc": "+20 monete alla cassa della compagnia",
+        "desc": "+20 Scudi alla cassa della compagnia",
         "effects": [
             { "effect": "coins", "val": 20 }
         ]
@@ -89,7 +89,7 @@ window.LIBRERIA.reliquie = {
     "prisma_rivelatore": {
         "type": "relic",
         "name": "Prisma Rivelatore",
-        "desc": "+1 Intelligenza all'eroe che ha superato la prova, +10 monete",
+        "desc": "+1 Intelligenza all'eroe che ha superato la prova, +10 Scudi",
         "effects": [
             { "effect": "hero_stat", "stat": "int", "val": 1 },
             { "effect": "coins", "val": 10 }

@@ -17,7 +17,15 @@ module.exports = (t, carica) => {
         }
     });
 
-    t.test('il formato attuale è il 3', () => t.uguale(3, g.eval('SAVE_VERSION')));
+    t.test('il formato attuale è il 4', () => t.uguale(4, g.eval('SAVE_VERSION')));
+
+    t.test('3 -> 4: la maledizione delle monete diventa quella degli Scudi', () => {
+        const v3 = { version: 3, campaignId: 'tutorial', stato: { party: [], activeCurses: [
+            { id: '15_ricompensa_monete', text: '-15% ricompensa monete (Monete future ridotte del 15%)' }, { id: 'sbornia_pesante', text: 'x' }] } };
+        const s = g.migrateSave(v3).stato;
+        t.uguale(['15_scudi_di_ricompensa', 'sbornia_pesante'], s.activeCurses.map(c => c.id));
+        t.ok(s.activeCurses[0].text.includes('Scudi'));
+    });
 
     t.test('2 -> 3: reliquie con l\'id della libreria (o ricavato dal nome se non c\'è più)', () => {
         const s = g.migrateSave(v2()).stato;
@@ -26,7 +34,7 @@ module.exports = (t, carica) => {
 
     t.test('2 -> 3: maledizioni da testo a { id, text }', () => {
         const s = g.migrateSave(v2()).stato;
-        t.uguale(['15_ricompensa_monete', 'gelo_nelle_ossa', 'sbornia_pesante', 'ferita_profonda'], s.activeCurses.map(c => c.id));
+        t.uguale(['15_scudi_di_ricompensa', 'gelo_nelle_ossa', 'sbornia_pesante', 'ferita_profonda'], s.activeCurses.map(c => c.id));
         t.uguale('Gelo nelle ossa (-1 tiri per colpire)', s.activeCurses[1].text);
     });
 
@@ -36,10 +44,10 @@ module.exports = (t, carica) => {
         t.uguale(1, s.party[1].challengeRerollMalus);
     });
 
-    t.test('1 -> 3: un salvataggio senza versione arriva al formato attuale', () => {
+    t.test('1 -> 4: un salvataggio senza versione arriva al formato attuale', () => {
         const v1 = { campaignId: 'tutorial', party: [{ name: 'A', hp: 1 }], unlockedRelics: [{ name: 'Sigillo runico' }], activeCurses: ['Presagio di Morte (+1 danno subito)'] };
         const s = g.migrateSave(v1);
-        t.uguale(3, s.version);
+        t.uguale(4, s.version);
         t.uguale('sigillo_runico', s.stato.unlockedRelics[0].id);
         t.uguale('presagio_di_morte', s.stato.activeCurses[0].id);
     });

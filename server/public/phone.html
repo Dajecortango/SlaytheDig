@@ -152,6 +152,20 @@
         // (senza, quelle richieste ricevono la pagina HTML dell'avviso invece dei dati JSON veri).
         const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
 
+        // Ogni chiamata al server ha un tempo massimo: attraverso ngrok o la rete mobile una connessione
+        // morta può tenere una richiesta appesa per minuti, e con lei tutte quelle dopo.
+        const FETCH_TIMEOUT_MS = 8000;
+        function fetchT(url, opts) {
+            opts = Object.assign({}, opts || {});
+            opts.headers = Object.assign({}, NGROK_SKIP_HEADER, opts.headers || {});
+            if (window.AbortController) {
+                const ctrl = new AbortController();
+                setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);  // dopo la risposta completa non fa niente
+                opts.signal = ctrl.signal;
+            }
+            return fetch(url, opts);
+        }
+
         let currentHero = null;
         let lastPendingRoll = null;
         let lastPendingAction = null;
@@ -198,7 +212,7 @@
             bagUseIndex = null;
             bagMessage = 'Pozione in uso...';
             renderHero(lastState);
-            fetch('/api/item-use', {
+            fetchT('/api/item-use', {
                 method: 'POST',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
                 body: JSON.stringify({ heroName: currentHero.name, itemIndex: idx, targetName: target.name })
@@ -234,7 +248,7 @@
         function sceneAction(action, extra) {
             if (!currentHero) return;
             sceneMessage = '';
-            fetch('/api/scene-action', {
+            fetchT('/api/scene-action', {
                 method: 'POST',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
                 body: JSON.stringify(Object.assign({ heroName: currentHero.name, action }, extra || {}))
@@ -285,7 +299,7 @@
             }
             if (s.kind === 'loot') {
                 if (s.taken) return panel('Bottino', '<div class="bag-note">Il bottino è stato assegnato.</div>');
-                if (!s.revealed) return panel('Bottino', `<div class="bag-note">Monete trovate: ${s.coins}. Il bottino è ancora coperto.</div>
+                if (!s.revealed) return panel('Bottino', `<div class="bag-note">Scudi trovati: ${s.coins}. Il bottino è ancora coperto.</div>
                     <button class="scene-btn" onclick="sceneAction('loot-reveal')">Scopri il bottino</button>`);
                 if (hero.hp <= 0) return panel('Bottino', '<div class="bag-note">Gli eroi caduti non possono prendere oggetti.</div>');
                 let html = '<div class="bag-note">Se ne tiene uno solo: chi lo prende per primo lo mette nel suo zaino.</div>' +
@@ -317,7 +331,7 @@
             runeSwapOut = null;
             runeMessage = 'Scambio in corso...';
             if (lastState) renderHero(lastState);
-            fetch('/api/rune-swap', {
+            fetchT('/api/rune-swap', {
                 method: 'POST',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
                 body: JSON.stringify(body)
@@ -498,7 +512,7 @@
             if (typeof itemIndex === 'number') body.itemIndex = itemIndex;
             if (targetName) body.targetName = targetName;
 
-            fetch('/api/action', {
+            fetchT('/api/action', {
                 method: 'POST',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
                 body: JSON.stringify(body)
@@ -508,8 +522,9 @@
                     lastResultDisplay = null;
                     renderActionArea(); // torna a "in attesa": l'oggetto non richiede un tiro
                 }
-                // Per le altre azioni non serve fare nulla qui: a breve arriva il pending-roll
-                // (via SSE o al prossimo polling) e renderActionArea() mostrerà i dadi da tirare.
+                // Per le altre azioni di solito arriva subito il pending-roll; se non arriva (abilità senza
+                // tiro, stream caduto) si chiede lo stato, così "Invio in corso..." non resta sullo schermo.
+                setTimeout(fetchState, 1500);
             }).catch(() => {
                 fetchState(); // esito incerto: richiedi lo stato vero invece di indovinarlo
             });
@@ -584,7 +599,7 @@
                 }, wait);
             };
 
-            fetch('/api/roll', {
+            fetchT('/api/roll', {
                 method: 'POST',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, NGROK_SKIP_HEADER),
                 body: JSON.stringify({ requestId })
@@ -595,7 +610,7 @@
         }
 
         function fetchState() {
-            fetch('/api/state', { headers: NGROK_SKIP_HEADER }).then(r => r.json()).then(state => {
+            fetchT('/api/state', { cache: 'no-store' }).then(r => r.json()).then(state => {
                 renderHero(state);
                 applyPendingAction(state.pendingAction);
                 applyPendingRoll(state.pendingRoll);
@@ -604,17 +619,65 @@
             });
         }
 
-        fetchState();
-        setInterval(fetchState, 5000); // rete di sicurezza se lo stream live si interrompe
+        /* ---------- Aggiornamenti in tempo reale ----------
+           Lo stream (SSE) porta stato e turni; il server manda un "ping" ogni 15 secondi. Se non arriva niente
+           per LIVE_STALE_MS (telefono in pausa, rete mobile o ngrok che hanno chiuso la connessione senza dirlo)
+           si riapre lo stream e si chiede subito lo stato. Il controllo di riserva va piano quando lo stream
+           è vivo (meno richieste: il piano gratuito di ngrok ne conta un numero limitato al mese). */
+        const LIVE_STALE_MS = 35000;
+        const POLL_FAST_MS = 5000;
+        const POLL_SLOW_MS = 25000;
+        let liveSource = null;
+        let lastLiveAt = 0;
+        let pollTimer = null;
 
-        if (window.EventSource) {
-            // EventSource non supporta header personalizzati: si passa lo stesso avviso come
-            // parametro nell'URL, che ngrok accetta come alternativa all'header.
-            const es = new EventSource('/api/events?ngrok-skip-browser-warning=true');
-            es.addEventListener('state', e => { try { renderHero(JSON.parse(e.data)); } catch (err) {} });
-            es.addEventListener('pending-action', e => { try { applyPendingAction(JSON.parse(e.data)); } catch (err) {} });
-            es.addEventListener('pending-roll', e => { try { applyPendingRoll(JSON.parse(e.data)); } catch (err) {} });
+        function liveOk() {
+            return !!liveSource && liveSource.readyState === 1 && Date.now() - lastLiveAt < LIVE_STALE_MS;
         }
+
+        function connectLive() {
+            if (!window.EventSource) return;
+            if (liveSource) liveSource.close();
+            // EventSource non supporta header personalizzati: si passa lo stesso avviso come
+            // parametro nell'URL (e vale il cookie che ngrok lascia dopo la pagina di avviso).
+            const source = new EventSource('/api/events?ngrok-skip-browser-warning=true');
+            liveSource = source;
+            lastLiveAt = Date.now();
+            const on = (event, handler) => source.addEventListener(event, e => {
+                lastLiveAt = Date.now();
+                if (handler) { try { handler(JSON.parse(e.data)); } catch (err) {} }
+            });
+            on('state', renderHero);
+            on('pending-action', applyPendingAction);
+            on('pending-roll', applyPendingRoll);
+            on('ping', null);
+            source.onopen = () => { lastLiveAt = Date.now(); };
+            // Stream chiuso del tutto (risposta non valida, per esempio una pagina di ngrok): si riprova
+            source.onerror = () => {
+                if (source === liveSource && source.readyState === 2) setTimeout(() => { if (source === liveSource) connectLive(); }, 3000);
+            };
+        }
+
+        function schedulePoll() {
+            clearTimeout(pollTimer);
+            pollTimer = setTimeout(() => { fetchState(); schedulePoll(); }, liveOk() ? POLL_SLOW_MS : POLL_FAST_MS);
+        }
+
+        // Si riparte da capo: stream nuovo, stato subito, controllo di riserva rimesso in fila
+        function resync() {
+            connectLive();
+            fetchState();
+            schedulePoll();
+        }
+
+        resync();
+        setInterval(() => {
+            if (liveSource && Date.now() - lastLiveAt > LIVE_STALE_MS) resync();
+        }, 10000);
+        // Telefono riacceso o di nuovo in primo piano, rete tornata: lo stream è probabilmente morto
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resync(); });
+        window.addEventListener('online', resync);
+        window.addEventListener('pageshow', e => { if (e.persisted) resync(); });
     </script>
 </body>
 </html>

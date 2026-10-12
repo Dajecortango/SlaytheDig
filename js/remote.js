@@ -226,6 +226,16 @@
             && !!stato.activeEnemy && stato.activeEnemy.hp > 0;
     }
 
+    // Il turno si chiude sul PC (azione scelta o dado tirato in locale, fine dello scontro): il server toglie la
+    // richiesta in attesa, così il telefono non resta con un pulsante che non vale più
+    function clearRemotePending(kind, requestId) {
+        fetch(`${REMOTE_BASE}/api/clear-pending`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kind, requestId: requestId || null })
+        }).catch(() => {});
+    }
+
     function applyRemoteItemUse(itemIdx, targetName) {
         if (!currentActiveHero || typeof useConsumable !== 'function') return;
         if (!useConsumable(currentActiveHero.name, itemIdx, targetName)) return;
@@ -332,12 +342,38 @@
     if (typeof selectCombatAction === 'function') {
         const originalSelectCombatAction = selectCombatAction;
         selectCombatAction = function (action) {
+            // Azione scelta sul PC: la scelta in attesa sul telefono non vale più (dal telefono l'id è già azzerato)
+            if (currentActionRequestId) { clearRemotePending('action', currentActionRequestId); currentActionRequestId = null; }
             const result = originalSelectCombatAction.apply(this, arguments);
             if (result === 'instant') return result;  // abilità senza tiro: nessun dado da chiedere al telefono
             if (currentActiveHero && (action === 'attack' || action === 'defend' || action === 'help' || action === 'ability')) {
                 const diceCount = (typeof combatRollUsesTwoDice === 'function' && combatRollUsesTwoDice(currentActiveHero, action)) ? 2 : 1;
                 const labels = { attack: 'Attacca', defend: 'Difendi', help: 'Aiuta', ability: 'Abilità' };
                 requestRemoteRoll(currentActiveHero.name, diceCount, labels[action] || 'Tira', 'combat');
+            }
+            return result;
+        };
+    }
+
+    // Dado tirato sul PC (senza dadi dal telefono): il tiro in attesa sul telefono non vale più
+    ['executeCombatHeroRoll', 'executeChallengeRoll'].forEach(name => {
+        if (typeof window[name] !== 'function') return;
+        const original = window[name];
+        window[name] = function (externalRolls) {
+            if (!externalRolls && currentRollRequestId) { clearRemotePending('roll', currentRollRequestId); currentRollRequestId = null; }
+            return original.apply(this, arguments);
+        };
+    });
+
+    // Fuori da scontro e prova nessuna richiesta resta aperta sui telefoni
+    if (typeof showScreen === 'function') {
+        const originalShowScreen = showScreen;
+        showScreen = function (id) {
+            const result = originalShowScreen.apply(this, arguments);
+            if (id !== 'screenCombat' && id !== 'screenChallenge' && (currentActionRequestId || currentRollRequestId)) {
+                currentActionRequestId = null;
+                currentRollRequestId = null;
+                clearRemotePending('all');
             }
             return result;
         };

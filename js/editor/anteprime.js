@@ -10,9 +10,9 @@
    (stessa grafica di #wc3Tooltip del gioco). Si aggiorna a ogni modifica. Rispecchia itemTip di
    js/oggetti.js e i tooltip delle abilità di js/combattimento.js: se cambiano, va aggiornata anche qui. */
 const PREVIEW_ITEM_LINES = [['str', 'Forza'], ['dmg', 'Danno'], ['armor', 'Armatura'], ['def_armor', 'Armatura con Difendi'],
-    ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza']];
+    ['def_bonus', 'Difesa'], ['help_bonus_val', 'Aiuto'], ['fth', 'Fede'], ['int', 'Intelligenza'], ['prayer_bonus', 'al tiro di Preghiera']];
 const PREVIEW_STAT = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_bonus: 'Difesa', def_armor: 'Armatura con Difendi',
-    help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza', att_bonus: 'Tiro per colpire', current_armor: 'Armatura (subito)' };
+    help_bonus_val: 'Aiuto', fth: 'Fede', int: 'Intelligenza', att_bonus: 'Tiro per colpire', current_armor: 'Armatura (subito)', regen: 'HP a inizio round' };
 
 function previewTipHtml(title, lines) {
     return `<div class="wc3-tooltip show ed-tip-preview"><div class="tip-title">${title}</div>${lines.length ? `<div class="tip-body">${lines.join('<br>')}</div>` : ''}</div>`;

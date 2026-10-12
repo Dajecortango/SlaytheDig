@@ -102,16 +102,39 @@
             return out;
         }
 
-        // Oggetti del bottino di uno scontro fra cui sceglierne uno (LOOT_CHOICES)
+        // Oggetti del bottino di uno scontro fra cui sceglierne uno (LOOT_CHOICES, più quelli della benedizione
+        // Passero di Gomd, che si consumano qui: gioco e simulatore)
         function pickLootChoices(isElite) {
-            return pickDistinctLoot(LOOT_CHOICES, isElite);
+            const extra = stato.party.lootExtraChoices || 0;
+            stato.party.lootExtraChoices = 0;
+            return pickDistinctLoot(LOOT_CHOICES + extra, isElite);
         }
 
-        // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti), poi un oggetto a caso di quella rarità
-        function pickByRarity(pool, weights) {
+        // Pesi in percentuale con il tetto di RARITY_MAX_SHARE: ciò che supera il tetto va alle altre rarità,
+        // in proporzione. Se tutte le rarità hanno un tetto (o non resta altro) i pesi restano quelli di prima.
+        function capRarityShares(weights) {
+            const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+            if (total <= 0) return weights;
+            const out = {};
+            for (const r in weights) out[r] = weights[r] / total * 100;
+            const capped = Object.keys(out).filter(r => r in RARITY_MAX_SHARE && out[r] > RARITY_MAX_SHARE[r]);
+            const free = Object.keys(out).filter(r => !(r in RARITY_MAX_SHARE) && out[r] > 0);
+            if (capped.length === 0 || free.length === 0) return out;
+            const excess = capped.reduce((sum, r) => sum + out[r] - RARITY_MAX_SHARE[r], 0);
+            const freeTotal = free.reduce((sum, r) => sum + out[r], 0);
+            for (const r of capped) out[r] = RARITY_MAX_SHARE[r];
+            for (const r of free) out[r] += excess * out[r] / freeTotal;
+            return out;
+        }
+
+        // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti, con il tetto di RARITY_MAX_SHARE),
+        // poi un oggetto a caso di quella rarità
+        function pickByRarity(pool, poolWeights) {
             if (pool.length === 0) return null;
-            const available = Object.keys(weights).filter(r => weights[r] > 0 && pool.some(i => itemRarity(i) === r));
-            if (available.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+            const present = Object.keys(poolWeights).filter(r => poolWeights[r] > 0 && pool.some(i => itemRarity(i) === r));
+            if (present.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+            const weights = capRarityShares(Object.fromEntries(present.map(r => [r, poolWeights[r]])));
+            const available = Object.keys(weights);
             const total = available.reduce((sum, r) => sum + weights[r], 0);
             let pick = Math.random() * total;
             let rarity = available[available.length - 1];
@@ -160,7 +183,7 @@
             const isEliteCombat = currentEnemyIsEliteOrBoss();  // elite, capitano e boss dell'ultimo livello
             let coins = scaledCoins([3, 5, 7, 9, 12], isEliteCombat);
 
-            if (hasCurse('15_ricompensa_monete')) {
+            if (hasCurse('15_scudi_di_ricompensa')) {
                 coins = Math.floor(coins * 0.85);
             }
 
@@ -175,6 +198,7 @@
             stato.partyCoins += coins;
 
             lootChoices = pickLootChoices(isEliteCombat);
+            if (lootChoices.length > LOOT_CHOICES) uiMessage(`${PRAYER_BLESSINGS.abbondanza.name}: ${lootChoices.length} oggetti fra cui scegliere`);
             currentLootItem = null;
             lootTaken = false;
             stato.expeditionStats.itemsFound++;
@@ -275,7 +299,7 @@
         // Genera l'offerta di un tesoro: monete (con eventuale sconto da maledizione) + 3 oggetti a caso.
         function generateTreasureOffer() {
             let coins = scaledCoins([5, 8, 10, 15], false);
-            if (hasCurse('15_ricompensa_monete')) {
+            if (hasCurse('15_scudi_di_ricompensa')) {
                 coins = Math.floor(coins * 0.85);
             }
             // Rarità come il bottino degli scontri normali (per livello della mappa), tutti diversi

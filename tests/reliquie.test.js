@@ -69,7 +69,7 @@ module.exports = (t, carica) => {
         stato.party = [{ name: 'A', int: 0, fth: 0, str: 0, hp: 4 }];
         stato.unlockedRelics = []; stato.activeCurses = [];
         stato.expeditionStats = g.eval('newExpeditionStats()');
-        for (const id of ['presagio_di_morte', '15_ricompensa_monete', 'sbornia_pesante']) {
+        for (const id of ['presagio_di_morte', '15_scudi_di_ricompensa', 'sbornia_pesante']) {
             const sfida = { stat: 'int', cd: 99, reward: null, punishment: { id, ...lib.maledizioni[id] } };
             stato.challengeState = { stat: 'int', challenge: sfida };
             g.resolveChallenge(stato.party[0], sfida, [2]);

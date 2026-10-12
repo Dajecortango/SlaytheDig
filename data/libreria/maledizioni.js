@@ -3,12 +3,12 @@
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.maledizioni = {
-    "15_ricompensa_monete": {
+    "15_scudi_di_ricompensa": {
         "type": "curse",
-        "name": "-15% ricompensa monete",
-        "desc": "Monete future ridotte del 15%",
+        "name": "-15% Scudi di ricompensa",
+        "desc": "Scudi futuri ridotti del 15%",
         "effects": [
-            { "effect": "add_curse", "text": "Maledizione: -15% monete" }
+            { "effect": "add_curse", "text": "Maledizione: -15% Scudi" }
         ]
     },
     "sbornia_pesante": {
@@ -47,9 +47,9 @@ window.LIBRERIA.maledizioni = {
     "rancore_del_mercante": {
         "type": "curse",
         "name": "Rancore del Mercante",
-        "desc": "I mercanti futuri applicheranno un sovrapprezzo di 2 monete su ogni articolo",
+        "desc": "I mercanti futuri applicheranno un sovrapprezzo di 2 Scudi su ogni articolo",
         "effects": [
-            { "effect": "add_curse", "text": "Rancore del Mercante (+2 monete prezzi)" }
+            { "effect": "add_curse", "text": "Rancore del Mercante (+2 Scudi sui prezzi)" }
         ]
     },
     "sacrilego": {
@@ -164,7 +164,7 @@ window.LIBRERIA.maledizioni = {
     "venti_sferzanti": {
         "type": "curse",
         "name": "Venti Sferzanti",
-        "desc": "1 danno a tutti e -10 monete",
+        "desc": "1 danno a tutti e -10 Scudi",
         "effects": [
             { "effect": "add_curse", "text": "Venti Sferzanti (risorse perdute)" },
             { "effect": "party_damage", "val": 1 },
