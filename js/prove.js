@@ -245,27 +245,7 @@
                 if (escape && escape.skipPunishment) {
                     escape.notes.forEach(text => events.push({ type: 'item', text: `🗺️ ${text}` }));
                 } else if (challenge.punishment) {
-                    const cursesBefore = stato.activeCurses.length;
-                    // Quanto cambiano davvero le statistiche (party_stat non scende sotto 0): serve per
-                    // restituire il giusto quando la maledizione viene tolta (removeCurseAt)
-                    const statKeys = [...new Set((challenge.punishment.effects || []).filter(e => e.effect === 'party_stat').map(e => e.stat))];
-                    // Si misura senza i bonus ricalcolati (Factotum, oggetti che scalano): quelli tornano da soli
-                    const own = (h, k) => (h[k] || 0) - ((h.factotumBonus || {})[k] || 0) - ((h.scaledBonus || {})[k] || 0);
-                    const before = stato.party.map(h => statKeys.map(k => own(h, k)));
-                    applyEffects(challenge.punishment.effects, hero);
-                    const applied = {};
-                    stato.party.forEach((h, i) => statKeys.forEach((k, j) => {
-                        const d = own(h, k) - before[i][j];
-                        if (d) (applied[h.name] = applied[h.name] || {})[k] = d;
-                    }));
-                    if (challenge.punishment.type === 'curse') discover('curses', challenge.punishment.name);
-                    const curseId = challenge.punishment.id || idFromName(challenge.punishment.name);
-                    // Le maledizioni aggiunte dagli effetti prendono l'id della maledizione della libreria
-                    stato.activeCurses.slice(cursesBefore).forEach(c => { c.id = curseId; });
-                    if (stato.activeCurses.length === cursesBefore) {
-                        stato.activeCurses.push({ id: curseId, text: `${challenge.punishment.name} (${challenge.punishment.desc})` });
-                    }
-                    if (statKeys.length) stato.activeCurses[stato.activeCurses.length - 1].applied = applied;
+                    applyPunishment(challenge.punishment, hero);
                     punishmentApplied = challenge.punishment;
                 }
                 stato.expeditionStats.challengesFailed++;
@@ -275,6 +255,32 @@
             const isFinal = isFinalNode();
 
             return { roll, roll2, kept, twoDice, rollMode, mods, relicBonus, total, success, rerolled, firstAttempt: rerolled ? first : null, rewardGranted, punishmentApplied, isFinal, events };
+        }
+
+        // Punizione di una prova o maledizione data da un evento (effetto "curse"): applica gli effetti e la registra
+        // fra le maledizioni attive con l'id della libreria, ricordando quanto hanno tolto i party_stat
+        // (removeCurseAt lo restituisce quando la maledizione viene tolta)
+        function applyPunishment(p, hero) {
+            const cursesBefore = stato.activeCurses.length;
+            // Quanto cambiano davvero le statistiche (party_stat non scende sotto 0)
+            const statKeys = [...new Set((p.effects || []).filter(e => e.effect === 'party_stat').map(e => e.stat))];
+            // Si misura senza i bonus ricalcolati (Factotum, oggetti che scalano): quelli tornano da soli
+            const own = (h, k) => (h[k] || 0) - ((h.factotumBonus || {})[k] || 0) - ((h.scaledBonus || {})[k] || 0);
+            const before = stato.party.map(h => statKeys.map(k => own(h, k)));
+            applyEffects(p.effects, hero);
+            const applied = {};
+            stato.party.forEach((h, i) => statKeys.forEach((k, j) => {
+                const d = own(h, k) - before[i][j];
+                if (d) (applied[h.name] = applied[h.name] || {})[k] = d;
+            }));
+            if (p.type === 'curse') discover('curses', p.name);
+            const curseId = p.id || idFromName(p.name);
+            // Le maledizioni aggiunte dagli effetti prendono l'id della maledizione della libreria
+            stato.activeCurses.slice(cursesBefore).forEach(c => { c.id = curseId; });
+            if (stato.activeCurses.length === cursesBefore) {
+                stato.activeCurses.push({ id: curseId, text: `${p.name} (${p.desc})` });
+            }
+            if (statKeys.length) stato.activeCurses[stato.activeCurses.length - 1].applied = applied;
         }
 
         // externalRolls: tiro/i già decisi da un telefono collegato via QR (vedi js/remote.js).
@@ -412,9 +418,13 @@
             return { healAmount, healed, geloRemoved, notes };
         }
 
-        /* ---------- Nodo di trama ----------
-           Solo racconto: titolo, immagine e testo (campagna: "stories" { chiave: { title, text } },
-           il nodo li richiama con storyId), poi si prosegue sulla mappa. */
+        /* ---------- Nodo di trama ed eventi con scelte ----------
+           Titolo, immagine e testo (campagna: "stories" { chiave: { title, text, scelte } }, il nodo li richiama
+           con storyId). Senza "scelte" è solo racconto e si prosegue sulla mappa. Con le scelte è un evento:
+           [{ testo, costo, stat, cd, effetti, esito, fallimento: { effetti, esito } }]. Una scelta può costare Scudi,
+           può chiedere una prova (stat + cd: tira l'eroe in piedi con la statistica più alta, con i bonus delle prove),
+           poi applica "effetti" (applyEffects) e mostra "esito"; se la prova fallisce valgono quelli di "fallimento".
+           Si sceglie una volta; poi "Prosegui". */
         function startStory(node) {
             const story = (stato.currentCampaign.stories || {})[node.storyId] || {};
             document.getElementById('storyTitle').textContent = story.title || node.title || 'Trama';
@@ -424,7 +434,68 @@
             // Come le altre schermate degli eventi: "Descrizione:" in apertura del primo paragrafo
             document.getElementById('storyDescBox').innerHTML = testo.split(/\n\s*\n/)
                 .map((p, i) => `<p>${i === 0 ? '<strong>Descrizione:</strong> ' : ''}${esc(p)}</p>`).join('');
+            storyChoiceMade = false;
+            renderStoryChoices(story);
             showScreen('screenStory');
+        }
+
+        let storyChoiceMade = false;
+
+        // Testo del pulsante di una scelta: costo e prova
+        function storyChoiceLabel(c) {
+            const extra = [c.costo ? `${c.costo} Scudi` : '', c.stat ? `prova di ${STAT_LABELS[c.stat] || c.stat}, CD ${c.cd || 0}` : ''].filter(Boolean);
+            return `${c.testo || 'Scegli'}${extra.length ? ` (${extra.join(', ')})` : ''}`;
+        }
+
+        function renderStoryChoices(story) {
+            const box = document.getElementById('storyChoices');
+            const proceed = document.getElementById('storyProceedBtn');
+            const scelte = story.scelte || [];
+            if (box) box.innerHTML = storyChoiceMade ? '' : scelte.map((c, i) =>
+                `<button class="btn-proceed story-choice" ${azione('chooseStoryOption', i)} ${(c.costo || 0) > stato.partyCoins ? 'disabled' : ''}>${esc(storyChoiceLabel(c))}</button>`).join('');
+            if (proceed) proceed.classList.toggle('hidden', scelte.length > 0 && !storyChoiceMade);
+        }
+
+        // Risolve una scelta senza interfaccia (gioco e test). Ritorna null se non si può (Scudi insufficienti)
+        // o { hero, roll, total, success, text, effetti }
+        function resolveStoryChoice(choice, rolls) {
+            if (!choice || (choice.costo || 0) > stato.partyCoins) return null;
+            stato.partyCoins -= choice.costo || 0;
+            let hero = null, roll = null, total = null, success = true;
+            if (choice.stat) {
+                const alive = stato.party.filter(h => h.hp > 0);
+                hero = alive.reduce((b, h) => (h[choice.stat] || 0) > (b[choice.stat] || 0) ? h : b, alive[0]) || null;
+                if (hero) {
+                    roll = rollD6(rolls, 0, hero);
+                    total = roll + (hero[choice.stat] || 0) + relicDiceBonus('prova', hero);
+                    spendNextRollRelics('prova', hero);
+                    success = naturalRollSuccess(roll, total, choice.cd || 0);
+                } else success = false;
+            }
+            const outcome = success ? choice : (choice.fallimento || {});
+            applyEffects(outcome.effetti || [], hero);
+            updatePartyStatusBars();
+            return { hero, roll, total, success, text: outcome.esito || '', effetti: outcome.effetti || [] };
+        }
+
+        function chooseStoryOption(i) {
+            const node = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+            const story = ((stato.currentCampaign.stories || {})[node && node.storyId]) || {};
+            const choice = (story.scelte || [])[i];
+            if (storyChoiceMade || !choice) return;
+            const res = resolveStoryChoice(choice);
+            if (!res) { uiError('Non avete abbastanza Scudi'); return; }
+            storyChoiceMade = true;
+            const parts = [`<p><strong>${esc(choice.testo || 'Scelta')}</strong></p>`];
+            if (choice.stat) {
+                parts.push(`<p>🎲 ${res.hero ? `${esc(res.hero.name)}: dado <b>${res.roll}</b>, totale <b>${res.total}</b> contro CD ${choice.cd || 0}` : 'Nessuno può tentare'}
+                    — ${res.success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>'}</p>`);
+                if (res.hero) showRollBanner(res.success, res.success ? 'Successo' : 'Fallimento', `${res.total} contro CD ${choice.cd || 0}`);
+            }
+            if (res.text) parts.push(...res.text.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`));
+            document.getElementById('storyDescBox').innerHTML += `<div class="story-outcome">${parts.join('')}</div>`;
+            renderStoryChoices(story);
+            revealInView('storyProceedBtn');
         }
 
         function finishStory() {

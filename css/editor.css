@@ -339,6 +339,13 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-special-row button { margin: 0 0 4px auto; }
 .ed-special-text { font-size: 0.8rem; color: var(--gold); }
 .ed-specials > .btn-small { justify-self: start; }
+/* Scelte degli eventi (choiceListEditor): effetti annidati e testi dell'esito */
+.ed-special-row .ed-grow { flex: 1 1 14em; }
+.ed-special-row .ed-grow input { width: 100%; }
+.ed-special .ed-specials { margin-left: 12px; }
+.ed-choice-part { font-size: 0.78rem; color: var(--gold); }
+.ed-choice-text { display: flex; flex-direction: column; gap: 2px; font-size: 0.72rem; color: var(--text-dim); }
+.ed-choice-text textarea { min-height: 3.5em; margin: 0; }
 .ed-add-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
 .ed-add-row select { flex: 1; margin: 0; }
 .ed-add-row button { margin: 0 0 4px; flex-shrink: 0; }

@@ -245,6 +245,120 @@ function specialiEditor(obj, f, onChange) {
     return box;
 }
 
+/* ---------- Effetti di applyEffects composti con i menu ----------
+   Un riga per effetto: tipo (EFFECT_LABELS in js/comune.js) e solo i campi che servono (EFFECT_TYPES).
+   list = l'elenco da modificare (si cambia sul posto), save = da chiamare a ogni modifica. */
+function effectListEditor(list, save) {
+    const box = document.createElement('div');
+    box.className = 'ed-specials';
+    const opts = (map, value) => Object.entries(map).map(([k, l]) => `<option value="${esc(k)}" ${k === value ? 'selected' : ''}>${esc(l)}</option>`).join('');
+    const libOpts = (kind, value) => opts(Object.fromEntries(Object.entries(lib[kind] || {}).map(([k, v]) => [k, v.name || k])), value);
+    const paint = () => {
+        box.innerHTML = '';
+        list.forEach((e, i) => {
+            const need = EFFECT_TYPES[e.effect] || [];
+            const row = document.createElement('div');
+            row.className = 'ed-special-row ed-special';
+            row.innerHTML = `<label>Effetto<select data-k="effect">${opts(EFFECT_LABELS, e.effect)}</select></label>
+                ${need.includes('stat') && e.effect !== 'hero_set' ? `<label>Statistica<select data-k="stat">${opts(EFFECT_STATS, e.stat)}</select></label>` : ''}
+                ${need.includes('stat') && e.effect === 'hero_set' ? `<label>Segnale<select data-k="stat">${opts(HERO_FLAGS, e.stat)}</select></label>` : ''}
+                ${need.includes('val') ? `<label>Valore<input type="number" data-k="val" value="${e.val ?? ''}"></label>` : ''}
+                ${need.includes('text') ? `<label>Testo<input type="text" data-k="text" value="${esc(e.text || '')}"></label>` : ''}
+                ${need.includes('item') ? `<label>Oggetto<select data-k="item">${libOpts('armeria', e.item)}</select></label>` : ''}
+                ${e.effect === 'relic' ? `<label>Reliquia<select data-k="id">${libOpts('reliquie', e.id)}</select></label>` : ''}
+                ${e.effect === 'curse' ? `<label>Maledizione<select data-k="id">${libOpts('maledizioni', e.id)}</select></label>` : ''}
+                <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>`;
+            row.addEventListener('change', ev => {
+                const k = ev.target.dataset.k;
+                if (!k) return;
+                e[k] = ev.target.type === 'number' ? Number(ev.target.value) : ev.target.value;
+                if (k === 'effect') {
+                    // Solo i campi del tipo nuovo, con un valore di partenza
+                    Object.keys(e).filter(x => x !== 'effect').forEach(x => delete e[x]);
+                    const n = EFFECT_TYPES[e.effect] || [];
+                    if (n.includes('val')) e.val = 1;
+                    if (n.includes('stat')) e.stat = e.effect === 'hero_set' ? Object.keys(HERO_FLAGS)[0] : 'str';
+                    if (n.includes('text')) e.text = 'Nuova maledizione';
+                    if (n.includes('item')) e.item = Object.keys(lib.armeria || {})[0];
+                    if (e.effect === 'relic') e.id = Object.keys(lib.reliquie || {})[0];
+                    if (e.effect === 'curse') e.id = Object.keys(lib.maledizioni || {})[0];
+                    save(); paint(); return;
+                }
+                save();
+            });
+            row.querySelector('[data-act="del"]').addEventListener('click', () => { list.splice(i, 1); save(); paint(); });
+            box.appendChild(row);
+        });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'btn-small';
+        add.textContent = 'Aggiungi un effetto';
+        add.addEventListener('click', () => { list.push({ effect: 'coins', val: 10 }); save(); paint(); });
+        box.appendChild(add);
+    };
+    paint();
+    return box;
+}
+
+// Scelte di un evento: [{ testo, costo, stat, cd, effetti, esito, fallimento: { effetti, esito } }] (js/prove.js)
+function choiceListEditor(obj, f, onChange) {
+    const box = document.createElement('div');
+    box.className = 'ed-specials';
+    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
+    const save = () => { if (!list().length) delete obj[f.k]; onChange(f.k); };
+    const paint = () => {
+        box.innerHTML = '';
+        list().forEach((c, i) => {
+            const card = document.createElement('div');
+            card.className = 'ed-special';
+            card.innerHTML = `
+                <div class="ed-special-row">
+                    <label class="ed-grow">Testo del pulsante<input type="text" data-k="testo" value="${esc(c.testo || '')}"></label>
+                    <label>Costo in Scudi<input type="number" data-k="costo" min="0" value="${c.costo ?? ''}"></label>
+                    <label>Prova<select data-k="stat"><option value="">Nessuna</option>${Object.entries(STAT_LABELS).map(([k, l]) => `<option value="${k}" ${k === c.stat ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+                    ${c.stat ? `<label>CD<input type="number" data-k="cd" min="1" value="${c.cd ?? ''}"></label>` : ''}
+                    <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
+                </div>
+                <div class="ed-choice-part"><b>${c.stat ? 'Se riesce' : 'Effetti'}</b></div>
+                <label class="ed-choice-text">Esito (testo mostrato dopo la scelta)<textarea data-k="esito">${esc(c.esito || '')}</textarea></label>
+                ${c.stat ? `<div class="ed-choice-part"><b>Se fallisce</b></div>
+                <label class="ed-choice-text">Esito del fallimento<textarea data-k="esito_f">${esc((c.fallimento || {}).esito || '')}</textarea></label>` : ''}`;
+            // Elenchi degli effetti: dopo la riga "Se riesce" e dopo "Se fallisce"
+            const parts = card.querySelectorAll('.ed-choice-part');
+            c.effetti = c.effetti || [];
+            parts[0].after(effectListEditor(c.effetti, save));
+            if (c.stat) {
+                c.fallimento = c.fallimento || { effetti: [] };
+                c.fallimento.effetti = c.fallimento.effetti || [];
+                parts[1].after(effectListEditor(c.fallimento.effetti, save));
+            }
+            card.addEventListener('change', ev => {
+                const k = ev.target.dataset.k;
+                if (!k || ev.target.closest('.ed-specials') !== box && ev.target.closest('.ed-special') !== card) return;
+                if (k === 'esito_f') { (c.fallimento = c.fallimento || { effetti: [] }).esito = ev.target.value; save(); return; }
+                if (ev.target.type === 'number') { if (ev.target.value === '') delete c[k]; else c[k] = Number(ev.target.value); }
+                else if (ev.target.value === '') delete c[k];
+                else c[k] = ev.target.value;
+                if (k === 'stat') {
+                    if (!c.stat) { delete c.cd; delete c.fallimento; } else c.cd = c.cd || 7;
+                    save(); paint(); return;
+                }
+                save();
+            });
+            card.querySelector('[data-act="del"]').addEventListener('click', () => { list().splice(i, 1); save(); paint(); });
+            box.appendChild(card);
+        });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'btn-small';
+        add.textContent = 'Aggiungi una scelta';
+        add.addEventListener('click', () => { list().push({ testo: 'Nuova scelta', effetti: [], esito: '' }); save(); paint(); });
+        box.appendChild(add);
+    };
+    paint();
+    return box;
+}
+
 // Potenziamenti [{ buff_stat, buff_val }] (benedizioni "al prossimo scontro"): statistiche come le pozioni
 const BUFF_LIST_STATS = { att_bonus: 'Tiro per colpire', dmg: 'Danno', str: 'Forza', def_bonus: 'Difesa', help_bonus_val: 'Aiuto',
     current_armor: 'Armatura (subito)', regen: 'HP a inizio round' };
@@ -319,6 +433,14 @@ function renderForm(container, obj, fields, onChange) {
             } else if (mode) {
                 wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', f.lib, mode)}>Modifica in ${LIB_LABELS[f.lib]}</a>`);
             }
+            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Scelte di un evento (nodo di trama): costo, prova, effetti ed esito
+        if (f.type === 'choicelist') {
+            wrap.appendChild(choiceListEditor(obj, f, onChange));
             if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;

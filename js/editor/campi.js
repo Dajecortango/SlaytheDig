@@ -327,7 +327,9 @@ const NODE_FIELDS = [
 const STORY_FIELDS = [
     { k: 'title', label: 'Titolo della trama', wide: true },
     { k: 'text', label: 'Descrizione', type: 'textarea', wide: true,
-      help: 'Il racconto mostrato nella schermata della trama, dopo "Descrizione:". Una riga vuota separa i paragrafi.' }
+      help: 'Il racconto mostrato nella schermata della trama, dopo "Descrizione:". Una riga vuota separa i paragrafi.' },
+    { k: 'scelte', label: 'Scelte (evento)', type: 'choicelist', wide: true,
+      help: 'Senza scelte è solo racconto. Con le scelte il giocatore ne prende una: può costare Scudi, chiedere una prova (tira l\'eroe con la statistica più alta) e dare effetti diversi se riesce o fallisce.' }
 ];
 
 const OTHER_SECTIONS = [

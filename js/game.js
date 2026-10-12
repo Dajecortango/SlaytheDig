@@ -148,6 +148,14 @@ function breakRelic(relicId) {
                     case 'coins': stato.partyCoins = Math.max(0, stato.partyCoins + e.val); break;
                     case 'add_curse': stato.activeCurses.push({ id: e.id || idFromName(e.text), text: e.text }); break;
                     case 'hero_item': targets.forEach(h => giveHeroItem(h, e.item, e.val || 1)); break;
+                    case 'party_heal': stato.party.filter(h => h.hp > 0).forEach(h => healHero(h, e.val || 1)); break;
+                    case 'relic': grantRelic(e.id); break;
+                    // Maledizione della libreria, come la punizione di una prova (applyPunishment in js/prove.js), una volta sola
+                    case 'curse': {
+                        const c = (LIBRERIA.maledizioni || {})[e.id];
+                        if (c && !hasCurse(e.id)) applyPunishment({ ...c, id: e.id }, hero);
+                        break;
+                    }
                     default: console.warn('Effetto sconosciuto:', e);
                 }
             });
