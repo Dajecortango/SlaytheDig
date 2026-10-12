@@ -212,11 +212,7 @@ function onlineMostraLink() {
 }
 
 /* ---------- Funzioni completate nei passi successivi (creazione, voti, pronti, capo, barra) ---------- */
-function onlineCapo() { return null; }
-function onlineVotoDaClic(tipo, nome, args, giocatore) { onlineAvvisa(giocatore, 'Voto non ancora disponibile'); }
-function onlineVota(giocatore, id, op) {}
 function onlinePronto(giocatore, nome, args) { onlineState.attore = null; chiamaAzione(nome, args, null); }
-function onlineDisegnaBarraMaster() {}
 
 /* ---------- Stanza, creazione a turno, chi deve agire ---------- */
 // Giocatori in ordine d'ingresso (anche i disconnessi: il loro posto resta)
@@ -291,6 +287,93 @@ if (typeof startPartyCreation === 'function') {
     const creaOrig = startPartyCreation;
     startPartyCreation = function () { const r = creaOrig.apply(this, arguments); stato.onlineOwners = {}; onlineDisegnaLobby(); return r; };
 }
+
+/* ---------- Capo della spedizione: uno per livello della mappa ---------- */
+function onlineCapo() {
+    if (!onlineState.attivo) return null;
+    const nodo = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
+    return nextCaptain(onlineState.giocatori, nodo ? nodo.level + 1 : 0);
+}
+
+/* ---------- Voti ---------- */
+let onlineVotoTimer = null, onlineVotoSeq = 0;
+function onlineApriVoto({ tipo, domanda, opzioni, secondi = VOTE_SECONDS, esegui }) {
+    if (!onlineState.attivo || !onlineGiocatoriCollegati().length) { esegui(opzioni[0].id); return; }
+    clearTimeout(onlineVotoTimer);
+    onlineState.voto = { id: `v${++onlineVotoSeq}`, tipo, domanda, opzioni, voti: {}, scadenza: Date.now() + secondi * 1000, esegui };
+    onlineVotoTimer = setTimeout(() => onlineChiudiVoto(), secondi * 1000);
+    onlineInviaStato();
+}
+function onlineVota(giocatore, id, op) {
+    const v = onlineState.voto;
+    if (!v || v.id !== id || !v.opzioni.some(o => o.id === op)) return;
+    v.voti[giocatore] = op;
+    if (onlineGiocatoriCollegati().every(n => n in v.voti)) onlineChiudiVoto();
+    else onlineInviaStato();
+}
+function onlineChiudiVoto(forzato) {
+    const v = onlineState.voto;
+    if (!v) return;
+    clearTimeout(onlineVotoTimer);
+    onlineState.voto = null;
+    const vincente = forzato !== undefined ? forzato
+        : resolveVote(v.voti, v.opzioni.map(o => o.id), onlineCapo(), onlineGiocatoriCollegati());
+    onlineInviaStato();
+    onlineState.attore = null;
+    v.esegui(vincente);
+    onlineInviaStato();
+}
+function onlineForzaVoto(op) { onlineChiudiVoto(op); }
+
+// Clic di un giocatore che diventa un voto (regole 'voto:<tipo>' di js/online-regole.js)
+function onlineVotoDaClic(tipo, nome, args, giocatore) {
+    const v = onlineState.voto;
+    if (tipo === 'mappa') {
+        if (!v || v.tipo !== 'mappa') onlineApriVotoMappa();
+        if (onlineState.voto) onlineVota(giocatore, onlineState.voto.id, String(args[0]));
+        return;
+    }
+    onlineVotoSpeciale(tipo, nome, args, giocatore);  // Task 9
+}
+
+/* ---------- Voto della mappa ---------- */
+function onlineApriVotoMappa() {
+    const aperti = stato.stsMapNodes.filter(n => n.active && !n.done);
+    if (!aperti.length) return;
+    const nome = n => (typeof nodeBannerInfo === 'function' ? `${nodeBannerInfo(n).kind}: ${nodeBannerInfo(n).title}` : n.type);
+    onlineApriVoto({ tipo: 'mappa', domanda: 'Dove andiamo?', opzioni: aperti.map(n => ({ id: String(n.id), label: nome(n) })),
+        esegui: id => selectStsNode(Number(id)) });
+}
+// Arrivati sulla mappa con più strade: il voto parte da solo
+if (typeof showScreen === 'function') {
+    const mostraOrig = showScreen;
+    showScreen = function (id) {
+        const r = mostraOrig.apply(this, arguments);
+        if (onlineState.attivo) {
+            if (onlineState.voto && id !== 'screenMap' && onlineState.voto.tipo === 'mappa') { clearTimeout(onlineVotoTimer); onlineState.voto = null; }
+            if (id === 'screenMap' && stato.stsMapNodes.filter(n => n.active && !n.done).length > 1) setTimeout(onlineApriVotoMappa, 600);
+            onlineInviaStato();
+        }
+        return r;
+    };
+}
+
+/* ---------- Barra del master (non inviata ai giocatori) ---------- */
+function onlineDisegnaBarraMaster() {
+    let bar = document.getElementById('onlineMasterBar');
+    if (!onlineState.attivo) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'onlineMasterBar'; bar.className = 'wc-panel';
+        bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:40;padding:8px 14px;max-width:calc(100% - 32px)';
+        document.body.appendChild(bar); }
+    const v = onlineState.voto;
+    const giocatori = onlineState.giocatori.map(gi => `${esc(gi.name)}${gi.connected ? '' : ' (disconnesso)'}${onlineCapo() === gi.name ? ' 👑' : ''}`).join(', ');
+    bar.innerHTML = `<b>Master</b> · ${giocatori || 'nessun giocatore'}`
+        + (v ? `<br>${esc(v.domanda)} ${v.opzioni.map(o => `<button class="btn-small" ${azione('onlineForzaVoto', o.id)}>${esc(o.label)} · ${Object.values(v.voti).filter(x => x === o.id).length}</button>`).join(' ')}` : '')
+        + (onlineState.pronti ? `<br>Pronti ${onlineState.pronti.size}/${onlineGiocatoriCollegati().length} <button class="btn-small" ${azione('onlineForzaPronti')}>Si parte</button>` : '');
+}
+
+function onlineVotoSpeciale(tipo, nome, args, giocatore) { onlineAvvisa(giocatore, 'Voto non ancora disponibile'); }
+function onlineForzaPronti() {}
 
 /* ---------- Pannello nelle Opzioni ---------- */
 if (typeof openOptions === 'function') {

@@ -107,4 +107,17 @@ module.exports = (t, carica) => {
         h.eval(`currentScreenId = 'screenMap';`);
         t.uguale(null, h.onlineTurnoCreazione());
     });
+
+    t.test('voto: si chiude quando votano tutti, esegue l\'opzione vincente', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Marco', connected: true }, { name: 'Sara', connected: true }];
+            globalThis.__scelto = null;
+            onlineApriVoto({ tipo: 'prova', domanda: 'Dove?', opzioni: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }], secondi: 30, esegui: id => { globalThis.__scelto = id; } });`);
+        const id = h.eval('onlineState.voto.id');
+        h.onlineVota('Marco', id, 'b');
+        t.uguale(null, h.eval('globalThis.__scelto'), 'manca Sara');
+        h.onlineVota('Sara', id, 'b');
+        t.uguale('b', h.eval('globalThis.__scelto'));
+        t.uguale(null, h.eval('onlineState.voto'));
+    });
 };
