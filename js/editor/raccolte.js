@@ -17,7 +17,7 @@ const COLLECTIONS = {
     },
     bestiario: {
         library: true, fields: ENEMY_FIELDS, label: e => e.name, keyHint: 'nuovo_nemico',
-        create: () => ({ name: 'Nuovo nemico', hp: 8, maxHp: 8, att: 7, dmg: 1, ca: 7, desc: '' }),
+        create: () => ({ name: 'Nuovo nemico', hp: 8, maxHp: 8, att: 7, dmg: 1, ca: 7, desc: '' }), wizard: true,
         sub: e => `HP ${e.maxHp} · CA ${e.ca} · Att ${e.att} · Danno ${e.dmg}`,
         renameRefs: (oldKey, key) => camp.mapNodes.forEach(n => { if (n.enemy === oldKey) n.enemy = key; }),
         note: (e, key) => `<p class="ed-lib-note">${Array.isArray(e.fasi) ? `${e.fasi.length} soglie di vita con azioni speciali` : 'Nessuna soglia di vita'}:
@@ -25,7 +25,7 @@ const COLLECTIONS = {
     },
     armeria: {
         library: true, fields: ITEM_FIELDS, label: i => i.name, keyHint: 'nuovo_oggetto',
-        create: key => ({ id: key, name: 'Nuovo oggetto', rarity: 'comune', desc: '' }),
+        create: key => ({ id: key, name: 'Nuovo oggetto', rarity: 'comune', desc: '' }), wizard: true,
         sub: i => [i.rarity, i.desc].filter(Boolean).join(' · '),
         afterKeyChange: (obj, key) => { obj.id = key; },
         renameRefs: (oldKey, key) => {
@@ -162,6 +162,12 @@ function renderCollection(name) {
             <div class="ed-detail" id="edDetail"></div>
         </div>`;
     applyListFilter(name);
+    if (wizardOpen === name) {
+        document.getElementById('edDetail').innerHTML = wizardHtml(name);
+        const input = document.getElementById('edWizName');
+        if (input) input.focus();
+        return;
+    }
     if (sel) {
         const uses = col.usage(sel);
         const detail = document.getElementById('edDetail');
@@ -173,11 +179,12 @@ function renderCollection(name) {
         renderForm(detail, items[sel], col.fields, key => {
             if (col.afterChange) col.afterChange(items[sel], key);
             col.dirty();
+            recordRecent(name, sel);
             const active = document.querySelector('.ed-list-item.active');
             if (active && (key === 'name' || key === 'title')) active.firstChild.textContent = col.label(items[sel]) || sel;
             updatePreview();
         });
-        detail.insertAdjacentHTML('afterbegin', `<p class="ed-usage-box"><b>Id:</b> <code>${esc(sel)}</code> · <b>Usato in:</b> ${esc(usageText(uses))}</p>`);
+        detail.insertAdjacentHTML('afterbegin', `<p class="ed-usage-box">${starHtml(name, sel)} <b>Id:</b> <code>${esc(sel)}</code> · <b>Usato in:</b> ${esc(usageText(uses))}</p>`);
         if (col.note) detail.insertAdjacentHTML('afterbegin', col.note(items[sel], sel));
         if (preview) {
             detail.insertAdjacentHTML('beforeend', '<div class="ed-tip-preview-wrap"><span class="ed-tip-preview-label">Anteprima del tooltip nel gioco</span><div id="edTipPreview"></div></div>');
@@ -188,6 +195,7 @@ function renderCollection(name) {
 
 function selectKeyed(name, key) {
     selection[name] = key;
+    wizardOpen = null;
     render();
 }
 
@@ -204,26 +212,97 @@ function askKey(name, suggestion) {
     return key;
 }
 
-function addKeyed(name) {
+/* ---------- Id automatici dal nome ----------
+   "Aggiungi" e "Duplica" non chiedono l'id: lo ricavano dal nome ("Spada di Fuoco" -> spada_di_fuoco),
+   con _2, _3... se esiste già. "Rinomina id" resta per cambiarlo a mano. */
+const nameField = name => name === 'challenges' ? 'title' : 'name';
+function uniqueKey(name, base) {
+    const store = COLLECTIONS[name].store();
+    const root = idFromName(base) || COLLECTIONS[name].keyHint || 'elemento';
+    let key = root;
+    for (let i = 2; store[key]; i++) key = `${root}_${i}`;
+    return key;
+}
+
+// Aggiunge l'elemento con il nome dato (id automatico) e lo seleziona
+function insertKeyed(name, obj) {
     const col = COLLECTIONS[name];
-    const key = askKey(name, col.keyHint);
-    if (!key) return;
-    col.store()[key] = col.create(key);
+    const key = uniqueKey(name, obj[nameField(name)]);
+    if ('id' in obj) obj.id = key;
+    col.store()[key] = obj;
+    if (col.afterKeyChange) col.afterKeyChange(obj, key);
     selection[name] = key;
     col.dirty();
+    recordRecent(name, key);
     render();
+}
+
+function addKeyed(name) {
+    const col = COLLECTIONS[name];
+    // Armeria e Bestiario: creazione guidata (tipo e rarità, ruolo e momento) nel riquadro a destra
+    if (col.wizard) { wizardOpen = name; render(); return; }
+    const label = prompt('Nome:', col.create('x')[nameField(name)] || '');
+    if (!label) return;
+    const obj = col.create(idFromName(label));
+    obj[nameField(name)] = label;
+    insertKeyed(name, obj);
 }
 
 function duplicateKeyed(name) {
     const col = COLLECTIONS[name];
-    const src = selection[name];
-    const key = askKey(name, `${src}_copia`);
-    if (!key) return;
-    col.store()[key] = deepCopy(col.store()[src]);
-    if (col.afterKeyChange) col.afterKeyChange(col.store()[key], key);
-    selection[name] = key;
-    col.dirty();
+    const src = col.store()[selection[name]];
+    if (!src) return;
+    const copy = deepCopy(src);
+    copy[nameField(name)] = `${src[nameField(name)] || selection[name]} (copia)`;
+    insertKeyed(name, copy);
+}
+
+/* ---------- Creazione guidata (ITEM_TEMPLATES / ENEMY_TEMPLATES in campi.js) ---------- */
+let wizardOpen = null;   // nome della raccolta con la creazione guidata aperta
+
+function wizardHtml(name) {
+    const opt = map => Object.entries(map).map(([k, v]) => `<option value="${esc(k)}">${esc(typeof v === 'string' ? v : v.label)}</option>`).join('');
+    const scelte = name === 'armeria'
+        ? `<label>Tipo<select id="edWizKind">${opt(ITEM_TEMPLATES)}</select></label>
+           <label>Rarità<select id="edWizLevel">${opt(RARITY_LABELS).replace('value="comune"', 'value="comune" selected')}</select></label>`
+        : `<label>Ruolo<select id="edWizKind">${opt(ENEMY_TEMPLATES)}</select></label>
+           <label>Momento<select id="edWizLevel">${opt(ENEMY_MOMENTS).replace('value="meta"', 'value="meta" selected')}</select></label>`;
+    return `<div class="ed-wizard">
+        <h3>${name === 'armeria' ? 'Nuovo oggetto' : 'Nuovo nemico'}</h3>
+        <p class="ed-help">Scegli e crea: i valori di partenza sono la media degli elementi di oggi, poi li ritocchi. L'id si ricava dal nome.</p>
+        <div class="ed-special-row">
+            <label class="ed-grow">Nome<input type="text" id="edWizName" ${azioneSu('enter', 'createFromWizard', name)} placeholder="${name === 'armeria' ? 'Es. Spada di Fuoco' : 'Es. Lupo delle Nevi'}"></label>
+            ${scelte}
+        </div>
+        <div class="ed-special-row">
+            <button type="button" ${azione('createFromWizard', name)}>Crea</button>
+            <button type="button" class="btn-small" ${azione('closeWizard')}>Annulla</button>
+        </div>
+    </div>`;
+}
+
+function closeWizard() {
+    wizardOpen = null;
     render();
+}
+
+function createFromWizard(name) {
+    const label = (document.getElementById('edWizName').value || '').trim();
+    if (!label) { alert('Scrivi il nome.'); return; }
+    const kind = document.getElementById('edWizKind').value;
+    const level = document.getElementById('edWizLevel').value;
+    let obj;
+    if (name === 'armeria') {
+        const base = deepCopy(ITEM_TEMPLATES[kind].rarita[level] || {});
+        obj = { id: '', name: label, rarity: level, ...base };
+        obj.desc = templateItemDesc(obj);
+    } else {
+        const st = ENEMY_TEMPLATES[kind].momenti[level];
+        obj = { name: label, hp: st.hp, maxHp: st.hp, att: st.att, dmg: st.dmg, ca: st.ca, desc: '' };
+        if (kind !== 'normale') obj.fasi = [{ soglia: 50, testo: '', azioni: [] }];
+    }
+    wizardOpen = null;
+    insertKeyed(name, obj);
 }
 
 // Uso in campagne diverse da quella aperta: lì l'editor non può aggiornare i riferimenti

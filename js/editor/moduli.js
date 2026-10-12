@@ -226,7 +226,9 @@ function specialiEditor(obj, f, onChange) {
     const V = specialiVocab(f.vocab || 'eroe');
     const box = document.createElement('div');
     box.className = 'ed-specials';
-    const list = () => { let l = getPath(obj, f.k); if (!Array.isArray(l)) { l = []; setPath(obj, f.k, l); } return l; };
+    // Il campo nasce solo quando si aggiunge il primo effetto: aprire un elemento non cambia i suoi dati
+    const list = () => { const l = getPath(obj, f.k); return Array.isArray(l) ? l : []; };
+    const ensure = () => { let l = getPath(obj, f.k); if (!Array.isArray(l)) { l = []; setPath(obj, f.k, l); } return l; };
     const save = () => { if (!list().length) deletePath(obj, f.k); onChange(f.k); };
     const opts = (map, value, empty) => (empty ? `<option value="">${esc(empty)}</option>` : '') + Object.entries(map)
         .map(([k, l]) => `<option value="${esc(k)}" ${k === value ? 'selected' : ''}>${esc(typeof l === 'string' ? l : l.label)}</option>`).join('');
@@ -294,10 +296,10 @@ function specialiEditor(obj, f, onChange) {
         const modelli = SPECIALI_MODELLI[f.vocab || 'eroe'] || {};
         row.innerHTML = `<button type="button" class="btn-small" data-act="add">Aggiungi un effetto</button>
             <select data-act="model"><option value="">Aggiungi da un modello…</option>${Object.keys(modelli).map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>`;
-        row.querySelector('[data-act="add"]').addEventListener('click', () => { list().push({ ...V.nuovo }); save(); paint(); });
+        row.querySelector('[data-act="add"]').addEventListener('click', () => { ensure().push({ ...V.nuovo }); save(); paint(); });
         row.querySelector('[data-act="model"]').addEventListener('change', e => {
             if (!e.target.value) return;
-            list().push(JSON.parse(JSON.stringify(modelli[e.target.value])));
+            ensure().push(JSON.parse(JSON.stringify(modelli[e.target.value])));
             save(); paint();
         });
         box.appendChild(row);
@@ -366,7 +368,8 @@ function effectListEditor(list, save) {
 function roadListEditor(obj, f, onChange) {
     const box = document.createElement('div');
     box.className = 'ed-specials';
-    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
+    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : []);
+    const ensure = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
     const save = () => { if (!list().length) delete obj[f.k]; onChange(f.k); };
     const libSelect = (k, kind, value) => `<select data-k="${k}"><option value="">Come la sfida</option>${Object.entries(lib[kind] || {})
         .map(([id, v]) => `<option value="${esc(id)}" ${id === value ? 'selected' : ''}>${esc(v.name || id)}</option>`).join('')}</select>`;
@@ -403,7 +406,7 @@ function roadListEditor(obj, f, onChange) {
         add.type = 'button';
         add.className = 'btn-small';
         add.textContent = 'Aggiungi una strada';
-        add.addEventListener('click', () => { list().push({ testo: 'Nuova strada', stat: obj.stat || 'str', cd: obj.cd || 7 }); save(); paint(); });
+        add.addEventListener('click', () => { ensure().push({ testo: 'Nuova strada', stat: obj.stat || 'str', cd: obj.cd || 7 }); save(); paint(); });
         box.appendChild(add);
     };
     paint();
@@ -414,7 +417,8 @@ function roadListEditor(obj, f, onChange) {
 function choiceListEditor(obj, f, onChange) {
     const box = document.createElement('div');
     box.className = 'ed-specials';
-    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
+    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : []);
+    const ensure = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
     const save = () => { if (!list().length) delete obj[f.k]; onChange(f.k); };
     const paint = () => {
         box.innerHTML = '';
@@ -462,7 +466,7 @@ function choiceListEditor(obj, f, onChange) {
         add.type = 'button';
         add.className = 'btn-small';
         add.textContent = 'Aggiungi una scelta';
-        add.addEventListener('click', () => { list().push({ testo: 'Nuova scelta', effetti: [], esito: '' }); save(); paint(); });
+        add.addEventListener('click', () => { ensure().push({ testo: 'Nuova scelta', effetti: [], esito: '' }); save(); paint(); });
         box.appendChild(add);
     };
     paint();
@@ -475,7 +479,8 @@ const BUFF_LIST_STATS = { att_bonus: 'Tiro per colpire', dmg: 'Danno', str: 'For
 function buffListEditor(obj, f, onChange) {
     const box = document.createElement('div');
     box.className = 'ed-specials';
-    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
+    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : []);
+    const ensure = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
     const paint = () => {
         box.innerHTML = '';
         list().forEach((b, i) => {
@@ -493,7 +498,7 @@ function buffListEditor(obj, f, onChange) {
         add.type = 'button';
         add.className = 'btn-small';
         add.textContent = 'Aggiungi un potenziamento';
-        add.addEventListener('click', () => { list().push({ buff_stat: 'att_bonus', buff_val: 1 }); onChange(f.k); paint(); });
+        add.addEventListener('click', () => { ensure().push({ buff_stat: 'att_bonus', buff_val: 1 }); onChange(f.k); paint(); });
         box.appendChild(add);
     };
     paint();
@@ -743,6 +748,21 @@ function renderForm(container, obj, fields, onChange) {
             input.addEventListener('input', updateThumb);
             row.append(input, btn, thumb);
             updateThumb();
+            // Un file trascinato sul campo: come "Carica…" (copiato nel progetto al salvataggio)
+            row.title = 'Trascina qui un\'immagine';
+            row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('ed-drop'); });
+            row.addEventListener('dragleave', () => row.classList.remove('ed-drop'));
+            row.addEventListener('drop', e => {
+                e.preventDefault();
+                row.classList.remove('ed-drop');
+                const file = [...(e.dataTransfer.files || [])].find(x => /^image\//.test(x.type));
+                if (!file) return;
+                const path = `${f.folder || 'immagini'}/${safeFileName(file.name)}`;
+                addPendingAsset(path, file);
+                input.value = path;
+                commit();
+                updateThumb();
+            });
         }
         if (f.k === 'enemy' && value && lib.bestiario[value]) {
             wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', 'bestiario', value)}>Modifica nel Bestiario</a>`);

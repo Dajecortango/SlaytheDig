@@ -29,6 +29,7 @@ function render() {
     else if (currentTab === 'elite') renderEliteTab();
     else renderCollection(currentTab);  // sfide e librerie
     renderIssues();
+    renderQuickNav();
 }
 
 fillCampaignSelect();

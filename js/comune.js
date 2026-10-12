@@ -5,6 +5,13 @@
    Caricato dopo js/libreria.js e prima di js/game.js / js/editor/.
    ========================================================================== */
 
+// Id ricavato da un nome, per gli elementi scritti dentro una campagna, i salvataggi vecchi e gli id automatici
+// dell'editor ("Scudo dell'Atamano" -> "scudo_dell_atamano", come le chiavi della libreria)
+function idFromName(name) {
+    return String(name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
 // Testo sicuro dentro l'HTML (nomi e descrizioni scritti nelle campagne)
 const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
