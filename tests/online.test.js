@@ -87,4 +87,13 @@ module.exports = (t, carica) => {
         t.uguale(5, vecchio.version);
         t.uguale({}, vecchio.stato.onlineOwners);
     });
+
+    t.test('trovaElementoRemoto: segue il percorso saltando SCRIPT e AUDIO', () => {
+        const h = carica();
+        const nodo = (tag, figli = []) => ({ tagName: tag, children: figli });
+        const bersaglio = nodo('BUTTON');
+        const root = nodo('DIV', [nodo('AUDIO'), nodo('DIV', [nodo('SPAN'), bersaglio])]);
+        t.ok(h.trovaElementoRemoto(root, [0, 1]) === bersaglio);
+        t.uguale(null, h.trovaElementoRemoto(root, [5]));
+    });
 };
