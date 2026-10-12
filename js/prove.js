@@ -30,6 +30,36 @@
             showScreen('screenVictory');
         }
 
+        /* Strade di una sfida ("strade": [{ testo, stat, cd, successText, failText, reward, punishment }]): approcci
+           diversi alla stessa prova, ognuno con la sua statistica e difficoltà; premio, punizione e testi che mancano
+           sono quelli della sfida. Senza strade la sfida ha un approccio solo ("Uno di voi si avvicina"). */
+        function challengeWithRoad(challenge, i) {
+            const road = (challenge.strade || [])[i];
+            if (!road) return challenge;
+            const out = { ...challenge, roadIndex: i };
+            ['stat', 'cd', 'successText', 'failText', 'reward', 'punishment'].forEach(k => { if (road[k] != null && road[k] !== '') out[k] = road[k]; });
+            return out;
+        }
+
+        // La strada con la migliore probabilità di riuscita per l'eroe più adatto (simulatore). Ritorna { i, challenge, pct }
+        function bestChallengeRoad(challenge) {
+            const alive = stato.party.filter(h => h.hp > 0);
+            const prev = stato.challengeState;
+            const roads = (challenge.strade || []).length ? challenge.strade.map((_, i) => i) : [null];
+            const best = roads.map(i => {
+                const ch = i == null ? challenge : challengeWithRoad(challenge, i);
+                stato.challengeState = ch;
+                const pct = alive.length ? Math.max(...alive.map(h => challengeChanceInfo(challengeModifiers(h)).pct)) : 0;
+                return { i, challenge: ch, pct };
+            }).reduce((b, r) => (r.pct > b.pct ? r : b));
+            stato.challengeState = prev;
+            return best;
+        }
+
+        function roadLabel(road) {
+            return `${road.testo || 'Un altro modo'} (${STAT_LABELS[road.stat] || road.stat || ''}, CD ${road.cd || '?'})`;
+        }
+
         function startChallenge(challengeId) {
             showScreen('screenChallenge');
             stato.challengeState = challengesData[challengeId] || {
@@ -46,6 +76,12 @@
             document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.desc)}`;
 
             document.getElementById('challengeStage1').classList.remove('hidden');
+            // Strade: un pulsante per ogni approccio al posto di "Uno di voi si avvicina"
+            const roads = stato.challengeState.strade || [];
+            const roadBox = document.getElementById('challengeRoads');
+            if (roadBox) roadBox.innerHTML = roads.map((r, i) => `<button class="btn-block" ${azione('challengeChooseRoad', i)}>${String.fromCharCode(97 + i)}) ${esc(roadLabel(r))}</button>`).join('');
+            const approachBtn = document.querySelector('#challengeStage1 [data-args=\'[true]\']');
+            if (approachBtn) approachBtn.classList.toggle('hidden', roads.length > 0);
             // La prova finale non si può lasciar perdere
             const ignoreBtn = document.querySelector('#challengeStage1 [data-args=\'[false]\']');
             if (ignoreBtn) ignoreBtn.classList.toggle('hidden', isFinalNode());
@@ -70,6 +106,14 @@
                 const mods = challengeModifiers(h);
                 return `<option value="${h.name}">${h.name} (${STAT_LABELS[stato.challengeState.stat] || 'Stat'} ${mods.statValue}) · ${challengeChanceInfo(mods).short}</option>`;
             }).join('');
+        }
+
+        // Scelta di una strada: la prova prende statistica, difficoltà, testi, premio e punizione di quella strada
+        function challengeChooseRoad(i) {
+            const original = stato.challengeState.base || stato.challengeState;  // la sfida com'è nella campagna
+            if (!(original.strade || [])[i]) return;
+            stato.challengeState = { ...challengeWithRoad(original, i), base: original };
+            challengeChoose(true);
         }
 
         let selectedChallengeHero = null;

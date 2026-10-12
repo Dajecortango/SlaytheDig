@@ -70,7 +70,8 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
     });
     camp.enemies = Object.assign(enemies, camp.enemies || {});
 
-    Object.values(camp.challenges || {}).forEach(ch => {
+    // Premio e punizione di una sfida e delle sue strade (approcci diversi, "strade": [{ ..., reward, punishment }])
+    const resolveOutcome = ch => {
         if (typeof ch.reward === 'string') {
             if (lib.reliquie[ch.reward]) ch.reward = { id: ch.reward, ...copy(lib.reliquie[ch.reward]) };
             else { missing('reliquia', ch.reward); ch.reward = null; }
@@ -79,7 +80,8 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
             if (lib.maledizioni[ch.punishment]) ch.punishment = { id: ch.punishment, ...copy(lib.maledizioni[ch.punishment]) };
             else { missing('maledizione', ch.punishment); ch.punishment = null; }
         }
-    });
+    };
+    Object.values(camp.challenges || {}).forEach(ch => { resolveOutcome(ch); (ch.strade || []).forEach(resolveOutcome); });
     return camp;
 }
 

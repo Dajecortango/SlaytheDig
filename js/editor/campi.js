@@ -300,7 +300,9 @@ const CHALLENGE_FIELDS = [
       help: 'Una reliquia della libreria, oppure "Personalizzata" per un premio immediato (es. Scudi)' },
     { k: 'punishment', label: 'Punizione', type: 'libref', lib: 'maledizioni', wide: true,
       custom: () => ({ type: 'injury', name: '', desc: '', effects: [{ effect: 'party_damage', val: 1 }] }),
-      help: 'Una maledizione della libreria, oppure "Personalizzata" per un danno o una penalità immediata' }
+      help: 'Una maledizione della libreria, oppure "Personalizzata" per un danno o una penalità immediata' },
+    { k: 'strade', label: 'Strade (approcci diversi)', type: 'roadlist', wide: true,
+      help: 'Facoltative: al posto di "Uno di voi si avvicina" il giocatore sceglie una strada, ognuna con la sua statistica e difficoltà. Testi, premio e punizione lasciati vuoti sono quelli della sfida.' }
 ];
 
 const NODE_FIELDS = [
