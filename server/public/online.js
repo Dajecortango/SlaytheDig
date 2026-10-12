@@ -47,10 +47,12 @@
     /* ---------- Stream ---------- */
     function collega() {
         if (flusso) flusso.close();
-        flusso = new EventSource(`/api/online/flusso?code=${encodeURIComponent(code)}&token=${encodeURIComponent(token)}&ngrok-skip-browser-warning=true`);
+        // z=1: regioni compresse dentro gli eventi (lo stream resta in chiaro, che i proxy come ngrok non trattengono)
+        const z = typeof DecompressionStream === 'function' ? '&z=1' : '';
+        flusso = new EventSource(`/api/online/flusso?code=${encodeURIComponent(code)}&token=${encodeURIComponent(token)}${z}&ngrok-skip-browser-warning=true`);
         ultimoSegnale = Date.now();
         const on = (ev, fn) => flusso.addEventListener(ev, e => { ultimoSegnale = Date.now(); try { fn(JSON.parse(e.data)); } catch (err) { console.error(err); } });
-        on('parti', applicaParti);
+        on('parti', p => { codaParti = codaParti.then(() => p && p.z ? decomprimi(p.z) : p).then(applicaParti).catch(err => console.error(err)); });
         on('stato', s => { stato = s || {}; disegnaBarra(); musica(); });
         on('master', m => mostraAvviso(m.online ? '' : (m.chiusa ? 'Il master ha chiuso la partita' : 'Il master non è collegato'), !m.online));
         on('avviso', a => mostraAvviso(a.testo));
@@ -61,6 +63,13 @@
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && token && Date.now() - ultimoSegnale > 20000) collega(); });
 
     /* ---------- Regioni ---------- */
+    // Le regioni compresse si decomprimono in ordine d'arrivo (una coda: due eventi non si scavalcano)
+    let codaParti = Promise.resolve();
+    async function decomprimi(b64) {
+        const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const testo = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+        return JSON.parse(testo);
+    }
     const DOVE = { topbar: 'partyTopBar', console: 'partyConsole', modal: 'wc3Modal' };
     function applicaParti(parti) {
         Object.entries(parti || {}).forEach(([k, html]) => {
