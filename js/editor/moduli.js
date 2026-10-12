@@ -245,6 +245,37 @@ function specialiEditor(obj, f, onChange) {
     return box;
 }
 
+// Potenziamenti [{ buff_stat, buff_val }] (benedizioni "al prossimo scontro"): statistiche come le pozioni
+const BUFF_LIST_STATS = { att_bonus: 'Tiro per colpire', dmg: 'Danno', str: 'Forza', def_bonus: 'Difesa', help_bonus_val: 'Aiuto',
+    current_armor: 'Armatura (subito)', regen: 'HP a inizio round' };
+function buffListEditor(obj, f, onChange) {
+    const box = document.createElement('div');
+    box.className = 'ed-specials';
+    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
+    const paint = () => {
+        box.innerHTML = '';
+        list().forEach((b, i) => {
+            const row = document.createElement('div');
+            row.className = 'ed-special-row ed-special';
+            row.innerHTML = `<label>Statistica<select>${Object.entries(BUFF_LIST_STATS).map(([k, l]) => `<option value="${k}" ${k === b.buff_stat ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+                <label>Valore<input type="number" value="${b.buff_val ?? 1}"></label>
+                <button type="button" class="btn-small ed-danger">Togli</button>`;
+            row.querySelector('select').addEventListener('change', e => { b.buff_stat = e.target.value; onChange(f.k); });
+            row.querySelector('input').addEventListener('change', e => { b.buff_val = Number(e.target.value) || 0; onChange(f.k); });
+            row.querySelector('button').addEventListener('click', () => { list().splice(i, 1); onChange(f.k); paint(); });
+            box.appendChild(row);
+        });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'btn-small';
+        add.textContent = 'Aggiungi un potenziamento';
+        add.addEventListener('click', () => { list().push({ buff_stat: 'att_bonus', buff_val: 1 }); onChange(f.k); paint(); });
+        box.appendChild(add);
+    };
+    paint();
+    return box;
+}
+
 function renderForm(container, obj, fields, onChange) {
     container.innerHTML = '';
     const form = document.createElement('div');
@@ -288,6 +319,14 @@ function renderForm(container, obj, fields, onChange) {
             } else if (mode) {
                 wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', f.lib, mode)}>Modifica in ${LIB_LABELS[f.lib]}</a>`);
             }
+            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Potenziamenti di una benedizione: statistica e valore, uno per riga
+        if (f.type === 'bufflist') {
+            wrap.appendChild(buffListEditor(obj, f, onChange));
             if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;

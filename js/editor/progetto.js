@@ -13,6 +13,8 @@ function libraryUsage(kind, key) {
         return Object.entries(lib.eroi).filter(([, h]) => [...(h.abilities || []), ...(h.runeOptions || [])].includes(key))
             .map(([id, h]) => ({ id, title: h.name, n: 1, current: true }));
     }
+    // Le benedizioni si pescano tutte nella preghiera ai riposi, in ogni campagna
+    if (kind === 'benedizioni') return [{ id: '', title: 'preghiera ai riposi', n: 1, current: true }];
     // Le azioni speciali sono usate dalle fasi dei nemici del bestiario
     if (kind === 'azioni_elite') {
         return Object.entries(lib.bestiario).map(([id, e]) => ({ id, title: e.name, current: true,
@@ -72,9 +74,10 @@ window.CAMPAIGNS[${JSON.stringify(camp.id)}] = ${formatJson(camp)};
 `;
 }
 
-const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite'];
-const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite' };
+const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite', 'benedizioni'];
+const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite', benedizioni: 'Benedizioni' };
 const LIB_HEADERS = {
+    benedizioni: 'Benedizioni degli Asi del Nord: si scelgono dopo una preghiera riuscita al riposo (js/prove.js).\n// livello: "minore" o "maggiore"; bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti).\n// effetto: "prossimo_scontro" (buffs: [{ buff_stat, buff_val }] per tutto il prossimo scontro), "cura_party" (val HP ai vivi),\n// "togli_maledizione" (la più recente), "fede" (+val Fede per sempre), "bottino_extra" (val oggetti in più al prossimo\n// bottino), "dono" (resta sull\'eroe: agiscono i suoi "speciali", effetti "quando → fai" di js/speciali.js).',
     armeria: 'Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.\n// Le campagne li richiamano per id in "initialArmory" e "lootItems".\n// "speciali": effetti "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js).',
     bestiario: 'Bestiario: tutti i nemici, condivisi dalle campagne.\n// I nodi della mappa li richiamano per id nel campo "enemy".',
     reliquie: 'Reliquie: ricompense delle sfide, condivise dalle campagne.\n// Le sfide le richiamano per id nel campo "reward". "effects" agisce quando si ottiene la reliquia,\n// "speciali" sono gli effetti "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js).',

@@ -254,6 +254,27 @@ const RELIC_FIELDS = [
     specialiField('reliquia')
 ];
 
+// Benedizioni degli Asi (data/libreria/benedizioni.js): cosa fanno lo dice "effetto" (applyBlessing in js/prove.js)
+const BLESSING_EFFECTS = [['prossimo_scontro', 'Potenziamenti per tutto il prossimo scontro'], ['cura_party', 'Cura i vivi (HP)'],
+    ['togli_maledizione', 'Toglie la maledizione più recente'], ['fede', 'Fede in più per sempre'],
+    ['bottino_extra', 'Oggetti in più al prossimo bottino'], ['dono', 'Dono che resta sull\'eroe (effetti speciali)']];
+const BLESSING_FIELDS = [
+    { k: 'name', label: 'Nome', wide: true, help: 'Dono di uno degli Asi del Nord (Tillvaxt, Hvid, Sluta, Valgoren, Rattvisa, Draken, Allmän, Gomd)' },
+    { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true, help: 'Solo icone classiche di Warcraft III (non Reforged)' },
+    { k: 'livello', label: 'Livello', type: 'select', options: () => [['minore', 'Minore'], ['maggiore', 'Maggiore']],
+      help: 'Maggiore: con un 6 o un totale alto nella preghiera' },
+    { k: 'bersaglio', label: 'A chi', type: 'select', options: () => [['eroe', 'Un eroe'], ['party', 'Tutta la compagnia']],
+      help: 'Un eroe: lo sceglie il giocatore' },
+    { k: 'effetto', label: 'Effetto', type: 'select', wide: true, options: () => BLESSING_EFFECTS },
+    { k: 'buffs', label: 'Potenziamenti', type: 'bufflist', wide: true, showIf: b => b.effetto === 'prossimo_scontro',
+      help: 'Valgono dall\'inizio alla fine del prossimo scontro, come una pozione' },
+    { k: 'val', label: 'Valore', type: 'number', showIf: b => ['cura_party', 'fede', 'bottino_extra'].includes(b.effetto),
+      help: 'HP curati, punti di Fede o oggetti in più' },
+    { ...specialiField('benedizione'), showIf: b => b.effetto === 'dono',
+      help: 'Il dono resta sull\'eroe e questi effetti agiscono come una passiva. Solo con "A chi: un eroe".' },
+    { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true }
+];
+
 const CURSE_FIELDS = [
     { k: 'name', label: 'Nome', wide: true },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },

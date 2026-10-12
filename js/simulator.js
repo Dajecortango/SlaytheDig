@@ -857,11 +857,13 @@ function simPray() {
     const res = prayerRoll(praying);
     if (!res.success) return;
     const choices = pickBlessings(res.major);
-    const b = SIM_BLESSING_ORDER.map(id => choices.find(c => c.id === id)).find(Boolean);
+    // Le benedizioni nuove (create dall'editor) dopo quelle conosciute
+    const b = SIM_BLESSING_ORDER.map(id => choices.find(c => c.id === id)).find(Boolean) || choices[0];
     if (!b) return;
     const alive = stato.party.filter(h => h.hp > 0);
+    const offensive = (b.buffs || [b]).some(x => x.buff_stat === 'dmg' || x.buff_stat === 'att_bonus');
     const hero = b.effetto === 'fede' ? praying
-        : b.buffs || b.buff_stat === 'dmg' || b.buff_stat === 'att_bonus' ? simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0))
+        : offensive || b.effetto === 'dono' ? simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0))
         : simAliveMinBy(alive, h => h.hp + (h.current_armor || 0));
     applyBlessing(b, hero);
 }
