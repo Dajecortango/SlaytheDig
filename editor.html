@@ -51,6 +51,10 @@
         <button data-tab="abilita" class="ed-lib-tab">Abilità</button>
         <button data-tab="maledizioni" class="ed-lib-tab">Maledizioni</button>
         <button data-tab="benedizioni" class="ed-lib-tab">Benedizioni</button>
+        <div class="ed-search">
+            <input type="search" id="edGlobalSearch" placeholder="Cerca ovunque" data-input="globalSearch" data-input-args='["$value"]'>
+            <div id="edSearchResults" class="ed-search-results hidden"></div>
+        </div>
     </nav>
 
     <main class="ed-main">
@@ -96,6 +100,7 @@
     <script src="js/editor/mappa.js"></script>
     <script src="js/editor/elite.js"></script>
     <script src="js/editor/controlli.js"></script>
+    <script src="js/editor/ricerca.js"></script>
     <script src="js/editor/avvio.js"></script>
 </body>
 </html>

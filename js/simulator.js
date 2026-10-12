@@ -530,10 +530,7 @@ function simExpertNodeScore(node) {
             const challenge = challengesData && challengesData[node.challengeId];
             const alive = party.filter(h => h.hp > 0);
             if (!challenge || !alive.length) return 0.5;
-            const prev = stato.challengeState;
-            stato.challengeState = challenge;
-            const best = Math.max(...alive.map(simChallengePct)) / 100;
-            stato.challengeState = prev;
+            const best = bestChallengeRoad(challenge).pct / 100;
             return 2 * best - 0.5;
         }
         default: return 1;
@@ -635,8 +632,10 @@ function simChooseNextNode(available, profile, runCtx) {
 }
 
 function simResolveChallengeNode(campaignData, node, profile) {
-    const challenge = campaignData.challenges[node.challengeId];
-    if (!challenge) return { defeat: false, finalVictory: false };
+    const original = campaignData.challenges[node.challengeId];
+    if (!original) return { defeat: false, finalVictory: false };
+    // Con le strade si sceglie quella con la migliore probabilità di riuscita
+    const challenge = bestChallengeRoad(original).challenge;
     stato.challengeState = challenge; // richiesto da challengeModifiers/challengeRollMode (leggono la globale)
 
     const alive = stato.party.filter(h => h.hp > 0);

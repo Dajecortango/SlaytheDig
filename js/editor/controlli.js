@@ -81,6 +81,15 @@ function validateCampaign() {
             if (typeof v === 'string' && !lib[kind][v]) add('error', `Sfida <b>${k}</b>: ${label} "${esc(v)}" non trovata in ${LIB_LABELS[kind]}`, 'challenges', k);
             else if (v && typeof v === 'object') checkEffects(v.effects, `Sfida <b>${k}</b> (${label})`, issues, 'challenges', k);
         });
+        // Strade: statistica, difficoltà e riferimenti alla libreria
+        (c.strade || []).forEach((r, i) => {
+            const where = `Sfida <b>${k}</b>, strada ${i + 1}`;
+            if (!['int', 'fth', 'str'].includes(r.stat)) add('error', `${where}: statistica non valida`, 'challenges', k);
+            if (typeof r.cd !== 'number') add('error', `${where}: classe di difficoltà mancante`, 'challenges', k);
+            if (!r.testo) add('warn', `${where}: testo del pulsante vuoto`, 'challenges', k);
+            if (r.reward && !lib.reliquie[r.reward]) add('error', `${where}: ricompensa "${esc(r.reward)}" non trovata`, 'challenges', k);
+            if (r.punishment && !lib.maledizioni[r.punishment]) add('error', `${where}: punizione "${esc(r.punishment)}" non trovata`, 'challenges', k);
+        });
     });
 
     const nodes = camp.mapNodes;

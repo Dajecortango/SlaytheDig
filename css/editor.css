@@ -241,6 +241,18 @@ code { color: var(--gold); font-size: 0.85em; }
     box-shadow: 0 0 10px rgba(255, 190, 60, 0.25), inset 0 1px 0 rgba(255, 220, 150, 0.2);
 }
 .ed-list-item small { display: block; color: var(--text-dim); font-size: 0.72rem; margin-top: 2px; }
+/* Ricerca globale nella barra delle schede (js/editor/ricerca.js) */
+.ed-search { position: relative; margin-left: auto; }
+.ed-search input { width: 15em; margin: 0; }
+.ed-search-results { position: absolute; right: 0; top: calc(100% + 4px); z-index: 50; width: 26em; max-height: 60vh; overflow-y: auto;
+    display: grid; gap: 2px; padding: 6px; background: linear-gradient(#1d1814, #120f0c); border: 1px solid #8a6418; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7); }
+.ed-search-hit { display: block; width: 100%; margin: 0; padding: 5px 8px; text-align: left; font-size: 0.82rem; text-transform: none;
+    background: transparent; border: 1px solid transparent; color: #e6dcc4; cursor: pointer; }
+.ed-search-hit:hover { border-color: #8a6418; color: #fff3b0; }
+.ed-search-hit small { color: var(--gold); font-size: 0.7rem; margin-right: 4px; }
+.ed-search-hit em { color: var(--text-dim); font-size: 0.72rem; }
+/* Filtro per nome sopra le liste: resta in alto mentre la lista scorre */
+.ed-list-filter { position: sticky; top: 0; z-index: 1; width: 100%; margin: 0 0 6px; box-sizing: border-box; }
 .ed-list-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
 .ed-list-actions button { margin: 0; padding: 7px 12px; font-size: 0.72rem; }
 .ed-danger { background: var(--noise-fine), linear-gradient(#9a1e12, #520b06 55%, #300503) !important; }

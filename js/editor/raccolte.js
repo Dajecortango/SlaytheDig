@@ -118,6 +118,21 @@ LIB_KINDS.forEach(kind => Object.assign(COLLECTIONS[kind], {
     dirty: () => markLibDirty(kind)
 }));
 
+/* ---------- Filtro per nome delle liste (bestiario, armeria, abilita, elite...) ----------
+   La casella sopra la lista nasconde gli elementi il cui nome (o id) non contiene il testo cercato,
+   senza ridisegnare la scheda. Il testo resta per scheda (listFilters) anche cambiando elemento. */
+const listFilters = {};
+const searchText = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const listFilterHtml = name => `<input type="search" class="ed-list-filter" placeholder="Cerca per nome…" value="${esc(listFilters[name] || '')}" ${azioneSu('input', 'filterList', name, '$value')}>`;
+function filterList(name, value) {
+    listFilters[name] = value;
+    applyListFilter(name);
+}
+function applyListFilter(name) {
+    const q = searchText(listFilters[name]);
+    document.querySelectorAll('#edContent .ed-list .ed-list-item[data-search]').forEach(el => el.classList.toggle('hidden', !!q && !el.dataset.search.includes(q)));
+}
+
 function renderCollection(name) {
     const col = COLLECTIONS[name];
     const content = document.getElementById('edContent');
@@ -137,8 +152,8 @@ function renderCollection(name) {
             <button class="ed-danger" ${azione('deleteKeyed', name)} ${sel ? '' : 'disabled'}>Elimina</button>
         </div>
         <div class="ed-split">
-            <div class="ed-list">${keys.map(k => `
-                <div class="ed-list-item ${k === sel ? 'active' : ''}" ${azione('selectKeyed', name, k)}>
+            <div class="ed-list">${listFilterHtml(name)}${keys.map(k => `
+                <div class="ed-list-item ${k === sel ? 'active' : ''}" data-search="${esc(searchText(`${col.label(items[k]) || ''} ${k}`))}" ${azione('selectKeyed', name, k)}>
                     ${items[k] && items[k].icon ? `<img class="ed-list-icon" src="${esc(assetUrl(items[k].icon))}" alt="" loading="lazy" decoding="async" ${azioneSu('error', 'nascondiImmagine', '$el')}>` : ''}
                     ${esc(col.label(items[k]) || k)}<small>${esc(k)}${col.sub ? ' · ' + esc(col.sub(items[k]) || '') : ''}</small>
                     <small class="ed-usage">${esc(usageText(col.usage(k)))}</small>
@@ -146,6 +161,7 @@ function renderCollection(name) {
             </div>
             <div class="ed-detail" id="edDetail"></div>
         </div>`;
+    applyListFilter(name);
     if (sel) {
         const uses = col.usage(sel);
         const detail = document.getElementById('edDetail');

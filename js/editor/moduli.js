@@ -300,6 +300,55 @@ function effectListEditor(list, save) {
     return box;
 }
 
+// Strade di una sfida: [{ testo, stat, cd, successText, failText, reward, punishment }] (challengeWithRoad in js/prove.js).
+// Premio e punizione: id della libreria, o vuoto = quelli della sfida
+function roadListEditor(obj, f, onChange) {
+    const box = document.createElement('div');
+    box.className = 'ed-specials';
+    const list = () => (Array.isArray(obj[f.k]) ? obj[f.k] : (obj[f.k] = []));
+    const save = () => { if (!list().length) delete obj[f.k]; onChange(f.k); };
+    const libSelect = (k, kind, value) => `<select data-k="${k}"><option value="">Come la sfida</option>${Object.entries(lib[kind] || {})
+        .map(([id, v]) => `<option value="${esc(id)}" ${id === value ? 'selected' : ''}>${esc(v.name || id)}</option>`).join('')}</select>`;
+    const paint = () => {
+        box.innerHTML = '';
+        list().forEach((r, i) => {
+            const card = document.createElement('div');
+            card.className = 'ed-special';
+            card.innerHTML = `
+                <div class="ed-special-row">
+                    <label class="ed-grow">Testo del pulsante<input type="text" data-k="testo" value="${esc(r.testo || '')}"></label>
+                    <label>Statistica<select data-k="stat">${Object.entries(STAT_LABELS).map(([k, l]) => `<option value="${k}" ${k === r.stat ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+                    <label>CD<input type="number" data-k="cd" min="1" value="${r.cd ?? ''}"></label>
+                    <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
+                </div>
+                <div class="ed-special-row">
+                    <label>Premio${libSelect('reward', 'reliquie', typeof r.reward === 'string' ? r.reward : '')}</label>
+                    <label>Punizione${libSelect('punishment', 'maledizioni', typeof r.punishment === 'string' ? r.punishment : '')}</label>
+                </div>
+                <label class="ed-choice-text">Testo di successo (vuoto = quello della sfida)<textarea data-k="successText">${esc(r.successText || '')}</textarea></label>
+                <label class="ed-choice-text">Testo di fallimento (vuoto = quello della sfida)<textarea data-k="failText">${esc(r.failText || '')}</textarea></label>`;
+            card.addEventListener('change', ev => {
+                const k = ev.target.dataset.k;
+                if (!k) return;
+                if (ev.target.type === 'number') { if (ev.target.value === '') delete r[k]; else r[k] = Number(ev.target.value); }
+                else if (ev.target.value === '') delete r[k];
+                else r[k] = ev.target.value;
+                save();
+            });
+            card.querySelector('[data-act="del"]').addEventListener('click', () => { list().splice(i, 1); save(); paint(); });
+            box.appendChild(card);
+        });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'btn-small';
+        add.textContent = 'Aggiungi una strada';
+        add.addEventListener('click', () => { list().push({ testo: 'Nuova strada', stat: obj.stat || 'str', cd: obj.cd || 7 }); save(); paint(); });
+        box.appendChild(add);
+    };
+    paint();
+    return box;
+}
+
 // Scelte di un evento: [{ testo, costo, stat, cd, effetti, esito, fallimento: { effetti, esito } }] (js/prove.js)
 function choiceListEditor(obj, f, onChange) {
     const box = document.createElement('div');
@@ -433,6 +482,14 @@ function renderForm(container, obj, fields, onChange) {
             } else if (mode) {
                 wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', f.lib, mode)}>Modifica in ${LIB_LABELS[f.lib]}</a>`);
             }
+            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Strade di una sfida: statistica, difficoltà, testi, premio e punizione per ogni approccio
+        if (f.type === 'roadlist') {
+            wrap.appendChild(roadListEditor(obj, f, onChange));
             if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;

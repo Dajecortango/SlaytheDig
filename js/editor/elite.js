@@ -51,10 +51,10 @@ function renderEliteTab() {
             <button class="ed-danger" ${azione('unmakeElite')} ${sel && Array.isArray(lib.bestiario[sel].fasi) ? '' : 'disabled'}>Togli le soglie</button>
         </div>
         <div class="ed-split">
-            <div class="ed-list">${keys.map(k => {
+            <div class="ed-list">${listFilterHtml('elite')}${keys.map(k => {
                 const e = lib.bestiario[k];
                 const n = (e.fasi || []).length;
-                return `<div class="ed-list-item ${k === sel ? 'active' : ''}" ${azione('selectKeyed', 'elite', k)}>
+                return `<div class="ed-list-item ${k === sel ? 'active' : ''}" data-search="${esc(searchText(`${e.name || ''} ${k}`))}" ${azione('selectKeyed', 'elite', k)}>
                     ${esc(e.name || k)}<small>${esc(k)} · HP ${e.maxHp} · ${n ? `${n} ${n === 1 ? 'soglia' : 'soglie'}` : 'nessuna soglia'}</small>
                     <small class="ed-usage">${esc(usageText(libraryUsage('bestiario', k)))}</small>
                 </div>`;
@@ -62,6 +62,7 @@ function renderEliteTab() {
             </div>
             <div class="ed-detail" id="edDetail"></div>
         </div>`;
+    applyListFilter('elite');
     if (sel) renderEliteDetail(document.getElementById('edDetail'), sel);
 }
 
