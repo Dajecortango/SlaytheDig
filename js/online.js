@@ -243,6 +243,7 @@ function onlineAttesi() {
 
 // Stanza cambiata (ingresso, uscita): la lista dei giocatori nella schermata della compagnia e lo stato
 function onlineStanzaCambiata() {
+    onlineAvvisoConnessioni();
     onlineDisegnaLobby();
     onlineInviaStato();
 }
@@ -351,6 +352,7 @@ if (typeof showScreen === 'function') {
         if (onlineState.attivo) {
             if (onlineState.voto && id !== 'screenMap' && onlineState.voto.tipo === 'mappa') { clearTimeout(onlineVotoTimer); onlineState.voto = null; }
             if (onlineState.pronti) { onlineState.pronti = null; onlineProntiAzione = null; }  // nuova schermata: i pronti ripartono da zero
+            if (id === 'screenMap') onlineSalvaAutomatico();  // si riprende da qui se il master chiude
             if (id === 'screenMap' && stato.stsMapNodes.filter(n => n.active && !n.done).length > 1) setTimeout(onlineApriVotoMappa, 600);
             onlineInviaStato();
         }
@@ -442,6 +444,27 @@ function onlineForzaPronti() {
     onlineInviaStato();
 }
 
+/* ---------- Salvataggio automatico e ripresa ---------- */
+function onlineSalvaAutomatico() {
+    if (!onlineState.attivo || !stato.currentCampaign) return;
+    try { writeSave('online', buildSaveData()); } catch (e) { console.error('Salvataggio online non riuscito', e); }
+}
+function onlineRiprendi() {
+    if (!readSave('online')) { uiError('Nessuna partita online salvata'); return; }
+    loadFromSlot('online');
+}
+
+// Avviso al master quando un giocatore si disconnette o rientra
+let onlineCollegatiPrima = [];
+function onlineAvvisoConnessioni() {
+    const ora = onlineGiocatoriCollegati();
+    onlineCollegatiPrima.filter(n => !ora.includes(n)).forEach(n => uiError(`${n} si è disconnesso: comandi tu il suo eroe finché non torna`));
+    ora.filter(n => !onlineCollegatiPrima.includes(n)).forEach(n => uiMessage(`${n} è nella stanza`));
+    onlineCollegatiPrima = ora;
+    if (onlineState.voto && ora.length && ora.every(n => n in onlineState.voto.voti)) onlineChiudiVoto();
+    if (onlineState.pronti && ora.length && ora.every(n => onlineState.pronti.has(n))) onlineForzaPronti();
+}
+
 /* ---------- Pannello nelle Opzioni ---------- */
 if (typeof openOptions === 'function') {
     const opzioniOrig = openOptions;
@@ -453,7 +476,7 @@ if (typeof openOptions === 'function') {
         box.className = 'options-grid';
         box.innerHTML = onlineState.attivo
             ? `<span class="option-label">Partita online attiva<small>${esc(onlineGiocatoriCollegati().join(', ') || 'Nessun giocatore collegato')}</small></span>
-               <span><button class="btn-small" ${azione('onlineMostraLink')}>Link</button> <button class="btn-small btn-danger" ${azione('onlineChiudi')}>Chiudi</button></span>`
+               <span><button class="btn-small" ${azione('onlineMostraLink')}>Link</button>${readSave('online') ? ` <button class="btn-small" ${azione('onlineRiprendi')}>Riprendi l'ultima</button>` : ''} <button class="btn-small btn-danger" ${azione('onlineChiudi')}>Chiudi</button></span>`
             : `<span class="option-label">Partita online<small>Tu sei il master: i giocatori si collegano con un link e comandano un eroe ciascuno</small></span>
                <span><button class="btn-small btn-proceed" ${azione('onlineApri')}>Apri la stanza</button></span>`;
         body.appendChild(box);

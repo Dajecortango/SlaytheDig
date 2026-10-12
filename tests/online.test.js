@@ -143,4 +143,12 @@ module.exports = (t, carica) => {
         t.uguale(1, h.eval('__partito'), 'Luca è disconnesso: non si aspetta');
         t.uguale(null, h.eval('onlineState.pronti'));
     });
+
+    t.test('salvataggio automatico online: lo slot "online" si scrive e si rilegge', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; stato.currentCampaign = CAMPAIGNS.tutorial; stato.stsMapNodes = []; stato.party = [];
+            stato.unlockedRelics = []; stato.activeCurses = []; stato.expeditionStats = newExpeditionStats(); stato.onlineOwners = { A: 'Marco' };`);
+        h.onlineSalvaAutomatico();
+        t.uguale({ A: 'Marco' }, h.readSave('online').stato.onlineOwners);
+    });
 };
