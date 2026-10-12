@@ -70,4 +70,21 @@ module.exports = (t, carica) => {
         t.ok(!h.chiamaAzione('provaAzione', [], null));
         t.uguale(1, h.eval('globalThis.__chiamate'));
     });
+
+    t.test('salvataggio: i proprietari degli eroi vanno e tornano, i vecchi salvataggi hanno {}', () => {
+        const h = carica();
+        const stato = h.eval('stato');
+        stato.currentCampaign = h.CAMPAIGNS.tutorial;
+        stato.stsMapNodes = []; stato.party = [{ name: 'Curio Dignitas', hp: 4, maxHp: 4, items: [] }];
+        stato.unlockedRelics = []; stato.activeCurses = []; stato.expeditionStats = h.eval('newExpeditionStats()');
+        stato.onlineOwners = { 'Curio Dignitas': 'Marco' };
+        const data = h.buildSaveData();
+        t.uguale({ 'Curio Dignitas': 'Marco' }, data.stato.onlineOwners);
+        stato.onlineOwners = {};
+        t.ok(h.applySaveData(JSON.parse(JSON.stringify(data))));
+        t.uguale({ 'Curio Dignitas': 'Marco' }, stato.onlineOwners);
+        const vecchio = h.migrateSave({ version: 4, campaignId: 'tutorial', stato: { party: [], activeCurses: [] } });
+        t.uguale(5, vecchio.version);
+        t.uguale({}, vecchio.stato.onlineOwners);
+    });
 };

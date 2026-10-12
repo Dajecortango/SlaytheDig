@@ -45,6 +45,7 @@
             unlockedRelics: [],
             activeCurses: [],
             expeditionStats: newExpeditionStats(),
+            onlineOwners: {},       // partita online: eroe -> nome del giocatore che lo comanda (js/online.js)
             challengeState: null,
             activeEnemy: null,
             helpBonus: 0,
