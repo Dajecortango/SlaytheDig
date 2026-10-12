@@ -17,9 +17,6 @@ const ONLINE_MASTER = '__master__';
    'prova'            il proprietario dell'eroe che affronta la prova
    'preghiera'        il proprietario dell'eroe che prega
    'capitano'         il proprietario dell'eroe scelto contro il capitano
-   'capo'             solo il capo della spedizione (il primo giocatore, capoSpedizione)
-   'primo:<tipo>'     il primo giocatore che clicca lo fa con il suo eroe (prova, preghiera: onlinePrimoClic)
-   'prova'            (challengeChoose) affrontarla: 'primo:prova'; lasciarla perdere: 'capo'
    'voto:<tipo>'      il clic del giocatore diventa un voto
    'pronti'           il clic del giocatore vale "Ho finito"
    'finale'           showScreen solo verso vittoria o sconfitta
@@ -33,8 +30,8 @@ const ONLINE_PERMESSI = {
     revealMerchantItem: 'tutti', showMerchantTab: 'tutti', tryBuyMerchantItem: 'tutti', openMedic: 'tutti',
     toggleHeroCard: 'tutti', toggleDescBox: 'tutti', openJournal: 'tutti',
     finishLostFinal: 'tutti', finishWonFinal: 'tutti',
-    // Strada: il capo della spedizione; prove e preghiera: il primo che clicca
-    selectStsNode: 'capo', challengeChoose: 'affrontaProva', startPrayer: 'primo:preghiera',
+    // Strada (selectStsNode), chi affronta una prova (challengeChoose, confirmChallengeHero) e chi prega
+    // (startPrayer, confirmPrayerHero) li decide il master: non sono elencati, quindi sono solo suoi
     advanceNode: { screenRest: 'pronti', altrove: 'tutti' },
     confirmLeaveMerchant: 'pronti',
     showScreen: 'finale',
@@ -48,8 +45,8 @@ const ONLINE_PERMESSI = {
     executeMonsterAttack: 'voto:bersaglio',
     // Eroe scelto in un menu o passato come argomento
     confirmLootAssignment: 'menu:lootHeroSelect', confirmTreasureAssignment: 'menu:treasureHeroSelect',
-    confirmMerchantAssignment: 'menu:merchantHeroSelect', confirmChallengeHero: 'menu:challengeHeroSelect',
-    captainAction: 'menu:captainHeroSelect', confirmPrayerHero: 'menu:prayerHeroSelect',
+    confirmMerchantAssignment: 'menu:merchantHeroSelect',
+    captainAction: 'menu:captainHeroSelect',
     trySellItem: 'argomento', openRuneSwap: 'argomento', useConsumableFromTopbar: 'argomento',
     executeDiscard: 'scarto',
     executeChallengeRoll: 'prova',
@@ -79,9 +76,6 @@ function onlineCanRun(azione, args, giocatore, ctx) {
     if (regola === 'master') return no('Solo il master può farlo');
     if (regola === 'finale') return ['screenVictory', 'screenDefeat'].includes(args[0]) ? { ok: true } : no('Solo il master può farlo');
     if (regola === 'pronti') return { ok: false, pronto: true };
-    if (regola === 'capo') return ctx.capo === giocatore ? { ok: true } : no('Decide il capo della spedizione');
-    if (regola === 'affrontaProva') return args[0] ? { ok: false, primo: 'prova' } : (ctx.capo === giocatore ? { ok: true } : no('Decide il capo della spedizione'));
-    if (regola.startsWith('primo:')) return { ok: false, primo: regola.slice(6) };
     if (regola.startsWith('voto:')) return { ok: false, voto: regola.slice(5) };
     if (regola === 'creazione') return ctx.creationTurn === giocatore ? { ok: true } : no('Sta scegliendo un altro giocatore');
     if (regola === 'eroeAttivo') return mio(ctx.activeHero) ? { ok: true } : no('Non è il tuo turno');

@@ -141,7 +141,6 @@ window.onlineGate = function (nome, args) {
     const r = onlineCanRun(nome, args, giocatore, contestoOnline());
     if (r.ok) return true;
     if (r.voto) { onlineVotoDaClic(r.voto, nome, args, giocatore); return false; }
-    if (r.primo) { onlinePrimoClic(r.primo, giocatore); return false; }
     if (r.pronto) { onlinePronto(giocatore, nome, args); return false; }
     onlineAvvisa(giocatore, r.motivo || 'Non è il tuo turno');
     return false;
@@ -262,7 +261,6 @@ function onlineAttesi() {
     if (onlineState.voto) return onlineGiocatoriCollegati().filter(n => !(n in onlineState.voto.voti));
     if (onlineState.pronti) return onlineGiocatoriCollegati().filter(n => !onlineState.pronti.has(n));
     if (currentScreenId === 'screenParty') return [onlineTurnoCreazione()].filter(Boolean);
-    if (currentScreenId === 'screenMap') return [onlineCapo()].filter(Boolean);
     if (heroNeedingDiscard) return [owners[heroNeedingDiscard.name]].filter(Boolean);
     if (currentScreenId === 'screenCombat' && combatPhase === 'heroes') {
         if (currentActiveHero) return [owners[currentActiveHero.name]].filter(Boolean);
@@ -327,22 +325,6 @@ function onlineCapo() {
     return capoSpedizione(onlineState.ordineCreazione || onlineOrdine(), onlineState.giocatori);
 }
 
-// Prova e preghiera: le affronta il primo giocatore che clicca, con il suo eroe (se è in piedi)
-function onlinePrimoClic(tipo, giocatore) {
-    const owners = stato.onlineOwners || {};
-    const eroe = stato.party.find(h => owners[h.name] === giocatore && h.hp > 0);
-    if (!eroe) { onlineAvvisa(giocatore, 'Il tuo eroe non può farlo adesso'); return; }
-    onlineState.attore = null;  // da qui agisce il gioco per conto del giocatore
-    if (tipo === 'prova') {
-        challengeChoose(true);
-        const sel = document.getElementById('challengeHeroSelect');
-        if (sel) sel.value = eroe.name;
-        confirmChallengeHero();
-    } else if (tipo === 'preghiera') {
-        startPrayer();
-        confirmPrayerHero(eroe.name);
-    }
-}
 
 /* ---------- Voti ---------- */
 let onlineVotoTimer = null, onlineVotoSeq = 0;

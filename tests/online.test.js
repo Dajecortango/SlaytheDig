@@ -29,10 +29,14 @@ module.exports = (t, carica) => {
         t.ok(!g.onlineCanRun('__modal', [0], 'Sara', base({ modalOwner: 'Marco' })).ok, 'finestra aperta da Marco');
     });
 
-    t.test('mappa: decide solo il capo della spedizione; showScreen solo per vittoria e sconfitta', () => {
-        t.ok(g.onlineCanRun('selectStsNode', [3], 'Marco', base({ screen: 'screenMap', capo: 'Marco' })).ok);
-        const sara = g.onlineCanRun('selectStsNode', [3], 'Sara', base({ screen: 'screenMap', capo: 'Marco' }));
-        t.ok(!sara.ok && !sara.voto && /capo/i.test(sara.motivo));
+    t.test('mappa, prove e preghiera: decide il master (nessun giocatore, nemmeno il capo); showScreen solo per vittoria e sconfitta', () => {
+        const capo = base({ screen: 'screenMap', capo: 'Marco', selects: { challengeHeroSelect: 'Icaro', prayerHeroSelect: 'Icaro' } });
+        for (const [azione, args] of [['selectStsNode', [3]], ['challengeChoose', [true]], ['challengeChoose', [false]],
+            ['confirmChallengeHero', []], ['startPrayer', []], ['confirmPrayerHero', []]]) {
+            const r = g.onlineCanRun(azione, args, 'Marco', capo);
+            t.ok(!r.ok && !r.voto && !r.primo && !r.pronto, `${azione} solo del master`);
+        }
+        t.ok(g.onlineCanRun('selectStsNode', [3], g.eval('ONLINE_MASTER'), capo).ok);
         t.ok(g.onlineCanRun('showScreen', ['screenVictory'], 'Marco', base()).ok);
         t.ok(!g.onlineCanRun('showScreen', ['screenStart'], 'Marco', base()).ok);
     });
@@ -123,19 +127,6 @@ module.exports = (t, carica) => {
         t.uguale(null, h.eval('onlineState.voto'));
     });
 
-    t.test('prova: la affronta il primo giocatore che clicca, con il suo eroe; lasciarla perdere decide il capo', () => {
-        const ctx = { screen: 'screenChallenge', owners: { Icaro: 'Marco', Astarte: 'Sara' }, selects: {}, capo: 'Marco' };
-        t.uguale('prova', g.onlineCanRun('challengeChoose', [true], 'Sara', ctx).primo);
-        t.ok(!g.onlineCanRun('challengeChoose', [false], 'Sara', ctx).ok, 'Sara non può lasciarla perdere');
-        t.ok(g.onlineCanRun('challengeChoose', [false], 'Marco', ctx).ok, 'il capo sì');
-        const h = carica();
-        h.eval(`onlineState.attivo = true; stato.onlineOwners = { Icaro: 'Marco', Astarte: 'Sara' };
-            stato.party = [{ name: 'Icaro', hp: 3, maxHp: 4 }, { name: 'Astarte', hp: 2, maxHp: 4 }];
-            globalThis.__fatto = []; challengeChoose = a => __fatto.push('scelta:' + a);
-            confirmChallengeHero = () => __fatto.push('eroe:' + document.getElementById('challengeHeroSelect').value);`);
-        h.onlinePrimoClic('prova', 'Sara');
-        t.uguale(['scelta:true', 'eroe:Astarte'], h.eval('__fatto'));
-    });
 
     t.test('Ho finito: si parte quando l\'hanno premuto tutti i collegati', () => {
         const h = carica();
@@ -184,17 +175,6 @@ module.exports = (t, carica) => {
         t.uguale(null, h.eval('onlineState.voto'));
     });
 
-    t.test('preghiera: prega il primo giocatore che clicca, con il suo eroe (se è in piedi)', () => {
-        const h = carica();
-        t.uguale('preghiera', h.onlineCanRun('startPrayer', [], 'Marco', { screen: 'screenRest', owners: {}, selects: {} }).primo);
-        h.eval(`onlineState.attivo = true; stato.onlineOwners = { Icaro: 'Marco', Astarte: 'Sara' };
-            stato.party = [{ name: 'Icaro', hp: 0, maxHp: 4 }, { name: 'Astarte', hp: 2, maxHp: 4 }];
-            globalThis.__fatto = []; startPrayer = () => __fatto.push('prega'); confirmPrayerHero = n => __fatto.push('eroe:' + n);`);
-        h.onlinePrimoClic('preghiera', 'Sara');
-        t.uguale(['prega', 'eroe:Astarte'], h.eval('__fatto'));
-        h.onlinePrimoClic('preghiera', 'Marco');
-        t.uguale(2, h.eval('__fatto.length'), 'Icaro è caduto: Marco non può pregare');
-    });
 
     t.test('revisione #3: un elemento nascosto non si può cliccare da remoto', () => {
         const h = carica();
