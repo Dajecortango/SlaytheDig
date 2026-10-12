@@ -61,3 +61,66 @@ document.addEventListener('keydown', e => {
     const box = document.getElementById('edSearchResults');
     if (box) box.classList.add('hidden');
 });
+
+/* ---------- Recenti e preferiti ----------
+   Nella colonna a destra: gli ultimi 10 elementi modificati e quelli segnati con la stella (☆ accanto all'id).
+   Voci { tab, key }: tab = scheda della raccolta (armeria, bestiario, elite, challenges...). Si ricordano nel
+   browser (localStorage, solo per comodità: se non c'è, le liste restano vuote). */
+const QUICK_KEYS = { recenti: 'dignitas_editor_recenti', preferiti: 'dignitas_editor_preferiti' };
+function quickList(kind) {
+    try { return JSON.parse(localStorage.getItem(QUICK_KEYS[kind]) || '[]'); } catch (e) { return []; }
+}
+function quickSave(kind, list) {
+    try { localStorage.setItem(QUICK_KEYS[kind], JSON.stringify(list)); } catch (e) { /* senza archivio: niente liste */ }
+}
+
+// Elemento di una voce: per la scheda Elite il nemico del bestiario
+function quickElement(tab, key) {
+    if (tab === 'elite') return lib.bestiario[key];
+    const col = COLLECTIONS[tab];
+    return col ? (col.store() || {})[key] : null;
+}
+
+function quickName(tab, key) {
+    const el = quickElement(tab, key);
+    return el ? (el.name || el.title || key) : null;
+}
+
+function recordRecent(tab, key) {
+    if (!key) return;
+    const list = quickList('recenti').filter(r => !(r.tab === tab && r.key === key));
+    list.unshift({ tab, key });
+    quickSave('recenti', list.slice(0, 10));
+    renderQuickNav();
+}
+
+const isFavourite = (tab, key) => quickList('preferiti').some(r => r.tab === tab && r.key === key);
+const starHtml = (tab, key) => `<button type="button" class="ed-star ${isFavourite(tab, key) ? 'on' : ''}" title="Preferito" ${azione('toggleFavourite', tab, key)}>${isFavourite(tab, key) ? '★' : '☆'}</button>`;
+
+function toggleFavourite(tab, key) {
+    const list = quickList('preferiti');
+    const i = list.findIndex(r => r.tab === tab && r.key === key);
+    if (i > -1) list.splice(i, 1); else list.push({ tab, key });
+    quickSave('preferiti', list);
+    document.querySelectorAll('.ed-star').forEach(b => { b.classList.toggle('on', i < 0); b.textContent = i < 0 ? '★' : '☆'; });
+    renderQuickNav();
+}
+
+function gotoQuick(tab, key) {
+    selection[tab] = key;
+    wizardOpen = null;
+    switchTab(tab);
+}
+
+const QUICK_TAB_LABELS = { elite: 'Elite', challenges: 'Sfida' };
+function renderQuickNav() {
+    const box = document.getElementById('edQuickNav');
+    if (!box) return;
+    const section = (title, list) => {
+        const rows = list.map(r => ({ ...r, name: quickName(r.tab, r.key) })).filter(r => r.name);
+        if (!rows.length) return '';
+        return `<h3 class="ed-quick-title">${title}</h3>${rows.map(r => `<a href="#" class="ed-quick" ${azione('gotoQuick', r.tab, r.key)}>
+            <small>${esc(QUICK_TAB_LABELS[r.tab] || LIB_LABELS[r.tab] || r.tab)}</small> ${esc(r.name)}</a>`).join('')}`;
+    };
+    box.innerHTML = section('★ Preferiti', quickList('preferiti')) + section('Modificati di recente', quickList('recenti'));
+}

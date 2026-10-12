@@ -59,12 +59,7 @@
         let combatPhase = 'none';
 // Reliquie e maledizioni si riconoscono per id (la chiave nella libreria), non per nome:
 // così si possono rinominare dall'editor senza rompere il loro effetto.
-// Id ricavato da un nome, per gli elementi scritti dentro una campagna o i salvataggi vecchi
-// ("Scudo dell'Atamano" -> "scudo_dell_atamano", come le chiavi della libreria).
-function idFromName(name) {
-    return String(name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-}
+// idFromName (id ricavato da un nome) è in js/comune.js: lo usa anche l'editor per gli id automatici
 
 function hasRelic(relicId) {
     return stato.unlockedRelics.some(r => r.id === relicId);

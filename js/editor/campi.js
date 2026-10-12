@@ -262,6 +262,40 @@ const RELIC_FIELDS = [
     specialiField('reliquia')
 ];
 
+/* ---------- Creazione guidata di oggetti e nemici ("Aggiungi" in Armeria e Bestiario) ----------
+   Valori di partenza per tipo e rarità (oggetti) o ruolo e momento del capitolo (nemici), presi dalla media
+   dei dati di oggi: si ritoccano dopo. ITEM_TEMPLATES[tipo].rarita = campi; "desc" si scrive da sola. */
+const RARITA_ORDINE = Object.keys(RARITY_LABELS);
+const perRarita = values => Object.fromEntries(RARITA_ORDINE.map((r, i) => [r, values[i]]));
+const ITEM_TEMPLATES = {
+    arma: { label: 'Arma', rarita: perRarita([{ dmg: 1, att_penalty: 1 }, { str: 1 }, { dmg: 1 }, { str: 1, dmg: 1 }, { str: 1, dmg: 2 }, { str: 2, dmg: 2 }]) },
+    armatura: { label: 'Armatura', rarita: perRarita([{ armor: 1, att_penalty: 1 }, { armor: 1 }, { armor: 2 }, { armor: 2, def_armor: 1 }, { armor: 3, def_armor: 1 }, { armor: 4, def_armor: 1 }]) },
+    scudo: { label: 'Scudo', rarita: perRarita([{ def_armor: 1, att_penalty: 1 }, { def_armor: 1 }, { def_armor: 1, def_bonus: 1 }, { def_armor: 2, def_bonus: 1 }, { def_armor: 2, def_bonus: 2 }, { def_armor: 3, def_bonus: 2 }]) },
+    amuleto: { label: 'Amuleto (Fede)', rarita: perRarita([{ fth: 1, att_penalty: 1 }, { fth: 1 }, { fth: 1, prayer_bonus: 1 }, { fth: 2 }, { fth: 2, prayer_bonus: 1 }, { fth: 3, prayer_bonus: 1 }]) },
+    tomo: { label: 'Tomo (Intelligenza)', rarita: perRarita([{ int: 1, att_penalty: 1 }, { int: 1 }, { int: 1, help_bonus_val: 1 }, { int: 2 }, { int: 2, help_bonus_val: 1 }, { int: 3, help_bonus_val: 1 }]) },
+    cura: { label: 'Pozione di cura', rarita: perRarita([1, 2, 3, 4, 5, 6].map(v => ({ type: 'consumable_heal', heal_val: v }))) },
+    bomba: { label: 'Consumabile da danno', rarita: perRarita([1, 1, 2, 2, 3, 4].map(v => ({ type: 'consumable_damage', dmg_val: v }))) },
+    potenziamento: { label: 'Potenziamento (tiro per colpire)', rarita: perRarita([1, 1, 1, 2, 2, 3].map(v => ({ type: 'consumable_buff', buff_stat: 'att_bonus', buff_val: v, buff_rounds: 0 }))) }
+};
+// Descrizione di partenza dalle statistiche (es. "+1 Forza, +1 Danno")
+const TEMPLATE_STAT_LABELS = { str: 'Forza', dmg: 'Danno', armor: 'Armatura', def_armor: 'Armatura con Difendi', def_bonus: 'al tiro di Difendi',
+    fth: 'Fede', int: 'Intelligenza', help_bonus_val: 'al tiro di Aiuta', prayer_bonus: 'al tiro di Preghiera' };
+function templateItemDesc(it) {
+    if (it.type === 'consumable_heal') return `Cura ${it.heal_val} HP`;
+    if (it.type === 'consumable_damage') return `Infligge ${it.dmg_val} danni al nemico`;
+    if (it.type === 'consumable_buff') return `+${it.buff_val} al tiro per colpire per tutto lo scontro`;
+    const parts = Object.entries(TEMPLATE_STAT_LABELS).filter(([k]) => it[k]).map(([k, l]) => `+${it[k]} ${l}`);
+    if (it.att_penalty) parts.push(`-${it.att_penalty} al tiro per colpire`);
+    return parts.join(', ');
+}
+// Nemici: ruolo e momento del capitolo (mediane del bestiario di oggi)
+const ENEMY_TEMPLATES = {
+    normale: { label: 'Nemico normale', momenti: { inizio: { hp: 8, att: 6, ca: 6, dmg: 1 }, meta: { hp: 10, att: 7, ca: 7, dmg: 1 }, fine: { hp: 14, att: 7, ca: 8, dmg: 2 } } },
+    elite: { label: 'Elite', momenti: { inizio: { hp: 12, att: 7, ca: 7, dmg: 2 }, meta: { hp: 15, att: 7, ca: 8, dmg: 2 }, fine: { hp: 20, att: 8, ca: 9, dmg: 3 } } },
+    boss: { label: 'Boss', momenti: { inizio: { hp: 18, att: 7, ca: 8, dmg: 2 }, meta: { hp: 22, att: 8, ca: 9, dmg: 3 }, fine: { hp: 26, att: 8, ca: 9, dmg: 3 } } }
+};
+const ENEMY_MOMENTS = { inizio: 'Inizio del capitolo', meta: 'Metà', fine: 'Fine' };
+
 // Benedizioni degli Asi (data/libreria/benedizioni.js): cosa fanno lo dice "effetto" (applyBlessing in js/prove.js)
 const BLESSING_EFFECTS = [['prossimo_scontro', 'Potenziamenti per tutto il prossimo scontro'], ['cura_party', 'Cura i vivi (HP)'],
     ['togli_maledizione', 'Toglie la maledizione più recente'], ['fede', 'Fede in più per sempre'],

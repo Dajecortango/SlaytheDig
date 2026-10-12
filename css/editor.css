@@ -241,6 +241,21 @@ code { color: var(--gold); font-size: 0.85em; }
     box-shadow: 0 0 10px rgba(255, 190, 60, 0.25), inset 0 1px 0 rgba(255, 220, 150, 0.2);
 }
 .ed-list-item small { display: block; color: var(--text-dim); font-size: 0.72rem; margin-top: 2px; }
+/* Recenti e preferiti (colonna a destra) e stella accanto all'id */
+.ed-quick-nav { display: grid; gap: 2px; margin-bottom: 12px; text-align: left; }
+.ed-quick-nav:empty { display: none; }
+.ed-quick-title { margin: 6px 0 2px; font-size: 0.78rem; color: var(--gold); font-family: var(--font-title); }
+.ed-quick { display: block; padding: 3px 6px; font-size: 0.8rem; color: #e6dcc4; text-decoration: none; border: 1px solid transparent; }
+.ed-quick:hover { border-color: #8a6418; color: #fff3b0; }
+.ed-quick small { color: var(--text-dim); font-size: 0.68rem; margin-right: 3px; }
+.ed-star { margin: 0 4px 0 0; padding: 0 4px; background: none; border: none; color: var(--text-dim); font-size: 1.1rem; cursor: pointer; line-height: 1; }
+.ed-star.on { color: var(--gold); }
+/* Creazione guidata (Armeria, Bestiario) */
+.ed-wizard { display: grid; gap: 10px; text-align: left; }
+.ed-wizard h3 { margin: 0; }
+.ed-wizard .ed-special-row button { margin: 0; }
+/* Campo immagine con un file trascinato sopra */
+.ed-image-row.ed-drop { outline: 2px dashed var(--gold); outline-offset: 3px; }
 /* Ricerca globale nella barra delle schede (js/editor/ricerca.js) */
 .ed-search { position: relative; margin-left: auto; }
 .ed-search input { width: 15em; margin: 0; }

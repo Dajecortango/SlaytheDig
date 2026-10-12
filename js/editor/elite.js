@@ -76,7 +76,7 @@ function renderEliteDetail(detail, key) {
         if (field === 'name') { const active = document.querySelector('.ed-list-item.active'); if (active) active.firstChild.textContent = e.name || key; }
         if (field === 'maxHp' || field === 'hp') renderElitePhases();
     });
-    detail.innerHTML = `<p class="ed-usage-box"><b>Id:</b> <code>${esc(key)}</code> · <b>Usato in:</b> ${esc(usageText(libraryUsage('bestiario', key)))}</p>
+    detail.innerHTML = `<p class="ed-usage-box">${starHtml('elite', key)} <b>Id:</b> <code>${esc(key)}</code> · <b>Usato in:</b> ${esc(usageText(libraryUsage('bestiario', key)))}</p>
         <h3>Soglie e azioni speciali</h3>
         <p class="ed-help">Quando la vita scende alla soglia o sotto (o, per le soglie a tempo, all'inizio di quel round), la fase scatta una volta: si legge il testo e partono le azioni, in ordine.
             "Nuova azione" ne crea una nella libreria e la apre: lì si combinano i campi e gli effetti speciali (veleno, spine, rigenerazione, danni a tutti...).
@@ -140,6 +140,7 @@ function renderElitePhases() {
 
 function eliteChanged(redraw = true) {
     markLibDirty('bestiario');
+    recordRecent('elite', selection.elite);
     if (redraw) renderElitePhases();
 }
 
@@ -149,12 +150,15 @@ function sortElitePhases(e) {
 }
 
 function newElite() {
-    const key = askKey('bestiario', 'nuovo_elite');
-    if (!key) return;
-    lib.bestiario[key] = { name: 'Nuovo elite', hp: 16, maxHp: 16, att: 7, dmg: 2, ca: 8, desc: '',
+    const label = prompt('Nome del nuovo elite:', '');
+    if (!label) return;
+    const key = uniqueKey('bestiario', label);
+    const st = ENEMY_TEMPLATES.elite.momenti.meta;
+    lib.bestiario[key] = { name: label, hp: st.hp, maxHp: st.hp, att: st.att, dmg: st.dmg, ca: st.ca, desc: '',
         fasi: [{ soglia: 50, testo: '', azioni: [] }] };
     selection.elite = key;
     markLibDirty('bestiario');
+    recordRecent('elite', key);
     render();
 }
 
@@ -238,9 +242,10 @@ function eliteAddAction(i) {
 function eliteNewAction(i) {
     const e = selectedElite();
     if (!e || !e.fasi[i]) return;
-    const key = askKey('azioni_elite', `${selection.elite}_${i + 1}`);
-    if (!key) return;
-    lib.azioni_elite[key] = { name: 'Nuova azione', desc: '' };
+    const label = prompt('Nome della nuova azione:', '');
+    if (!label) return;
+    const key = uniqueKey('azioni_elite', label);
+    lib.azioni_elite[key] = { name: label, desc: '' };
     (e.fasi[i].azioni = e.fasi[i].azioni || []).push(key);
     markLibDirty('azioni_elite');
     markLibDirty('bestiario');
