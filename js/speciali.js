@@ -60,6 +60,12 @@
                 out.push({ s, owner: hero, kind: 'oggetto', name: it.name, icon: it.icon || '', ref: it, key: `o:${it.id || it.name}#${i}` })));
             heroAbilityRefs(hero).forEach(ab => abilitySpecials(ab).forEach((s, i) =>
                 out.push({ s, owner: hero, kind: 'abilita', name: ab.name, icon: ab.icon || '', ref: ab, key: `a:${ab.id || ab.name}#${i}` })));
+            // Doni delle benedizioni (effetto "dono"): restano sull'eroe e agiscono come una passiva
+            (hero.blessings || []).forEach(x => {
+                const b = PRAYER_BLESSINGS[x.id];
+                ((b && b.speciali) || []).forEach((s, i) =>
+                    out.push({ s, owner: hero, kind: 'benedizione', name: b.name, icon: b.icon || '', ref: x, key: `b:${x.id}#${i}` }));
+            });
             return out;
         }
 
@@ -164,6 +170,10 @@
             if (entry.kind === 'maledizione') {
                 const idx = stato.activeCurses.indexOf(entry.ref);
                 if (idx > -1) removeCurseAt(idx);
+                return `${entry.name} svanisce`;
+            }
+            if (entry.kind === 'benedizione' && entry.owner) {
+                entry.owner.blessings = (entry.owner.blessings || []).filter(x => x !== entry.ref);
                 return `${entry.name} svanisce`;
             }
             if (entry.kind === 'oggetto' && entry.owner) {

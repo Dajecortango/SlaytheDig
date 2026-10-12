@@ -92,6 +92,19 @@ const COLLECTIONS = {
             if (list.includes(oldKey)) { list[list.indexOf(oldKey)] = key; markLibDirty('bestiario'); }
         }))
     },
+    benedizioni: {
+        library: true, fields: BLESSING_FIELDS, label: b => b.name, keyHint: 'nuova_benedizione',
+        create: () => ({ name: 'Nuova benedizione', livello: 'minore', bersaglio: 'eroe', icon: '', desc: '', effetto: 'prossimo_scontro', buffs: [{ buff_stat: 'att_bonus', buff_val: 1 }] }),
+        sub: b => `${b.livello === 'maggiore' ? 'Maggiore' : 'Minore'} · ${b.desc || ''}`,
+        // L'effetto decide i campi: si tolgono quelli che non servono più e si ridisegna il modulo
+        afterChange: (b, key) => {
+            if (key !== 'effetto') return;
+            if (b.effetto !== 'prossimo_scontro') delete b.buffs; else b.buffs = b.buffs || [{ buff_stat: 'att_bonus', buff_val: 1 }];
+            if (!['cura_party', 'fede', 'bottino_extra'].includes(b.effetto)) delete b.val; else b.val = b.val || 1;
+            if (b.effetto !== 'dono') delete b.speciali;
+            setTimeout(render);
+        }
+    },
     maledizioni: {
         library: true, fields: CURSE_FIELDS, label: c => c.name, keyHint: 'nuova_maledizione',
         create: () => ({ type: 'curse', name: 'Nuova maledizione', desc: '', effects: [{ effect: 'add_curse', text: 'Nuova maledizione' }] }),

@@ -113,4 +113,33 @@ module.exports = (t, carica) => {
         dado(6); g.simPray(); dadoVero();
         t.ok([a, b].some(h => (h.blessings || []).length) || b.fth === 4 || a.hp === 6);
     });
+
+    // Le benedizioni sono una libreria (data/libreria/benedizioni.js), modificabile dalla scheda dell'editor
+    t.test('libreria Benedizioni: 8 doni degli Asi, ognuno con livello, bersaglio ed effetto conosciuti', () => {
+        const lib = g.LIBRERIA.benedizioni;
+        t.uguale(8, Object.keys(lib).length);
+        t.ok(g.eval('PRAYER_BLESSINGS') === lib, 'PRAYER_BLESSINGS è la libreria');
+        // Gli effetti che applyBlessing (js/prove.js) conosce; l'editor li offre in BLESSING_EFFECTS
+        const effetti = ['prossimo_scontro', 'cura_party', 'togli_maledizione', 'fede', 'bottino_extra', 'dono'];
+        for (const [id, b] of Object.entries(lib)) {
+            t.ok(['minore', 'maggiore'].includes(b.livello) && ['eroe', 'party'].includes(b.bersaglio), `${id}: livello e bersaglio`);
+            t.ok(effetti.includes(b.effetto), `${id}: effetto "${b.effetto}"`);
+            if (b.effetto === 'prossimo_scontro') t.ok(Array.isArray(b.buffs) && b.buffs.length, `${id}: potenziamenti`);
+        }
+    });
+
+    t.test('benedizione "dono": resta sull\'eroe e i suoi effetti speciali agiscono come una passiva', () => {
+        const lib = g.LIBRERIA.benedizioni;
+        lib.__prova = { name: 'Fuoco di Draken', livello: 'maggiore', bersaglio: 'eroe', effetto: 'dono', desc: 'x',
+            speciali: [{ quando: 'riposo', fai: 'bonus_cura', val: 2 }] };
+        try {
+            const [a, b] = prepara([eroe('A', { hp: 1 }), eroe('B', { hp: 1 })]);
+            g.applyBlessing({ id: '__prova', ...lib.__prova }, a);
+            g.applyCombatBlessings();
+            t.ok((a.blessings || []).some(x => x.id === '__prova'), 'il dono non si consuma con lo scontro');
+            g.resolveRest();
+            t.uguale(4, a.hp, '1 + 1 del riposo + 2 del dono');
+            t.uguale(2, b.hp, 'solo chi ha il dono');
+        } finally { delete lib.__prova; }
+    });
 };

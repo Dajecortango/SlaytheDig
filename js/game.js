@@ -225,6 +225,8 @@ function breakRelic(relicId) {
                     // Libreria modificata nell'editor: vale solo per questa scheda; si risolvono di nuovo tutte le campagne
                     if (data.library) {
                         Object.assign(LIBRERIA, data.library);
+                        // PRAYER_BLESSINGS (js/comune.js) è l'oggetto di prima: si riempie con le benedizioni modificate
+                        if (data.library.benedizioni) { Object.keys(PRAYER_BLESSINGS).forEach(k => delete PRAYER_BLESSINGS[k]); Object.assign(PRAYER_BLESSINGS, data.library.benedizioni); }
                         DEFAULT_GAME_ITEMS.splice(0, DEFAULT_GAME_ITEMS.length, ...(LIBRERIA.lootPredefinito || []).map(i => LIBRERIA.armeria[i]).filter(Boolean));
                         resolveAllCampaigns();
                     }

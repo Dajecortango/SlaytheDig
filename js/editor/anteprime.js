@@ -71,4 +71,8 @@ const specialPreviewLines = (o, tipo) => (Array.isArray(o.speciali) ? o.speciali
 const previewSimple = tipo => o => previewTipHtml(esc(o.name || '(senza nome)'), [...(o.desc ? [esc(o.desc)] : []), ...specialPreviewLines(o, tipo)]);
 // Azione degli elite: come appare nel tooltip del nome del nemico
 const previewEliteAction = a => previewTipHtml(esc(a.name || '(senza nome)'), [a.desc ? esc(a.desc) : '', esc(describeEliteAction(a))].filter(Boolean));
-const PREVIEWS = { armeria: previewItem, abilita: previewAbility, reliquie: previewSimple('reliquia'), maledizioni: previewSimple('maledizione'), azioni_elite: previewEliteAction };
+// Benedizione: come appare sulla carta dell'eroe e nella scelta dopo la preghiera
+const previewBlessing = b => previewTipHtml(esc(b.name || '(senza nome)'),
+    [`<span class="tip-hint">${b.livello === 'maggiore' ? 'Benedizione maggiore' : 'Benedizione minore'} · ${b.bersaglio === 'party' ? 'tutta la compagnia' : 'un eroe'}</span>`,
+        ...(b.desc ? [esc(b.desc)] : []), ...specialPreviewLines(b, 'benedizione')]);
+const PREVIEWS = { benedizioni: previewBlessing, armeria: previewItem, abilita: previewAbility, reliquie: previewSimple('reliquia'), maledizioni: previewSimple('maledizione'), azioni_elite: previewEliteAction };

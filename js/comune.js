@@ -136,7 +136,7 @@ function specialeTesto(s, tipo) {
     const cond = [s.se && SPECIALI_SE[s.se], s.round && `nel round ${s.round}`, s.prob && `${s.prob}% di probabilità`].filter(Boolean);
     const volte = s.volte || 1;
     const limite = s.limite ? (volte === 1 ? `una volta per ${s.limite}` : `${volte} volte per ${s.limite}`) : '';
-    const fine = s.rompe ? ({ reliquia: 'poi si rompe', oggetto: 'poi si consuma', maledizione: 'poi sparisce' }[tipo] || 'poi si esaurisce') : '';
+    const fine = s.rompe ? ({ reliquia: 'poi si rompe', oggetto: 'poi si consuma', maledizione: 'poi sparisce', benedizione: 'poi svanisce' }[tipo] || 'poi si esaurisce') : '';
     const coda = [limite, fine].filter(Boolean).join(', ');
     const testo = `${SPECIALI_QUANDO[s.quando] || s.quando}${cond.length ? ` (${cond.join(', ')})` : ''}: ${fai}`;
     return coda ? `${testo} (${coda})` : testo;
@@ -161,6 +161,10 @@ const LEGACY_ITEM_SPECIALS = {
     hit_chill: v => ({ quando: 'colpo', fai: 'malus_nemico', stat: 'att', val: v, limite: 'scontro', volte: 2 }),
     last_stand_armor: v => ({ quando: 'dopo_colpito', se: 'ferito', fai: 'armatura', val: v, limite: 'scontro' })
 };
+
+// Benedizioni degli Asi (preghiera ai riposi, js/prove.js): libreria data/libreria/benedizioni.js, scheda
+// Benedizioni dell'editor. Stesso oggetto della libreria (la campagna di prova dall'editor lo riempie di nuovo).
+const PRAYER_BLESSINGS = (window.LIBRERIA && window.LIBRERIA.benedizioni) || {};
 
 // Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi CLAUDE.md).
 // Un segnale nuovo va aggiunto qui, altrimenti l'editor lo segnala come sconosciuto.
