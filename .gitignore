@@ -32,3 +32,6 @@ tools/chiave_pollinations.txt
 
 # Manuali e materiale della lore Dignitas (privati: PDF, immagini e riassunti di studio)
 lore/
+
+# Media leggeri per i giocatori della partita online (creati da server/online.js con ffmpeg)
+server/cache-leggera/
