@@ -17,6 +17,9 @@ const ONLINE_MASTER = '__master__';
    'prova'            il proprietario dell'eroe che affronta la prova
    'preghiera'        il proprietario dell'eroe che prega
    'capitano'         il proprietario dell'eroe scelto contro il capitano
+   'capo'             solo il capo della spedizione (il primo giocatore, capoSpedizione)
+   'primo:<tipo>'     il primo giocatore che clicca lo fa con il suo eroe (prova, preghiera: onlinePrimoClic)
+   'prova'            (challengeChoose) affrontarla: 'primo:prova'; lasciarla perdere: 'capo'
    'voto:<tipo>'      il clic del giocatore diventa un voto
    'pronti'           il clic del giocatore vale "Ho finito"
    'finale'           showScreen solo verso vittoria o sconfitta
@@ -30,6 +33,8 @@ const ONLINE_PERMESSI = {
     revealMerchantItem: 'tutti', showMerchantTab: 'tutti', tryBuyMerchantItem: 'tutti', openMedic: 'tutti',
     toggleHeroCard: 'tutti', toggleDescBox: 'tutti', openJournal: 'tutti',
     finishLostFinal: 'tutti', finishWonFinal: 'tutti',
+    // Strada: il capo della spedizione; prove e preghiera: il primo che clicca
+    selectStsNode: 'capo', challengeChoose: 'affrontaProva', startPrayer: 'primo:preghiera',
     advanceNode: { screenRest: 'pronti', altrove: 'tutti' },
     confirmLeaveMerchant: 'pronti',
     showScreen: 'finale',
@@ -51,7 +56,7 @@ const ONLINE_PERMESSI = {
     executePrayerRoll: 'preghiera', chooseBlessing: 'preghiera', giveBlessing: 'preghiera',
     executeCaptainRoll: 'capitano',
     // Voti
-    selectStsNode: 'voto:mappa', challengeChoose: 'voto:prova', startPrayer: 'voto:preghiera', openHaggle: 'voto:contratta', haggle: 'voto:contratta', rerollMerchantStock: 'voto:rinnova',
+    openHaggle: 'voto:contratta', haggle: 'voto:contratta', rerollMerchantStock: 'voto:rinnova',
     // Pulsanti della finestra e voto dalla barra
     __modal: 'modale', __vota: 'tutti'
 };
@@ -74,6 +79,9 @@ function onlineCanRun(azione, args, giocatore, ctx) {
     if (regola === 'master') return no('Solo il master può farlo');
     if (regola === 'finale') return ['screenVictory', 'screenDefeat'].includes(args[0]) ? { ok: true } : no('Solo il master può farlo');
     if (regola === 'pronti') return { ok: false, pronto: true };
+    if (regola === 'capo') return ctx.capo === giocatore ? { ok: true } : no('Decide il capo della spedizione');
+    if (regola === 'affrontaProva') return args[0] ? { ok: false, primo: 'prova' } : (ctx.capo === giocatore ? { ok: true } : no('Decide il capo della spedizione'));
+    if (regola.startsWith('primo:')) return { ok: false, primo: regola.slice(6) };
     if (regola.startsWith('voto:')) return { ok: false, voto: regola.slice(5) };
     if (regola === 'creazione') return ctx.creationTurn === giocatore ? { ok: true } : no('Sta scegliendo un altro giocatore');
     if (regola === 'eroeAttivo') return mio(ctx.activeHero) ? { ok: true } : no('Non è il tuo turno');
@@ -89,7 +97,6 @@ function onlineCanRun(azione, args, giocatore, ctx) {
 
 // Azioni che decidono la stessa cosa di un voto: se le esegue il master il voto si annulla
 const ONLINE_VOTO_AZIONI = {
-    mappa: ['selectStsNode'], prova: ['challengeChoose', 'confirmChallengeHero'], preghiera: ['startPrayer', 'confirmPrayerHero'],
     bersaglio: ['executeMonsterAttack'], contratta: ['openHaggle', 'haggle'], rinnova: ['rerollMerchantStock']
 };
 function votoAnnullatoDa(azione, voto) {
@@ -127,11 +134,10 @@ function resolveVote(voti, opzioni, capo, collegati) {
     return pari.includes(sceltaCapo) ? sceltaCapo : pari[0];
 }
 
-// Capo della spedizione: a rotazione fra i collegati, nell'ordine d'ingresso, uno per livello della mappa
-function nextCaptain(giocatori, livello) {
-    const vivi = (giocatori || []).filter(gi => gi.connected);
-    if (!vivi.length) return null;
-    return vivi[((livello % vivi.length) + vivi.length) % vivi.length].name;
+// Capo della spedizione: il primo giocatore della compagnia; se è disconnesso, il primo collegato dopo di lui
+function capoSpedizione(ordine, giocatori) {
+    const collegati = new Set((giocatori || []).filter(gi => gi.connected).map(gi => gi.name));
+    return (ordine || []).find(n => collegati.has(n)) || null;
 }
 
 // Regioni da inviare: solo quelle cambiate; null per quelle sparite
@@ -155,5 +161,5 @@ function rendiLeggero(html) {
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
-        elementoCliccabile, ONLINE_OSSERVA, resolveVote, nextCaptain, changedRegions, leggeroUrl, rendiLeggero };
+        elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, changedRegions, leggeroUrl, rendiLeggero };
 }

@@ -123,6 +123,7 @@ function contestoOnline() {
         prayingHero: selectedPrayerHero ? selectedPrayerHero.name : null,
         captainHero: selectedCaptainHero ? selectedCaptainHero.name : null,
         modalOwner: onlineState.modalOwner,
+        capo: onlineCapo(),
         voto: onlineState.voto
     };
 }
@@ -140,6 +141,7 @@ window.onlineGate = function (nome, args) {
     const r = onlineCanRun(nome, args, giocatore, contestoOnline());
     if (r.ok) return true;
     if (r.voto) { onlineVotoDaClic(r.voto, nome, args, giocatore); return false; }
+    if (r.primo) { onlinePrimoClic(r.primo, giocatore); return false; }
     if (r.pronto) { onlinePronto(giocatore, nome, args); return false; }
     onlineAvvisa(giocatore, r.motivo || 'Non è il tuo turno');
     return false;
@@ -260,6 +262,7 @@ function onlineAttesi() {
     if (onlineState.voto) return onlineGiocatoriCollegati().filter(n => !(n in onlineState.voto.voti));
     if (onlineState.pronti) return onlineGiocatoriCollegati().filter(n => !onlineState.pronti.has(n));
     if (currentScreenId === 'screenParty') return [onlineTurnoCreazione()].filter(Boolean);
+    if (currentScreenId === 'screenMap') return [onlineCapo()].filter(Boolean);
     if (heroNeedingDiscard) return [owners[heroNeedingDiscard.name]].filter(Boolean);
     if (currentScreenId === 'screenCombat' && combatPhase === 'heroes') {
         if (currentActiveHero) return [owners[currentActiveHero.name]].filter(Boolean);
@@ -321,8 +324,24 @@ if (typeof startPartyCreation === 'function') {
 /* ---------- Capo della spedizione: uno per livello della mappa ---------- */
 function onlineCapo() {
     if (!onlineState.attivo) return null;
-    const nodo = stato.stsMapNodes.find(n => n.id === stato.currentNodeId);
-    return nextCaptain(onlineState.giocatori, nodo ? nodo.level + 1 : 0);
+    return capoSpedizione(onlineState.ordineCreazione || onlineOrdine(), onlineState.giocatori);
+}
+
+// Prova e preghiera: le affronta il primo giocatore che clicca, con il suo eroe (se è in piedi)
+function onlinePrimoClic(tipo, giocatore) {
+    const owners = stato.onlineOwners || {};
+    const eroe = stato.party.find(h => owners[h.name] === giocatore && h.hp > 0);
+    if (!eroe) { onlineAvvisa(giocatore, 'Il tuo eroe non può farlo adesso'); return; }
+    onlineState.attore = null;  // da qui agisce il gioco per conto del giocatore
+    if (tipo === 'prova') {
+        challengeChoose(true);
+        const sel = document.getElementById('challengeHeroSelect');
+        if (sel) sel.value = eroe.name;
+        confirmChallengeHero();
+    } else if (tipo === 'preghiera') {
+        startPrayer();
+        confirmPrayerHero(eroe.name);
+    }
 }
 
 /* ---------- Voti ---------- */
@@ -365,24 +384,10 @@ let onlineSchermataPrima = null;
 
 // Clic di un giocatore che diventa un voto (regole 'voto:<tipo>' di js/online-regole.js)
 function onlineVotoDaClic(tipo, nome, args, giocatore) {
-    const v = onlineState.voto;
-    if (tipo === 'mappa') {
-        if (!v || v.tipo !== 'mappa') onlineApriVotoMappa();
-        if (onlineState.voto) onlineVota(giocatore, onlineState.voto.id, String(args[0]));
-        return;
-    }
-    onlineVotoSpeciale(tipo, nome, args, giocatore);  // Task 9
+    onlineVotoSpeciale(tipo, nome, args, giocatore);
 }
 
-/* ---------- Voto della mappa ---------- */
-function onlineApriVotoMappa() {
-    const aperti = stato.stsMapNodes.filter(n => n.active && !n.done);
-    if (!aperti.length) return;
-    const nome = n => (typeof nodeBannerInfo === 'function' ? `${nodeBannerInfo(n).kind}: ${nodeBannerInfo(n).title}` : n.type);
-    onlineApriVoto({ tipo: 'mappa', domanda: 'Dove andiamo?', opzioni: aperti.map(n => ({ id: String(n.id), label: nome(n) })),
-        esegui: id => selectStsNode(Number(id)) });
-}
-// Arrivati sulla mappa con più strade: il voto parte da solo
+// Cambio di schermata: i voti e i pronti della schermata lasciata non valgono più
 if (typeof showScreen === 'function') {
     const mostraOrig = showScreen;
     showScreen = function (id) {
@@ -392,7 +397,6 @@ if (typeof showScreen === 'function') {
             if (onlineState.voto && id !== onlineSchermataPrima) onlineAnnullaVoto();  // il voto riguardava la schermata lasciata
             if (onlineState.pronti) { onlineState.pronti = null; onlineProntiAzione = null; }  // nuova schermata: i pronti ripartono da zero
             if (id === 'screenMap') onlineSalvaAutomatico();  // si riprende da qui se il master chiude
-            if (id === 'screenMap' && stato.stsMapNodes.filter(n => n.active && !n.done).length > 1) setTimeout(onlineApriVotoMappa, 600);
             onlineInviaStato();
         }
         return r;
@@ -417,33 +421,12 @@ function onlineDisegnaBarraMaster() {
 /* ---------- Voti di prova, preghiera, bersaglio, mercante ---------- */
 const onlineEroiInPiedi = () => stato.party.filter(h => h.hp > 0).map(h => ({ id: h.name, label: h.name }));
 
-function onlineApriVotoProva() {
-    const opzioni = onlineEroiInPiedi();
-    if (!isFinalNode()) opzioni.push({ id: '__lascia', label: 'Lascia perdere' });
-    onlineApriVoto({ tipo: 'prova', domanda: 'Chi affronta la prova?', opzioni, esegui: id => {
-        if (id === '__lascia') { challengeChoose(false); return; }
-        challengeChoose(true);
-        const sel = document.getElementById('challengeHeroSelect');
-        if (sel) sel.value = id;
-        confirmChallengeHero();
-    } });
-}
-function onlineApriVotoPreghiera() {
-    if (restPrayer) return;
-    onlineApriVoto({ tipo: 'preghiera', domanda: 'Chi prega?', opzioni: [...onlineEroiInPiedi(), { id: '__nessuno', label: 'Nessuno' }],
-        esegui: id => { if (id === '__nessuno') return; startPrayer(); confirmPrayerHero(id); } });
-}
 function onlineApriVotoBersaglio() {
     onlineApriVoto({ tipo: 'bersaglio', domanda: 'Chi riceve il colpo del nemico?', opzioni: onlineEroiInPiedi(), secondi: VOTE_SECONDS_TARGET,
         esegui: id => { const sel = document.getElementById('monsterTargetSelect'); if (sel) sel.value = id; executeMonsterAttack(); } });
 }
 
 function onlineVotoSpeciale(tipo, nome, args, giocatore) {
-    if (tipo === 'prova' || tipo === 'preghiera') {
-        if (!onlineState.voto) (tipo === 'prova' ? onlineApriVotoProva : onlineApriVotoPreghiera)();
-        onlineAvvisa(giocatore, 'Si decide insieme: vota nella barra in basso');
-        return;
-    }
     if (onlineState.voto && onlineState.voto.tipo === tipo) return;
     if (tipo === 'bersaglio') { onlineApriVotoBersaglio(); return; }
     if (tipo === 'contratta') {
@@ -459,10 +442,8 @@ function onlineVotoSpeciale(tipo, nome, args, giocatore) {
     }
 }
 
-// I voti si aprono da soli entrando nella prova, nel riposo, al turno del nemico
-[['startChallenge', () => setTimeout(onlineApriVotoProva, 800)],
- ['startRest', () => setTimeout(onlineApriVotoPreghiera, 800)],
- ['startMonsterTurn', () => {
+// Il voto sul bersaglio si apre da solo al turno del nemico (quando il bersaglio lo sceglie la compagnia)
+[['startMonsterTurn', () => {
      const sel = document.getElementById('monsterTargetSelect');
      const area = document.getElementById('monsterTargetArea');
      if (sel && !sel.disabled && area && !area.classList.contains('hidden')) onlineApriVotoBersaglio();
