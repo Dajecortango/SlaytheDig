@@ -12,9 +12,11 @@ let fallite = 0;
 const ok = (cond, msg) => { console.log(`${cond ? '  ✓' : '  ✗'} ${msg}`); if (!cond) fallite++; };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-function req(method, p, body, host = `localhost:${PORT}`) {
+let segreto = null;  // dato da /api/online/apri: il master lo manda in ogni chiamata
+function req(method, p, body, host = `localhost:${PORT}`, conSegreto = true) {
     return new Promise((resolve, reject) => {
-        const r = http.request({ host: '127.0.0.1', port: PORT, path: p, method, headers: { 'Content-Type': 'application/json', Host: host } }, res => {
+        const headers = { 'Content-Type': 'application/json', Host: host, ...(segreto && conSegreto ? { 'X-Online-Segreto': segreto } : {}) };
+        const r = http.request({ host: '127.0.0.1', port: PORT, path: p, method, headers }, res => {
             let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve({ status: res.statusCode, body: JSON.parse(d || '{}') }); } catch { resolve({ status: res.statusCode, body: d }); } });
         });
         r.on('error', reject); if (body) r.write(JSON.stringify(body)); r.end();
@@ -41,14 +43,20 @@ try {
     await wait(800);
     const fuori = `abc.ngrok-free.app`;
     ok((await req('POST', '/api/online/apri', {}, fuori)).status === 403, 'un ospite non può aprire la stanza');
-    const { code } = (await req('POST', '/api/online/apri', {})).body;
+    const aperta = (await req('POST', '/api/online/apri', {})).body;
+    const code = aperta.code;
+    segreto = aperta.segreto;
+    ok(typeof segreto === 'string' && segreto.length >= 16, 'la stanza dà al master un segreto');
+    ok((await req('POST', '/api/online/parti', { parti: {} }, `localhost:${PORT}`, false)).status === 403, 'senza segreto niente regioni (anche da localhost)');
     ok(typeof code === 'string' && code.length >= 6, 'il master apre la stanza');
-    const master = flusso('/api/online/master', `localhost:${PORT}`, false);
+    const master = flusso(`/api/online/master?segreto=${segreto}`, `localhost:${PORT}`, false);
+    const intruso = flusso('/api/online/master', `localhost:${PORT}`, false);
     ok((await req('POST', '/api/online/entra', { code: 'sbagliato', nome: 'Marco' }, fuori)).body.error, 'codice sbagliato rifiutato');
     const marco = (await req('POST', '/api/online/entra', { code, nome: '  Marco  ' }, fuori)).body;
     ok(marco.token && marco.nome === 'Marco', 'Marco entra (nome pulito)');
     ok((await req('POST', '/api/online/entra', { code, nome: 'marco' }, fuori)).body.error, 'nome già usato (maiuscole a parte) rifiutato');
     ok((await req('POST', '/api/online/entra', { code, nome: '' }, fuori)).body.error, 'nome vuoto rifiutato');
+    ok((await req('POST', '/api/online/entra', { code, nome: '__master__' }, fuori)).body.error, 'il nome del master è riservato');
     const sara = (await req('POST', '/api/online/entra', { code, nome: 'Sara'.repeat(20) }, fuori)).body;
     ok(sara.nome.length <= 24, 'nome lunghissimo accorciato');
     await req('POST', '/api/online/parti', { parti: { screen: '<div id="screenMap">mappa</div>' } });
@@ -87,6 +95,10 @@ try {
     ok(/no-store/.test(codice.headers['cache-control'] || ''), 'il codice resta senza cache');
     const fuga = await prendi('/leggero/../tools/chiave_gemini.txt');
     ok(fuga.statusCode === 403 || fuga.statusCode === 404, 'niente file fuori da immagini/ e video/');
+    ok(!intruso.some(([e]) => e === 'clic'), 'lo stream del master senza segreto non riceve i clic');
+    await prendi('/leggero/immagini/%25');
+    await prendi('/%');
+    ok((await prendi('/js/online-regole.js')).statusCode === 200, 'un percorso con codifica sbagliata non fa cadere il server');
     master.chiudi();
 } finally {
     server.kill();

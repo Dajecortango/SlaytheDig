@@ -268,7 +268,8 @@ function readJsonBody(req, callback) {
 
 const server = http.createServer((req, res) => {
     const parsed = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = decodeURIComponent(parsed.pathname);
+    let pathname;
+    try { pathname = decodeURIComponent(parsed.pathname); } catch (e) { res.writeHead(400); res.end('Percorso non valido'); return; }
 
     if (req.method === 'OPTIONS') {
         res.writeHead(204, {
