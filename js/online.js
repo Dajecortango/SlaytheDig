@@ -212,7 +212,6 @@ function onlineMostraLink() {
 }
 
 /* ---------- Funzioni completate nei passi successivi (creazione, voti, pronti, capo, barra) ---------- */
-function onlinePronto(giocatore, nome, args) { onlineState.attore = null; chiamaAzione(nome, args, null); }
 
 /* ---------- Stanza, creazione a turno, chi deve agire ---------- */
 // Giocatori in ordine d'ingresso (anche i disconnessi: il loro posto resta)
@@ -351,6 +350,7 @@ if (typeof showScreen === 'function') {
         const r = mostraOrig.apply(this, arguments);
         if (onlineState.attivo) {
             if (onlineState.voto && id !== 'screenMap' && onlineState.voto.tipo === 'mappa') { clearTimeout(onlineVotoTimer); onlineState.voto = null; }
+            if (onlineState.pronti) { onlineState.pronti = null; onlineProntiAzione = null; }  // nuova schermata: i pronti ripartono da zero
             if (id === 'screenMap' && stato.stsMapNodes.filter(n => n.active && !n.done).length > 1) setTimeout(onlineApriVotoMappa, 600);
             onlineInviaStato();
         }
@@ -372,7 +372,6 @@ function onlineDisegnaBarraMaster() {
         + (onlineState.pronti ? `<br>Pronti ${onlineState.pronti.size}/${onlineGiocatoriCollegati().length} <button class="btn-small" ${azione('onlineForzaPronti')}>Si parte</button>` : '');
 }
 
-function onlineForzaPronti() {}
 
 /* ---------- Voti di prova, preghiera, bersaglio, mercante ---------- */
 const onlineEroiInPiedi = () => stato.party.filter(h => h.hp > 0).map(h => ({ id: h.name, label: h.name }));
@@ -426,6 +425,22 @@ function onlineVotoSpeciale(tipo, nome, args, giocatore) {
     const orig = window[nome];
     window[nome] = function () { const r = orig.apply(this, arguments); if (onlineState.attivo) dopo(); return r; };
 });
+
+/* ---------- Ho finito (riposo e mercante) ---------- */
+let onlineProntiAzione = null;
+function onlinePronto(giocatore, nome, args) {
+    if (!onlineState.pronti) { onlineState.pronti = new Set(); onlineProntiAzione = { nome, args }; }
+    onlineState.pronti.add(giocatore);
+    if (onlineGiocatoriCollegati().every(n => onlineState.pronti.has(n))) onlineForzaPronti();
+    else onlineInviaStato();
+}
+function onlineForzaPronti() {
+    const a = onlineProntiAzione;
+    onlineState.pronti = null; onlineProntiAzione = null;
+    onlineState.attore = null;
+    if (a) chiamaAzione(a.nome, a.args, null);
+    onlineInviaStato();
+}
 
 /* ---------- Pannello nelle Opzioni ---------- */
 if (typeof openOptions === 'function') {

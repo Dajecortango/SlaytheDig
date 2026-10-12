@@ -132,4 +132,15 @@ module.exports = (t, carica) => {
         h.onlineVota('Marco', h.eval('onlineState.voto.id'), 'Icaro');
         t.uguale(['scelta:true', 'eroe'], h.eval('__fatto'));
     });
+
+    t.test('Ho finito: si parte quando l\'hanno premuto tutti i collegati', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Marco', connected: true }, { name: 'Sara', connected: true }, { name: 'Luca', connected: false }];
+            globalThis.__partito = 0; globalThis.advanceNode = () => { __partito++; };`);
+        h.onlinePronto('Marco', 'advanceNode', []);
+        t.uguale(0, h.eval('__partito'));
+        h.onlinePronto('Sara', 'advanceNode', []);
+        t.uguale(1, h.eval('__partito'), 'Luca è disconnesso: non si aspetta');
+        t.uguale(null, h.eval('onlineState.pronti'));
+    });
 };
