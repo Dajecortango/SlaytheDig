@@ -372,8 +372,60 @@ function onlineDisegnaBarraMaster() {
         + (onlineState.pronti ? `<br>Pronti ${onlineState.pronti.size}/${onlineGiocatoriCollegati().length} <button class="btn-small" ${azione('onlineForzaPronti')}>Si parte</button>` : '');
 }
 
-function onlineVotoSpeciale(tipo, nome, args, giocatore) { onlineAvvisa(giocatore, 'Voto non ancora disponibile'); }
 function onlineForzaPronti() {}
+
+/* ---------- Voti di prova, preghiera, bersaglio, mercante ---------- */
+const onlineEroiInPiedi = () => stato.party.filter(h => h.hp > 0).map(h => ({ id: h.name, label: h.name }));
+
+function onlineApriVotoProva() {
+    const opzioni = onlineEroiInPiedi();
+    if (!isFinalNode()) opzioni.push({ id: '__lascia', label: 'Lascia perdere' });
+    onlineApriVoto({ tipo: 'prova', domanda: 'Chi affronta la prova?', opzioni, esegui: id => {
+        if (id === '__lascia') { challengeChoose(false); return; }
+        challengeChoose(true);
+        const sel = document.getElementById('challengeHeroSelect');
+        if (sel) sel.value = id;
+        confirmChallengeHero();
+    } });
+}
+function onlineApriVotoPreghiera() {
+    if (restPrayer) return;
+    onlineApriVoto({ tipo: 'preghiera', domanda: 'Chi prega?', opzioni: [...onlineEroiInPiedi(), { id: '__nessuno', label: 'Nessuno' }],
+        esegui: id => { if (id === '__nessuno') return; startPrayer(); confirmPrayerHero(id); } });
+}
+function onlineApriVotoBersaglio() {
+    onlineApriVoto({ tipo: 'bersaglio', domanda: 'Chi riceve il colpo del nemico?', opzioni: onlineEroiInPiedi(), secondi: VOTE_SECONDS_TARGET,
+        esegui: id => { const sel = document.getElementById('monsterTargetSelect'); if (sel) sel.value = id; executeMonsterAttack(); } });
+}
+
+function onlineVotoSpeciale(tipo, nome, args, giocatore) {
+    if (onlineState.voto && onlineState.voto.tipo === tipo) return;
+    if (tipo === 'bersaglio') { onlineApriVotoBersaglio(); return; }
+    if (tipo === 'contratta') {
+        if (merchantHaggle !== null) return;
+        onlineApriVoto({ tipo, domanda: 'Contrattiamo con il mercante?', opzioni: [{ id: '__no', label: 'No' },
+            ...stato.party.filter(h => h.hp > 0).map(h => ({ id: h.name, label: `Sì, con ${h.name}` }))],
+            esegui: id => { if (id !== '__no') haggle(id); } });
+        return;
+    }
+    if (tipo === 'rinnova') {
+        onlineApriVoto({ tipo, domanda: `Rinnoviamo la merce (${MERCHANT_REROLL_COST} Scudi)?`, opzioni: [{ id: 'no', label: 'No' }, { id: 'si', label: 'Sì' }],
+            esegui: id => { if (id === 'si') rerollMerchantStock(); } });
+    }
+}
+
+// I voti si aprono da soli entrando nella prova, nel riposo, al turno del nemico
+[['startChallenge', () => setTimeout(onlineApriVotoProva, 800)],
+ ['startRest', () => setTimeout(onlineApriVotoPreghiera, 800)],
+ ['startMonsterTurn', () => {
+     const sel = document.getElementById('monsterTargetSelect');
+     const area = document.getElementById('monsterTargetArea');
+     if (sel && !sel.disabled && area && !area.classList.contains('hidden')) onlineApriVotoBersaglio();
+ }]].forEach(([nome, dopo]) => {
+    if (typeof window[nome] !== 'function') return;
+    const orig = window[nome];
+    window[nome] = function () { const r = orig.apply(this, arguments); if (onlineState.attivo) dopo(); return r; };
+});
 
 /* ---------- Pannello nelle Opzioni ---------- */
 if (typeof openOptions === 'function') {
