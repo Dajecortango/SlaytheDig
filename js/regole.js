@@ -132,3 +132,9 @@ const PROC_SCALA = {
    Valore di un oggetto, pesato su quanto conta in combattimento: il danno vale più di tutto
    (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura. */
 const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75 };
+
+/* ---------- Partita online (js/online.js, server/online.js) ---------- */
+const VOTE_SECONDS = 30;               // durata di un voto
+const VOTE_SECONDS_TARGET = 15;        // voto sul bersaglio del nemico, più corto per non spezzare lo scontro
+const ONLINE_DISCONNECT_SECONDS = 20;  // senza segnale per tanto, il giocatore è disconnesso
+const ONLINE_FRAME_MS = 100;           // intervallo minimo fra due invii della schermata
