@@ -212,14 +212,85 @@ function onlineMostraLink() {
 }
 
 /* ---------- Funzioni completate nei passi successivi (creazione, voti, pronti, capo, barra) ---------- */
-function onlineTurnoCreazione() { return null; }
 function onlineCapo() { return null; }
-function onlineAttesi() { return []; }
 function onlineVotoDaClic(tipo, nome, args, giocatore) { onlineAvvisa(giocatore, 'Voto non ancora disponibile'); }
 function onlineVota(giocatore, id, op) {}
 function onlinePronto(giocatore, nome, args) { onlineState.attore = null; chiamaAzione(nome, args, null); }
-function onlineStanzaCambiata() { onlineInviaStato(); }
 function onlineDisegnaBarraMaster() {}
+
+/* ---------- Stanza, creazione a turno, chi deve agire ---------- */
+// Giocatori in ordine d'ingresso (anche i disconnessi: il loro posto resta)
+const onlineOrdine = () => onlineState.giocatori.map(gi => gi.name);
+
+// Creazione degli eroi: a turno, il primo giocatore senza eroe nell'ordine d'ingresso
+function onlineTurnoCreazione() {
+    if (!onlineState.attivo || currentScreenId !== 'screenParty') return null;
+    const conEroe = Object.values(stato.onlineOwners || {});
+    return onlineOrdine().find(n => !conEroe.includes(n)) || null;
+}
+
+// Chi deve agire adesso (per l'avviso "Tocca a te" dei giocatori)
+function onlineAttesi() {
+    if (!onlineState.attivo) return [];
+    const owners = stato.onlineOwners || {};
+    if (onlineState.voto) return onlineGiocatoriCollegati().filter(n => !(n in onlineState.voto.voti));
+    if (onlineState.pronti) return onlineGiocatoriCollegati().filter(n => !onlineState.pronti.has(n));
+    if (currentScreenId === 'screenParty') return [onlineTurnoCreazione()].filter(Boolean);
+    if (heroNeedingDiscard) return [owners[heroNeedingDiscard.name]].filter(Boolean);
+    if (currentScreenId === 'screenCombat' && combatPhase === 'heroes') {
+        if (currentActiveHero) return [owners[currentActiveHero.name]].filter(Boolean);
+        return [...new Set(stato.party.filter(h => h.hp > 0 && !h.hasActed).map(h => owners[h.name]).filter(Boolean))];
+    }
+    if (currentScreenId === 'screenChallenge' && selectedChallengeHero) return [owners[selectedChallengeHero.name]].filter(Boolean);
+    if (currentScreenId === 'screenRest' && selectedPrayerHero) return [owners[selectedPrayerHero.name]].filter(Boolean);
+    return [];
+}
+
+// Stanza cambiata (ingresso, uscita): la lista dei giocatori nella schermata della compagnia e lo stato
+function onlineStanzaCambiata() {
+    onlineDisegnaLobby();
+    onlineInviaStato();
+}
+function onlineDisegnaLobby() {
+    const area = document.getElementById('partyConfigArea');
+    if (!area) return;
+    let box = document.getElementById('onlineLobby');
+    if (!onlineState.attivo) { if (box) box.remove(); return; }
+    if (!box) { box = document.createElement('div'); box.id = 'onlineLobby'; box.className = 'wc-inset'; area.prepend(box); }
+    const righe = onlineState.giocatori.map(gi => `<li>${esc(gi.name)} ${gi.connected ? '🟢' : '⚪'}</li>`).join('') || '<li>Nessun giocatore: manda il link</li>';
+    box.innerHTML = `<p><b>Giocatori nella stanza</b> (un eroe a testa)</p><ul>${righe}</ul>`;
+}
+
+// Numero di eroi = giocatori collegati (il master non gioca), entro il massimo della campagna
+if (typeof confirmPartySize === 'function') {
+    const confermaOrig = confirmPartySize;
+    confirmPartySize = function () {
+        if (onlineState.attivo) {
+            const n = onlineGiocatoriCollegati().length;
+            const sel = document.getElementById('partySizeSelect');
+            const max = Math.max(...[...sel.options].map(o => Number(o.value)));
+            if (n < 1) { uiError('Nessun giocatore collegato'); return; }
+            if (n > max) { uiError(`Troppi giocatori: questa campagna ne permette al massimo ${max}`); return; }
+            if (![...sel.options].some(o => Number(o.value) === n)) sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n} Eroi</option>`);
+            sel.value = String(n);
+            stato.onlineOwners = {};
+        }
+        return confermaOrig.apply(this, arguments);
+    };
+}
+// L'eroe appena creato diventa del giocatore di turno
+if (typeof nextHero === 'function') {
+    const prossimoOrig = nextHero;
+    nextHero = function () {
+        const chi = onlineTurnoCreazione();
+        if (onlineState.attivo && chi && activeHeroForCreation) stato.onlineOwners = { ...(stato.onlineOwners || {}), [activeHeroForCreation.name]: chi };
+        return prossimoOrig.apply(this, arguments);
+    };
+}
+if (typeof startPartyCreation === 'function') {
+    const creaOrig = startPartyCreation;
+    startPartyCreation = function () { const r = creaOrig.apply(this, arguments); stato.onlineOwners = {}; onlineDisegnaLobby(); return r; };
+}
 
 /* ---------- Pannello nelle Opzioni ---------- */
 if (typeof openOptions === 'function') {

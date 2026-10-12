@@ -96,4 +96,15 @@ module.exports = (t, carica) => {
         t.ok(h.trovaElementoRemoto(root, [0, 1]) === bersaglio);
         t.uguale(null, h.trovaElementoRemoto(root, [5]));
     });
+
+    t.test('creazione a turno: tocca al giocatore successivo, l\'eroe diventa suo', () => {
+        const h = carica();
+        h.eval(`onlineState.attivo = true; onlineState.giocatori = [{ name: 'Marco', connected: true }, { name: 'Sara', connected: true }];
+            stato.party = []; stato.onlineOwners = {}; currentScreenId = 'screenParty';`);
+        t.uguale('Marco', h.onlineTurnoCreazione());
+        h.eval(`stato.party.push({ name: 'Icaro' }); stato.onlineOwners.Icaro = 'Marco';`);
+        t.uguale('Sara', h.onlineTurnoCreazione());
+        h.eval(`currentScreenId = 'screenMap';`);
+        t.uguale(null, h.onlineTurnoCreazione());
+    });
 };
