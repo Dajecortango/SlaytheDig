@@ -197,7 +197,7 @@ function nemicoTesto(s) {
     const fai = {
         danni: `${v} ${v === 1 ? 'danno' : 'danni'} a ${chi}`,
         cura: `recupera ${v} HP`,
-        potenzia: `+${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat}`,
+        potenzia: `${v >= 0 ? '+' : '−'}${Math.abs(v)} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat}`,
         malus: `−${v} al tiro per colpire a ${chi} ${s.durata ? `per ${s.durata} round` : 'fino a fine scontro'}`,
         stordisci: `stordisce ${chi}`,
         veleno: `avvelena ${chi}: −${v} HP a ogni round per ${s.durata || 3} round`,

@@ -29,6 +29,93 @@ module.exports = (t, carica) => {
         t.uguale(10, n.ca);
     });
 
+    // Le 13 azioni nate con gli effetti speciali dei nemici (speciali con NEMICO_QUANDO / NEMICO_FAI)
+    const conItems = h => Object.assign(h, { items: [], att_bonus: 0, def_bonus: 0, help_bonus_val: 0, att_penalty: 0, base_armor: 0 });
+    const scontro = (n, eroi) => {
+        stato.activeEnemy = n; stato.helpBonus = 0; stato.helpDmgBonus = 0; stato.partyCoins = 20;
+        stato.stsMapNodes = [{ id: 1, level: 0, type: 'elite', next: [2] }, { id: 2, level: 1, type: 'combat', next: [] }];
+        stato.currentNodeId = 1;
+        eroi.forEach(conItems);
+        return n;
+    };
+
+    t.test('le 13 azioni nuove esistono, con nome e descrizione', () => {
+        ['pelle_di_brina', 'morso_velenoso', 'nube_tossica', 'ladro_di_tombe', 'ultimo_sangue', 'ululato_del_branco', 'frenesia',
+            'maledizione_del_sangue', 'scudo_d_ossa', 'bersaglio_marcato', 'pioggia_di_frecce', 'furia_ultimo_round', 'rito_di_sangue']
+            .forEach(id => t.ok(azioni[id] && azioni[id].name && azioni[id].desc, id));
+    });
+
+    t.test('Pelle di Brina: +2 CA e chi lo colpisce subisce 1 danno', () => {
+        const [a] = prepara([eroe('A')]);
+        const n = scontro(elite(['pelle_di_brina']), [a]);
+        g.checkEnemyPhases(n, a);
+        t.uguale(9, n.ca);
+        g.resolveAttack(a, n, [6]);
+        t.uguale(5, a.hp);
+    });
+
+    t.test('Nube Tossica e Morso Velenoso: veleno a tutti subito, poi a chi viene colpito', () => {
+        const [a, b] = prepara([eroe('A'), eroe('B')]);
+        const n = scontro(elite(['nube_tossica', 'morso_velenoso']), [a, b]);
+        g.checkEnemyPhases(n, a);
+        t.ok(a.poison && b.poison, 'tutti avvelenati');
+        g.startRoundSpecials();
+        t.uguale([5, 5], [a.hp, b.hp]);
+        delete b.poison;
+        g.resolveMonsterAttack(n, b);
+        t.ok(b.poison && b.poison.rounds === 3, 'il morso avvelena per 3 round');
+    });
+
+    t.test('Ladro di Tombe: +1 Attacco e ruba 5 Scudi a ogni colpo', () => {
+        const [a] = prepara([eroe('A')]);
+        const n = scontro(elite(['ladro_di_tombe']), [a]);
+        g.checkEnemyPhases(n, a);
+        t.uguale(8, n.att);
+        g.resolveMonsterAttack(n, a);
+        t.uguale(15, stato.partyCoins);
+    });
+
+    t.test("Scudo d'Ossa: +3 CA, poi -1 CA a ogni round per 3 round", () => {
+        const [a] = prepara([eroe('A')]);
+        const n = scontro(elite(['scudo_d_ossa']), [a]);
+        g.checkEnemyPhases(n, a);
+        t.uguale(10, n.ca);
+        for (let i = 0; i < 5; i++) g.startRoundSpecials();
+        t.uguale(7, n.ca, "torna com'era");
+    });
+
+    t.test('Ululato del Branco: a inizio round stordisce un eroe a caso, con probabilità', () => {
+        const [a] = prepara([eroe('A')]);
+        const n = scontro(elite(['ululato_del_branco']), [a]);
+        g.checkEnemyPhases(n, a);
+        g.eval('Math.__r = Math.random; Math.random = () => 0.1');
+        g.startRoundSpecials();
+        g.eval('Math.random = Math.__r');
+        t.ok(a.stunnedRounds >= 1, 'stordito');
+    });
+
+    t.test('Frenesia: due colpi a turno e -2 CA; Pioggia di Frecce: 1 a tutti e attacco più debole', () => {
+        const [a, b] = prepara([eroe('A'), eroe('B')]);
+        const n = scontro(elite(['frenesia']), [a, b]);
+        g.checkEnemyPhases(n, a);
+        t.uguale(5, n.ca);
+        g.resolveEnemyTurn(n, a);
+        t.uguale(2, a.hp, 'due colpi da 2');
+        const [c, d] = prepara([eroe('C'), eroe('D')]);
+        const p = scontro(elite(['pioggia_di_frecce']), [c, d]);
+        g.checkEnemyPhases(p, c);
+        g.resolveEnemyTurn(p, c);
+        t.uguale([4, 5], [c.hp, d.hp], 'C: 1 + 1, D: 1');
+    });
+
+    t.test('Rito di Sangue in una soglia a tempo: al round 3 recupera 5 HP', () => {
+        const [a] = prepara([eroe('A')]);
+        const n = scontro({ name: 'Sciamano', hp: 4, maxHp: 12, att: 7, dmg: 1, ca: 7, fasi: [{ round: 3, soglia: 50, testo: 'Il rito!', azioni: ['rito_di_sangue'] }] }, [a]);
+        stato.combatRound = 3;
+        g.checkEnemyRoundPhases(n);
+        t.uguale(9, n.hp);
+    });
+
     t.test('Esplosione: 2 danni subito a tutta la compagnia', () => {
         const [a, b] = prepara([eroe('A'), eroe('B', { current_armor: 1 })]);
         g.checkEnemyPhases(elite(['esplosione']), a);
