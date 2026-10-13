@@ -239,7 +239,7 @@
         function expireTempBuffs(all = false) {
             const expired = [];
             stato.party.forEach(h => {
-                if (all) { h.pendingBuffs = []; delete h.poison; }  // fine scontro: anche il veleno dei nemici
+                if (all) { h.pendingBuffs = []; delete h.poison; delete h.silencedUntil; delete h.rageUntil; }  // fine scontro: anche gli stati
                 if (!h.tempBuffs || !h.tempBuffs.length) return;
                 h.tempBuffs = h.tempBuffs.filter(b => {
                     if (!all && b.expiresAfterRound >= stato.combatRound) return true;

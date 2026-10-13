@@ -117,8 +117,8 @@ function simDuelScore(special, extraDmg) {
                 stato.combatRound++;
                 expireTempBuffs();
                 applyRegen();
-                startRoundSpecials();
                 stato.party.forEach(h => { h.hasActed = false; });
+                startRoundSpecials();
                 stato.party.forEach((h, i) => {
                     if (h.hp <= 0 || enemy.hp <= 0) return;
                     // Le scelte dell'Esperto (attacca, difende chi cadrebbe, aiuta chi colpisce meglio)
@@ -758,6 +758,7 @@ function simResolveCaptainNode(profile) {
 }
 
 function simExecuteCombatAction(hero, action) {
+    if (!combatActionAllowed(hero, action).ok) action = 'attack';  // in furia si può solo attaccare
     if (action === 'ability' && hasUsableAbility(hero)) resolveAbility(hero, stato.activeEnemy);
     else if (action === 'defend') resolveDefend(hero, stato.activeEnemy);
     else if (action === 'help') resolveHelp(hero, stato.activeEnemy);
@@ -789,10 +790,10 @@ function simRunCombat(enemyData, profile, runCtx) {
         expireTempBuffs();
         applyPendingBuffs();
         applyRegen();
+        stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
         startRoundSpecials();
         checkEnemyRoundPhases(stato.activeEnemy);
         if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
-        stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
         applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);
         const order = profile.turnOrder ? profile.turnOrder(alive) : alive;

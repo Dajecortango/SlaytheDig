@@ -314,6 +314,14 @@
             return '';
         }
 
+        // Stati dell'eroe in combattimento (stordito, avvelenato, silenziato, furia)
+        function renderStatuses(hero) {
+            const list = hero.statuses || [];
+            if (!list.length) return '';
+            return `<div class="panel items"><div class="bag-title">Stati</div>${list.map(s =>
+                `<div class="bag-item"><img class="bag-icon" src="/${s.icon}" alt=""><div class="bag-text"><b>${s.name}${s.rounds ? ` (${s.rounds} round)` : ''}</b><small>${s.desc}</small></div></div>`).join('')}</div>`;
+        }
+
         // Benedizioni della preghiera ancora da usare
         function renderBlessings(hero) {
             const list = hero.blessings || [];
@@ -386,6 +394,7 @@
                     ${hero.chosenAbility ? `<div class="hero-ability-line">★ ${hero.chosenAbility}</div>${hero.abilityDesc ? `<div class="hero-ability-desc">${hero.abilityDesc}</div>` : ''}` : ''}
                 </div>
                 ${renderScene(state, hero)}
+                ${renderStatuses(hero)}
                 ${renderBlessings(hero)}
                 ${renderRunes(hero)}
                 <div class="panel items">${renderBag(hero, state)}</div>`;
@@ -424,8 +433,8 @@
                 <div class="action-title">Scegli l'azione di ${currentHero.name}</div>
                 <div class="action-grid">
                     <button class="action-btn" data-action="attack">⚔️ Attacca</button>
-                    <button class="action-btn" data-action="defend">🛡️ Difendi</button>
-                    <button class="action-btn" data-action="help">🤝 Aiuta</button>
+                    <button class="action-btn" data-action="defend" ${pendingAction.onlyAttack ? 'disabled' : ''}>🛡️ Difendi</button>
+                    <button class="action-btn" data-action="help" ${pendingAction.onlyAttack ? 'disabled' : ''}>🤝 Aiuta</button>
                     <button class="action-btn" data-action="ability" ${pendingAction.canUseAbility ? '' : 'disabled'}>★ ${pendingAction.abilityLabel || 'Abilità'}</button>
                 </div>
                 <div class="action-grid" style="margin-top:8px;">

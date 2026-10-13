@@ -39,6 +39,7 @@
                 chosenAbility: h.chosenAbility ? h.chosenAbility.name : null,
                 abilityDesc: h.chosenAbility ? (h.chosenAbility.desc || '') : '',
                 runes: remoteRunes(h),
+                statuses: typeof heroStatuses === 'function' ? heroStatuses(h).map(s => ({ name: s.name, desc: s.desc, icon: s.icon, rounds: s.rounds || 0 })) : [],
                 blessings: (h.blessings || []).filter(x => typeof PRAYER_BLESSINGS !== 'undefined' && PRAYER_BLESSINGS[x.id])
                     .map(x => ({ name: PRAYER_BLESSINGS[x.id].name, desc: PRAYER_BLESSINGS[x.id].desc, icon: PRAYER_BLESSINGS[x.id].icon, n: x.n || 1 }))
             }))
@@ -208,6 +209,7 @@
             body: JSON.stringify({
                 heroName: hero.name,
                 canUseAbility,
+                onlyAttack: typeof isRaging === 'function' && isRaging(hero),  // in furia: solo Attacca (e oggetti)
                 abilityLabel: hero.chosenAbility ? hero.chosenAbility.name : null,
                 consumables,
                 livingAllies

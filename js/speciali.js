@@ -370,6 +370,13 @@
                         res.cards += v;
                         note = `${v === 1 ? 'una carta' : `${v} carte`} in più`;
                         break;
+                    case 'purifica': {
+                        const ts = specialTargets(e, hero).filter(t => heroStatuses(t).length);
+                        if (!ts.length) continue;
+                        ts.forEach(clearHeroStatuses);
+                        note = `${ts.map(t => t.name).join(', ')} ${ts.length > 1 ? 'sono liberi' : 'è libero'} da ogni stato`;
+                        break;
+                    }
                     case 'togli_maledizione':
                         if (!stato.activeCurses.length) continue;
                         removeCurseAt(Math.floor(Math.random() * stato.activeCurses.length));
@@ -419,6 +426,58 @@
         function hasSpecial(quando, fai, hero, ctx = {}) {
             return specialSources(quando, hero).some(e => e.s.quando === quando && e.s.fai === fai && !e.s.prob
                 && specialAvailable(e) && specialConditionsMet(e, hero, ctx));
+        }
+
+        /* ---------- Stati degli eroi ----------
+           stordito (hero.stunnedRounds: salta il turno, applyHeroStuns), avvelenato (hero.poison: HP persi a inizio round,
+           applyPoison), silenziato (hero.silencedUntil: niente abilità attiva, abilityUsable), furia (hero.rageUntil: può
+           solo attaccare, combatActionAllowed). Silenzio e furia valgono fino al round indicato compreso: dati durante il
+           turno del nemico contano dal round dopo, dati a inizio round contano già da quello (statusUntil).
+           Si vedono come icone sulla carta (heroStatusesHtml) e finiscono con lo scontro (expireTempBuffs(true)). */
+        const HERO_STATUSES = {
+            stordito: { name: 'Stordito', icon: 'immagini/icone/BTNStun.png', desc: 'Salta il prossimo turno' },
+            avvelenato: { name: 'Avvelenato', icon: 'immagini/icone/BTNPoisonSting.png', desc: 'Perde HP a inizio di ogni round, l\'armatura non para' },
+            silenziato: { name: 'Silenziato', icon: 'immagini/icone/BTNSilence.png', desc: 'Non può usare l\'abilità attiva' },
+            furia: { name: 'Furia', icon: 'immagini/icone/BTNBerserk.png', desc: 'Può solo attaccare: niente Difendi, Aiuta né abilità' }
+        };
+
+        function statusUntil(rounds) {
+            const acted = stato.party.some(h => h.hasActed);
+            return (stato.combatRound || 0) + Math.max(1, rounds || 1) - (acted ? 0 : 1);
+        }
+        function isSilenced(h) { return !!h && (h.silencedUntil || 0) > 0 && h.silencedUntil >= (stato.combatRound || 0); }
+        function isRaging(h) { return !!h && (h.rageUntil || 0) > 0 && h.rageUntil >= (stato.combatRound || 0); }
+
+        // Stati attivi di un eroe: [{ key, name, icon, desc, rounds }] (rounds = round che restano, se si sa)
+        function heroStatuses(h) {
+            if (!h || h.hp <= 0) return [];
+            const left = until => until - (stato.combatRound || 0) + (stato.party.some(x => x.hasActed) ? 0 : 1);
+            const out = [];
+            if (h.stunnedRounds > 0) out.push({ key: 'stordito', rounds: h.stunnedRounds });
+            if (h.poison) out.push({ key: 'avvelenato', rounds: h.poison.rounds, val: h.poison.val });
+            if (isSilenced(h)) out.push({ key: 'silenziato', rounds: left(h.silencedUntil) });
+            if (isRaging(h)) out.push({ key: 'furia', rounds: left(h.rageUntil) });
+            return out.map(s => ({ ...HERO_STATUSES[s.key], ...s }));
+        }
+
+        // Toglie tutti gli stati (effetto "purifica", fine scontro)
+        function clearHeroStatuses(h) {
+            delete h.poison; delete h.silencedUntil; delete h.rageUntil;
+            h.stunnedRounds = 0;
+        }
+
+        // In furia l'eroe può solo attaccare (e usare oggetti, che non consumano l'azione)
+        function combatActionAllowed(hero, action) {
+            if (isRaging(hero) && ['defend', 'help', 'ability'].includes(action)) return { ok: false, reason: `${hero.name} è in furia: può solo attaccare` };
+            return { ok: true, reason: '' };
+        }
+
+        // Icone degli stati sulla carta dell'eroe, accanto ai potenziamenti
+        function heroStatusesHtml(h) {
+            const list = heroStatuses(h);
+            if (!list.length) return '';
+            return `<div class="hero-statuses">${list.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}">
+                <img src="${esc(s.icon)}" alt="">${s.rounds ? `<b>${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
         }
 
         /* ---------- Effetti speciali dei nemici (NEMICO_QUANDO / NEMICO_FAI in js/comune.js) ----------
@@ -481,6 +540,15 @@
                         targets.forEach(t => { t.poison = { val: Math.max(t.poison && t.poison.val || 0, v), rounds: Math.max(t.poison && t.poison.rounds || 0, s.durata || 3), from: enemy.name }; });
                         note = `${targets.map(t => t.name).join(', ')} ${targets.length > 1 ? 'sono avvelenati' : 'è avvelenato'} (−${v} HP a ogni round per ${s.durata || 3} round)`;
                         break;
+                    case 'silenzia':
+                    case 'infuria': {
+                        if (!targets.length) return;
+                        const until = statusUntil(s.durata || 2);
+                        const field = s.fai === 'silenzia' ? 'silencedUntil' : 'rageUntil';
+                        targets.forEach(t => { t[field] = Math.max(t[field] || 0, until); });
+                        note = `${targets.map(t => t.name).join(', ')} ${s.fai === 'silenzia' ? (targets.length > 1 ? 'sono silenziati' : 'è silenziato') : (targets.length > 1 ? 'vanno in furia' : 'va in furia')} per ${s.durata || 2} round`;
+                        break;
+                    }
                     case 'spezza_armatura':
                         if (!targets.some(t => t.current_armor > 0)) return;
                         targets.forEach(t => { t.current_armor = 0; });

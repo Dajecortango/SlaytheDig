@@ -3217,6 +3217,9 @@ body.no-anim .phase-banner { animation: none; }
 .armory-btn.prayer-choice.major { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 12px rgba(255, 215, 110, 0.35), inset 0 0 12px rgba(0, 0, 0, 0.7); }
 .armory-btn.prayer-choice:disabled { opacity: 0.35; }
 .hero-blessings { position: absolute; top: 4px; left: 4px; display: flex; gap: 3px; z-index: 4; }
+/* Stati dell'eroe (stordito, avvelenato, silenziato, furia): sotto i potenziamenti, bordo rosso come i malus */
+.hero-statuses { position: absolute; top: 48px; left: 6px; display: flex; gap: 2px; z-index: 4; }
+.hero-statuses .hero-buff { width: 18px; height: 18px; }
 .hero-blessing {
     position: relative; width: 18px; height: 18px; background: #0a0807;
     box-shadow: 0 0 0 1px #000, 0 0 0 2px #d4a93a, 0 0 7px rgba(255, 215, 110, 0.7);

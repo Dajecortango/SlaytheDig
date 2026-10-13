@@ -109,6 +109,7 @@ const SPECIALI_FAI = {
     monete: { label: 'Scudi', campi: ['val'], quando: ['inizio_scontro', 'fine_scontro', 'riposo', 'nemico_sconfitto'] },
     carta_bottino: { label: 'Carte in più al bottino', campi: ['val'], quando: ['bottino'] },
     togli_maledizione: { label: 'Toglie una maledizione a caso', campi: [], quando: ['riposo', 'fine_scontro'] },
+    purifica: { label: 'Toglie gli stati (stordito, avvelenato, silenziato, furia)', campi: ['bersaglio'], quando: SPECIALI_SCONTRO },
     bonus_tiro: { label: 'Bonus al tiro', campi: ['val'], quando: SPECIALI_TIRI },
     bonus_cura: { label: 'HP in più alla cura', campi: ['val'], quando: ['riposo', 'pozione'] },
     sconto: { label: 'Sconto in Scudi su ogni articolo', campi: ['val'], quando: ['mercante'] },
@@ -151,6 +152,7 @@ function specialeTesto(s, tipo) {
         monete: `+${v} Scudi`,
         carta_bottino: `${v === 1 ? 'una carta' : `${v} carte`} in più fra cui scegliere`,
         togli_maledizione: 'toglie una maledizione a caso',
+        purifica: `toglie stordimento, veleno, silenzio e furia a ${chi}`,
         bonus_tiro: `${v >= 0 ? '+' : ''}${v} al tiro`,
         bonus_cura: `${v >= 0 ? '+' : ''}${v} HP alla cura`,
         sconto: v >= 0 ? `−${v} Scudi su ogni articolo` : `+${-v} Scudi su ogni articolo`,
@@ -183,6 +185,8 @@ const NEMICO_FAI = {
     malus: { label: 'Malus al tiro per colpire degli eroi', campi: ['val', 'durata', 'bersaglio'] },
     stordisci: { label: 'Stordisce gli eroi (saltano il turno)', campi: ['bersaglio'] },
     veleno: { label: 'Avvelena: HP persi a ogni round, senza armatura', campi: ['val', 'durata', 'bersaglio'] },
+    silenzia: { label: 'Silenzia: niente abilità attiva', campi: ['durata', 'bersaglio'] },
+    infuria: { label: 'Fa infuriare: può solo attaccare', campi: ['durata', 'bersaglio'] },
     spezza_armatura: { label: 'Toglie l\'armatura agli eroi', campi: ['bersaglio'] },
     ruba_scudi: { label: 'Ruba Scudi alla compagnia', campi: ['val'] }
 };
@@ -201,6 +205,8 @@ function nemicoTesto(s) {
         malus: `−${v} al tiro per colpire a ${chi} ${s.durata ? `per ${s.durata} round` : 'fino a fine scontro'}`,
         stordisci: `stordisce ${chi}`,
         veleno: `avvelena ${chi}: −${v} HP a ogni round per ${s.durata || 3} round`,
+        silenzia: `silenzia ${chi} per ${s.durata || 2} round (niente abilità attiva)`,
+        infuria: `fa infuriare ${chi} per ${s.durata || 2} round (può solo attaccare)`,
         spezza_armatura: `toglie l'armatura a ${chi}`,
         ruba_scudi: `ruba ${v} Scudi`
     }[s.fai] || s.fai;
