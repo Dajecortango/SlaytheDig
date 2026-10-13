@@ -464,7 +464,7 @@
                     }
                     case 'potenzia':
                         enemy[s.stat] = (enemy[s.stat] || 0) + v;
-                        note = `+${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat}`;
+                        note = `${v >= 0 ? '+' : '−'}${Math.abs(v)} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat}`;
                         break;
                     case 'malus':
                         if (!targets.length) return;
