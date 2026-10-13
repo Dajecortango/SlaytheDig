@@ -9,7 +9,7 @@
 let camp = null;                                         // campagna in modifica, con i riferimenti per id
 let lib = JSON.parse(JSON.stringify(window.LIBRERIA));   // copia modificabile della libreria condivisa
 const libDirty = new Set();                              // file della libreria modificati (armeria, bestiario, ...)
-let currentTab = 'general';
+let currentTab = 'home';
 const selection = { challenges: null, map: null, itemList: 'initialArmory',
                     bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null, abilita: null,
                     elite: null, azioni_elite: null, benedizioni: null };
@@ -22,15 +22,42 @@ function markDirty() {
     renderIssues();
     if (currentTab === 'map') renderMapPreview();
     scheduleDraftSave();
+    historyRecord();
+    updateCampaignName();
 }
 
 function markLibDirty(key) {
     libDirty.add(key);
     renderIssues();
     scheduleDraftSave();
+    historyRecord();
+    updateCampaignName();
+}
+
+// Nome della campagna aperta in alto, con "● non salvata" se ci sono modifiche da salvare
+function updateCampaignName() {
+    const el = document.getElementById('edCampaignName');
+    if (!el) return;
+    el.innerHTML = campaignChosen ? `${esc(camp.title || '(senza titolo)')}${hasUnsaved() ? ' <span class="ed-unsaved" title="Ci sono modifiche non ancora salvate">● non salvata</span>' : ''}` : '';
 }
 
 const hasUnsaved = () => dirty || libDirty.size > 0;
+
+/* ---------- Modalità Avanzate ----------
+   Spenta (di partenza) nasconde id, effetti speciali, campi JSON, elite e i salvataggi tecnici:
+   classe "ed-advanced" sul body (CSS: .ed-adv-only / .ed-simple-only) e campi "avanzato: true" saltati da renderForm. */
+const ADVANCED_KEY = 'dignitas_editor_avanzate';
+function isAdvanced() {
+    try { return localStorage.getItem(ADVANCED_KEY) === '1'; } catch (e) { return false; }
+}
+function setAdvanced(on) {
+    try { localStorage.setItem(ADVANCED_KEY, on ? '1' : '0'); } catch (e) { /* non ricordato: vale per questa pagina */ }
+    document.body.classList.toggle('ed-advanced', !!on);
+    const box = document.getElementById('edAdvanced');
+    if (box) box.checked = !!on;
+    render();
+}
+const toggleAdvanced = () => setAdvanced(!document.body.classList.contains('ed-advanced'));
 
 window.addEventListener('beforeunload', e => {
     if (hasUnsaved()) { e.preventDefault(); e.returnValue = ''; }
@@ -96,6 +123,7 @@ function pickFile(folder, accept, onPicked) {
 let draftTimer = null;
 function scheduleDraftSave() {
     clearTimeout(draftTimer);
+    homeDraft = null;   // la bozza nel browser sta per diventare questa: quella offerta nella Home non c'è più
     draftTimer = setTimeout(() => {
         kvSet('draft', {
             campaign: deepCopy(camp),
@@ -110,6 +138,7 @@ function scheduleDraftSave() {
 
 async function clearDraft() {
     clearTimeout(draftTimer);
+    homeDraft = null;
     try { await kvDel('draft'); } catch (e) {}
 }
 
@@ -122,36 +151,31 @@ function webpPaths(val, keep) {
     return val;
 }
 
-async function offerDraftRestore() {
-    let draft = null;
-    try { draft = await kvGet('draft'); } catch (e) { return false; }
-    if (!draft || !draft.campaign) return false;
-    const libNote = (draft.libDirty || []).length ? ` e modifiche alla libreria (${draft.libDirty.join(', ')})` : '';
-    if (confirm(`C'è una bozza non salvata di "${draft.campaign.title}"${libNote} (${draft.savedAt}). Ripristinarla?`)) {
-        pendingAssets.clear();
-        (draft.assets || []).forEach(([p, blob]) => addPendingAsset(p, blob));
-        // Una bozza salvata prima di una nuova libreria (es. Abilità) la prende dai file del progetto
-        const uploaded = new Set((draft.assets || []).map(([p]) => p));
-        draft.campaign = webpPaths(draft.campaign, uploaded);
-        if (draft.library) draft.library = webpPaths(draft.library, uploaded);
-        if (draft.library) lib = { ...deepCopy(window.LIBRERIA), ...draft.library };
-        libDirty.clear();
-        (draft.libDirty || []).forEach(k => libDirty.add(k));
-        setCampaign(draft.campaign, draft.origin !== undefined ? draft.origin : draft.campaign.id);
-        dirty = true;
-        return true;
-    }
-    await clearDraft();
-    return false;
+// Bozza salvata nel browser (null se non c'è): la Home la offre con "Riprendi da dove eri rimasto"
+async function readDraft() {
+    try {
+        const draft = await kvGet('draft');
+        return draft && draft.campaign ? draft : null;
+    } catch (e) { return null; }
+}
+
+function restoreDraft(draft) {
+    pendingAssets.clear();
+    (draft.assets || []).forEach(([p, blob]) => addPendingAsset(p, blob));
+    // Una bozza salvata prima di una nuova libreria (es. Abilità) la prende dai file del progetto
+    const uploaded = new Set((draft.assets || []).map(([p]) => p));
+    draft.campaign = webpPaths(draft.campaign, uploaded);
+    if (draft.library) draft.library = webpPaths(draft.library, uploaded);
+    if (draft.library) lib = { ...deepCopy(window.LIBRERIA), ...draft.library };
+    libDirty.clear();
+    (draft.libDirty || []).forEach(k => libDirty.add(k));
+    setCampaign(draft.campaign, draft.origin !== undefined ? draft.origin : draft.campaign.id);
+    dirty = true;
+    historyReset();
 }
 
 /* ---------- Caricamento ---------- */
 const rawCampaigns = () => window.CAMPAIGNS_RAW || window.CAMPAIGNS || {};
-
-function fillCampaignSelect() {
-    document.getElementById('edCampaignSelect').innerHTML = Object.values(rawCampaigns())
-        .map(c => `<option value="${esc(c.id)}">${esc(c.title)} (${esc(c.id)})</option>`).join('');
-}
 
 function confirmDiscard() {
     return !dirty || confirm('Ci sono modifiche alla campagna non salvate nel progetto. Continuare e perderle?');
@@ -170,7 +194,10 @@ function setCampaign(data, origin = data.id) {
     selection.challenges = keysOf(camp.challenges)[0] || null;
     selection.map = camp.mapNodes[0] ? camp.mapNodes[0].id : null;
     dirty = false;
+    pendingPick = null;
+    mapLink = null;
     render();
+    historyReset();
 }
 
 function switchCampaign(data, origin = data.id) {
@@ -179,26 +206,53 @@ function switchCampaign(data, origin = data.id) {
     setCampaign(data, origin);
 }
 
-function loadSelectedCampaign() {
-    const id = document.getElementById('edCampaignSelect').value;
-    if (!id || !confirmDiscard()) return;
-    switchCampaign(deepCopy(rawCampaigns()[id]));
+// Id libero tra le campagne del progetto: base, base_2, base_3...
+function uniqueCampaignId(base) {
+    const ids = new Set(Object.keys(rawCampaigns()));
+    const root = base || 'campagna';
+    let id = root;
+    for (let i = 2; ids.has(id); i++) id = `${root}_${i}`;
+    return id;
 }
 
-function newCampaign() {
-    if (!confirmDiscard()) return;
-    switchCampaign({
-        id: 'nuova_campagna', title: 'Nuova campagna', badge: 'Nuova Campagna', description: '', coverImage: '', introText: '',
+// Campagna nuova: già giocabile come forma (scontro → riposo → boss finale), da riempire
+function blankCampaign(title = 'Nuova campagna') {
+    const node = (id, level, type, titolo, next, extra = {}) =>
+        ({ id, level, x: 400, type, title: titolo, icon: NODE_ICONS[type], done: false, active: id === 0, next, image: '', ...extra });
+    return {
+        id: uniqueCampaignId(idFromName(title)), title, badge: 'Nuova Campagna', description: '', coverImage: '', introText: '',
         heroes: [], initialArmory: [], challenges: {},
         merchants: { default: '' }, rests: { default: '' }, treasures: {}, lootItems: null,
-        mapNodes: [{ id: 0, level: 0, x: 400, type: 'combat', enemy: '', title: 'Livello 1 - Scontro', icon: '🗡️', done: false, active: true, next: [], image: '' }]
-    }, null);
+        mapNodes: [
+            node(0, 0, 'combat', 'Primo scontro', [1], { enemy: '' }),
+            node(1, 1, 'rest', 'Riposo', [2], { restId: 'default' }),
+            node(2, 2, 'combat', 'Boss finale', [], { enemy: '' })
+        ]
+    };
+}
+
+// Copia di una campagna del progetto, come campagna nuova (id nuovo dal titolo)
+function campaignCopy(src, title) {
+    const c = deepCopy(src);
+    c.title = title || `${src.title} (copia)`;
+    c.id = uniqueCampaignId(idFromName(c.title));
+    return c;
+}
+
+function openCampaign(id) {
+    if (!rawCampaigns()[id] || !confirmDiscard()) return false;
+    switchCampaign(deepCopy(rawCampaigns()[id]));
+    return true;
+}
+
+function newCampaign(title) {
+    if (!confirmDiscard()) return false;
+    switchCampaign(blankCampaign(title || undefined), null);
+    return true;
 }
 
 // Legge un file .js della cartella data/campagne (o un .json con la sola campagna)
-document.getElementById('edFileInput').addEventListener('change', e => {
-    const file = e.target.files[0];
-    e.target.value = '';
+function readCampaignFile(file, onDone) {
     if (!file || !confirmDiscard()) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -213,9 +267,10 @@ document.getElementById('edFileInput').addEventListener('change', e => {
             }
             if (!data || typeof data !== 'object') throw new Error('nessuna campagna trovata nel file');
             switchCampaign(data);
+            if (onDone) onDone();
         } catch (err) {
             alert(`Impossibile leggere ${file.name}: ${err.message}`);
         }
     };
     reader.readAsText(file);
-});
+}

@@ -18,7 +18,7 @@
         // Metà del prezzo base; un oggetto comprato non si rivende per più di metà di quanto è stato pagato
         // (con Moneta di Fredlös, Lasciapassare e contrattazione comprare e rivendere darebbe un guadagno)
         function itemSellPrice(item) {
-            const half = Math.max(1, Math.floor(ITEM_BASE_PRICE[itemRarity(item)] / 2));
+            const half = Math.max(1, Math.floor(itemBasePrice(item) / 2));
             return item.paidPrice != null ? Math.min(half, Math.max(1, Math.floor(item.paidPrice / 2))) : half;
         }
 
@@ -73,7 +73,7 @@
             const stock = shopPool.filter(Boolean).map(item => {
                 const rarity = itemRarity(item);
                 const spread = ITEM_PRICE_SPREAD[rarity];
-                const basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(rng() * (spread * 2 + 1)) - spread;
+                const basePrice = Math.max(1, itemBasePrice(item) + Math.floor(rng() * (spread * 2 + 1)) - spread);
                 return { kind: 'item', item, price: adjust(basePrice), revealed: false };
             });
 

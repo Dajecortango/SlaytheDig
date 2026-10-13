@@ -15,26 +15,33 @@ function renderMapTab() {
     const nodeSub = n => {
         const t = NODE_TYPES[n.type] ? NODE_TYPES[n.type].label : n.type;
         const what = n.enemy ? ` (${lib.bestiario[n.enemy] ? lib.bestiario[n.enemy].name : n.enemy})` : '';
-        return `id ${n.id} · livello ${n.level} · ${t}${what} → ${(n.next || []).join(', ') || 'fine'}`;
+        return `livello ${n.level + 1} · ${t}${what}`;
     };
+    const problemNodes = nodes.filter(n => nodeProblems(n).some(p => p.livello === 'errore'));
+    const hint = mapLink
+        ? `<p class="ed-map-status">${mapLink.mode === 'link' ? 'Clicca il punto a cui collegare' : 'Clicca il collegamento da togliere di'} «${esc((nodes.find(n => n.id === mapLink.from) || {}).title || '')}» · <button class="btn-small" ${azione('cancelMapLink')}>Annulla</button></p>`
+        : problemNodes.length
+            ? `<p class="ed-map-status ed-map-bad">⚠ ${problemNodes.length === 1 ? '1 punto da sistemare' : `${problemNodes.length} punti da sistemare`} <button class="btn-small" ${azione('selectNode', problemNodes[0].id)}>Mostrami il primo</button></p>`
+            : '';
 
     content.innerHTML = `
+        ${hint}
         <div class="ed-map-wrap">
             <div class="ed-map" id="edMap"></div>
             <div class="ed-legend">${Object.values(NODE_TYPES).map(t => `<span style="--c:${t.color}">${t.label}</span>`).join('')}
                 <span style="--c:transparent; outline:2px solid var(--wc-yellow); border-radius:50%">partenza</span></div>
         </div>
         <div class="ed-list-actions">
-            <button data-action="addNode">Aggiungi nodo</button>
-            <button data-action="duplicateNode" ${sel ? '' : 'disabled'}>Duplica</button>
-            <button data-action="renumberNodes">Rinumera id</button>
+            <button data-action="addNode">${sel ? 'Aggiungi un nodo dopo quello scelto' : 'Aggiungi nodo'}</button>
+            <button class="ed-adv-only" data-action="duplicateNode" ${sel ? '' : 'disabled'}>Duplica</button>
+            <button class="ed-adv-only" data-action="renumberNodes">Rinumera id</button>
             <button class="ed-danger" data-action="deleteNode" ${sel ? '' : 'disabled'}>Elimina</button>
         </div>
         <div class="ed-split">
             <div class="ed-list">${sorted.map(n => `
-                <div class="ed-list-item ${n.id === selection.map ? 'active' : ''}" ${azione('selectNode', n.id)}>
+                <div class="ed-list-item ${n.id === selection.map ? 'active' : ''} ${problemNodes.includes(n) ? 'ed-has-problem' : ''}" ${azione('selectNode', n.id)}>
                     ${esc(n.icon || '')} ${esc(n.title || '(senza titolo)')}
-                    <small>${esc(nodeSub(n))}</small>
+                    <small><span class="ed-adv-only">id ${n.id} · </span>${esc(nodeSub(n))}</small>
                 </div>`).join('')}
             </div>
             <div class="ed-detail" id="edDetail"></div>
@@ -46,16 +53,17 @@ function renderMapTab() {
 function renderNodeForm(node) {
     renderForm(document.getElementById('edDetail'), node, NODE_FIELDS, key => {
         if (key === 'type') {
-            node.icon = NODE_ICONS[node.type] || node.icon;
-            Object.values(NODE_TYPES).forEach(t => { if (t.ref && t.ref !== NODE_TYPES[node.type].ref) delete node[t.ref]; });
-            const ref = NODE_TYPES[node.type].ref;
-            if (ref && node[ref] == null) node[ref] = ref === 'restId' || ref === 'merchantId' ? 'default' : '';
+            applyNodeType(node, node.type);
             renderNodeForm(node);
         }
         if (key === 'enemy' || key === 'storyId') renderNodeForm(node);
         if (key === 'id') selection.map = node.id;
         markDirty();
     });
+    // Problemi del nodo sopra il modulo, in parole semplici
+    const probs = nodeProblems(node);
+    if (probs.length) document.getElementById('edDetail').insertAdjacentHTML('afterbegin',
+        `<ul class="ed-node-problems">${probs.map(p => `<li class="${p.livello === 'errore' ? 'err' : 'warn'}">${esc(p.msg)}</li>`).join('')}</ul>`);
     if (node.type === 'story') renderStoryForm(node);
 }
 
@@ -68,11 +76,10 @@ function renderStoryForm(node) {
         for (let i = 2; camp.stories[key]; i++) key = `trama_${node.id}_${i}`;
         camp.stories[key] = { title: (node.title || '').replace(/^Livello \d+ - /, ''), text: '' };
         node.storyId = key;
-        markDirty();
         renderNodeForm(node);
         return;
     }
-    if (!camp.stories[node.storyId]) { camp.stories[node.storyId] = { title: '', text: '' }; markDirty(); }
+    if (!camp.stories[node.storyId]) camp.stories[node.storyId] = { title: '', text: '' };
     const box = document.createElement('div');
     box.className = 'ed-story';
     box.innerHTML = `<h3>Testo della trama <small>(${esc(node.storyId)})</small></h3><div></div>`;
@@ -111,17 +118,23 @@ function renderMapPreview() {
         const bad = (target.level || 0) <= (n.level || 0);
         svg += `<line class="edge ${bad ? 'bad' : ''}" data-from="${n.id}" data-to="${id}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
     }));
+    const candidates = mapLinkCandidates();
     nodes.forEach(n => {
         const p = pos(n);
         const t = NODE_TYPES[n.type] || { color: '#777' };
         const enemyName = n.enemy && lib.bestiario[n.enemy] ? ` — ${lib.bestiario[n.enemy].name}` : '';
-        svg += `<g class="node ${n.active ? 'active-node' : ''} ${n.id === selection.map ? 'selected' : ''}" data-id="${n.id}">
-            <title>${esc(n.title)} (id ${n.id})${esc(enemyName)}</title>
+        const probs = nodeProblems(n);
+        const err = probs.some(x => x.livello === 'errore');
+        const linkCls = candidates ? (candidates.has(n.id) ? 'link-candidate' : n.id === mapLink.from ? 'link-source' : 'link-dim') : '';
+        svg += `<g class="node ${n.active ? 'active-node' : ''} ${n.id === selection.map ? 'selected' : ''} ${linkCls}" data-id="${n.id}">
+            <title>${esc(n.title)}${esc(enemyName)}${probs.map(x => `\n• ${esc(x.msg)}`).join('')}</title>
             <circle cx="${p.x}" cy="${p.y}" r="16" fill="${t.color}"/>
-            <text x="${p.x}" y="${p.y + 4}">${n.id}</text></g>`;
+            <text x="${p.x}" y="${p.y + 4}">${esc(n.icon || n.id)}</text>
+            ${err ? `<circle class="badge err" cx="${p.x + 13}" cy="${p.y - 13}" r="7"/><text class="badge-t" x="${p.x + 13}" y="${p.y - 9.5}">!</text>`
+                : probs.length ? `<circle class="badge warn" cx="${p.x + 13}" cy="${p.y - 13}" r="5"/>` : ''}</g>`;
     });
     box.innerHTML = `<svg viewBox="0 0 ${MAP_W} ${H}" xmlns="http://www.w3.org/2000/svg">${svg}<line class="link-preview hidden" x1="0" y1="0" x2="0" y2="0"/></svg>
-        <p class="ed-map-help">Trascina un nodo per spostarlo (in orizzontale e di livello). Shift + trascina da un nodo a un altro per creare o togliere il collegamento. Clic per selezionarlo.</p>`;
+        <p class="ed-map-help">Clicca un punto per il suo menu: aggiungi un punto dopo, collega, cambia tipo. Trascinalo per spostarlo<span class="ed-adv-only"> (Shift + trascina da un nodo a un altro: crea o toglie il collegamento)</span>. <b style="color:#e74c3c">!</b> = manca qualcosa, <b style="color:#f1c40f">●</b> = manca solo l'immagine.</p>`;
     box.querySelector('svg').addEventListener('pointerdown', onMapPointerDown);
 }
 
@@ -186,7 +199,13 @@ function onMapPointerUp(e) {
     mapDrag = null;
     const node = drag.node;
 
-    if (!drag.moved) { selectNode(node.id); return; }
+    if (!drag.moved) {
+        if (mapLink) { finishMapLink(node.id); return; }
+        selection.map = node.id;
+        render();
+        openNodeMenu(node.id, e.clientX, e.clientY);
+        return;
+    }
 
     if (drag.link) {
         // Rilascio sopra un altro nodo: aggiunge il collegamento, o lo toglie se c'era già
@@ -225,9 +244,7 @@ function nextNodeId() {
 }
 
 function addNode() {
-    const sel = camp.mapNodes.find(n => n.id === selection.map);
-    const node = { id: nextNodeId(), level: sel ? sel.level + 1 : 0, x: 400, type: 'combat', enemy: '', title: 'Nuovo nodo', icon: NODE_ICONS.combat, done: false, active: !sel, next: [], image: '' };
-    camp.mapNodes.push(node);
+    const node = addNodeAfterIn(camp, selection.map);
     selection.map = node.id;
     markDirty();
     render();
@@ -244,12 +261,24 @@ function duplicateNode() {
 
 function deleteNode() {
     const id = selection.map;
-    if (!confirm(`Eliminare il nodo ${id}? Verrà tolto anche dai collegamenti degli altri nodi.`)) return;
-    camp.mapNodes = camp.mapNodes.filter(n => n.id !== id);
-    camp.mapNodes.forEach(n => { n.next = (n.next || []).filter(x => x !== id); });
-    selection.map = null;
-    markDirty();
-    render();
+    const node = camp.mapNodes.find(n => n.id === id);
+    if (!node) return;
+    const from = camp.mapNodes.filter(n => (n.next || []).includes(id));
+    edConfirm({
+        title: `Eliminare «${node.title || `nodo ${id}`}»?`,
+        html: from.length || (node.next || []).length
+            ? `<p>Si perdono i collegamenti${from.length ? ` da ${from.map(n => `«${esc(n.title || n.id)}»`).join(', ')}` : ''}${(node.next || []).length ? ` verso ${node.next.length === 1 ? '1 punto' : `${node.next.length} punti`}` : ''}.</p>`
+            : '<p>Non è collegato a niente.</p>',
+        ok: 'Elimina',
+        danger: true
+    }, () => {
+        camp.mapNodes = camp.mapNodes.filter(n => n.id !== id);
+        camp.mapNodes.forEach(n => { n.next = (n.next || []).filter(x => x !== id); });
+        selection.map = null;
+        markDirty();
+        render();
+        edToast(`Eliminato «${node.title || `nodo ${id}`}»`, true);
+    });
 }
 
 // Riassegna gli id in ordine di livello e posizione (0, 1, 2, ...) aggiornando i collegamenti
@@ -265,3 +294,172 @@ function renumberNodes() {
     markDirty();
     render();
 }
+
+/* ---------- Mappa guidata: problemi dei nodi, menu del nodo, collegamenti con due clic ---------- */
+
+// Nodi che si raggiungono da una partenza (active) seguendo i collegamenti
+function reachableNodeIds(nodes) {
+    const byId = new Map(nodes.map(n => [n.id, n]));
+    const seen = new Set();
+    const todo = nodes.filter(n => n.active).map(n => n.id);
+    while (todo.length) {
+        const id = todo.pop();
+        if (seen.has(id) || !byId.has(id)) continue;
+        seen.add(id);
+        (byId.get(id).next || []).forEach(x => todo.push(x));
+    }
+    return seen;
+}
+
+// Cosa manca a un nodo, in parole semplici: errori (la partita non funziona) e consigli
+function nodeProblems(node, c = camp) {
+    const out = [];
+    const err = msg => out.push({ livello: 'errore', msg });
+    const tip = msg => out.push({ livello: 'consiglio', msg });
+    const nodes = c.mapNodes || [];
+    const ids = new Set(nodes.map(n => n.id));
+    const maxLevel = Math.max(0, ...nodes.map(n => n.level || 0));
+    if (node.type === 'combat' || node.type === 'elite') {
+        if (!node.enemy) err('Scontro senza nemico: scegline uno');
+        else if (!lib.bestiario[node.enemy]) err('Il nemico scelto non esiste più');
+    }
+    if (node.type === 'challenge' && !(node.challengeId && (c.challenges || {})[node.challengeId])) err('Prova non scelta');
+    if (node.type === 'story' && node.storyId && !((c.stories || {})[node.storyId] || {}).text) tip('Testo della trama vuoto');
+    if (!(node.next || []).length && (node.level || 0) < maxLevel) err('Senza uscita: la partita si fermerebbe qui');
+    if ((node.next || []).some(x => !ids.has(x))) err('Porta a un punto che non esiste più');
+    if (!reachableNodeIds(nodes).has(node.id)) err('Non si arriva qui dalla partenza');
+    const enemyImage = node.enemy && lib.bestiario[node.enemy] && lib.bestiario[node.enemy].image;
+    if (!node.image && !enemyImage && node.type !== 'story') tip('Senza immagine (si vedrà un disegno di riserva)');
+    return out;
+}
+
+// Imposta il tipo di un nodo: icona, contenuto giusto per il tipo (quello degli altri tipi si toglie)
+function applyNodeType(node, type) {
+    node.type = type;
+    node.icon = NODE_ICONS[type] || node.icon;
+    Object.values(NODE_TYPES).forEach(t => { if (t.ref && t.ref !== NODE_TYPES[type].ref) delete node[t.ref]; });
+    const ref = NODE_TYPES[type].ref;
+    if (ref && node[ref] == null) node[ref] = ref === 'restId' || ref === 'merchantId' ? 'default' : '';
+}
+
+// Nuovo nodo al livello sopra quello dato, già collegato da lui (senza id: in fondo ai nodi)
+function addNodeAfterIn(c, id) {
+    const from = c.mapNodes.find(n => n.id === id);
+    const level = from ? (from.level || 0) + 1 : 0;
+    const taken = c.mapNodes.filter(n => n.level === level).map(n => n.x);
+    let x = from ? from.x : 400;
+    for (let step = 0; taken.some(t => Math.abs(t - x) < 50) && step < 16; step++) x = Math.max(40, Math.min(760, (from ? from.x : 400) + (step % 2 ? -1 : 1) * 60 * Math.ceil((step + 1) / 2)));
+    const node = { id: c.mapNodes.reduce((m, n) => Math.max(m, n.id), -1) + 1, level, x, type: 'combat', enemy: '', title: 'Nuovo punto',
+        icon: NODE_ICONS.combat, done: false, active: !from, next: [], image: '' };
+    c.mapNodes.push(node);
+    if (from) from.next = [...(from.next || []), node.id].sort((a, b) => a - b);
+    return node;
+}
+
+function toggleNodeLinkIn(c, fromId, toId) {
+    const from = c.mapNodes.find(n => n.id === fromId);
+    if (!from || fromId === toId) return;
+    const next = from.next || [];
+    from.next = next.includes(toId) ? next.filter(x => x !== toId) : [...next, toId].sort((a, b) => a - b);
+}
+
+let mapLink = null;   // { from, mode: 'link' | 'unlink' } mentre si sceglie il nodo da collegare
+function mapLinkCandidates() {
+    if (!mapLink) return null;
+    const from = camp.mapNodes.find(n => n.id === mapLink.from);
+    if (!from) return null;
+    const next = from.next || [];
+    return new Set(camp.mapNodes.filter(n => mapLink.mode === 'unlink' ? next.includes(n.id)
+        : n.id !== from.id && !next.includes(n.id) && (n.level || 0) > (from.level || 0)).map(n => n.id));
+}
+function nodeLinkStart(id, mode) {
+    closeNodeMenu();
+    mapLink = { from: id, mode };
+    render();
+}
+function cancelMapLink() {
+    mapLink = null;
+    render();
+}
+function finishMapLink(toId) {
+    const cand = mapLinkCandidates();
+    const from = mapLink.from;
+    mapLink = null;
+    if (cand && cand.has(toId)) { toggleNodeLinkIn(camp, from, toId); selection.map = from; markDirty(); }
+    render();
+}
+function nodeLinkFromForm(fromId, selectSel) {
+    const sel = document.querySelector(selectSel);
+    if (!sel || sel.value === '') return;
+    toggleNodeLinkIn(camp, fromId, Number(sel.value));
+    markDirty();
+    render();
+}
+function nodeUnlinkFromForm(fromId, toId) {
+    toggleNodeLinkIn(camp, fromId, toId);
+    markDirty();
+    render();
+}
+
+function nodeAddAfter(id) {
+    closeNodeMenu();
+    const node = addNodeAfterIn(camp, id);
+    selection.map = node.id;
+    markDirty();
+    render();
+}
+function nodeSetType(id, type) {
+    closeNodeMenu();
+    const node = camp.mapNodes.find(n => n.id === id);
+    if (!node) return;
+    applyNodeType(node, type);
+    selection.map = id;
+    markDirty();
+    render();
+}
+function nodeEdit(id) {
+    closeNodeMenu();
+    selection.map = id;
+    render();
+    const d = document.getElementById('edDetail');
+    if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function nodeDelete(id) {
+    closeNodeMenu();
+    selection.map = id;
+    deleteNode();
+}
+
+// Menu accanto al nodo cliccato
+function openNodeMenu(id, x, y) {
+    closeNodeMenu();
+    const node = camp.mapNodes.find(n => n.id === id);
+    if (!node) return;
+    const menu = document.createElement('div');
+    menu.id = 'edNodeMenu';
+    menu.className = 'ed-node-menu';
+    menu.innerHTML = `<b>${esc(node.title || 'Punto della mappa')}</b>
+        <button type="button" ${azione('nodeAddAfter', id)}>➕ Aggiungi un punto dopo questo</button>
+        <button type="button" ${azione('nodeLinkStart', id, 'link')}>🔗 Collega a…</button>
+        ${(node.next || []).length ? `<button type="button" ${azione('nodeLinkStart', id, 'unlink')}>✂ Scollega da…</button>` : ''}
+        <span class="ed-node-menu-label">Cambia tipo</span>
+        <div class="ed-node-types">${Object.entries(NODE_TYPES).map(([k, t]) => `<button type="button" class="${k === node.type ? 'on' : ''}" style="--c:${t.color}" title="${esc(t.label)}" ${azione('nodeSetType', id, k)}>${NODE_ICONS[k] || ''} ${esc(t.label)}</button>`).join('')}</div>
+        <button type="button" ${azione('nodeEdit', id)}>✎ Modifica</button>
+        <button type="button" class="ed-danger" ${azione('nodeDelete', id)}>Elimina</button>`;
+    document.body.appendChild(menu);
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, x + 14))}px`;
+    menu.style.top = `${Math.max(8, Math.min(window.innerHeight - h - 8, y - 20))}px`;
+}
+function closeNodeMenu() {
+    const m = document.getElementById('edNodeMenu');
+    if (m) m.remove();
+}
+document.addEventListener('pointerdown', e => {
+    if (!e.target.closest('#edNodeMenu') && !e.target.closest('#edMap g.node')) closeNodeMenu();
+});
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    closeNodeMenu();
+    if (mapLink) cancelMapLink();
+});

@@ -46,7 +46,7 @@ const DATI_SCHEMA = {
         id: TESTO, name: OBBL(TESTO), rarity: campo('scelta', { valori: RARITY_LABELS }), type: campo('scelta', { valori: ITEM_TYPES }),
         desc: TESTO, icon: PERCORSO, str: NUMERO, dmg: NUMERO, armor: NUMERO, def_armor: NUMERO, def_bonus: NUMERO, help_bonus_val: NUMERO,
         fth: NUMERO, int: NUMERO, prayer_bonus: NUMERO, att_penalty: NUMERO, heal_val: NUMERO, dmg_val: NUMERO,
-        buff_stat: TESTO, buff_val: NUMERO, buff_rounds: NUMERO, scaling: campo('elenco'), speciali: SCHEMA_SPECIALI
+        buff_stat: TESTO, buff_val: NUMERO, buff_rounds: NUMERO, prezzo: NUMERO, scaling: campo('elenco'), speciali: SCHEMA_SPECIALI
     },
     bestiario: {
         name: OBBL(TESTO), hp: OBBL(NUMERO), maxHp: OBBL(NUMERO), att: OBBL(NUMERO), dmg: OBBL(NUMERO), ca: OBBL(NUMERO), desc: TESTO,

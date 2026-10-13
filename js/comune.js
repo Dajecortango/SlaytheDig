@@ -38,6 +38,13 @@ const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '
 const RARITY_LABELS = { scarso: 'Scarso', comune: 'Comune', non_comune: 'Non comune', raro: 'Raro', epico: 'Epico', leggendario: 'Leggendario' };
 const RARITY_COLORS = { scarso: 'grigio', comune: 'bianco', non_comune: 'verde', raro: 'blu', epico: 'viola', leggendario: 'arancio' };
 
+// Prezzo base di un oggetto in Scudi: il campo "prezzo" dell'armeria se c'è, altrimenti quello della rarità
+// (ITEM_BASE_PRICE in js/regole.js, caricato anche dall'editor). Il mercante poi lo varia e lo alza con l'avanzamento.
+function itemBasePrice(item) {
+    if (item && item.prezzo > 0) return item.prezzo;
+    return ITEM_BASE_PRICE[RARITY_LABELS[item && item.rarity] ? item.rarity : 'comune'];
+}
+
 // Statistiche degli eroi usate nelle prove e dalle abilità attive
 const STAT_LABELS = { int: 'Intelligenza', fth: 'Fede', str: 'Forza' };
 

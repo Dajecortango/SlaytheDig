@@ -151,7 +151,7 @@ window.LIBRERIA.armeria = {
         "desc": "Consumabile: +1 Armatura con Difendi per tutto lo scontro",
         "icon": "immagini/icone/BTNPotionOfDivinity.png"
     },
-    "elisir_berserker": { "id": "elisir_berserker", "name": "Elisir del Berserker", "rarity": "epico", "type": "consumable_buff", "buff_stat": "str", "buff_val": 2, "desc": "Consumabile: +2 Forza per tutto lo scontro", "icon": "immagini/icone/BTNBerserk.png" },
+    "elisir_berserker": { "id": "elisir_berserker", "name": "Elisir del Berserker", "rarity": "raro", "type": "consumable_buff", "buff_stat": "str", "buff_val": 2, "desc": "Consumabile: +2 Forza per tutto lo scontro", "icon": "immagini/icone/BTNBerserk.png" },
     "ankh_pellegrino": {
         "id": "ankh_pellegrino",
         "icon": "immagini/icone/BTNAnkh.png",

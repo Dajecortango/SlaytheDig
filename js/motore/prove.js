@@ -114,7 +114,10 @@
 
         // Risolve una prova: tiro (con svantaggio e ritiro di Dioforo), reliquie, ricompensa/punizione.
         // Muta unlockedRelics/activeCurses/expeditionStats. "events" sono le righe di log in ordine.
-        function resolveChallenge(hero, challenge, rolls) {
+        // Ritiro di Dioforo: senza opzioni si ripete da solo (simulatore). Nel gioco opts.chiediRitiro ferma la prova
+        // dopo il primo tiro fallito ({ pendingReroll: true }, niente punizione né conteggi) e il giocatore tira il
+        // secondo dado, risolto con opts.ritiro (dadi da "rolls", malus della passiva, senza le reliquie "al prossimo tiro").
+        function resolveChallenge(hero, challenge, rolls, opts = {}) {
             const events = [];
             const rollMode = challengeRollMode(hero);
             const twoDice = rollMode.mode !== 'single';
@@ -153,13 +156,25 @@
                 return { roll, roll2, kept, relicBonus, total, success: naturalRollSuccess(kept, total, challenge.cd) };
             };
 
-            const first = attempt(0, 0);
-            let final = first, rerolled = false;
-            // Era solo una prova! (Dioforo): una prova fallita si ritenta una volta, con il malus
-            if (!first.success && hero && hero.challengeRerollMalus) {
+            const canReroll = !!(hero && hero.challengeRerollMalus);
+            let first = null, final, rerolled = false;
+            if (opts.ritiro && canReroll) {
+                // Secondo tiro chiesto dal giocatore dopo il primo tentativo fallito
                 events.push({ type: 'reroll', text: `🔁 Era solo una prova! ${hero.name} ripete il tiro (−${hero.challengeRerollMalus})` });
-                final = attempt(2, hero.challengeRerollMalus);
+                final = attempt(0, hero.challengeRerollMalus);
                 rerolled = true;
+            } else {
+                first = final = attempt(0, 0);
+                // Era solo una prova! (Dioforo): una prova fallita si ritenta una volta, con il malus
+                if (!first.success && canReroll) {
+                    if (opts.chiediRitiro) {
+                        events.push({ type: 'reroll', text: `🔁 Era solo una prova! ${hero.name} può ripetere il tiro (−${hero.challengeRerollMalus})` });
+                        return { ...first, twoDice, rollMode, mods, pendingReroll: true, events };
+                    }
+                    events.push({ type: 'reroll', text: `🔁 Era solo una prova! ${hero.name} ripete il tiro (−${hero.challengeRerollMalus})` });
+                    final = attempt(2, hero.challengeRerollMalus);
+                    rerolled = true;
+                }
             }
             const { roll, roll2, kept, relicBonus } = final;
             let { total, success } = final;

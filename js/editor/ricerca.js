@@ -95,7 +95,7 @@ function recordRecent(tab, key) {
 }
 
 const isFavourite = (tab, key) => quickList('preferiti').some(r => r.tab === tab && r.key === key);
-const starHtml = (tab, key) => `<button type="button" class="ed-star ${isFavourite(tab, key) ? 'on' : ''}" title="Preferito" ${azione('toggleFavourite', tab, key)}>${isFavourite(tab, key) ? '★' : '☆'}</button>`;
+const starHtml = (tab, key) => `<button type="button" class="ed-star ed-adv-only ${isFavourite(tab, key) ? 'on' : ''}" title="Preferito" ${azione('toggleFavourite', tab, key)}>${isFavourite(tab, key) ? '★' : '☆'}</button>`;
 
 function toggleFavourite(tab, key) {
     const list = quickList('preferiti');
@@ -122,5 +122,5 @@ function renderQuickNav() {
         return `<h3 class="ed-quick-title">${title}</h3>${rows.map(r => `<a href="#" class="ed-quick" ${azione('gotoQuick', r.tab, r.key)}>
             <small>${esc(QUICK_TAB_LABELS[r.tab] || LIB_LABELS[r.tab] || r.tab)}</small> ${esc(r.name)}</a>`).join('')}`;
     };
-    box.innerHTML = section('★ Preferiti', quickList('preferiti')) + section('Modificati di recente', quickList('recenti'));
+    box.innerHTML = `<div class="ed-adv-only">${section('★ Preferiti', quickList('preferiti'))}</div>` + section('Modificati di recente', quickList('recenti'));
 }

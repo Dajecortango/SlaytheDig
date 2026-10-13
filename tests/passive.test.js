@@ -62,6 +62,26 @@ module.exports = (t, carica) => {
         t.uguale(1, stato.expeditionStats.challengesFailed, 'conta una prova fallita sola');
     });
 
+    t.test('Era solo una prova! nel gioco: il primo tiro fallito si ferma e il giocatore tira il secondo dado', () => {
+        const stato = prepara();
+        const dioforo = { name: 'Dioforo', hp: 4, int: 2, challengeRerollMalus: 1 };
+        stato.party = [dioforo];
+        const sfida = { stat: 'int', cd: 6, reward: null, punishment: { type: 'curse', name: 'Presagio di Morte', id: 'presagio_di_morte', desc: '' } };
+        stato.challengeState = sfida;
+        const primo = g.resolveChallenge(dioforo, sfida, [2], { chiediRitiro: true });
+        t.ok(primo.pendingReroll && !primo.success, 'in attesa del secondo tiro');
+        t.uguale(2, primo.kept);
+        t.uguale(0, stato.activeCurses.length, 'nessuna punizione prima del secondo tiro');
+        t.uguale(0, stato.expeditionStats.challengesFailed || 0, 'non conta ancora come fallita');
+        const secondo = g.resolveChallenge(dioforo, sfida, [5], { ritiro: true });
+        t.ok(secondo.rerolled && secondo.success && !secondo.pendingReroll, 'riuscita al secondo tiro');
+        t.uguale(6, secondo.total, '5 + 2 Intelligenza - 1');
+        t.ok(secondo.events.some(e => /secondo tentativo/.test(e.text)), 'malus nel diario');
+        // senza la passiva nessuna attesa
+        const senza = g.resolveChallenge({ name: 'A', int: 2 }, { stat: 'int', cd: 6 }, [2], { chiediRitiro: true });
+        t.ok(!senza.pendingReroll && !senza.success);
+    });
+
     t.test('Era solo una prova!: nessun ritiro se la prova riesce o se l\'eroe non ha la passiva', () => {
         const stato = prepara();
         const sfida = { stat: 'int', cd: 6, reward: null, punishment: null };

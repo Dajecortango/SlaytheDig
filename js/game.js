@@ -409,23 +409,38 @@ function breakRelic(relicId) {
             video.addEventListener('error', () => document.body.classList.remove('menu-video-ok'));
         })();
 
-        // 26. Breve "sipario" scuro che copre il cambio di schermata
-        function playScreenCurtain() {
+        // 26. Sipario tra le schermate, con un passaggio a tema: taglio di spada verso lo scontro (rosso con elite e boss),
+        // bagliore d'oro verso bottino e tesori, fuoco verso il riposo, buio verso la sconfitta, gloria verso la vittoria
+        const SCREEN_TRANSITIONS = {
+            screenCombat: 'taglio', screenLoot: 'oro', screenTreasure: 'oro', screenTreasureLoot: 'oro',
+            screenRest: 'fuoco', screenDefeat: 'buio', screenVictory: 'gloria'
+        };
+        function screenTransitionFor(from, to) {
+            const tema = SCREEN_TRANSITIONS[to] || 'base';
+            if (tema !== 'base' && SCREEN_TRANSITIONS[from] === tema) return 'base';  // tesoro -> suo bottino: una volta sola
+            if (tema === 'taglio' && currentEnemyIsEliteOrBoss()) return 'taglio-elite';
+            return tema;
+        }
+
+        function playScreenCurtain(tema = 'base') {
             if (!animationsEnabled()) return;
             let curtain = document.getElementById('screenCurtain');
             if (!curtain) {
                 curtain = document.createElement('div');
                 curtain.id = 'screenCurtain';
                 curtain.setAttribute('aria-hidden', 'true');
+                curtain.innerHTML = '<i class="sc-half sc-a"></i><i class="sc-half sc-b"></i><b class="sc-slash"><i></i></b>';
                 document.body.appendChild(curtain);
             }
-            curtain.classList.remove('play');
+            curtain.className = '';
             void curtain.offsetWidth;
-            curtain.classList.add('play');
+            curtain.className = `play t-${tema}`;
+            void curtain.offsetWidth;
+            speedUpAnimations(curtain);
         }
 
         function showScreen(screenId) {
-            if (currentScreenId && currentScreenId !== screenId) playScreenCurtain();
+            if (currentScreenId && currentScreenId !== screenId) playScreenCurtain(screenTransitionFor(currentScreenId, screenId));
             currentScreenId = screenId;
             if (screenId !== 'screenCombat') combatPhase = 'none';
             // Fine partita: il riepilogo si scrive prima di mostrare la schermata (js/spedizione.js)

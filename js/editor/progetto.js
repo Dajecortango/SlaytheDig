@@ -75,7 +75,8 @@ window.CAMPAIGNS[${JSON.stringify(camp.id)}] = ${formatJson(camp)};
 }
 
 const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite', 'benedizioni'];
-const LIB_LABELS = { armeria: 'Armeria', bestiario: 'Bestiario', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite', benedizioni: 'Benedizioni' };
+// Nomi mostrati nell'editor (i file e le chiavi restano armeria, bestiario...)
+const LIB_LABELS = { armeria: 'Oggetti', bestiario: 'Nemici', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Schede degli eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite', benedizioni: 'Benedizioni' };
 const LIB_HEADERS = {
     benedizioni: 'Benedizioni degli Asi del Nord: si scelgono dopo una preghiera riuscita al riposo (js/prove.js).\n// livello: "minore" o "maggiore"; bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti).\n// effetto: "prossimo_scontro" (buffs: [{ buff_stat, buff_val }] per tutto il prossimo scontro), "cura_party" (val HP ai vivi),\n// "togli_maledizione" (la più recente), "fede" (+val Fede per sempre), "bottino_extra" (val oggetti in più al prossimo\n// bottino), "dono" (resta sull\'eroe: agiscono i suoi "speciali", effetti "quando → fai" di js/motore/speciali.js).',
     armeria: 'Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.\n// Le campagne li richiamano per id in "initialArmory" e "lootItems".\n// "speciali": effetti "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js).',
@@ -209,7 +210,8 @@ async function ensureScriptTag(root, page, beforeSrc) {
 // File da scrivere: la campagna, i file di libreria modificati, le immagini caricate
 function filesToSave() {
     return [
-        [campaignFilePath(), campaignFileText()],
+        // Dalla Home, senza una campagna scelta, si salva solo la libreria
+        ...(campaignChosen ? [[campaignFilePath(), campaignFileText()]] : []),
         ...[...libDirty].map(kind => [libraryFilePath(kind), libraryFileText(kind)]),
         ...usedPendingAssets().map(([p, a]) => [p, a.blob])
     ];
@@ -218,6 +220,7 @@ function filesToSave() {
 function afterSave() {
     dirty = false;
     libDirty.clear();
+    historyMarkSaved();
     // Le altre campagne aperte in seguito devono vedere la libreria aggiornata
     window.LIBRERIA = deepCopy(lib);
     clearDraft();
@@ -234,10 +237,11 @@ async function saveToProject() {
     if (!root) return;
     try {
         const files = filesToSave();
+        if (!files.length) { edToast('Niente da salvare: non hai cambiato niente'); return; }
         for (const [path, data] of files) await writeProjectFile(root, path, data);
         const added = [];
-        if (await ensureScriptTag(root, 'index.html', 'js/libreria.js')) added.push('index.html');
-        if (await ensureScriptTag(root, 'editor.html', 'js/libreria.js')) added.push('editor.html');
+        if (campaignChosen && await ensureScriptTag(root, 'index.html', 'js/libreria.js')) added.push('index.html');
+        if (campaignChosen && await ensureScriptTag(root, 'editor.html', 'js/libreria.js')) added.push('editor.html');
         const libs = [...libDirty];
         afterSave();
         alert(`Salvati ${files.length} file nella cartella «${root.name}»:\n${files.map(([p]) => '• ' + p).join('\n')}` +
@@ -296,7 +300,7 @@ async function downloadZip() {
         `Se la campagna "${camp.id}" è nuova, aggiungi in index.html ed editor.html, subito prima di js/libreria.js:\n` +
         `<script src="${campaignFilePath()}"></script>\n` +
         (libDirty.size ? `\nL'archivio contiene anche la libreria modificata (${[...libDirty].join(', ')}), che vale per tutte le campagne.\n` : '');
-    download(await buildZip([...filesToSave(), ['LEGGIMI_campagna.txt', readme]]), `${camp.id || 'campagna'}.zip`);
+    download(await buildZip([...filesToSave(), ["LEGGIMI_campagna.txt", readme]]), `${campaignChosen ? camp.id || "campagna" : "libreria"}.zip`);
     afterSave();
 }
 

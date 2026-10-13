@@ -40,7 +40,7 @@ const NODE_TYPES = {
 const NODE_ICONS = { combat: '🗡️', elite: '👹', challenge: '❓', treasure: '💎', merchant: '🪙', rest: '⛺', story: '📜', captain: '👑' };
 
 const GENERAL_FIELDS = [
-    { k: 'id', label: 'Id (nome del file)', help: 'Solo lettere minuscole, numeri e _' },
+    { k: 'id', label: 'Id (nome del file)', avanzato: true, automatico: true, help: 'Solo lettere minuscole, numeri e _' },
     { k: 'title', label: 'Titolo' },
     { k: 'badge', label: 'Etichetta' },
     { k: 'coverImage', label: 'Immagine di copertina', type: 'image', folder: 'immagini', wide: true },
@@ -85,109 +85,130 @@ const isPassiveStat = a => !a.isCombatActive && a.type === 'passive_stat';
 
 // Effetti speciali "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js): si compongono
 // con i menu (specialiEditor in js/editor/moduli.js). tipo = come si esaurisce con "rompe" (si rompe, si consuma...)
-const specialiField = tipo => ({ k: 'speciali', label: 'Effetti speciali (quando → fai)', type: 'speciali', tipo, wide: true,
+const specialiField = tipo => ({ k: 'speciali', label: 'Effetti speciali (quando → fai)', type: 'speciali', avanzato: true, tipo, wide: true,
     help: 'Ogni effetto: quando scatta, cosa fa e, se serve, una condizione, un round, una probabilità e un limite. Ricordati di scriverlo anche nella descrizione.' });
 // "Passiva" o "Attiva" più la descrizione, senza ripeterlo se la descrizione comincia già così
 const abilitySummary = a => /^(passiva|attiva)/i.test(a.desc || '') ? a.desc : [a.isCombatActive ? 'Attiva' : 'Passiva', a.desc].filter(Boolean).join(' · ');
 
 // Abilità della libreria (l'id è la chiave nella libreria)
 const ABILITY_FIELDS = [
-    { k: 'name', label: 'Nome', wide: true },
-    { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
-    { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
+    { gruppo: 'Aspetto', k: 'name', label: 'Nome', wide: true },
+    { gruppo: 'Aspetto', k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
+    { gruppo: 'Aspetto', k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
       help: 'Solo icone classiche di Warcraft III (non Reforged). Vuoto = icona generica' },
-    { k: 'isCombatActive', label: 'Attiva in combattimento (1 volta per scontro)', type: 'checkbox', wide: true },
-    { k: 'actionName', label: 'Nome del comando in combattimento', wide: true, showIf: isActive },
-    { k: 'combat.dice', label: 'Dadi per colpire', type: 'select', showIf: isActive, numeric: true,
+    { gruppo: 'Tipo', k: 'isCombatActive', label: 'Attiva in combattimento (1 volta per scontro)', type: 'checkbox', wide: true },
+    { gruppo: 'Tipo', k: 'actionName', label: 'Nome del comando in combattimento', wide: true, showIf: isActive },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.dice', label: 'Dadi per colpire', type: 'select', showIf: isActive, numeric: true,
       options: () => [['1', 'Un dado'], ['2', 'Due dadi, tiene il migliore']] },
-    { k: 'combat.attackStat', label: 'Aggiunge al tiro per colpire', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS,
+    { gruppo: 'Come funziona in combattimento', k: 'combat.attackStat', label: 'Aggiunge al tiro per colpire', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS,
       help: 'Il tiro è sempre d6 + Forza: qui si aggiunge un\'altra statistica' },
-    { k: 'combat.damageStat', label: 'Aggiunge al danno', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS },
-    { k: 'combat.attackBonus', label: 'Bonus fisso al tiro per colpire', type: 'number', omitEmpty: true, showIf: isActive, help: 'Es. 2 = +2 al tiro' },
-    { k: 'combat.damageBonus', label: 'Bonus fisso al danno', type: 'number', omitEmpty: true, showIf: isActive, help: 'Es. 1 = +1 danno se colpisce' },
-    { k: 'combat.damageMult', label: 'Moltiplicatore del danno', type: 'number', omitEmpty: true, showIf: isActive,
+    { gruppo: 'Come funziona in combattimento', k: 'combat.damageStat', label: 'Aggiunge al danno', type: 'select', omitEmpty: true, showIf: isActive, options: COMBAT_STAT_OPTIONS },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.attackBonus', label: 'Bonus fisso al tiro per colpire', type: 'number', omitEmpty: true, showIf: isActive, help: 'Es. 2 = +2 al tiro' },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.damageBonus', label: 'Bonus fisso al danno', type: 'number', omitEmpty: true, showIf: isActive, help: 'Es. 1 = +1 danno se colpisce' },
+    { gruppo: 'Avanzate', k: 'combat.damageMult', label: 'Moltiplicatore del danno', type: 'number', avanzato: true, omitEmpty: true, showIf: isActive,
       help: 'Vuoto = normale, 2 = danno raddoppiato' },
-    { k: 'combat.stun', label: 'Se colpisce, stordisce il nemico (salta il suo prossimo attacco)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { k: 'combat.critical', label: 'Il colpo a segno mostra i numeri del critico', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { k: 'combat.autoHit', label: 'Colpisce sempre, senza tiro (vale come un 6)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { k: 'combat.requiresHitLastTurn', label: 'Usabile solo se il nemico ha colpito l\'eroe nel suo ultimo turno', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { k: 'combat.armorGain', label: 'Senza tiro: armatura ottenuta subito', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
+    { gruppo: 'Come funziona in combattimento', k: 'combat.stun', label: 'Se colpisce, stordisce il nemico (salta il suo prossimo attacco)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Avanzate', k: 'combat.critical', label: 'Il colpo a segno mostra i numeri del critico', type: 'checkbox', avanzato: true, omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.autoHit', label: 'Colpisce sempre, senza tiro (vale come un 6)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.requiresHitLastTurn', label: 'Usabile solo se il nemico ha colpito l\'eroe nel suo ultimo turno', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.armorGain', label: 'Senza tiro: armatura ottenuta subito', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
       help: 'Vuoto = abilità normale. Es. 4: l\'eroe usa la sua azione e guadagna 4 Armatura, senza dadi' },
-    { k: 'combat.sumTarget', label: 'Due dadi: se la somma è esattamente questo numero, nemico sconfitto (elite e boss a metà vita)', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
+    { gruppo: 'Avanzate', k: 'combat.sumTarget', avanzato: true, label: 'Due dadi: se la somma è esattamente questo numero, nemico sconfitto (elite e boss a metà vita)', type: 'number', omitEmpty: true, showIf: isActive, wide: true,
       help: 'Vuoto = abilità normale. Es. 7 (17%), 2 o 12 (3%). Il tiro non usa Forza, bonus o reliquie' },
-    { k: 'combat.damageTakenBonus', label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { k: 'combat.senzaTiro', label: 'Senza tiro né attacco: agiscono solo gli effetti "quando la usa" (cure, potenziamenti...)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { k: 'combat.effetti', label: 'Effetti dell\'abilità (quando la usa, se colpisce, se manca)', type: 'speciali', vocab: 'abilita', tipo: 'abilita', wide: true, showIf: isActive,
+    { gruppo: 'Avanzate', k: 'combat.damageTakenBonus', avanzato: true, label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.senzaTiro', label: 'Senza tiro né attacco: agiscono solo gli effetti "quando la usa" (cure, potenziamenti...)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Avanzate', k: 'combat.effetti', label: 'Effetti dell\'abilità (quando la usa, se colpisce, se manca)', type: 'speciali', avanzato: true, vocab: 'abilita', tipo: 'abilita', wide: true, showIf: isActive,
       help: 'Si aggiungono all\'attacco: es. se colpisce cura tutta la compagnia, quando la usa +2 armatura all\'eroe con meno HP. Con "Senza tiro" agiscono solo questi.' },
-    { k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
+    { gruppo: 'Testi del diario', k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
       help: '{eroe} = nome dell\'eroe. Es. "✨ {eroe} infonde il colpo di fede sacra!"' },
-    { k: 'combat.hitLabel', label: 'Scritta del colpo a segno', omitEmpty: true, showIf: isActive, help: 'Es. COLPO CRITICO! (vuoto = COLPO A SEGNO!)' },
-    { k: 'combat.hitText', label: 'Diario: se colpisce', wide: true, omitEmpty: true, showIf: isActive,
+    { gruppo: 'Testi del diario', k: 'combat.hitLabel', label: 'Scritta del colpo a segno', omitEmpty: true, showIf: isActive, help: 'Es. COLPO CRITICO! (vuoto = COLPO A SEGNO!)' },
+    { gruppo: 'Testi del diario', k: 'combat.hitText', label: 'Diario: se colpisce', wide: true, omitEmpty: true, showIf: isActive,
       help: '{danni} = danni inflitti. Es. "La luce divina guida la lama: infliggi {danni} danni!"' },
-    { k: 'type', label: 'Tipo di passiva', type: 'select', omitEmpty: true, showIf: a => !a.isCombatActive,
-      options: () => [['', 'Con effetti (JSON)'], ['passive_stat', 'Bonus semplice a una statistica']] },
-    { k: 'stat', label: 'Statistica', type: 'select', showIf: isPassiveStat,
+    { gruppo: 'Passiva', k: 'type', label: 'Tipo di passiva', type: 'select', omitEmpty: true, showIf: a => !a.isCombatActive,
+      options: () => [['', 'Con effetti'], ['passive_stat', 'Bonus semplice a una statistica']] },
+    { gruppo: 'Passiva', k: 'stat', label: 'Statistica', type: 'select', showIf: isPassiveStat,
       options: () => [['str', 'Forza'], ['int', 'Intelligenza'], ['fth', 'Fede'], ['hp', 'HP massimi']] },
-    { k: 'val', label: 'Bonus', type: 'number', showIf: isPassiveStat },
-    { k: 'effects', label: 'Effetti alla scelta (JSON)', type: 'json', wide: true, nullable: true,
+    { gruppo: 'Passiva', k: 'val', label: 'Bonus', type: 'number', showIf: isPassiveStat },
+    { gruppo: 'Passiva', k: 'effects', label: 'Effetti quando l\'eroe la sceglie', type: 'effetti', wide: true,
       showIf: a => !a.isCombatActive && a.type !== 'passive_stat',
-      help: 'Es. [{ "effect": "hero_stat", "stat": "dmg", "val": 1 }] = +1 Danno permanente. Tipi: ' + Object.keys(EFFECT_TYPES).join(', ') },
-    { ...specialiField('abilita'), showIf: a => !a.isCombatActive && a.type !== 'passive_stat' }
+      help: 'Valgono per sempre dal momento della scelta: es. Statistica di un eroe, Danno, 1 = +1 Danno.' },
+    { ...specialiField('abilita'), gruppo: 'Avanzate', showIf: a => !a.isCombatActive && a.type !== 'passive_stat' }
 ];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
 // Statistiche di un potenziamento temporaneo (le stesse di BUFF_STATS in js/game.js)
 const BUFF_STATS_EDITOR = { str: 'Forza', dmg: 'Danno', att_bonus: 'Tiro per colpire', def_bonus: 'Difesa',
     def_armor: 'Armatura con Difendi', help_bonus_val: 'Aiuto', current_armor: 'Armatura (subito, non scade)', regen: 'HP a inizio round' };
+// Quanto costa un oggetto dal mercante (variazione della rarità, aumento fino all'ultimo livello) e quanto si rivende
+function itemPriceHelp(it) {
+    const rarity = RARITY_LABELS[it.rarity] ? it.rarity : 'comune';
+    const base = itemBasePrice(it), spread = ITEM_PRICE_SPREAD[rarity];
+    const min = Math.max(1, base - spread), max = base + spread;
+    const fine = Math.round(max * (1 + MERCHANT_PROGRESS_MARKUP));
+    return `Vuoto = prezzo della rarità (${ITEM_BASE_PRICE[rarity]}). Dal mercante: ${min}-${max} Scudi al primo livello, fino a ${fine} all'ultimo; si rivende a ${Math.max(1, Math.floor(base / 2))}.`;
+}
+
+const isConsumable = it => (it.type || '').startsWith('consumable');
+const notConsumable = it => !isConsumable(it);
 const ITEM_FIELDS = [
-    { k: 'name', label: 'Nome' },
-    { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true,
+    { k: 'name', label: 'Nome', gruppo: 'Aspetto' },
+    { k: 'icon', label: 'Icona', type: 'image', folder: 'immagini/icone', wide: true, gruppo: 'Aspetto',
       help: 'Solo icone classiche di Warcraft III (non Reforged). Vuoto = icona generica del tipo di oggetto' },
-    { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, options: () => [['', '—'], ...Object.entries(RARITY_LABELS).map(([k, label]) => [k, `${label} (${RARITY_COLORS[k]})`])] },
-    { k: 'type', label: 'Tipo', type: 'select', omitEmpty: true,
+    { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true, gruppo: 'Aspetto',
+      help: 'Cosa fa, in breve: es. "+1 Forza, +1 Danno". La vede il giocatore nel tooltip.' },
+    { k: 'rarity', label: 'Rarità', type: 'select', omitEmpty: true, gruppo: 'Tipo e prezzo',
+      help: 'Più è rara, più è forte, più costa e meno spesso esce nel bottino e dal mercante.',
+      options: () => [['', '—'], ...Object.entries(RARITY_LABELS).map(([k, label]) => [k, `${label} (${RARITY_COLORS[k]})`])] },
+    { k: 'type', label: 'Tipo', type: 'select', omitEmpty: true, gruppo: 'Tipo e prezzo',
+      help: 'Equipaggiamento: resta nello zaino e dà i suoi bonus. Consumabile: si usa una volta.',
       options: () => [['', 'Equipaggiamento'], ['consumable_heal', 'Consumabile: cura'], ['consumable_full', 'Consumabile: cura completa'],
           ['consumable_damage', 'Consumabile: danno al nemico (solo in combattimento)'], ['consumable_buff', 'Consumabile: potenziamento temporaneo (solo in combattimento)']] },
-    { k: 'heal_val', label: 'HP curati', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_heal' },
-    { k: 'dmg_val', label: 'Danni al nemico', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_damage' },
-    { k: 'buff_stat', label: 'Statistica potenziata', type: 'select', showIf: it => it.type === 'consumable_buff',
+    { k: 'prezzo', label: 'Prezzo in Scudi', type: 'number', omitEmpty: true, gruppo: 'Tipo e prezzo', placeholder: it => itemBasePrice({ rarity: it.rarity }),
+      help: itemPriceHelp },
+    { k: 'heal_val', label: 'HP curati', type: 'number', omitEmpty: true, gruppo: 'Effetto', range: 'armeria', showIf: it => it.type === 'consumable_heal' },
+    { k: 'dmg_val', label: 'Danni al nemico', type: 'number', omitEmpty: true, gruppo: 'Effetto', range: 'armeria', showIf: it => it.type === 'consumable_damage' },
+    { k: 'buff_stat', label: 'Statistica potenziata', type: 'select', gruppo: 'Effetto', showIf: it => it.type === 'consumable_buff',
       options: () => Object.entries(BUFF_STATS_EDITOR) },
-    { k: 'buff_val', label: 'Bonus', type: 'number', showIf: it => it.type === 'consumable_buff' },
-    { k: 'buff_rounds', label: 'Durata in round', type: 'number', omitEmpty: true, showIf: it => it.type === 'consumable_buff' && it.buff_stat !== 'current_armor',
+    { k: 'buff_val', label: 'Bonus', type: 'number', gruppo: 'Effetto', showIf: it => it.type === 'consumable_buff' },
+    { k: 'buff_rounds', label: 'Durata in round', type: 'number', omitEmpty: true, gruppo: 'Effetto', showIf: it => it.type === 'consumable_buff' && it.buff_stat !== 'current_armor',
       help: 'Vuoto o 0 = per tutto lo scontro. 1 = solo il round in cui lo usi' },
-    { k: 'def_armor', label: 'Armatura in più con Difendi (scudi)', type: 'number', omitEmpty: true, showIf: it => !(it.type || '').startsWith('consumable'),
+    { k: 'str', label: 'Forza', type: 'number', omitEmpty: true, gruppo: 'Effetto', range: 'armeria', showIf: notConsumable,
+      help: 'Si somma al dado per colpire. Es. 1 = +1 al tiro.' },
+    { k: 'dmg', label: 'Danno', type: 'number', omitEmpty: true, gruppo: 'Effetto', range: 'armeria', showIf: notConsumable,
+      help: 'Danni in più quando l\'eroe colpisce.' },
+    { k: 'armor', label: 'Armatura', type: 'number', omitEmpty: true, gruppo: 'Effetto', range: 'armeria', showIf: notConsumable,
+      help: 'Punti armatura a inizio di ogni scontro: assorbono i colpi prima degli HP.' },
+    { k: 'def_armor', label: 'Armatura in più con Difendi (scudi)', type: 'number', omitEmpty: true, gruppo: 'Effetto', range: 'armeria', showIf: notConsumable,
       help: 'Un tiro di difesa riuscito dà 1 Armatura più questo valore' },
-    { k: 'str', label: 'Forza', type: 'number', omitEmpty: true },
-    { k: 'dmg', label: 'Danno', type: 'number', omitEmpty: true },
-    { k: 'armor', label: 'Armatura', type: 'number', omitEmpty: true },
-    { k: 'att_penalty', label: 'Penalità attacco', type: 'number', omitEmpty: true },
-    { k: 'def_bonus', label: 'Bonus difesa', type: 'number', omitEmpty: true },
-    { k: 'help_bonus_val', label: 'Bonus aiuto', type: 'number', omitEmpty: true },
-    { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true },
-    { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true },
-    { k: 'prayer_bonus', label: 'Bonus al tiro di Preghiera', type: 'number', omitEmpty: true },
-    specialiField('oggetto'),
-    { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', wide: true, nullable: true,
-      help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' },
-    { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true }
+    { k: 'att_penalty', label: 'Penalità attacco', type: 'number', omitEmpty: true, gruppo: 'Effetto', showIf: notConsumable,
+      help: 'Toglie al tiro per colpire: es. 1 = -1. Si usa per gli oggetti scarsi o pesanti.' },
+    { k: 'def_bonus', label: 'Bonus difesa', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable, help: 'Si somma al tiro di Difendi' },
+    { k: 'help_bonus_val', label: 'Bonus aiuto', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable, help: 'Si somma al tiro di Aiuta' },
+    { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable, help: 'Fede in più: conta nelle prove di Fede e nella preghiera' },
+    { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable, help: 'Intelligenza in più: conta nelle prove di Intelligenza' },
+    { k: 'prayer_bonus', label: 'Bonus al tiro di Preghiera', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable },
+    { ...specialiField('oggetto'), gruppo: 'Avanzate' },
+    { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', avanzato: true, wide: true, nullable: true, gruppo: 'Avanzate',
+      help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' }
 ];
 
 const ENEMY_FIELDS = [
-    { k: 'name', label: 'Nome', wide: true },
-    { k: 'image', label: 'Immagine dello scontro', type: 'image', folder: 'immagini/bestiario', wide: true,
+    { k: 'name', label: 'Nome', wide: true, gruppo: 'Aspetto' },
+    { k: 'image', label: 'Immagine dello scontro', type: 'image', folder: 'immagini/bestiario', wide: true, gruppo: 'Aspetto',
       help: 'Usata da tutti i nodi con questo nemico, salvo quelli che indicano un\'immagine propria' },
-    { k: 'hp', label: 'HP', type: 'number' },
-    { k: 'maxHp', label: 'HP massimi', type: 'number' },
-    { k: 'att', label: 'Attacco', type: 'number', help: 'Da superare per difendersi e aiutare' },
-    { k: 'ca', label: 'Classe armatura', type: 'number', help: 'Da superare per colpire' },
-    { k: 'dmg', label: 'Danno', type: 'number' },
-    { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true },
-    { k: 'video', label: 'Video (elite e boss)', type: 'video', folder: 'video/nemici', wide: true,
+    { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true, gruppo: 'Aspetto' },
+    { k: 'hp', label: 'HP', type: 'number', gruppo: 'Forza in battaglia', range: 'bestiario', help: 'Punti vita all\'inizio dello scontro (di solito uguali agli HP massimi)' },
+    { k: 'maxHp', label: 'HP massimi', type: 'number', gruppo: 'Forza in battaglia', range: 'bestiario', help: 'Punti vita pieni: la barra della vita parte da qui' },
+    { k: 'att', label: 'Attacco', type: 'number', gruppo: 'Forza in battaglia', range: 'bestiario', help: 'Il numero che gli eroi devono superare col dado per difendersi e aiutare' },
+    { k: 'ca', label: 'Classe armatura', type: 'number', gruppo: 'Forza in battaglia', range: 'bestiario', help: 'Il numero che gli eroi devono superare col dado per colpirlo' },
+    { k: 'dmg', label: 'Danno', type: 'number', gruppo: 'Forza in battaglia', range: 'bestiario', help: 'Danni che fa quando colpisce un eroe (prima tolgono l\'armatura)' },
+    { k: 'video', label: 'Video (elite e boss)', type: 'video', folder: 'video/nemici', wide: true, gruppo: 'Suoni e video',
       help: 'Facoltativo (.mp4 o .webm, senza audio): nello scontro si vede al posto dell\'immagine, in ciclo' },
-    { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true },
-    { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true },
-    { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true,
+    { k: 'sfxAttack', label: 'Suono quando attacca', type: 'audio', folder: 'audio/nemici', wide: true, gruppo: 'Suoni e video' },
+    { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true, gruppo: 'Suoni e video' },
+    { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true, gruppo: 'Suoni e video',
       help: 'Vuoti = suoni generati del gioco. Se manca quello della morte, alla morte suona quello del colpo.' },
-    { k: 'speciali', label: 'Effetti speciali del nemico (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true,
+    { k: 'speciali', label: 'Effetti speciali del nemico (quando → fai)', type: 'speciali', avanzato: true, vocab: 'nemico', tipo: 'nemico', wide: true, gruppo: 'Avanzate',
       help: 'Valgono per tutto lo scontro: es. spine quando lo colpiscono, veleno quando colpisce, rigenerazione a inizio round.' }
 ];
 
@@ -224,7 +245,7 @@ const ELITE_ACTION_FIELDS = [
     { k: 'turnoRigenera', label: 'A ogni turno: HP che recupera', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoAura', label: 'A ogni turno: danno a tutti prima dell\'attacco', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoRubaVita', label: 'A ogni turno: recupera gli HP che toglie agli eroi', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true },
-    { k: 'speciali', label: 'Effetti speciali da questa soglia in poi (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true,
+    { k: 'speciali', label: 'Effetti speciali da questa soglia in poi (quando → fai)', type: 'speciali', avanzato: true, vocab: 'nemico', tipo: 'nemico', wide: true,
       help: '"Alla soglia" agisce subito una volta (es. 2 danni a tutti, veleno, ruba Scudi); gli altri momenti valgono da lì fino a fine scontro (es. spine, rigenerazione).' }
 ];
 
@@ -257,8 +278,8 @@ function describeEliteAction(a) {
 const RELIC_FIELDS = [
     { k: 'name', label: 'Nome', wide: true, help: 'Il nome si può cambiare: il gioco riconosce la reliquia dall\'id' },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
-    { k: 'effects', label: 'Effetti all\'ottenimento (JSON)', type: 'json', wide: true, nullable: true,
-      help: 'Es. [{ "effect": "party_stat", "stat": "fth", "val": 1 }] — vuoto = nessun effetto immediato' },
+    { k: 'effects', label: 'Effetti quando si ottiene', type: 'effetti', wide: true,
+      help: 'Agiscono subito, una volta: es. Statistica di tutta la compagnia, Fede, 1 = +1 Fede a tutti. Per effetti che scattano durante il gioco usa gli effetti speciali (Avanzate).' },
     specialiField('reliquia')
 ];
 
@@ -320,8 +341,8 @@ const BLESSING_FIELDS = [
 const CURSE_FIELDS = [
     { k: 'name', label: 'Nome', wide: true },
     { k: 'desc', label: 'Descrizione mostrata al giocatore', wide: true },
-    { k: 'effects', label: 'Effetti (JSON)', type: 'json', wide: true, nullable: true,
-      help: 'Di solito { "effect": "add_curse", "text": "Nome (effetto)" } più eventuali penalità, es. { "effect": "party_stat", "stat": "fth", "val": -1 }' },
+    { k: 'effects', label: 'Effetti quando arriva', type: 'effetti', wide: true,
+      help: 'Di solito "Aggiungi maledizione" con il testo "Nome (effetto)", più eventuali penalità: es. Statistica di tutta la compagnia, Fede, -1.' },
     specialiField('maledizione')
 ];
 
@@ -348,24 +369,27 @@ const CHALLENGE_FIELDS = [
       help: 'Facoltativi: al posto di "Uno di voi si avvicina" il giocatore sceglie come affrontare la sfida. Ogni modo ha la sua statistica (Forza, Intelligenza o Fede), la sua CD, un eventuale malus al tiro e un eventuale prezzo pagato subito (es. -1 HP a tutti). Testi, premio e punizione lasciati vuoti sono quelli della sfida.' }
 ];
 
+const challengeOptions = () => [['', '—'], ...keysOf(camp.challenges).map(k => [k, camp.challenges[k].title || k])];
 const NODE_FIELDS = [
-    { k: 'id', label: 'Id', type: 'number' },
-    { k: 'level', label: 'Livello (0 = partenza)', type: 'number' },
-    { k: 'x', label: 'Posizione orizzontale (0–800)', type: 'number' },
-    { k: 'type', label: 'Tipo', type: 'select', options: () => Object.entries(NODE_TYPES).map(([k, t]) => [k, t.label]) },
-    { k: 'enemy', label: 'Nemico (dal bestiario)', type: 'select', options: enemyOptions, wide: true, showIf: n => n.type === 'combat' || n.type === 'elite' },
-    { k: 'challengeId', label: 'Sfida', type: 'select', options: refOptions('challenges'), showIf: n => n.type === 'challenge' },
-    { k: 'treasureId', label: 'Testo del tesoro', type: 'select', options: refOptions('treasures'), showIf: n => n.type === 'treasure' },
-    { k: 'merchantId', label: 'Testo del mercante', type: 'select', options: refOptions('merchants'), showIf: n => n.type === 'merchant' },
-    { k: 'restId', label: 'Testo del riposo', type: 'select', options: refOptions('rests'), showIf: n => n.type === 'rest' },
-    { k: 'storyId', label: 'Trama', type: 'select', options: refOptions('stories'), showIf: n => n.type === 'story',
+    { k: 'type', label: 'Tipo', type: 'select', gruppo: 'Cosa c\'è qui', options: () => Object.entries(NODE_TYPES).map(([k, t]) => [k, t.label]),
+      help: 'Cosa trovano gli eroi in questo punto della mappa' },
+    { k: 'enemy', label: 'Nemico', type: 'select', gruppo: 'Cosa c\'è qui', options: enemyOptions, creaNuovo: 'bestiario', wide: true, showIf: n => n.type === 'combat' || n.type === 'elite' },
+    { k: 'challengeId', label: 'Prova', type: 'select', gruppo: 'Cosa c\'è qui', options: challengeOptions, creaNuovo: 'challenges', wide: true, showIf: n => n.type === 'challenge' },
+    { k: 'treasureId', label: 'Testo del tesoro', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('treasures'), showIf: n => n.type === 'treasure' },
+    { k: 'merchantId', label: 'Testo del mercante', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('merchants'), showIf: n => n.type === 'merchant' },
+    { k: 'restId', label: 'Testo del riposo', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('rests'), showIf: n => n.type === 'rest' },
+    { k: 'storyId', label: 'Trama', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('stories'), showIf: n => n.type === 'story',
       help: 'Titolo e descrizione si scrivono qui sotto (più nodi possono usare la stessa trama)' },
-    { k: 'title', label: 'Titolo', wide: true },
-    { k: 'icon', label: 'Icona' },
-    { k: 'image', label: 'Immagine', type: 'image', folder: 'immagini', wide: true,
-      help: 'Negli scontri, vuoto = immagine del nemico nel bestiario' },
-    { k: 'next', label: 'Collegamenti (id separati da virgola)', type: 'idlist' },
-    { k: 'active', label: 'Nodo di partenza', type: 'checkbox' }
+    { k: 'title', label: 'Titolo', wide: true, gruppo: 'Aspetto', help: 'Il nome del punto sulla mappa, es. "Il ponte crollato"' },
+    { k: 'icon', label: 'Icona', gruppo: 'Aspetto', help: 'Un simbolo (emoji) sul nodo della mappa' },
+    { k: 'image', label: 'Immagine', type: 'image', folder: 'immagini', wide: true, gruppo: 'Aspetto',
+      help: 'Negli scontri, vuoto = immagine del nemico' },
+    { k: 'next', label: 'Porta a', type: 'nodelinks', wide: true, gruppo: 'Strada',
+      help: 'I punti in cui si può andare dopo questo. Nessuno = è il finale della campagna.' },
+    { k: 'active', label: 'Punto di partenza (gli eroi possono cominciare da qui)', type: 'checkbox', wide: true, gruppo: 'Strada' },
+    { k: 'id', label: 'Id', type: 'number', avanzato: true, automatico: true, gruppo: 'Avanzate' },
+    { k: 'level', label: 'Livello (0 = partenza)', type: 'number', avanzato: true, automatico: true, gruppo: 'Avanzate' },
+    { k: 'x', label: 'Posizione orizzontale (0–800)', type: 'number', avanzato: true, gruppo: 'Avanzate' }
 ];
 
 // Trama di un nodo di tipo "story" (camp.stories[storyId]), scritta sotto il modulo del nodo
@@ -384,4 +408,4 @@ const OTHER_SECTIONS = [
     { k: 'stories', label: 'Trame', help: 'Chiave usata da storyId nei nodi di trama: { "chiave": { "title": "...", "text": "..." } }. Una riga vuota nel testo separa i paragrafi.' }
 ];
 
-const ITEM_LISTS = { initialArmory: 'Armeria iniziale', lootItems: 'Bottino' };
+const ITEM_LISTS = { initialArmory: 'Oggetti iniziali', lootItems: 'Bottino' };

@@ -2827,21 +2827,84 @@
         .hero-stats .stat-up { color: #8dff78; }
         .hero-stats .stat-down { color: #ff7a6a; }
 
-        /* 26. Sipario tra le schermate */
+        /* 26. Sipario tra le schermate, con i passaggi a tema (screenTransitionFor in js/game.js) */
         #screenCurtain {
             position: fixed;
             inset: 0;
             z-index: 1500;
             pointer-events: none;
             opacity: 0;
+            overflow: hidden;
             background: radial-gradient(ellipse at center, rgba(20, 14, 8, 0.75), rgba(0, 0, 0, 0.95));
         }
+        #screenCurtain > * { display: none; position: absolute; inset: 0; }
         #screenCurtain.play { animation: screen-curtain 0.55s ease-out; }
         @keyframes screen-curtain {
             0% { opacity: 0; }
             30% { opacity: 1; }
             100% { opacity: 0; }
         }
+
+        /* Taglio di spada: un fendente attraversa il buio, poi le due metà si aprono in diagonale */
+        #screenCurtain.t-taglio, #screenCurtain.t-taglio-elite { background: none; --slash: #fff3c8; --slash-glow: #ffc24a; --half: #0d0a07; --half-in: #2a1f10; }
+        #screenCurtain.t-taglio-elite { --slash: #ffd0c0; --slash-glow: #ff3a22; --half: #1a0605; --half-in: #3a0d08; }
+        #screenCurtain.t-taglio.play, #screenCurtain.t-taglio-elite.play { animation: sc-hold 0.9s linear; }
+        #screenCurtain.t-taglio > *, #screenCurtain.t-taglio-elite > * { display: block; }
+        #screenCurtain .sc-half { background: radial-gradient(ellipse at center, var(--half-in), var(--half) 70%); }
+        #screenCurtain .sc-a { clip-path: polygon(0 0, 100% 0, 100% 100%); animation: sc-open-a 0.9s cubic-bezier(.6, 0, .3, 1) both; }
+        #screenCurtain .sc-b { clip-path: polygon(0 0, 100% 100%, 0 100%); animation: sc-open-b 0.9s cubic-bezier(.6, 0, .3, 1) both; }
+        #screenCurtain .sc-slash { filter: drop-shadow(0 0 6px var(--slash-glow)) drop-shadow(0 0 18px var(--slash-glow)); animation: sc-slash-fade 0.9s ease-out both; }
+        #screenCurtain .sc-slash > i {
+            display: block; position: absolute; inset: 0;
+            background: var(--slash);
+            animation: sc-slash-draw 0.9s cubic-bezier(.7, 0, .2, 1) both;
+        }
+        @keyframes sc-hold { 0%, 99% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes sc-slash-draw {
+            0% { clip-path: polygon(0 0, 0.6% 0, 0.6% 0.6%, 0 0.6%); }
+            35%, 100% { clip-path: polygon(0 0, 0.6% 0, 100% 99.4%, 100% 100%); }
+        }
+        @keyframes sc-slash-fade { 0%, 40% { opacity: 1; } 70%, 100% { opacity: 0; } }
+        @keyframes sc-open-a { 0%, 42% { transform: none; opacity: 1; } 100% { transform: translate(40%, -40%); opacity: 0; } }
+        @keyframes sc-open-b { 0%, 42% { transform: none; opacity: 1; } 100% { transform: translate(-40%, 40%); opacity: 0; } }
+
+        /* Bagliore d'oro con raggi che girano: bottino e tesori */
+        #screenCurtain.t-oro {
+            background: radial-gradient(circle at center, rgba(255, 232, 160, 0.95), rgba(214, 160, 40, 0.55) 35%, rgba(18, 11, 3, 0.92) 75%);
+        }
+        #screenCurtain.t-oro.play { animation: sc-flash 0.8s ease-out; }
+        #screenCurtain.t-oro::before, #screenCurtain.t-gloria::before {
+            content: ''; position: absolute; inset: -50%;
+            background: repeating-conic-gradient(from 0deg, rgba(255, 236, 170, 0.35) 0 5deg, transparent 5deg 18deg);
+            -webkit-mask-image: radial-gradient(circle, #000 10%, transparent 45%);
+            mask-image: radial-gradient(circle, #000 10%, transparent 45%);
+            animation: sc-rays 1.2s linear both;
+        }
+        @keyframes sc-flash { 0% { opacity: 0; } 22% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes sc-rays { from { transform: rotate(0deg) scale(0.8); } to { transform: rotate(25deg) scale(1.15); } }
+
+        /* Gloria: vittoria, più luminosa e più lunga */
+        #screenCurtain.t-gloria { background: radial-gradient(circle at center, #fffbe8, rgba(255, 214, 110, 0.75) 40%, rgba(40, 26, 6, 0.9) 85%); }
+        #screenCurtain.t-gloria.play { animation: sc-flash 1.4s ease-out; }
+
+        /* Fuoco del riposo: luce calda che sale dal basso e trema come una fiamma */
+        #screenCurtain.t-fuoco {
+            background: linear-gradient(to top, rgba(255, 128, 30, 0.7), rgba(120, 36, 6, 0.85) 35%, rgba(8, 3, 0, 0.96) 75%);
+            background-size: 100% 200%;
+        }
+        #screenCurtain.t-fuoco.play { animation: sc-fire 1s ease-out; }
+        @keyframes sc-fire {
+            0% { opacity: 0; background-position: 0 0; }
+            25% { opacity: 1; }
+            40% { opacity: 0.85; }
+            55% { opacity: 0.95; }
+            100% { opacity: 0; background-position: 0 100%; }
+        }
+
+        /* Buio della sconfitta: rosso cupo che diventa nero, lento */
+        #screenCurtain.t-buio { background: radial-gradient(ellipse at center, rgba(90, 4, 0, 0.8), #000 70%); }
+        #screenCurtain.t-buio.play { animation: sc-dark 1.8s ease-in-out; }
+        @keyframes sc-dark { 0% { opacity: 0; } 35%, 55% { opacity: 1; } 100% { opacity: 0; } }
 
         /* 27. Numeri che scorrono */
         .count-down { color: #ff8a70 !important; }
@@ -2855,7 +2918,7 @@
             80% { transform: translateY(-2px) rotate(-0.3deg); }
             100% { transform: none; }
         }
-        body.no-anim .hp-bar-ghost, body.no-anim .hp-bar-preview, body.no-anim #screenCurtain.play,
+        body.no-anim .hp-bar-ghost, body.no-anim .hp-bar-preview, body.no-anim #screenCurtain.play, body.no-anim #screenCurtain *, body.no-anim #screenCurtain::before,
         body.no-anim .modal-box.modal-drop { animation: none !important; transition: none !important; }
 
         /* =========================================================

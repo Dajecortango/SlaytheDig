@@ -381,6 +381,19 @@
         };
     }
 
+    // Era solo una prova!: il secondo dado si tira anche dal telefono
+    if (typeof askChallengeRetry === 'function') {
+        const originalAskChallengeRetry = askChallengeRetry;
+        askChallengeRetry = function (...args) {
+            const result = originalAskChallengeRetry.apply(this, args);
+            if (typeof selectedChallengeHero !== 'undefined' && selectedChallengeHero) {
+                const mode = (typeof challengeRollMode === 'function') ? challengeRollMode(selectedChallengeHero).mode : 'single';
+                requestRemoteRoll(selectedChallengeHero.name, mode === 'single' ? 1 : 2, 'Era solo una prova! Ritenta', 'challenge');
+            }
+            return result;
+        };
+    }
+
     if (typeof confirmChallengeHero === 'function') {
         const originalConfirmChallengeHero = confirmChallengeHero;
         confirmChallengeHero = function (...args) {

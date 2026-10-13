@@ -89,7 +89,9 @@
         }
 
         let selectedChallengeHero = null;
+        let challengeRetryPending = false;   // Era solo una prova!: il primo tiro è fallito, si aspetta il secondo
         function confirmChallengeHero() {
+            challengeRetryPending = false;
             selectedChallengeHero = stato.party.filter(p => p.hp > 0).find(p => p.name === document.getElementById('challengeHeroSelect').value);
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('diceChallengeSection').classList.remove('hidden');
@@ -127,6 +129,23 @@
                 rollMode.mode === 'best' ? "Tira (2D6, tieni il migliore)" : (rollMode.mode === 'worst' ? "Tira (2D6, tieni il peggiore)" : "Tira (D6)");
         }
 
+        // Era solo una prova!: primo tiro fallito, il pulsante torna attivo per il secondo dado (anche dal telefono:
+        // js/remote.js avvolge questa funzione e chiede un nuovo tiro)
+        function askChallengeRetry(res) {
+            const malus = selectedChallengeHero.challengeRerollMalus;
+            challengeRetryPending = true;
+            showRollBanner(false, 'Era solo una prova!', `${res.total} contro CD ${stato.challengeState.cd}: ritenta con −${malus}`);
+            const note = document.getElementById('diceChallengeNote');
+            note.textContent = `Primo tiro fallito (${res.kept}). Era solo una prova! ${selectedChallengeHero.name} può ritentare con −${malus}`;
+            note.classList.remove('hidden');
+            document.getElementById('diceChallenge').classList.remove('discarded');
+            document.getElementById('diceChallenge2').classList.remove('discarded');
+            const btn = document.getElementById('rollChallengeBtn');
+            btn.textContent = res.twoDice ? `Ritenta (2D6, −${malus})` : `Ritenta (D6, −${malus})`;
+            btn.disabled = false;
+            revealInView('rollChallengeBtn');
+        }
+
         function addChallengeLog(text) {
             const log = document.getElementById('challengeLog');
             log.classList.remove('hidden');
@@ -155,7 +174,9 @@
                 if(counter >= animTime(500)) {
                     clearInterval(interval);
 
-                    const res = resolveChallenge(selectedChallengeHero, stato.challengeState, externalRolls);
+                    const retry = challengeRetryPending;
+                    challengeRetryPending = false;
+                    const res = resolveChallenge(selectedChallengeHero, stato.challengeState, externalRolls, retry ? { ritiro: true } : { chiediRitiro: true });
                     diceBox.textContent = res.roll;
                     diceBox.classList.remove('rolling');
 
@@ -169,12 +190,13 @@
                     }
                     if (res.rerolled) {
                         const note = document.getElementById('diceChallengeNote');
-                        note.textContent = `Era solo una prova! Primo tiro ${res.firstAttempt.kept} fallito, ritentato con −${selectedChallengeHero.challengeRerollMalus}: ${res.kept}`;
+                        note.textContent = `Era solo una prova! Secondo tiro con −${selectedChallengeHero.challengeRerollMalus}: ${res.kept}`;
                         note.classList.remove('hidden');
                     }
 
                     diceOutcomeSfx(res.kept);
                     res.events.forEach(ev => addChallengeLog(ev.text));
+                    if (res.pendingReroll) { askChallengeRetry(res); return; }
                     showRollBanner(res.success, res.success ? 'Successo!' : 'Fallimento', `${res.total} contro CD ${stato.challengeState.cd}`);
 
                     if(res.success) {
