@@ -77,4 +77,10 @@ const previewEliteAction = a => previewTipHtml(esc(a.name || '(senza nome)'), [a
 const previewBlessing = b => previewTipHtml(esc(b.name || '(senza nome)'),
     [`<span class="tip-hint">${b.livello === 'maggiore' ? 'Benedizione maggiore' : 'Benedizione minore'} · ${b.bersaglio === 'party' ? 'tutta la compagnia' : 'un eroe'}</span>`,
         ...(b.desc ? [esc(b.desc)] : []), ...specialPreviewLines(b, 'benedizione')]);
-const PREVIEWS = { benedizioni: previewBlessing, armeria: previewItem, abilita: previewAbility, reliquie: previewSimple('reliquia'), maledizioni: previewSimple('maledizione'), azioni_elite: previewEliteAction };
+// Nemico: come si presenta nello scontro (immagine, numeri, descrizione)
+const previewEnemy = e => previewTipHtml(esc(e.name || '(senza nome)'), [
+    ...(e.image ? [`<img class="ed-preview-img" src="${esc(assetUrl(e.image))}" alt="" ${azioneSu('error', 'nascondiImmagine', '$el')}>`] : []),
+    esc(`HP ${e.maxHp ?? e.hp ?? '?'} · Attacco ${e.att ?? '?'} · Classe armatura ${e.ca ?? '?'} · Danno ${e.dmg ?? '?'}`),
+    ...(Array.isArray(e.fasi) && e.fasi.length ? ['<span class="tip-hint">Elite o boss: cambia quando scende sotto una soglia di vita</span>'] : []),
+    ...(e.desc ? [`<span class="tip-desc">${esc(e.desc)}</span>`] : [])]);
+const PREVIEWS = { bestiario: previewEnemy, benedizioni: previewBlessing, armeria: previewItem, abilita: previewAbility, reliquie: previewSimple('reliquia'), maledizioni: previewSimple('maledizione'), azioni_elite: previewEliteAction };

@@ -141,21 +141,21 @@ function renderCollection(name) {
     if (!keys.includes(selection[name])) selection[name] = keys[0] || null;
     const sel = selection[name];
     const intro = col.library
-        ? `<p class="ed-lib-note">Libreria condivisa da tutte le campagne (<code>${libraryFilePath(name)}</code>). Le modifiche valgono ovunque l'elemento è usato.</p>`
+        ? `<p class="ed-lib-note">Libreria condivisa da tutte le campagne<span class="ed-adv-only"> (<code>${libraryFilePath(name)}</code>)</span>. Le modifiche valgono ovunque l'elemento è usato.</p>`
         : '';
 
     content.innerHTML = `${intro}
         <div class="ed-list-actions">
             <button ${azione('addKeyed', name)}>Aggiungi</button>
             <button ${azione('duplicateKeyed', name)} ${sel ? '' : 'disabled'}>Duplica</button>
-            <button ${azione('renameKeyed', name)} ${sel ? '' : 'disabled'}>Rinomina id</button>
+            <button class="ed-adv-only" ${azione('renameKeyed', name)} ${sel ? '' : 'disabled'}>Rinomina id</button>
             <button class="ed-danger" ${azione('deleteKeyed', name)} ${sel ? '' : 'disabled'}>Elimina</button>
         </div>
         <div class="ed-split">
             <div class="ed-list">${listFilterHtml(name)}${keys.map(k => `
                 <div class="ed-list-item ${k === sel ? 'active' : ''}" data-search="${esc(searchText(`${col.label(items[k]) || ''} ${k}`))}" ${azione('selectKeyed', name, k)}>
                     ${items[k] && items[k].icon ? `<img class="ed-list-icon" src="${esc(assetUrl(items[k].icon))}" alt="" loading="lazy" decoding="async" ${azioneSu('error', 'nascondiImmagine', '$el')}>` : ''}
-                    ${esc(col.label(items[k]) || k)}<small>${esc(k)}${col.sub ? ' · ' + esc(col.sub(items[k]) || '') : ''}</small>
+                    ${esc(col.label(items[k]) || k)}<small><span class="ed-adv-only">${esc(k)}${col.sub ? ' · ' : ''}</span>${col.sub ? esc(col.sub(items[k]) || '') : ''}</small>
                     <small class="ed-usage">${esc(usageText(col.usage(k)))}</small>
                 </div>`).join('') || '<div class="ed-list-item">Nessun elemento</div>'}
             </div>
@@ -173,8 +173,8 @@ function renderCollection(name) {
         const detail = document.getElementById('edDetail');
         const preview = PREVIEWS[name];
         const updatePreview = () => {
-            const box = document.getElementById('edTipPreview');
-            if (box && preview) box.innerHTML = preview(items[sel]);
+            const box = document.getElementById('edSidePreview');
+            if (box && preview) box.innerHTML = `<span class="ed-tip-preview-label">Come appare nel gioco</span>${preview(items[sel])}`;
         };
         renderForm(detail, items[sel], col.fields, key => {
             if (col.afterChange) col.afterChange(items[sel], key);
@@ -184,12 +184,11 @@ function renderCollection(name) {
             if (active && (key === 'name' || key === 'title')) active.firstChild.textContent = col.label(items[sel]) || sel;
             updatePreview();
         });
-        detail.insertAdjacentHTML('afterbegin', `<p class="ed-usage-box">${starHtml(name, sel)} <b>Id:</b> <code>${esc(sel)}</code> · <b>Usato in:</b> ${esc(usageText(uses))}</p>`);
+        detail.insertAdjacentHTML('afterbegin', `<p class="ed-usage-box">${starHtml(name, sel)} <span class="ed-adv-only"><b>Id:</b> <code>${esc(sel)}</code> · </span><b>Usato in:</b> ${esc(usageText(uses))}</p>`);
         if (col.note) detail.insertAdjacentHTML('afterbegin', col.note(items[sel], sel));
-        if (preview) {
-            detail.insertAdjacentHTML('beforeend', '<div class="ed-tip-preview-wrap"><span class="ed-tip-preview-label">Anteprima del tooltip nel gioco</span><div id="edTipPreview"></div></div>');
-            updatePreview();
-        }
+        detail.querySelector('.ed-usage-box').insertAdjacentHTML('afterend', sharedBannerHtml(name, sel));
+        detail.insertAdjacentHTML('afterbegin', pickBannerHtml(name, sel));
+        if (preview) updatePreview();
     }
 }
 
@@ -234,6 +233,7 @@ function insertKeyed(name, obj) {
     selection[name] = key;
     col.dirty();
     recordRecent(name, key);
+    finishPendingPick(name, key);   // creato da "Crea nuovo…" di un menu: è già scelto lì
     render();
 }
 
@@ -283,6 +283,7 @@ function wizardHtml(name) {
 
 function closeWizard() {
     wizardOpen = null;
+    if (pendingPick && !pendingPick.done) returnFromPick();
     render();
 }
 
@@ -331,14 +332,37 @@ function renameKeyed(name) {
 function deleteKeyed(name) {
     const col = COLLECTIONS[name];
     const key = selection[name];
+    const el = col.store()[key];
+    if (!el) return;
+    const label = col.label(el) || key;
     const uses = col.usage(key);
-    if (col.library && uses.length) {
-        alert(`"${key}" è usato in: ${usageText(uses)}.\nToglilo da lì prima di eliminarlo dalla libreria.`);
+    const useText = u => `${u.title}${u.n > 1 ? ` (${u.n} volte)` : ''}`;
+    // Altre campagne e bottino predefinito: lì l'editor non vede i buchi, quindi prima si toglie da lì
+    const blocking = col.library ? uses.filter(u => !u.current || (name === 'armeria' && u.title === 'bottino predefinito')) : [];
+    if (blocking.length) {
+        edConfirm({
+            title: `«${label}» non si può eliminare adesso`,
+            html: `<p>È usato anche in:</p><ul>${blocking.map(u => `<li>${esc(useText(u))}</li>`).join('')}</ul>
+                <p>Toglilo prima da lì (o, se vuoi cambiarlo solo qui, usa "Fanne una copia solo per questa campagna").</p>`,
+            ok: null
+        });
         return;
     }
-    if (!confirm(`Eliminare "${key}"?${uses.length ? ` È usato da ${uses[0].n} nodi della mappa.` : ''}`)) return;
-    delete col.store()[key];
-    selection[name] = null;
-    col.dirty();
-    render();
+    const where = name === 'challenges'
+        ? camp.mapNodes.filter(n => n.challengeId === key).map(n => n.title || `nodo ${n.id}`)
+        : uses.filter(u => name !== 'benedizioni').map(useText);
+    edConfirm({
+        title: `Eliminare «${label}»?`,
+        html: where.length
+            ? `<p>È usato in:</p><ul>${where.map(w => `<li>${esc(w)}</li>`).join('')}</ul><p>Lì resterà un buco da sistemare (lo vedrai in "Da sistemare").</p>`
+            : '<p>Non è usato da nessuna parte.</p>',
+        ok: where.length ? 'Elimina comunque' : 'Elimina',
+        danger: where.length > 0
+    }, () => {
+        delete col.store()[key];
+        selection[name] = null;
+        col.dirty();
+        render();
+        edToast(`Eliminato «${label}»`, true);
+    });
 }

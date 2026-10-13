@@ -42,7 +42,7 @@ function renderEliteTab() {
     const sel = selection.elite;
     const others = keysOf(lib.bestiario).filter(k => !keys.includes(k));
     content.innerHTML = `
-        <p class="ed-lib-note">Elite e boss: soglie di vita e azioni speciali. I nemici stanno nel Bestiario (<code>${libraryFilePath('bestiario')}</code>),
+        <p class="ed-lib-note">Elite e boss: soglie di vita e azioni speciali. I nemici stanno nella libreria Nemici (<code>${libraryFilePath('bestiario')}</code>),
             le azioni nella scheda <a href="#" ${azione('switchTab', 'azioni_elite')}>Azioni elite</a> (<code>${libraryFilePath('azioni_elite')}</code>).</p>
         <div class="ed-list-actions">
             <button ${azione('newElite')}>Nuovo elite</button>
@@ -76,7 +76,7 @@ function renderEliteDetail(detail, key) {
         if (field === 'name') { const active = document.querySelector('.ed-list-item.active'); if (active) active.firstChild.textContent = e.name || key; }
         if (field === 'maxHp' || field === 'hp') renderElitePhases();
     });
-    detail.innerHTML = `<p class="ed-usage-box">${starHtml('elite', key)} <b>Id:</b> <code>${esc(key)}</code> · <b>Usato in:</b> ${esc(usageText(libraryUsage('bestiario', key)))}</p>
+    detail.innerHTML = `<p class="ed-usage-box">${starHtml('elite', key)} <span class="ed-adv-only"><b>Id:</b> <code>${esc(key)}</code> · </span><b>Usato in:</b> ${esc(usageText(libraryUsage('bestiario', key)))}</p>
         <h3>Soglie e azioni speciali</h3>
         <p class="ed-help">Quando la vita scende alla soglia o sotto (o, per le soglie a tempo, all'inizio di quel round), la fase scatta una volta: si legge il testo e partono le azioni, in ordine.
             "Nuova azione" ne crea una nella libreria e la apre: lì si combinano i campi e gli effetti speciali (veleno, spine, rigenerazione, danni a tutti...).

@@ -318,7 +318,8 @@ function effectListEditor(list, save, nuovo = { effect: 'coins', val: 10 }) {
     const box = document.createElement('div');
     box.className = 'ed-specials';
     const opts = (map, value) => Object.entries(map).map(([k, l]) => `<option value="${esc(k)}" ${k === value ? 'selected' : ''}>${esc(l)}</option>`).join('');
-    const libOpts = (kind, value) => opts(Object.fromEntries(Object.entries(lib[kind] || {}).map(([k, v]) => [k, v.name || k])), value);
+    const libOpts = (kind, value) => opts({ ...Object.fromEntries(Object.entries(lib[kind] || {}).map(([k, v]) => [k, v.name || k])),
+        ...(value && !(lib[kind] || {})[value] ? { [value]: `${value} (non trovato)` } : {}) }, value);
     const paint = () => {
         box.innerHTML = '';
         list.forEach((e, i) => {
@@ -513,16 +514,104 @@ function buffListEditor(obj, f, onChange) {
     return box;
 }
 
+// Campi da mostrare: quelli che valgono per questo elemento (showIf) e, con Avanzate spente, non avanzati
+function visibleFields(fields, obj, advanced = document.body.classList.contains('ed-advanced')) {
+    return fields.filter(f => (!f.showIf || f.showIf(obj)) && (advanced || !f.avanzato));
+}
+
+/* ---------- Avvisi sui numeri ----------
+   Un valore fuori da quanto c'è già nella libreria (stesso ruolo per i nemici: normali / elite e boss;
+   stessa rarità e stesso genere per gli oggetti) dà una riga gialla sotto il campo. Non blocca niente. */
+const enemyRole = e => Array.isArray(e.fasi) && e.fasi.length ? 'elite' : 'normale';
+function numberRangeWarning(kind, key, obj) {
+    const v = obj[key];
+    if (typeof v !== 'number' || !v) return '';
+    let peers, chi;
+    if (kind === 'bestiario') {
+        const role = enemyRole(obj);
+        peers = Object.values(lib.bestiario || {}).filter(e => e !== obj && enemyRole(e) === role);
+        chi = role === 'elite' ? 'gli elite e i boss del gioco' : 'i nemici normali del gioco';
+    } else {
+        const r = obj.rarity || 'comune';
+        const cons = (obj.type || '').startsWith('consumable');
+        const same = Object.values(lib.armeria || {}).filter(it => it !== obj && (it.type || '').startsWith('consumable') === cons);
+        peers = same.filter(it => (it.rarity || 'comune') === r);
+        chi = `gli oggetti ${(RARITY_LABELS[r] || r).toLowerCase()} del gioco`;
+        // Pochi oggetti di quella rarità con questo bonus: si confronta con tutti
+        if (peers.filter(x => x[key] > 0).length < 3) { peers = same; chi = 'gli oggetti del gioco'; }
+    }
+    const vals = peers.map(x => x[key]).filter(x => typeof x === 'number' && x > 0);
+    if (vals.length < 3) return '';
+    const min = Math.min(...vals), max = Math.max(...vals);
+    return v < min || v > max ? `Fuori dal solito: ${chi} hanno da ${min} a ${max}` : '';
+}
+
+/* ---------- "Crea nuovo…" da un menu ----------
+   Dal menu del nemico di un nodo (o della reliquia / maledizione di una prova) si crea l'elemento nella
+   libreria; appena creato è già scelto lì, e un riquadro riporta indietro quando si è finito di sistemarlo. */
+let pendingPick = null;   // { kind, obj, key, tab, label, done }
+function startCreateFor(kind, obj, key, label) {
+    pendingPick = { kind, obj, key, tab: currentTab, label, done: false };
+    switchTab(kind);
+    if (COLLECTIONS[kind].wizard) { wizardOpen = kind; render(); } else addKeyed(kind);
+}
+function finishPendingPick(kind, newKey) {
+    if (!pendingPick || pendingPick.done || pendingPick.kind !== kind) return;
+    pendingPick.obj[pendingPick.key] = newKey;
+    pendingPick.done = true;
+    pendingPick.newKey = newKey;
+    markDirty();
+}
+function returnFromPick() {
+    const tab = pendingPick ? pendingPick.tab : 'general';
+    pendingPick = null;
+    switchTab(tab);
+}
+const pickBannerHtml = (kind, key) => pendingPick && pendingPick.done && pendingPick.kind === kind && pendingPick.newKey === key
+    ? `<p class="ed-pick-banner">Fatto: è già scelto in ${esc(pendingPick.label)}. Sistemalo qui e poi <button type="button" class="btn-small ed-save" ${azione('returnFromPick')}>Torna indietro</button></p>`
+    : '';
+
+// Gruppi che restano chiusi finché i loro campi sono vuoti
+const FORM_CLOSED_GROUPS = ['Altri bonus', 'Suoni e video'];
+const isEmptyValue = v => v == null || v === '' || v === 0 || v === false || (Array.isArray(v) && !v.length);
+
 function renderForm(container, obj, fields, onChange) {
     container.innerHTML = '';
-    const form = document.createElement('div');
-    form.className = 'ed-form';
-    fields.forEach(f => {
-        if (f.showIf && !f.showIf(obj)) return;
+    // Campi divisi per gruppo (nell'ordine in cui compaiono); senza gruppi, un modulo solo come prima
+    const order = [], byGroup = new Map();
+    visibleFields(fields, obj).forEach(f => {
+        const g = f.gruppo || '';
+        if (!byGroup.has(g)) { byGroup.set(g, []); order.push(g); }
+        byGroup.get(g).push(f);
+    });
+    let form;
+    order.forEach(g => {
+        form = document.createElement('div');
+        form.className = 'ed-form';
+        if (g) {
+            const closable = FORM_CLOSED_GROUPS.includes(g);
+            const box = document.createElement(closable ? 'details' : 'section');
+            box.className = 'ed-group';
+            box.innerHTML = closable ? `<summary class="ed-group-title">${esc(g)}</summary>` : `<h4 class="ed-group-title">${esc(g)}</h4>`;
+            if (closable && !byGroup.get(g).every(f => isEmptyValue(getPath(obj, f.k)))) box.open = true;
+            box.appendChild(form);
+            container.appendChild(box);
+        } else container.appendChild(form);
+        byGroup.get(g).forEach(renderField);
+    });
+    // Impostazioni avanzate già compilate ma nascoste: si dice che ci sono, con il modo per vederle
+    const hiddenSet = document.body.classList.contains('ed-advanced') ? [] : fields.filter(f => f.avanzato && !f.automatico && (!f.showIf || f.showIf(obj)) && !isEmptyValue(getPath(obj, f.k)));
+    if (hiddenSet.length) container.insertAdjacentHTML('beforeend', `<p class="ed-hidden-set">Ha anche impostazioni avanzate (${esc(hiddenSet.map(f => f.label).join(', '))}).
+        <button type="button" class="btn-small" ${azione('setAdvanced', true)}>Mostrale</button></p>`);
+
+    function renderField(f) {
         const wrap = document.createElement('div');
         wrap.className = 'ed-field' + (f.wide ? ' wide' : '');
         const id = `f_${f.k.replace(/\./g, '_')}_${Math.random().toString(36).slice(2, 7)}`;
-        wrap.innerHTML = `<label for="${id}">${esc(f.label)}</label>`;
+        // La spiegazione fissa sta nel "?" accanto al nome; quella calcolata (es. prezzo) resta sotto il campo
+        const tip = typeof f.help === 'string' ? f.help : '';
+        wrap.innerHTML = `<label for="${id}">${esc(f.label)}${tip ? ` <span class="ed-q" tabindex="0" data-q="${esc(tip)}" aria-label="${esc(tip)}">?</span>` : ''}</label>`;
+        wrap.dataset.field = f.k;
         let input;
         const value = getPath(obj, f.k);
 
@@ -532,11 +621,12 @@ function renderForm(container, obj, fields, onChange) {
             const entries = Object.entries(lib[f.lib]).map(([k, v]) => [k, `${v.name} — ${v.desc || ''}`]);
             const mode = value == null ? '' : typeof value === 'string' ? value : '__custom';
             if (typeof value === 'string' && !lib[f.lib][value]) entries.push([value, `${value} (non trovato)`]);
-            input.innerHTML = [['', '— Nessuna —'], ...entries, ['__custom', 'Personalizzata (scritta nella sfida)…']]
+            input.innerHTML = [['', '— Nessuna —'], ...entries, ['__new', '+ Crea nuova…'], ['__custom', 'Personalizzata (scritta nella sfida)…']]
                 .map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
             input.value = mode;
             input.id = id;
             input.addEventListener('change', () => {
+                if (input.value === '__new') { input.value = mode; startCreateFor(f.lib, obj, f.k, `«${obj.title || obj.name || 'questa prova'}»`); return; }
                 if (input.value === '') obj[f.k] = null;
                 else if (input.value === '__custom') obj[f.k] = typeof value === 'object' && value ? value : f.custom();
                 else obj[f.k] = input.value;
@@ -556,7 +646,41 @@ function renderForm(container, obj, fields, onChange) {
             } else if (mode) {
                 wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', f.lib, mode)}>Modifica in ${LIB_LABELS[f.lib]}</a>`);
             }
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Effetti (reliquie, maledizioni, passive): elenco composto con i menu, come le scelte degli eventi
+        if (f.type === 'effetti') {
+            const list = Array.isArray(value) ? value : [];
+            wrap.appendChild(effectListEditor(list, () => {
+                if (list.length) setPath(obj, f.k, list); else deletePath(obj, f.k);
+                onChange(f.k);
+            }, f.nuovo || { effect: 'party_stat', stat: 'fth', val: 1 }));
+            form.appendChild(wrap);
+            return;
+        }
+
+        // "Porta a" di un nodo: i nodi successivi per nome, con la × per toglierli e un menu per aggiungerne
+        if (f.type === 'nodelinks') {
+            const list = Array.isArray(value) ? value : [];
+            const nodeName = n => `${n.title || NODE_TYPES[n.type]?.label || 'Nodo'}${isAdvanced() ? ` (${n.id})` : ''}`;
+            const byId = new Map(camp.mapNodes.map(n => [n.id, n]));
+            const box = document.createElement('div');
+            box.className = 'ed-chips';
+            box.innerHTML = list.map(nid => `<span class="ed-chip" style="--c:${(NODE_TYPES[byId.get(nid)?.type] || {}).color || '#777'}">
+                ${esc(byId.has(nid) ? nodeName(byId.get(nid)) : `nodo ${nid} (non esiste)`)}
+                <button type="button" title="Togli" ${azione('nodeUnlinkFromForm', obj.id, nid)}>×</button></span>`).join('')
+                || '<span class="ed-help">Nessuno: qui finisce la campagna.</span>';
+            const options = camp.mapNodes.filter(n => n.id !== obj.id && !list.includes(n.id) && (n.level || 0) > (obj.level || 0))
+                .sort((x, y) => x.level - y.level || x.x - y.x);
+            const row = document.createElement('div');
+            row.className = 'ed-add-row';
+            row.innerHTML = options.length
+                ? `<select id="${id}">${options.map(n => `<option value="${n.id}">${esc(nodeName(n))}</option>`).join('')}</select>
+                   <button type="button" class="btn-small" ${azione('nodeLinkFromForm', obj.id, `#${id}`)}>Collega</button>`
+                : '<span class="ed-help">Per collegarlo a un punto nuovo usa "Aggiungi un nodo dopo" dal menu del nodo sulla mappa.</span>';
+            wrap.append(box, row);
             form.appendChild(wrap);
             return;
         }
@@ -564,7 +688,6 @@ function renderForm(container, obj, fields, onChange) {
         // Strade di una sfida: statistica, difficoltà, testi, premio e punizione per ogni approccio
         if (f.type === 'roadlist') {
             wrap.appendChild(roadListEditor(obj, f, onChange));
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
         }
@@ -572,7 +695,6 @@ function renderForm(container, obj, fields, onChange) {
         // Scelte di un evento (nodo di trama): costo, prova, effetti ed esito
         if (f.type === 'choicelist') {
             wrap.appendChild(choiceListEditor(obj, f, onChange));
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
         }
@@ -580,7 +702,6 @@ function renderForm(container, obj, fields, onChange) {
         // Potenziamenti di una benedizione: statistica e valore, uno per riga
         if (f.type === 'bufflist') {
             wrap.appendChild(buffListEditor(obj, f, onChange));
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
         }
@@ -588,7 +709,6 @@ function renderForm(container, obj, fields, onChange) {
         // Effetti speciali "quando → fai": elenco composto con i menu
         if (f.type === 'speciali') {
             wrap.appendChild(specialiEditor(obj, f, onChange));
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
         }
@@ -596,7 +716,6 @@ function renderForm(container, obj, fields, onChange) {
         // Inquadratura dei ritratti (icona e cinematica d'attacco), come le calcola js/game.js
         if (f.type === 'portraitframe') {
             wrap.appendChild(portraitFrameEditor(obj, onChange));
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
         }
@@ -643,7 +762,6 @@ function renderForm(container, obj, fields, onChange) {
             add.addEventListener('click', () => { if (!select.value) return; if (!Array.isArray(obj[f.k])) obj[f.k] = list; list.push(select.value); onChange(f.k); render(); });
             row.append(select, add);
             wrap.append(box, row);
-            if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
             form.appendChild(wrap);
             return;
         }
@@ -662,6 +780,7 @@ function renderForm(container, obj, fields, onChange) {
                 input = document.createElement('select');
                 const opts = f.options();
                 if (value != null && value !== '' && !opts.some(([v]) => v === String(value))) opts.push([String(value), `${value} (non trovato)`]);
+                if (f.creaNuovo) opts.push(['__new', '+ Crea nuovo…']);
                 input.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
                 input.value = value ?? '';
                 break;
@@ -679,9 +798,15 @@ function renderForm(container, obj, fields, onChange) {
                 input = document.createElement('input');
                 input.type = f.type === 'number' ? 'number' : 'text';
                 input.value = value ?? '';
+                if (f.placeholder) input.placeholder = typeof f.placeholder === 'function' ? f.placeholder(obj) : f.placeholder;
         }
         input.id = id;
         const commit = () => {
+            if (f.creaNuovo && input.value === '__new') {
+                input.value = value ?? '';
+                startCreateFor(f.creaNuovo, obj, f.k, `«${obj.title || obj.name || 'questo nodo'}»`);
+                return;
+            }
             let v;
             if (f.type === 'number') v = input.value === '' ? null : Number(input.value);
             else if (f.type === 'checkbox') v = input.checked;
@@ -774,10 +899,21 @@ function renderForm(container, obj, fields, onChange) {
             });
         }
         if (f.k === 'enemy' && value && lib.bestiario[value]) {
-            wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', 'bestiario', value)}>Modifica nel Bestiario</a>`);
+            wrap.insertAdjacentHTML('beforeend', `<a href="#" class="ed-goto" ${azione('gotoLibrary', 'bestiario', value)}>Modifica tra i Nemici</a>`);
         }
-        if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);
+        if (f.range) {
+            const warn = document.createElement('span');
+            warn.className = 'ed-warn';
+            const update = () => { warn.textContent = numberRangeWarning(f.range, f.k, obj); warn.hidden = !warn.textContent; };
+            input.addEventListener('input', update);
+            update();
+            wrap.appendChild(warn);
+        }
+        // Testo d'aiuto calcolato dal modulo (es. prezzo dal mercante): si aggiorna mentre si scrive
+        if (typeof f.help === 'function') {
+            wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help(obj))}</span>`);
+            input.addEventListener('input', () => { wrap.querySelector('.ed-help').textContent = f.help(obj); });
+        }
         form.appendChild(wrap);
-    });
-    container.appendChild(form);
+    }
 }

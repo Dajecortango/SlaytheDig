@@ -70,7 +70,7 @@ function validateCampaign() {
             if (typeof ref === 'string' && !lib.armeria[ref]) add('error', `${label}: oggetto <b>${esc(ref)}</b> non trovato nell'armeria`, 'items');
         });
     });
-    if (!camp.initialArmory.length) add('warn', 'Armeria iniziale vuota: gli eroi partono senza oggetti da scegliere', 'items');
+    if (!camp.initialArmory.length) add('warn', 'Nessun oggetto iniziale: gli eroi partono senza oggetti da scegliere', 'items');
 
     Object.entries(camp.challenges).forEach(([k, c]) => {
         if (!['int', 'fth', 'str'].includes(c.stat)) add('error', `Sfida <b>${k}</b>: statistica non valida`, 'challenges', k);
@@ -101,11 +101,12 @@ function validateCampaign() {
     const procedurale = !!camp.procedurale;
     if (!procedurale && !nodes.some(n => n.active)) add('error', 'Nessun nodo di partenza (spunta "Nodo di partenza")', 'map');
     nodes.forEach(n => {
-        const name = `Nodo <b>${n.id}</b>`;
+        const name = `Nodo <b>${esc(n.title || n.id)}</b>`;
         if (ids.get(n.id) > 1) add('error', `${name}: id duplicato`, 'map', n.id);
         const type = NODE_TYPES[n.type];
         if (!type) add('error', `${name}: tipo "${n.type}" sconosciuto`, 'map', n.id);
-        else if (type.ref === 'enemy' && !lib.bestiario[n.enemy] && !(camp.enemies && camp.enemies[n.enemy])) add('error', `${name}: nemico "${n.enemy || ''}" non trovato nel bestiario`, 'map', n.id);
+        else if (type.ref === 'enemy' && !n.enemy) add('error', `${name}: scontro senza nemico`, 'map', n.id);
+        else if (type.ref === 'enemy' && !lib.bestiario[n.enemy] && !(camp.enemies && camp.enemies[n.enemy])) add('error', `${name}: il nemico "${esc(n.enemy)}" non esiste più`, 'map', n.id);
         else if (type.ref === 'challengeId' && !camp.challenges[n.challengeId]) add('warn', `${name}: sfida "${n.challengeId || ''}" inesistente (il gioco userà una sfida vuota)`, 'map', n.id);
         else if (type.ref && ['treasureId', 'merchantId', 'restId', 'storyId'].includes(type.ref)) {
             const coll = { treasureId: 'treasures', merchantId: 'merchants', restId: 'rests', storyId: 'stories' }[type.ref];
@@ -125,15 +126,15 @@ function validateCampaign() {
 
     // Libreria condivisa
     Object.entries(lib.bestiario).forEach(([k, e]) => {
-        ['hp', 'maxHp', 'att', 'dmg', 'ca'].forEach(f => { if (typeof e[f] !== 'number') add('error', `Bestiario <b>${k}</b>: "${f}" non è un numero`, 'bestiario', k); });
-        if (checkImage(e.image) === 'missing') add('warn', `Bestiario <b>${k}</b>: immagine non trovata ${esc(e.image)}`, 'bestiario', k);
-        ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(f => { if (checkAudio(e[f]) === 'missing') add('warn', `Bestiario <b>${k}</b>: suono non trovato ${esc(e[f])}`, 'bestiario', k); });
-        if (e.hp !== e.maxHp) add('warn', `Bestiario <b>${k}</b>: HP (${e.hp}) diversi da HP massimi (${e.maxHp})`, 'bestiario', k);
-        if (!e.name) add('warn', `Bestiario <b>${k}</b>: nome mancante`, 'bestiario', k);
+        ['hp', 'maxHp', 'att', 'dmg', 'ca'].forEach(f => { if (typeof e[f] !== 'number') add('error', `Nemico <b>${k}</b>: "${f}" non è un numero`, 'bestiario', k); });
+        if (checkImage(e.image) === 'missing') add('warn', `Nemico <b>${k}</b>: immagine non trovata ${esc(e.image)}`, 'bestiario', k);
+        ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(f => { if (checkAudio(e[f]) === 'missing') add('warn', `Nemico <b>${k}</b>: suono non trovato ${esc(e[f])}`, 'bestiario', k); });
+        if (e.hp !== e.maxHp) add('warn', `Nemico <b>${k}</b>: HP (${e.hp}) diversi da HP massimi (${e.maxHp})`, 'bestiario', k);
+        if (!e.name) add('warn', `Nemico <b>${k}</b>: nome mancante`, 'bestiario', k);
         if (e.fasi != null) {
-            if (!Array.isArray(e.fasi)) add('error', `Bestiario <b>${k}</b>: "fasi" deve essere un elenco`, 'bestiario', k);
+            if (!Array.isArray(e.fasi)) add('error', `Nemico <b>${k}</b>: "fasi" deve essere un elenco`, 'bestiario', k);
             else e.fasi.forEach((f, i) => {
-                if (typeof f.soglia !== 'number') add('error', `Bestiario <b>${k}</b>: fase ${i + 1} senza "soglia" numerica`, 'bestiario', k);
+                if (typeof f.soglia !== 'number') add('error', `Nemico <b>${k}</b>: fase ${i + 1} senza "soglia" numerica`, 'bestiario', k);
                 [...(f.azioni || []), f.schema, f.reazione].filter(ref => typeof ref === 'string').forEach(ref => {
                     if (!lib.azioni_elite[ref]) add('error', `Elite <b>${k}</b>: soglia ${i + 1}, azione "${esc(ref)}" non trovata in Azioni elite`, 'elite', k);
                 });
@@ -148,16 +149,16 @@ function validateCampaign() {
         if (describeEliteAction(a) === 'nessun effetto') add('warn', `Azione elite <b>${k}</b>: non fa niente`, 'azioni_elite', k);
     });
     Object.entries(lib.armeria).forEach(([k, it]) => {
-        if (it.id !== k) add('error', `Armeria <b>${k}</b>: il campo id ("${esc(it.id)}") deve coincidere con la chiave`, 'armeria', k);
+        if (it.id !== k) add('error', `Oggetto <b>${k}</b>: il campo id ("${esc(it.id)}") deve coincidere con la chiave`, 'armeria', k);
         if (it.scaling != null) {
-            if (!Array.isArray(it.scaling)) add('error', `Armeria <b>${k}</b>: "scaling" deve essere un elenco`, 'armeria', k);
+            if (!Array.isArray(it.scaling)) add('error', `Oggetto <b>${k}</b>: "scaling" deve essere un elenco`, 'armeria', k);
             else it.scaling.forEach(sc => {
-                if (!['str', 'dmg', 'armor', 'def_bonus', 'def_armor', 'help_bonus_val'].includes(sc.stat)) add('error', `Armeria <b>${k}</b>: scaling con "stat" non valida (${esc(sc.stat)})`, 'armeria', k);
-                if (!['fth', 'int'].includes(sc.per)) add('error', `Armeria <b>${k}</b>: scaling con "per" non valido (${esc(sc.per)}): usa fth o int`, 'armeria', k);
-                if (!(sc.every >= 1)) add('error', `Armeria <b>${k}</b>: scaling con "every" mancante o minore di 1`, 'armeria', k);
+                if (!['str', 'dmg', 'armor', 'def_bonus', 'def_armor', 'help_bonus_val'].includes(sc.stat)) add('error', `Oggetto <b>${k}</b>: scaling con "stat" non valida (${esc(sc.stat)})`, 'armeria', k);
+                if (!['fth', 'int'].includes(sc.per)) add('error', `Oggetto <b>${k}</b>: scaling con "per" non valido (${esc(sc.per)}): usa fth o int`, 'armeria', k);
+                if (!(sc.every >= 1)) add('error', `Oggetto <b>${k}</b>: scaling con "every" mancante o minore di 1`, 'armeria', k);
             });
         }
-        if (!it.name) add('warn', `Armeria <b>${k}</b>: nome mancante`, 'armeria', k);
+        if (!it.name) add('warn', `Oggetto <b>${k}</b>: nome mancante`, 'armeria', k);
     });
     (lib.lootPredefinito || []).forEach(id => { if (!lib.armeria[id]) add('error', `Bottino predefinito: "${esc(id)}" non trovato nell'armeria`, 'armeria'); });
     Object.entries(lib.reliquie).forEach(([k, r]) => {
@@ -209,16 +210,27 @@ function renderIssues() {
     if (!camp) return;
     const issues = validateCampaign().sort((a, b) => (a.level === 'error' ? 0 : 1) - (b.level === 'error' ? 0 : 1));
     const errors = issues.filter(i => i.level === 'error').length;
-    document.getElementById('edIssueCount').textContent = issues.length ? `(${errors} errori, ${issues.length - errors} avvisi)` : '';
-    const unsavedLib = libDirty.size ? `<p class="ed-lib-unsaved">Libreria modificata e non salvata: ${[...libDirty].map(k => LIB_LABELS[k]).join(', ')}</p>` : '';
+    document.getElementById('edIssueCount').textContent = issues.length ? `(${errors})` : '';
+    const unsavedLib = libDirty.size ? `<p class="ed-lib-unsaved">Da salvare: ${[...libDirty].map(k => LIB_LABELS[k]).join(', ')}</p>` : '';
+    const row = (i, idx) => `<div class="ed-issue ${i.level}" data-idx="${idx}" title="Clicca per andare al punto giusto">${i.msg}</div>`;
+    const list = issues.map((i, idx) => ({ i, idx }));
+    const errs = list.filter(x => x.i.level === 'error'), tips = list.filter(x => x.i.level !== 'error');
     document.getElementById('edIssues').innerHTML = unsavedLib + (issues.length
-        ? issues.map((i, idx) => `<div class="ed-issue ${i.level}" data-idx="${idx}">${i.msg}</div>`).join('')
+        ? (errs.length ? `<h3 class="ed-issues-group err">Errori: il gioco non funziona così</h3>${errs.map(x => row(x.i, x.idx)).join('')}` : '<p class="ed-ok">Nessun errore: la campagna si può giocare.</p>')
+          + (tips.length ? `<h3 class="ed-issues-group">Consigli</h3>${tips.map(x => row(x.i, x.idx)).join('')}` : '')
         : '<p class="ed-ok">Nessun problema trovato.</p>');
     document.querySelectorAll('#edIssues .ed-issue').forEach(el => el.addEventListener('click', () => {
         const issue = issues[el.dataset.idx];
-        if (issue.sel != null) {
-            selection[issue.tab] = issue.sel;
-        }
+        if (issue.sel != null) selection[issue.tab] = issue.sel;
+        if (CAMPAIGN_TABS.includes(issue.tab)) campaignChosen = true;
         switchTab(issue.tab);
+        // Il riquadro dell'elemento lampeggia: è qui che c'è da sistemare
+        const target = document.getElementById('edDetail') || document.getElementById('edContent');
+        if (target) {
+            target.classList.remove('ed-flash');
+            void target.offsetWidth;
+            target.classList.add('ed-flash');
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }));
 }

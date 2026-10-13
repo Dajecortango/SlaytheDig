@@ -73,7 +73,7 @@ function renderItemsTab() {
         <div class="ed-list-actions">
             ${Object.entries(ITEM_LISTS).map(([k, label]) => `<button class="ed-subtab ${k === listKey ? 'active' : ''}" ${azione('selectItemList', k)}>${label}</button>`).join('')}
         </div>
-        <p class="ed-lib-note">Gli oggetti stanno nell'<a href="#" ${azione('switchTab', 'armeria')}>Armeria</a>, condivisa da tutte le campagne: qui si sceglie quali usa questa campagna.</p>
+        <p class="ed-lib-note">Gli oggetti stanno nella libreria <a href="#" ${azione('switchTab', 'armeria')}>Oggetti</a>, condivisa da tutte le campagne: qui si sceglie quali usa questa campagna.</p>
         ${listKey === 'lootItems' ? `<label class="ed-check"><input type="checkbox" ${usesDefault ? 'checked' : ''} ${azioneSu('change', 'toggleDefaultLoot', '$checked')}>
             Usa il bottino predefinito (elenco nell'armeria, condiviso)</label>` : ''}
         <div class="ed-detail">

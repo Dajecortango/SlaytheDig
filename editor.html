@@ -16,10 +16,8 @@
 <body class="ed-body">
     <header class="ed-top">
         <div class="ed-top-group">
-            <select id="edCampaignSelect" title="Campagne presenti in data/campagne"></select>
-            <button class="btn-small" data-action="loadSelectedCampaign">Apri</button>
-            <button class="btn-small" data-action="newCampaign">Nuova</button>
-            <label class="ed-file-btn">Apri file…<input type="file" id="edFileInput" accept=".js,.json" hidden></label>
+            <button class="btn-small" data-action="goHome" title="Torna alla pagina iniziale: crea, apri o copia una campagna">Home</button>
+            <span class="ed-campaign-name" id="edCampaignName"></span>
         </div>
 
         <div class="ed-plate">
@@ -27,50 +25,63 @@
         </div>
 
         <div class="ed-top-group ed-top-right">
-            <button class="btn-small" data-action="playtest" title="Apre il gioco in una nuova scheda con la campagna così com'è ora">Prova nel gioco</button>
-            <button class="btn-small ed-save" data-action="saveToProject" title="Scrive data/campagne/&lt;id&gt;.js e le immagini caricate nella cartella del gioco">Salva nel progetto</button>
-            <button class="btn-small" data-action="downloadZip" title="Archivio con il file della campagna e le immagini, da estrarre nella cartella del gioco">Scarica .zip</button>
+            <label class="ed-switch" id="edAdvancedSwitch" title="Mostra anche id, effetti speciali, elite e i salvataggi tecnici">
+                <input type="checkbox" id="edAdvanced" data-change="setAdvanced" data-change-args='["$checked"]'> Avanzate
+            </label>
+            <button class="btn-small ed-undo" id="edUndo" data-action="undo" disabled title="Niente da annullare">↶</button>
+            <button class="btn-small ed-undo" id="edRedo" data-action="redo" disabled title="Niente da ripetere">↷</button>
+            <button class="btn-small ed-help-btn" id="edGuideBtn" data-action="startGuide" title="Guida all'editor">?</button>
+            <button class="btn-small" id="edPlaytestBtn" data-action="playtest" title="Apre il gioco in una nuova scheda con la campagna così com'è ora, senza salvarla">Prova nel gioco</button>
+            <button class="btn-small ed-save ed-simple-only" id="edSaveBtn" data-action="saveToProject" title="Scrive la campagna, i nemici e gli oggetti cambiati e le immagini caricate nella cartella del gioco (la prima volta te la chiede: scegli quella con index.html). Se il browser non può, scarica uno .zip: mandalo a chi tiene il gioco.">Salva</button>
+            <button class="btn-small ed-save ed-adv-only" data-action="saveToProject" title="Scrive data/campagne/&lt;id&gt;.js e le immagini caricate nella cartella del gioco">Salva nel progetto</button>
+            <button class="btn-small ed-adv-only" data-action="downloadZip" title="Archivio con il file della campagna e le immagini, da estrarre nella cartella del gioco">Scarica .zip</button>
             <a class="ed-link" href="index.html">Torna al gioco</a>
         </div>
     </header>
 
     <nav class="ed-tabs" id="edTabs">
-        <button data-tab="general" class="active">Generale</button>
-        <button data-tab="map">Mappa</button>
-        <button data-tab="heroes">Eroi</button>
-        <button data-tab="items">Oggetti</button>
-        <button data-tab="challenges">Sfide</button>
-        <button data-tab="other">Testi</button>
-        <span class="ed-tabs-sep" title="Libreria condivisa da tutte le campagne">Libreria</span>
-        <button data-tab="bestiario" class="ed-lib-tab">Bestiario</button>
-        <button data-tab="elite" class="ed-lib-tab">Elite</button>
-        <button data-tab="azioni_elite" class="ed-lib-tab">Azioni elite</button>
-        <button data-tab="armeria" class="ed-lib-tab">Armeria</button>
-        <button data-tab="reliquie" class="ed-lib-tab">Reliquie</button>
-        <button data-tab="eroi" class="ed-lib-tab">Eroi</button>
-        <button data-tab="abilita" class="ed-lib-tab">Abilità</button>
-        <button data-tab="maledizioni" class="ed-lib-tab">Maledizioni</button>
-        <button data-tab="benedizioni" class="ed-lib-tab">Benedizioni</button>
-        <div class="ed-search">
-            <input type="search" id="edGlobalSearch" placeholder="Cerca ovunque" data-input="globalSearch" data-input-args='["$value"]'>
-            <div id="edSearchResults" class="ed-search-results hidden"></div>
+        <div class="ed-tab-row">
+            <span class="ed-tabs-sep">La campagna</span>
+            <button data-tab="general">Generale</button>
+            <button data-tab="map">Mappa</button>
+            <button data-tab="heroes">Eroi della campagna</button>
+            <button data-tab="items">Oggetti iniziali</button>
+            <button data-tab="challenges">Prove</button>
+            <button data-tab="other">Testi</button>
+        </div>
+        <div class="ed-tab-row" id="edLibTabs">
+            <span class="ed-tabs-sep" title="Valgono per tutte le campagne">Libreria condivisa</span>
+            <button data-tab="bestiario" class="ed-lib-tab">Nemici</button>
+            <button data-tab="armeria" class="ed-lib-tab">Oggetti</button>
+            <button data-tab="reliquie" class="ed-lib-tab">Reliquie</button>
+            <button data-tab="maledizioni" class="ed-lib-tab">Maledizioni</button>
+            <button data-tab="eroi" class="ed-lib-tab">Schede degli eroi</button>
+            <button data-tab="abilita" class="ed-lib-tab">Abilità</button>
+            <button data-tab="benedizioni" class="ed-lib-tab">Benedizioni</button>
+            <button data-tab="elite" class="ed-lib-tab ed-adv-only">Elite</button>
+            <button data-tab="azioni_elite" class="ed-lib-tab ed-adv-only">Azioni elite</button>
+            <div class="ed-search">
+                <input type="search" id="edGlobalSearch" placeholder="Cerca ovunque" data-input="globalSearch" data-input-args='["$value"]'>
+                <div id="edSearchResults" class="ed-search-results hidden"></div>
+            </div>
         </div>
     </nav>
 
     <main class="ed-main">
         <section class="ed-frame ed-content" id="edContent"></section>
         <aside class="ed-frame ed-side">
+            <div id="edSidePreview" class="ed-side-preview"></div>
             <div id="edQuickNav" class="ed-quick-nav"></div>
-            <h2 class="ed-heading">Controlli <span id="edIssueCount"></span></h2>
+            <h2 class="ed-heading" id="edIssuesHeading">Da sistemare <span id="edIssueCount"></span></h2>
             <div id="edIssues"></div>
-            <p class="ed-hint">
+            <p class="ed-hint ed-adv-only">
                 <b>Salva nel progetto</b> scrive <code>data/campagne/&lt;id&gt;.js</code>, i file della libreria modificati
                 (<code>data/libreria/</code>) e le immagini caricate direttamente nella cartella del gioco (Edge o Chrome: la
                 cartella si sceglie la prima volta). Una campagna nuova viene aggiunta da sola a <code>index.html</code> ed <code>editor.html</code>.
                 Negli altri browser usa <b>Scarica .zip</b> ed estrailo nella cartella del gioco.
             </p>
-            <p class="ed-hint">Le modifiche non salvate restano in una bozza nel browser. <b>Prova nel gioco</b> apre la campagna così com'è, senza salvarla.</p>
-            <p class="ed-hint"><a href="#" data-action="forgetProjectDir">Cambia la cartella del progetto</a></p>
+            <p class="ed-hint ed-adv-only">Le modifiche non salvate restano in una bozza nel browser. <b>Prova nel gioco</b> apre la campagna così com'è, senza salvarla.</p>
+            <p class="ed-hint ed-adv-only"><a href="#" data-action="forgetProjectDir">Cambia la cartella del progetto</a></p>
         </aside>
     </main>
 
@@ -86,10 +97,12 @@
     <script src="data/campagne/tutorial.js"></script>
     <script src="data/campagne/astarte_ch1.js"></script>
     <script src="data/campagne/astarte_ch2.js"></script>
+    <script src="data/campagne/astarte_ch3.js"></script>
     <script src="data/campagne/drakengrad.js"></script>
     <script src="js/azioni.js"></script>
     <script src="data/campagne/prova di fede.js"></script>
     <script src="js/libreria.js"></script>
+    <script src="js/regole.js"></script>
     <script src="js/comune.js"></script>
     <script src="js/schema.js"></script>
     <script src="js/editor/campi.js"></script>
@@ -103,6 +116,9 @@
     <script src="js/editor/elite.js"></script>
     <script src="js/editor/controlli.js"></script>
     <script src="js/editor/ricerca.js"></script>
+    <script src="js/editor/sicurezza.js"></script>
+    <script src="js/editor/home.js"></script>
+    <script src="js/editor/guida.js"></script>
     <script src="js/editor/avvio.js"></script>
 </body>
 </html>
