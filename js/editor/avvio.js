@@ -7,7 +7,7 @@
 
 /* ---------- Navigazione ---------- */
 const TABS = ['home', 'general', 'map', 'heroes', 'items', 'challenges', 'other', 'elite', ...LIB_KINDS];
-const ADVANCED_TABS = ['elite', 'azioni_elite'];
+const ADVANCED_TABS = ['azioni_elite'];
 const CAMPAIGN_TABS = ['general', 'map', 'heroes', 'items', 'challenges', 'other'];
 
 function switchTab(tab) {

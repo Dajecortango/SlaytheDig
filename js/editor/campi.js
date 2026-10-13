@@ -85,7 +85,7 @@ const isPassiveStat = a => !a.isCombatActive && a.type === 'passive_stat';
 
 // Effetti speciali "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js): si compongono
 // con i menu (specialiEditor in js/editor/moduli.js). tipo = come si esaurisce con "rompe" (si rompe, si consuma...)
-const specialiField = tipo => ({ k: 'speciali', label: 'Effetti speciali (quando → fai)', type: 'speciali', avanzato: true, tipo, wide: true,
+const specialiField = tipo => ({ k: 'speciali', label: 'Effetti speciali (quando → fai)', type: 'speciali', tipo, wide: true,
     help: 'Ogni effetto: quando scatta, cosa fa e, se serve, una condizione, un round, una probabilità e un limite. Ricordati di scriverlo anche nella descrizione.' });
 // "Passiva" o "Attiva" più la descrizione, senza ripeterlo se la descrizione comincia già così
 const abilitySummary = a => /^(passiva|attiva)/i.test(a.desc || '') ? a.desc : [a.isCombatActive ? 'Attiva' : 'Passiva', a.desc].filter(Boolean).join(' · ');
@@ -117,7 +117,7 @@ const ABILITY_FIELDS = [
       help: 'Vuoto = abilità normale. Es. 7 (17%), 2 o 12 (3%). Il tiro non usa Forza, bonus o reliquie' },
     { gruppo: 'Avanzate', k: 'combat.damageTakenBonus', avanzato: true, label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { gruppo: 'Come funziona in combattimento', k: 'combat.senzaTiro', label: 'Senza tiro né attacco: agiscono solo gli effetti "quando la usa" (cure, potenziamenti...)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
-    { gruppo: 'Avanzate', k: 'combat.effetti', label: 'Effetti dell\'abilità (quando la usa, se colpisce, se manca)', type: 'speciali', avanzato: true, vocab: 'abilita', tipo: 'abilita', wide: true, showIf: isActive,
+    { gruppo: 'Come funziona in combattimento', k: 'combat.effetti', label: 'Effetti dell\'abilità (quando la usa, se colpisce, se manca)', type: 'speciali', vocab: 'abilita', tipo: 'abilita', wide: true, showIf: isActive,
       help: 'Si aggiungono all\'attacco: es. se colpisce cura tutta la compagnia, quando la usa +2 armatura all\'eroe con meno HP. Con "Senza tiro" agiscono solo questi.' },
     { gruppo: 'Testi del diario', k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
       help: '{eroe} = nome dell\'eroe. Es. "✨ {eroe} infonde il colpo di fede sacra!"' },
@@ -132,7 +132,7 @@ const ABILITY_FIELDS = [
     { gruppo: 'Passiva', k: 'effects', label: 'Effetti quando l\'eroe la sceglie', type: 'effetti', wide: true,
       showIf: a => !a.isCombatActive && a.type !== 'passive_stat',
       help: 'Valgono per sempre dal momento della scelta: es. Statistica di un eroe, Danno, 1 = +1 Danno.' },
-    { ...specialiField('abilita'), gruppo: 'Avanzate', showIf: a => !a.isCombatActive && a.type !== 'passive_stat' }
+    { ...specialiField('abilita'), gruppo: 'Passiva', showIf: a => !a.isCombatActive && a.type !== 'passive_stat' }
 ];
 
 // Oggetto dell'armeria (l'id è la chiave nella libreria)
@@ -187,7 +187,7 @@ const ITEM_FIELDS = [
     { k: 'fth', label: 'Fede', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable, help: 'Fede in più: conta nelle prove di Fede e nella preghiera' },
     { k: 'int', label: 'Intelligenza', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable, help: 'Intelligenza in più: conta nelle prove di Intelligenza' },
     { k: 'prayer_bonus', label: 'Bonus al tiro di Preghiera', type: 'number', omitEmpty: true, gruppo: 'Altri bonus', showIf: notConsumable },
-    { ...specialiField('oggetto'), gruppo: 'Avanzate' },
+    { ...specialiField('oggetto'), gruppo: 'Effetti speciali' },
     { k: 'scaling', label: 'Bonus in scala con Fede o Intelligenza (JSON)', type: 'json', avanzato: true, wide: true, nullable: true, gruppo: 'Avanzate',
       help: 'Es. [{ "stat": "dmg", "per": "fth", "every": 2 }] = +1 Danno ogni 2 Fede. "stat": str, dmg, armor, def_bonus, help_bonus_val; "per": fth o int; "max" facoltativo. Ricordati di scriverlo anche nella descrizione.' }
 ];
@@ -208,7 +208,7 @@ const ENEMY_FIELDS = [
     { k: 'sfxHit', label: 'Suono quando viene colpito', type: 'audio', folder: 'audio/nemici', wide: true, gruppo: 'Suoni e video' },
     { k: 'sfxDeath', label: 'Suono quando muore', type: 'audio', folder: 'audio/nemici', wide: true, gruppo: 'Suoni e video',
       help: 'Vuoti = suoni generati del gioco. Se manca quello della morte, alla morte suona quello del colpo.' },
-    { k: 'speciali', label: 'Effetti speciali del nemico (quando → fai)', type: 'speciali', avanzato: true, vocab: 'nemico', tipo: 'nemico', wide: true, gruppo: 'Avanzate',
+    { k: 'speciali', label: 'Effetti speciali del nemico (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true, gruppo: 'Effetti speciali',
       help: 'Valgono per tutto lo scontro: es. spine quando lo colpiscono, veleno quando colpisce, rigenerazione a inizio round.' }
 ];
 
@@ -245,7 +245,7 @@ const ELITE_ACTION_FIELDS = [
     { k: 'turnoRigenera', label: 'A ogni turno: HP che recupera', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoAura', label: 'A ogni turno: danno a tutti prima dell\'attacco', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoRubaVita', label: 'A ogni turno: recupera gli HP che toglie agli eroi', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true },
-    { k: 'speciali', label: 'Effetti speciali da questa soglia in poi (quando → fai)', type: 'speciali', avanzato: true, vocab: 'nemico', tipo: 'nemico', wide: true,
+    { k: 'speciali', label: 'Effetti speciali da questa soglia in poi (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true,
       help: '"Alla soglia" agisce subito una volta (es. 2 danni a tutti, veleno, ruba Scudi); gli altri momenti valgono da lì fino a fine scontro (es. spine, rigenerazione).' }
 ];
 

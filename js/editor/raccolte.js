@@ -6,6 +6,20 @@
    ========================================================================== */
 
 /* ---------- Raccolte con chiave: sfide (campagna) e le quattro librerie ---------- */
+// Riassunto degli attacchi speciali di un elite (soglie e azioni per nome), sopra il modulo del nemico
+function eliteSummaryHtml(e, key) {
+    const fasi = Array.isArray(e.fasi) ? e.fasi : [];
+    if (!fasi.length) return `<p class="ed-lib-note">Nemico normale, senza attacchi speciali. <a href="#" ${azione('gotoLibrary', 'elite', key)}>Rendilo elite</a> (soglie di vita con attacchi speciali).</p>`;
+    const actionName = a => typeof a === 'string' ? ((lib.azioni_elite || {})[a] || {}).name || a : (a && a.name) || 'azione scritta nella soglia';
+    const rows = fasi.map(f => {
+        const quando = f.round != null ? `dal round ${f.round}` : `sotto il ${f.soglia}% di vita`;
+        const azioni = (f.azioni || []).map(actionName);
+        return `<li><b>${esc(quando)}</b>: ${esc(azioni.join(', ') || 'nessuna azione')}${f.testo ? ` <em>«${esc(f.testo)}»</em>` : ''}</li>`;
+    }).join('');
+    return `<div class="ed-elite-summary"><b>Elite: attacchi speciali</b><ul>${rows}</ul>
+        <button type="button" class="btn-small" ${azione('gotoLibrary', 'elite', key)}>Modifica gli attacchi speciali</button></div>`;
+}
+
 const COLLECTIONS = {
     challenges: {
         store: () => camp.challenges, setStore: v => { camp.challenges = v; },
@@ -20,8 +34,7 @@ const COLLECTIONS = {
         create: () => ({ name: 'Nuovo nemico', hp: 8, maxHp: 8, att: 7, dmg: 1, ca: 7, desc: '' }), wizard: true,
         sub: e => `HP ${e.maxHp} · CA ${e.ca} · Att ${e.att} · Danno ${e.dmg}`,
         renameRefs: (oldKey, key) => camp.mapNodes.forEach(n => { if (n.enemy === oldKey) n.enemy = key; }),
-        note: (e, key) => `<p class="ed-lib-note">${Array.isArray(e.fasi) ? `${e.fasi.length} soglie di vita con azioni speciali` : 'Nessuna soglia di vita'}:
-            <a href="#" ${azione('gotoLibrary', 'elite', key)}>modifica nella scheda Elite</a>.</p>`
+        note: (e, key) => eliteSummaryHtml(e, key)
     },
     armeria: {
         library: true, fields: ITEM_FIELDS, label: i => i.name, keyHint: 'nuovo_oggetto',

@@ -13,7 +13,7 @@ const GUIDA_PASSI = [
     { sel: 'edTabs', titolo: 'Le schede',
       testo: 'Sopra le schede della campagna aperta (mappa, eroi, prove, testi); sotto la libreria condivisa: nemici, oggetti, reliquie... valgono per tutte le campagne.' },
     { sel: 'edAdvancedSwitch', titolo: 'Avanzate',
-      testo: 'Spente, l\'editor mostra solo le cose di tutti i giorni. Accendile per gli effetti speciali, gli elite e i dettagli tecnici: puoi spegnerle quando vuoi.' },
+      testo: 'Spente, l\'editor nasconde solo i dettagli tecnici (id, campi JSON, la libreria delle azioni degli elite). Elite ed effetti speciali si vedono sempre.' },
     { sel: 'edIssuesHeading', titolo: 'Da sistemare',
       testo: 'Qui l\'editor elenca cosa manca o non va (un nodo senza nemico, un\'immagine mancante). Clicca una riga per andare al punto giusto.' },
     { sel: 'edSaveBtn', titolo: 'Salva',
