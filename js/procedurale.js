@@ -27,7 +27,7 @@ function procRng(seed) {
 }
 
 function newProcSeed() {
-    return Math.floor(Math.random() * 2147483647) + 1;
+    return Math.floor(rng() * 2147483647) + 1;
 }
 
 // Materiale delle altre campagne (già risolte): nemici per ruolo, sfide, testi e immagini per tipo di nodo

@@ -73,7 +73,7 @@
             const stock = shopPool.filter(Boolean).map(item => {
                 const rarity = itemRarity(item);
                 const spread = ITEM_PRICE_SPREAD[rarity];
-                const basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
+                const basePrice = ITEM_BASE_PRICE[rarity] + Math.floor(rng() * (spread * 2 + 1)) - spread;
                 return { kind: 'item', item, price: adjust(basePrice), revealed: false };
             });
 

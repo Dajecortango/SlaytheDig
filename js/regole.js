@@ -111,7 +111,7 @@ const PROC_SCALA = {
    Valore di un oggetto, pesato su quanto conta in combattimento: il danno vale più di tutto
    (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura. */
 const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 0.75, help_bonus_val: 0.75, fth: 0.75, int: 0.75 };
-// Effetti speciali "quando → fai" (js/speciali.js) fuori dallo scontro, che la prova di scontro del simulatore
+// Effetti speciali "quando → fai" (js/motore/speciali.js) fuori dallo scontro, che la prova di scontro del simulatore
 // (simSpecialValue) non può misurare: valore per ogni punto di "val" (o per l'effetto, se non ha un valore)
 const SIM_SPECIAL_WEIGHTS = { annulla_punizione: 1.5, prova_riuscita: 2, monete: 0.05, carta_bottino: 1, togli_maledizione: 1,
     bonus_cura: 1.25, sconto: 0.3, sconto_percento: 0.03, bonus_tiro_fuori: 0.75 };

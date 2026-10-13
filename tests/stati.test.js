@@ -1,4 +1,4 @@
-// Stati degli eroi (js/speciali.js): stordito, avvelenato, silenziato, furia; "purifica" li toglie
+// Stati degli eroi (js/motore/speciali.js): stordito, avvelenato, silenziato, furia; "purifica" li toglie
 module.exports = (t, carica) => {
     const g = carica();
     const stato = g.eval('stato');

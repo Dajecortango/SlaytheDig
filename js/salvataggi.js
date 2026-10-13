@@ -69,7 +69,7 @@
             },
             // Versione 4 -> 5: proprietari degli eroi nella partita online (vuoti per le partite di prima)
             4: old => ({ ...old, version: 5, stato: { ...old.stato, onlineOwners: old.stato.onlineOwners || {} } }),
-            // Versione 5 -> 6: effetti speciali "quando → fai" (js/speciali.js). I segni delle reliquie e degli
+            // Versione 5 -> 6: effetti speciali "quando → fai" (js/motore/speciali.js). I segni delle reliquie e degli
             // oggetti diventano usi in specialUses; le passive convertite non scrivono più segnali sull'eroe.
             5: old => {
                 const s = old.stato;

@@ -49,4 +49,41 @@ module.exports = (t, carica) => {
         const sfida = prepara();
         t.uguale(1, g.bestChallengeRoad(sfida).i, 'Intelligenza 4 contro CD 6');
     });
+
+    t.test('malus al tiro: della strada o, se manca, della sfida; conta anche nella probabilità', () => {
+        const sfida = prepara();
+        sfida.malus = 1;
+        sfida.strade[1].malus = 2;
+        const s = g.challengeWithRoad(sfida, 1);
+        stato.challengeState = s;
+        const res = g.resolveChallenge(stato.party[0], s, [4]);
+        t.uguale(6, res.total, '4 + 4 Intelligenza - 2 malus');
+        t.ok(res.events.some(e => /malus della prova/.test(e.text)), 'nel diario');
+        const s0 = g.challengeWithRoad(sfida, 0);
+        stato.challengeState = s0;
+        t.uguale(1, g.challengeModifiers(stato.party[1]).malus, 'senza malus suo vale quello della sfida');
+        sfida.strade[1].malus = 0;
+        stato.challengeState = g.challengeWithRoad(sfida, 1);
+        const conMalus = g.challengeChanceInfo(g.challengeModifiers(stato.party[0])).pct;
+        stato.challengeState = { ...stato.challengeState, malus: 3 };
+        t.ok(g.challengeChanceInfo(g.challengeModifiers(stato.party[0])).pct < conMalus, 'con più malus la probabilità scende');
+    });
+
+    t.test('prezzo di una strada: si paga scegliendola, prima del tiro; senza abbastanza Scudi non si sceglie', () => {
+        const sfida = prepara();
+        stato.partyCoins = 20;
+        sfida.strade[2].prezzo = [{ effect: 'coins', val: -10 }, { effect: 'party_damage', val: 1 }];
+        g.eval('challengesData = {}');
+        g.eval('challengesData').ponte = sfida;
+        g.startChallenge('ponte');
+        g.challengeChooseRoad(2);
+        t.uguale(10, stato.partyCoins);
+        t.uguale([3, 3], stato.party.map(h => h.hp), '-1 HP a tutti');
+        t.uguale('fth', stato.challengeState.stat, 'la prova ora è di Fede');
+        stato.partyCoins = 5;
+        g.startChallenge('ponte');
+        g.challengeChooseRoad(2);
+        t.uguale(5, stato.partyCoins, 'Scudi insufficienti: niente');
+        t.ok(/Pregate \(Fede, CD 7, costa 10 Scudi, 1 HP a tutti\)/.test(g.roadLabel(sfida.strade[2], sfida)), g.roadLabel(sfida.strade[2], sfida));
+    });
 };

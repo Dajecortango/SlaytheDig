@@ -2,7 +2,7 @@
 // livello: "minore" o "maggiore"; bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti).
 // effetto: "prossimo_scontro" (buffs: [{ buff_stat, buff_val }] per tutto il prossimo scontro), "cura_party" (val HP ai vivi),
 // "togli_maledizione" (la più recente), "fede" (+val Fede per sempre), "bottino_extra" (val oggetti in più al prossimo
-// bottino), "dono" (resta sull'eroe: agiscono i suoi "speciali", effetti "quando → fai" di js/speciali.js).
+// bottino), "dono" (resta sull'eroe: agiscono i suoi "speciali", effetti "quando → fai" di js/motore/speciali.js).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.benedizioni = {

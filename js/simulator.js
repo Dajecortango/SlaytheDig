@@ -82,22 +82,12 @@ function simSpecialsValue(list) {
     return value;
 }
 
-// Generatore con seme (mulberry32): gli stessi dadi per le prove con e senza l'effetto
-function simSeeded(seed) {
-    return () => {
-        seed = (seed + 0x6D2B79F5) | 0;
-        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-
 // Punteggio medio della compagnia di prova; "special" = effetti sull'oggetto del primo eroe, "extraDmg" = Danno in più
 function simDuelScore(special, extraDmg) {
-    const saved = { random: Math.random, party: stato.party, activeEnemy: stato.activeEnemy, combatRound: stato.combatRound,
+    const saved = { rng: getRngState(), party: stato.party, activeEnemy: stato.activeEnemy, combatRound: stato.combatRound,
         helpBonus: stato.helpBonus, helpDmgBonus: stato.helpDmgBonus, unlockedRelics: stato.unlockedRelics, activeCurses: stato.activeCurses,
         stsMapNodes: stato.stsMapNodes, currentNodeId: stato.currentNodeId, expeditionStats: stato.expeditionStats, partyCoins: stato.partyCoins };
-    Math.random = simSeeded(12345);
+    setRngSeed(12345);  // stessi dadi per le prove con e senza l'effetto
     let total = 0;
     try {
         Object.assign(stato, { unlockedRelics: [], activeCurses: [], expeditionStats: {}, partyCoins: 0, currentNodeId: 'a',
@@ -128,15 +118,15 @@ function simDuelScore(special, extraDmg) {
                 if (enemy.hp <= 0) break;
                 if (enemy.isStunned) { enemy.isStunned = false; continue; }
                 const alive = stato.party.filter(h => h.hp > 0);
-                resolveEnemyTurn(enemy, alive[Math.floor(Math.random() * alive.length)]);
+                resolveEnemyTurn(enemy, alive[Math.floor(rng() * alive.length)]);
             }
             const hpLeft = stato.party.reduce((sum, h) => sum + Math.max(0, h.hp), 0);
             total += (enemy.hp <= 0 ? 10 + hpLeft : 4 * (1 - Math.max(0, enemy.hp) / enemy.maxHp)) - 0.1 * rounds;
             expireTempBuffs(true);
         }
     } finally {
-        Math.random = saved.random;
-        delete saved.random;
+        setRngState(saved.rng);
+        delete saved.rng;
         Object.assign(stato, saved);
     }
     return total / SIM_SPECIAL_DUELS;
@@ -622,20 +612,21 @@ function simChooseNextNode(available, profile, runCtx) {
         let bestCount = Infinity;
         available.forEach(n => { bestCount = Math.min(bestCount, runCtx.visitCounts[n.type] || 0); });
         const candidates = available.filter(n => (runCtx.visitCounts[n.type] || 0) === bestCount);
-        return candidates[Math.floor(Math.random() * candidates.length)];
+        return candidates[Math.floor(rng() * candidates.length)];
     }
 
     const rankOf = n => { const r = profile.nodePriority.indexOf(n.type); return r === -1 ? 999 : r; };
     const bestRank = Math.min(...available.map(rankOf));
     const candidates = available.filter(n => rankOf(n) === bestRank);
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    return candidates[Math.floor(rng() * candidates.length)];
 }
 
 function simResolveChallengeNode(campaignData, node, profile) {
     const original = campaignData.challenges[node.challengeId];
     if (!original) return { defeat: false, finalVictory: false };
     // Con le strade si sceglie quella con la migliore probabilità di riuscita
-    const challenge = bestChallengeRoad(original).challenge;
+    const best = bestChallengeRoad(original);
+    const challenge = best.challenge;
     stato.challengeState = challenge; // richiesto da challengeModifiers/challengeRollMode (leggono la globale)
 
     const alive = stato.party.filter(h => h.hp > 0);
@@ -645,6 +636,8 @@ function simResolveChallengeNode(campaignData, node, profile) {
     const final = (node.next || []).length === 0;
     // La prova finale non si può lasciar perdere
     if (!final && !profile.attemptChallenge(chance, node)) return { defeat: false, finalVictory: false };
+    // Il prezzo della strada scelta si paga come nel gioco (challengeChooseRoad), solo se la si affronta
+    if (best.i != null && (original.strade[best.i].prezzo || []).length) applyEffects(original.strade[best.i].prezzo);
 
     // La ricerca a simulazioni (simLookaheadProfile) rimette lo stato com'era: l'eroe si riprende dalla compagnia di adesso
     const res = resolveChallenge(stato.party.find(h => h.name === hero.name) || hero, challenge);

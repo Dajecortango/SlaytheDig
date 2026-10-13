@@ -10,8 +10,8 @@ const ROOT = path.resolve(__dirname, '..');
 
 // Script nell'ordine di index.html, senza avvio, telefono e animazioni (audio e ritratti servono alla barra degli eroi)
 const SCRIPT_MOTORE = [
-    'js/azioni.js', 'js/libreria.js', 'js/regole.js', 'js/online-regole.js', 'js/comune.js', 'js/procedurale.js', 'js/game.js', 'js/interfaccia.js', 'js/effetti.js', 'js/menu.js', 'js/spedizione.js',
-    'js/creazione.js', 'js/oggetti.js', 'js/speciali.js', 'js/prove.js', 'js/salvataggi.js', 'js/audio.js', 'js/mappa.js',
+    'js/azioni.js', 'js/libreria.js', 'js/regole.js', 'js/online-regole.js', 'js/comune.js', 'js/schema.js', 'js/procedurale.js', 'js/game.js', 'js/interfaccia.js', 'js/effetti.js', 'js/menu.js', 'js/spedizione.js',
+    'js/creazione.js', 'js/oggetti.js', 'js/motore/tiri.js', 'js/motore/speciali.js', 'js/motore/scontro.js', 'js/motore/prove.js', 'js/prove.js', 'js/salvataggi.js', 'js/audio.js', 'js/mappa.js',
     'js/combattimento.js', 'js/ritratti.js', 'js/loot.js', 'js/shop.js', 'js/simulator.js', 'js/online.js'
 ];
 

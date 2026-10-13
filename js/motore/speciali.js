@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EFFETTI SPECIALI "QUANDO → FAI"
+   MOTORE: EFFETTI SPECIALI "QUANDO → FAI"
    Motore degli effetti scritti nel campo "speciali" di oggetti, reliquie, maledizioni e abilità
    (vocabolario e testi in js/comune.js: SPECIALI_QUANDO, SPECIALI_FAI, specialeTesto).
    Gioco e simulatore chiamano sempre queste funzioni, così un effetto nuovo creato dall'editor
@@ -14,9 +14,10 @@
    libreria per id, così una modifica nell'editor vale anche per le partite salvate.
    Limiti ("una volta per scontro / capitolo"): in hero.specialUses e stato.party.specialUses
    ({ scontro: { chiave: usi }, capitolo: {...} }), salvati con la partita.
-   Stesso ambito globale degli altri file; le funzioni si chiamano solo dopo il caricamento.
+   Modulo: window.Motore.speciali (i nomi restano anche globali). Le icone degli stati sulla carta
+   (heroStatusesHtml) sono in js/oggetti.js.
    ========================================================================== */
-
+(function () {
         // Effetti di un oggetto: il campo "speciali", o i campi del formato di prima (LEGACY_ITEM_SPECIALS)
         function itemSpecials(item) {
             if (!item) return [];
@@ -252,7 +253,7 @@
                 }
                 case 'altro_casuale': {
                     const others = alive.filter(h => h !== who && h.hp < h.maxHp);
-                    return others.length ? [others[Math.floor(Math.random() * others.length)]] : [];
+                    return others.length ? [others[Math.floor(rng() * others.length)]] : [];
                 }
                 default: return who && who.hp > 0 ? [who] : [];
             }
@@ -286,7 +287,7 @@
                 if (res.cancel || res.revive != null) break;  // colpo già annullato o eroe già salvato
                 const s = e.s;
                 if (!specialAvailable(e) || !specialConditionsMet(e, hero, ctx)) continue;
-                if (s.prob && Math.random() * 100 >= s.prob) continue;
+                if (s.prob && rng() * 100 >= s.prob) continue;
                 const v = s.val || 0;
                 const who = e.owner || hero;
                 let note = null;
@@ -379,7 +380,7 @@
                     }
                     case 'togli_maledizione':
                         if (!stato.activeCurses.length) continue;
-                        removeCurseAt(Math.floor(Math.random() * stato.activeCurses.length));
+                        removeCurseAt(Math.floor(rng() * stato.activeCurses.length));
                         note = 'una maledizione svanisce';
                         break;
                     default:
@@ -472,14 +473,6 @@
             return { ok: true, reason: '' };
         }
 
-        // Icone degli stati sulla carta dell'eroe, accanto ai potenziamenti
-        function heroStatusesHtml(h) {
-            const list = heroStatuses(h);
-            if (!list.length) return '';
-            return `<div class="hero-statuses">${list.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}">
-                <img src="${esc(s.icon)}" alt="">${s.rounds ? `<b>${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
-        }
-
         /* ---------- Effetti speciali dei nemici (NEMICO_QUANDO / NEMICO_FAI in js/comune.js) ----------
            Fonti: "speciali" del nemico (bestiario) e "specialiFase" (aggiunti dalle azioni degli elite alla soglia).
            Usi "una volta per scontro" in enemy.specialUses: il nemico è una copia nuova a ogni scontro. */
@@ -501,7 +494,7 @@
                 if (s.round && stato.combatRound !== s.round) return;
                 if (s.se === 'sotto_meta' && enemy.hp > enemy.maxHp / 2) return;
                 if (s.se === 'eroe_ferito' && !(hero && hero.hp > 0 && hero.hp <= WOUNDED_HP)) return;
-                if (s.prob && Math.random() * 100 >= s.prob) return;
+                if (s.prob && rng() * 100 >= s.prob) return;
                 const v = s.val || 0;
                 const mode = s.bersaglio || 'eroe';
                 const targets = mode === 'eroe' ? (hero && hero.hp > 0 ? [hero] : []) : eliteTargets(mode, hero);
@@ -596,3 +589,16 @@
         function specialTipLines(list, tipo) {
             return (list || []).map(s => specialeTesto(s, tipo));
         }
+
+    // API del modulo: window.Motore.speciali. Gli stessi nomi restano anche globali (Object.assign su window),
+    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: abilitySpecials, relicSpecials, curseSpecials, heroAbilityRefs, partySpecialSources, SPECIALI_DI_COMPAGNIA, specialSources, specialWhenMatches, specialUsesStore, specialAvailable, specialUsesLeft, specialConditionsMet, specialEntries, markSpecialUsed, exhaustSpecialSource, specialTargets, addSpecialBuff, SPECIALI_BONUS, HERO_STATUSES, statusUntil, clearHeroStatuses, applyPoison.
+    const api = {
+        itemSpecials, heroSpecialSources, resetCombatSpecialUses, rollSpecialSources, rollSpecialBonus, spendRollSpecials,
+        specialSum, specialPriceFactor, fireSpecials, runSpecialEntries, fireSpecialsAll, specialReroll,
+        specialHitDamagePreview, hasSpecial, isSilenced, isRaging, heroStatuses, combatActionAllowed,
+        enemySpecialList, fireEnemySpecials, enemyHitReaction, startRoundSpecials, specialTipLines
+    };
+    window.Motore = window.Motore || {};
+    window.Motore.speciali = api;
+    Object.assign(window, api);
+})();

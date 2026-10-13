@@ -94,7 +94,7 @@ function grantRelic(relicId) {
 // Una reliquia a caso fra quelle della libreria che il party non ha ancora (null se le ha tutte)
 function pickUnownedRelicId() {
     const ids = Object.keys(LIBRERIA.reliquie || {}).filter(id => !hasRelic(id));
-    return ids.length ? ids[Math.floor(Math.random() * ids.length)] : null;
+    return ids.length ? ids[Math.floor(rng() * ids.length)] : null;
 }
 
 function breakRelic(relicId) {
@@ -212,6 +212,13 @@ function breakRelic(relicId) {
             activeCampaignSlide = idx;
             updateCampaignCarouselState();
         }
+
+        // index.html?seme=123: tutti i numeri casuali della partita in una sequenza fissa (rng in js/comune.js),
+        // per riprovare uguale una partita in cui è comparso un problema
+        (function seedFromUrl() {
+            const seme = new URLSearchParams(location.search).get('seme');
+            if (seme != null && seme !== '') setRngSeed(Number(seme) || [...seme].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
+        })();
 
         /* "Prova nel gioco" dall'editor: index.html?prova=<id> carica la campagna in modifica
            (salvata dall'editor in IndexedDB, chiave "playtest") solo per questa scheda del browser. */

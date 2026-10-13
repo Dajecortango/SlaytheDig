@@ -3,8 +3,6 @@
 // e interpretati da applyEffects() in js/game.js. È un file .js (e non .json) perché il gioco
 // si apre con doppio click da file:// e il browser blocca fetch() di file locali.
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
-// Campagna procedurale ("procedurale"): la mappa si genera a ogni partita in js/procedurale.js
-// riciclando nemici, sfide, testi e immagini delle altre campagne; qui restano vuote.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["drakengrad"] = {
     "id": "drakengrad",

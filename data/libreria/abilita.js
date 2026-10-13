@@ -1,6 +1,6 @@
 // Abilità: passive e attive degli eroi, condivise dalla libreria Eroi.
 // Gli eroi le richiamano per id nel campo "abilities". Le passive agiscono con "speciali" (effetti
-// "quando → fai", js/speciali.js), con "effects" (o con "type": "passive_stat");
+// "quando → fai", js/motore/speciali.js), con "effects" (o con "type": "passive_stat");
 // le attive (isCombatActive) agiscono con "combat" (vedi abilityCombat in js/game.js).
 // "icon" è l'icona di Warcraft III mostrata nel gioco.
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
