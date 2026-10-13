@@ -269,6 +269,8 @@
             const ability = hero && hero.chosenAbility;
             if (!ability || !ability.isCombatActive) return { ok: false, reason: 'Nessuna abilità attiva' };
             if (hero.abilityUsedThisCombat) return { ok: false, reason: 'Già utilizzata in questo scontro' };
+            if (isSilenced(hero)) return { ok: false, reason: 'Silenziato: non può usare l\'abilità attiva' };
+            if (isRaging(hero)) return { ok: false, reason: 'In furia: può solo attaccare' };
             const c = abilityCombat(ability) || {};
             if (c.requiresHitLastTurn && !heroHitLastTurn(hero)) return { ok: false, reason: 'Si può usare solo dopo essere stati colpiti dal nemico nel suo ultimo turno' };
             // Somma esatta contro elite e boss: li porta a metà vita, inutile se ci sono già
@@ -976,6 +978,13 @@
                 btnAbility.style.display = "none";
             }
             updateActionPreviews(currentActiveHero);
+            // Furia: solo Attacca (e gli oggetti); i pulsanti spiegano perché
+            const rage = isRaging(currentActiveHero);
+            ['cmdDefend', 'cmdHelp'].forEach(id => {
+                const b = document.getElementById(id);
+                b.disabled = rage;
+                if (rage) b.dataset.tip = `${b.dataset.tip.split('||')[0]}||<span class="tip-hint">${esc(currentActiveHero.name)} è in furia: può solo attaccare</span>`;
+            });
         }
 
         /* ---------- Anteprima dell'esito sui pulsanti azione ---------- */
@@ -1046,6 +1055,8 @@
             }
       }
         function selectCombatAction(action) {
+            const allowed = combatActionAllowed(currentActiveHero, action);
+            if (!allowed.ok) { uiError(allowed.reason); return; }
             if (action === 'ability' && !abilityUsable(currentActiveHero).ok) {
                 uiError(abilityUsable(currentActiveHero).reason);
                 return;

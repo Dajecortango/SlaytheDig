@@ -188,7 +188,8 @@ const SPECIALI_MODELLI = {
         'Taglia: +5 Scudi a ogni nemico sconfitto': { quando: 'nemico_sconfitto', fai: 'monete', val: 5 },
         'Avido: +3 Scudi dopo ogni scontro': { quando: 'fine_scontro', fai: 'monete', val: 3 },
         'Amico dei mercanti: -10% sui prezzi': { quando: 'mercante', fai: 'sconto_percento', val: 10 },
-        'Riposo profondo: +1 HP al riposo': { quando: 'riposo', fai: 'bonus_cura', val: 1 }
+        'Riposo profondo: +1 HP al riposo': { quando: 'riposo', fai: 'bonus_cura', val: 1 },
+        "Purezza: a inizio round toglie gli stati all'eroe": { quando: 'inizio_round', fai: 'purifica' }
     },
     abilita: {
         'Se colpisce, cura 1 HP a tutta la compagnia': { quando: 'colpo', fai: 'cura', val: 1, bersaglio: 'compagnia' },
@@ -204,7 +205,9 @@ const SPECIALI_MODELLI = {
         'Urlo: -1 al tiro a tutti per 2 round all\'inizio': { quando: 'inizio_scontro', fai: 'malus', val: 1, durata: 2, bersaglio: 'tutti' },
         'Ladro: ruba 5 Scudi quando colpisce': { quando: 'colpisce', fai: 'ruba_scudi', val: 5 },
         'Furia: +1 danno quando scende a metà vita': { quando: 'colpito', se: 'sotto_meta', fai: 'potenzia', stat: 'dmg', val: 1, limite: 'scontro' },
-        'Esplosione alla soglia: 2 danni a tutti': { quando: 'soglia', fai: 'danni', val: 2, bersaglio: 'tutti' }
+        'Esplosione alla soglia: 2 danni a tutti': { quando: 'soglia', fai: 'danni', val: 2, bersaglio: 'tutti' },
+        "Silenzio: chi lo colpisce perde l'abilità per 2 round": { quando: 'colpito', fai: 'silenzia', durata: 2 },
+        'Urlo di guerra: tutti in furia per 2 round alla soglia': { quando: 'soglia', fai: 'infuria', durata: 2, bersaglio: 'tutti' }
     }
 };
 

@@ -311,6 +311,7 @@ const server = http.createServer((req, res) => {
                 requestId: crypto.randomUUID(),
                 heroName: data.heroName,
                 canUseAbility: !!data.canUseAbility,
+                onlyAttack: !!data.onlyAttack,
                 abilityLabel: data.abilityLabel || null,
                 consumables: Array.isArray(data.consumables) ? data.consumables : [],
                 livingAllies: Array.isArray(data.livingAllies) ? data.livingAllies : [],
