@@ -30,9 +30,14 @@ module.exports = (t) => {
         }));
     });
 
-    t.test('effetti speciali e campi JSON sono avanzati', () => {
-        Object.keys(MODULI).forEach(nome => ed.eval(nome).filter(f => f.type === 'speciali' || f.type === 'json')
+    t.test('i campi JSON sono avanzati; gli effetti speciali (con i menu) e la scheda Elite no', () => {
+        Object.keys(MODULI).forEach(nome => ed.eval(nome).filter(f => f.type === 'json')
             .forEach(f => t.ok(f.avanzato, `${nome}: "${f.k}" dovrebbe essere avanzato`)));
+        Object.keys(MODULI).forEach(nome => ed.eval(nome).filter(f => f.type === 'speciali')
+            .forEach(f => t.ok(!f.avanzato, `${nome}: "${f.k}" deve restare visibile`)));
+        t.ok(/data-tab="elite" class="ed-lib-tab">/.test(html), 'scheda Elite visibile senza Avanzate');
+        const nota = ed.eliteSummaryHtml({ fasi: [{ soglia: 50, testo: 'Furia!', azioni: ['furore', 'predatore'] }] }, 'boia');
+        t.ok(/Furore/.test(nota) && /Predatore/.test(nota) && /50%/.test(nota), nota);
     });
 
     t.test('schede: nessun nome ripetuto, nomi semplici per la libreria', () => {
