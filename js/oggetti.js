@@ -264,6 +264,14 @@
             }).join('')}</div>`;
         }
 
+        // Icone degli stati sulla carta dell'eroe, accanto ai potenziamenti
+        function heroStatusesHtml(h) {
+            const list = heroStatuses(h);
+            if (!list.length) return '';
+            return `<div class="hero-statuses">${list.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}">
+                <img src="${esc(s.icon)}" alt="">${s.rounds ? `<b>${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
+        }
+
         // Benedizioni della preghiera ancora da usare (hero.blessings, js/prove.js): icone dorate sulla carta dell'eroe,
         // anche fuori dal combattimento; il numero è quante ne ha dello stesso tipo
         function heroBlessingsHtml(h) {

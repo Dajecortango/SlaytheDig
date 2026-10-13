@@ -83,7 +83,7 @@ const COMBAT_STAT_OPTIONS = () => [['', 'Nessuna'], ['int', STAT_LABELS.int], ['
 const isActive = a => !!a.isCombatActive;
 const isPassiveStat = a => !a.isCombatActive && a.type === 'passive_stat';
 
-// Effetti speciali "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js): si compongono
+// Effetti speciali "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js): si compongono
 // con i menu (specialiEditor in js/editor/moduli.js). tipo = come si esaurisce con "rompe" (si rompe, si consuma...)
 const specialiField = tipo => ({ k: 'speciali', label: 'Effetti speciali (quando → fai)', type: 'speciali', tipo, wide: true,
     help: 'Ogni effetto: quando scatta, cosa fa e, se serve, una condizione, un round, una probabilità e un limite. Ricordati di scriverlo anche nella descrizione.' });
@@ -333,6 +333,7 @@ const CHALLENGE_FIELDS = [
     { k: 'title', label: 'Titolo', wide: true },
     { k: 'stat', label: 'Statistica', type: 'select', options: () => [['int', 'Intelligenza'], ['fth', 'Fede'], ['str', 'Forza']] },
     { k: 'cd', label: 'Classe di difficoltà', type: 'number' },
+    { k: 'malus', label: 'Malus al tiro', type: 'number', omitEmpty: true, help: 'Facoltativo: es. 1 = -1 al tiro. Le strade possono averne uno loro.' },
     { k: 'desc', label: 'Descrizione', type: 'textarea', wide: true },
     { k: 'ignoreText', label: 'Testo se ignorata', type: 'textarea', wide: true },
     { k: 'successText', label: 'Testo di successo', type: 'textarea', wide: true },
@@ -343,8 +344,8 @@ const CHALLENGE_FIELDS = [
     { k: 'punishment', label: 'Punizione', type: 'libref', lib: 'maledizioni', wide: true,
       custom: () => ({ type: 'injury', name: '', desc: '', effects: [{ effect: 'party_damage', val: 1 }] }),
       help: 'Una maledizione della libreria, oppure "Personalizzata" per un danno o una penalità immediata' },
-    { k: 'strade', label: 'Strade (approcci diversi)', type: 'roadlist', wide: true,
-      help: 'Facoltative: al posto di "Uno di voi si avvicina" il giocatore sceglie una strada, ognuna con la sua statistica e difficoltà. Testi, premio e punizione lasciati vuoti sono quelli della sfida.' }
+    { k: 'strade', label: 'Modi di affrontarla (scelti prima del tiro)', type: 'roadlist', wide: true,
+      help: 'Facoltativi: al posto di "Uno di voi si avvicina" il giocatore sceglie come affrontare la sfida. Ogni modo ha la sua statistica (Forza, Intelligenza o Fede), la sua CD, un eventuale malus al tiro e un eventuale prezzo pagato subito (es. -1 HP a tutti). Testi, premio e punizione lasciati vuoti sono quelli della sfida.' }
 ];
 
 const NODE_FIELDS = [

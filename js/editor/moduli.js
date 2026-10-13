@@ -314,7 +314,7 @@ function specialiEditor(obj, f, onChange) {
 /* ---------- Effetti di applyEffects composti con i menu ----------
    Un riga per effetto: tipo (EFFECT_LABELS in js/comune.js) e solo i campi che servono (EFFECT_TYPES).
    list = l'elenco da modificare (si cambia sul posto), save = da chiamare a ogni modifica. */
-function effectListEditor(list, save) {
+function effectListEditor(list, save, nuovo = { effect: 'coins', val: 10 }) {
     const box = document.createElement('div');
     box.className = 'ed-specials';
     const opts = (map, value) => Object.entries(map).map(([k, l]) => `<option value="${esc(k)}" ${k === value ? 'selected' : ''}>${esc(l)}</option>`).join('');
@@ -359,7 +359,7 @@ function effectListEditor(list, save) {
         add.type = 'button';
         add.className = 'btn-small';
         add.textContent = 'Aggiungi un effetto';
-        add.addEventListener('click', () => { list.push({ effect: 'coins', val: 10 }); save(); paint(); });
+        add.addEventListener('click', () => { list.push({ ...nuovo }); save(); paint(); });
         box.appendChild(add);
     };
     paint();
@@ -386,17 +386,22 @@ function roadListEditor(obj, f, onChange) {
                     <label class="ed-grow">Testo del pulsante<input type="text" data-k="testo" value="${esc(r.testo || '')}"></label>
                     <label>Statistica<select data-k="stat">${Object.entries(STAT_LABELS).map(([k, l]) => `<option value="${k}" ${k === r.stat ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
                     <label>CD<input type="number" data-k="cd" min="1" value="${r.cd ?? ''}"></label>
+                    <label>Malus al tiro<input type="number" data-k="malus" min="0" value="${r.malus ?? ''}" placeholder="${obj.malus || 0}"></label>
                     <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
                 </div>
+                <div class="ed-choice-part"><b>Prezzo pagato subito scegliendo questo modo</b> <small>(facoltativo: es. Scudi, danni a tutti, una maledizione)</small></div>
                 <div class="ed-special-row">
                     <label>Premio${libSelect('reward', 'reliquie', typeof r.reward === 'string' ? r.reward : '')}</label>
                     <label>Punizione${libSelect('punishment', 'maledizioni', typeof r.punishment === 'string' ? r.punishment : '')}</label>
                 </div>
                 <label class="ed-choice-text">Testo di successo (vuoto = quello della sfida)<textarea data-k="successText">${esc(r.successText || '')}</textarea></label>
                 <label class="ed-choice-text">Testo di fallimento (vuoto = quello della sfida)<textarea data-k="failText">${esc(r.failText || '')}</textarea></label>`;
+            // Prezzo: elenco di effetti con i menu (come gli effetti degli eventi), dopo la riga del titolo
+            const prezzo = r.prezzo || [];
+            card.querySelector('.ed-choice-part').after(effectListEditor(prezzo, () => { if (prezzo.length) r.prezzo = prezzo; else delete r.prezzo; save(); }, { effect: 'coins', val: -10 }));
             card.addEventListener('change', ev => {
                 const k = ev.target.dataset.k;
-                if (!k) return;
+                if (!k || ev.target.closest('.ed-special') !== card) return;
                 if (ev.target.type === 'number') { if (ev.target.value === '') delete r[k]; else r[k] = Number(ev.target.value); }
                 else if (ev.target.value === '') delete r[k];
                 else r[k] = ev.target.value;
@@ -408,8 +413,8 @@ function roadListEditor(obj, f, onChange) {
         const add = document.createElement('button');
         add.type = 'button';
         add.className = 'btn-small';
-        add.textContent = 'Aggiungi una strada';
-        add.addEventListener('click', () => { ensure().push({ testo: 'Nuova strada', stat: obj.stat || 'str', cd: obj.cd || 7 }); save(); paint(); });
+        add.textContent = 'Aggiungi un modo di affrontarla';
+        add.addEventListener('click', () => { ensure().push({ testo: 'Nuovo modo', stat: obj.stat || 'str', cd: obj.cd || 7 }); save(); paint(); });
         box.appendChild(add);
     };
     paint();
@@ -598,7 +603,8 @@ function renderForm(container, obj, fields, onChange) {
 
         // Elenco di id di una libreria (abilità di un eroe): togli, riordina, aggiungi
         if (f.type === 'reflist') {
-            const list = Array.isArray(value) ? value : (obj[f.k] = []);
+            // Il campo nasce solo quando si aggiunge il primo elemento: aprire l'eroe non cambia i suoi dati
+            const list = Array.isArray(value) ? value : [];
             const box = document.createElement('div');
             box.className = 'ed-picklist';
             box.innerHTML = list.map((ref, i) => {
@@ -634,7 +640,7 @@ function renderForm(container, obj, fields, onChange) {
             add.className = 'btn-small';
             add.textContent = `Aggiungi da ${LIB_LABELS[f.lib]}`;
             add.disabled = !available.length;
-            add.addEventListener('click', () => { if (!select.value) return; list.push(select.value); onChange(f.k); render(); });
+            add.addEventListener('click', () => { if (!select.value) return; if (!Array.isArray(obj[f.k])) obj[f.k] = list; list.push(select.value); onChange(f.k); render(); });
             row.append(select, add);
             wrap.append(box, row);
             if (f.help) wrap.insertAdjacentHTML('beforeend', `<span class="ed-help">${esc(f.help)}</span>`);

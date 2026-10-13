@@ -1,6 +1,6 @@
 // Reliquie: ricompense delle sfide, condivise dalle campagne.
 // Le sfide le richiamano per id nel campo "reward". "effects" agisce quando si ottiene la reliquia,
-// "speciali" sono gli effetti "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js).
+// "speciali" sono gli effetti "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.reliquie = {

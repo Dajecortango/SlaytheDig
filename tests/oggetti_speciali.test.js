@@ -1,4 +1,4 @@
-// Oggetti con un effetto speciale "quando → fai" (campo "speciali" dell'armeria, motore in js/speciali.js)
+// Oggetti con un effetto speciale "quando → fai" (campo "speciali" dell'armeria, motore in js/motore/speciali.js)
 module.exports = (t, carica) => {
     const g = carica();
     const lib = g.LIBRERIA;

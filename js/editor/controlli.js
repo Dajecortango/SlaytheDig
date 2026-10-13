@@ -191,6 +191,17 @@ function validateCampaign() {
         if (!a.isCombatActive) checkEffects(a.effects, name, issues, 'abilita', k);
         if (checkImage(a.icon) === 'missing') add('warn', `${name}: icona non trovata ${esc(a.icon)}`, 'abilita', k);
     });
+
+    // Scheda dei dati (js/schema.js): tipi, campi obbligatori, valori ammessi, effetti e campi che il gioco non conosce.
+    // Stesso controllo dei test: un errore qui è un dato che il gioco leggerebbe male
+    const fromSchema = (problems, tab, sel) => problems.forEach(p => add(p.livello === 'errore' ? 'error' : 'warn', esc(p.msg), tab, sel));
+    LIB_KINDS.forEach(kind => Object.entries(lib[kind] || {}).forEach(([k, el]) =>
+        fromSchema(controllaElemento(DATI_SCHEMA[kind], el, `${LIB_LABELS[kind]} ${k}`), kind === 'bestiario' && Array.isArray(el.fasi) ? 'elite' : kind, k)));
+    fromSchema(controllaElemento(DATI_SCHEMA.campagna, camp, 'Campagna'), 'general');
+    Object.entries(camp.challenges || {}).forEach(([k, c]) => fromSchema(controllaElemento(DATI_SCHEMA.sfida, c, `Sfida ${k}`), 'challenges', k));
+    Object.entries(camp.stories || {}).forEach(([k, s]) => fromSchema(controllaElemento(DATI_SCHEMA.trama, s, `Trama ${k}`), 'map',
+        ((camp.mapNodes || []).find(n => n.storyId === k) || {}).id));
+    (camp.mapNodes || []).forEach(n => fromSchema(controllaElemento(DATI_SCHEMA.nodo, n, `Nodo ${n.id}`), 'map', n.id));
     return issues;
 }
 

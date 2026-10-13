@@ -36,11 +36,11 @@ module.exports = (t, carica) => {
     });
 
     t.test('ogni id usato nel codice esiste nella libreria (o è tra le reliquie orfane note)', () => {
-        const codice = ['js/game.js', 'js/interfaccia.js', 'js/effetti.js', 'js/menu.js', 'js/spedizione.js', 'js/combattimento.js', 'js/loot.js', 'js/shop.js', 'js/simulator.js']
+        const codice = ['js/game.js', 'js/interfaccia.js', 'js/effetti.js', 'js/menu.js', 'js/spedizione.js', 'js/combattimento.js', 'js/motore/tiri.js', 'js/motore/speciali.js', 'js/motore/scontro.js', 'js/motore/prove.js', 'js/prove.js', 'js/loot.js', 'js/shop.js', 'js/simulator.js']
             .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
         const relic = [...codice.matchAll(/(?:hasRelic|breakRelic)\('([^']+)'\)/g)].map(m => m[1]);
         const curse = [...codice.matchAll(/hasCurse\('([^']+)'\)/g)].map(m => m[1]);
-        // Le reliquie agiscono con gli effetti speciali (js/speciali.js): il codice non ne riconosce più nessuna per id
+        // Le reliquie agiscono con gli effetti speciali (js/motore/speciali.js): il codice non ne riconosce più nessuna per id
         t.uguale([], relic, 'nessuna reliquia scritta nel codice');
         for (const id of relic) t.ok(lib.reliquie[id] || ORFANE.includes(id), `reliquia sconosciuta: ${id}`);
         for (const id of curse) t.ok(lib.maledizioni[id], `maledizione sconosciuta: ${id}`);

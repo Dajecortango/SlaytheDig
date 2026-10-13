@@ -134,23 +134,23 @@
         function pickByRarity(pool, poolWeights) {
             if (pool.length === 0) return null;
             const present = Object.keys(poolWeights).filter(r => poolWeights[r] > 0 && pool.some(i => itemRarity(i) === r));
-            if (present.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+            if (present.length === 0) return pool[Math.floor(rng() * pool.length)];
             const weights = capRarityShares(Object.fromEntries(present.map(r => [r, poolWeights[r]])));
             const available = Object.keys(weights);
             const total = available.reduce((sum, r) => sum + weights[r], 0);
-            let pick = Math.random() * total;
+            let pick = rng() * total;
             let rarity = available[available.length - 1];
             for (const r of available) {
                 pick -= weights[r];
                 if (pick < 0) { rarity = r; break; }
             }
             const sameRarity = pool.filter(i => itemRarity(i) === rarity);
-            return sameRarity[Math.floor(Math.random() * sameRarity.length)];
+            return sameRarity[Math.floor(rng() * sameRarity.length)];
         }
 
         // Oro base moltiplicato per l'avanzamento (fino a x2 all'ultimo livello) e +50% negli scontri elite
         function scaledCoins(amounts, isElite) {
-            const base = amounts[Math.floor(Math.random() * amounts.length)];
+            const base = amounts[Math.floor(rng() * amounts.length)];
             return Math.round(base * (1 + mapProgress()) * (isElite ? 1.5 : 1));
         }
 

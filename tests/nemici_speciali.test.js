@@ -1,5 +1,5 @@
 // Effetti speciali dei nemici (bestiario e azioni degli elite), fasi a tempo, abilità attive componibili
-// e i momenti "perde_hp" e "nemico_sconfitto" degli eroi (js/speciali.js, js/combattimento.js)
+// e i momenti "perde_hp" e "nemico_sconfitto" degli eroi (js/motore/speciali.js, js/combattimento.js)
 module.exports = (t, carica) => {
     const g = carica();
     const stato = g.eval('stato');

@@ -25,7 +25,8 @@ window.LIBRERIA.eroi = {
         "portrait": "immagini/ritratti/curio.webp",
         "portraitWounded": "immagini/ritratti/curio_ferito.webp",
         "portraitPos": "53% 22%",
-        "portraitZoom": 2.4
+        "portraitZoom": 2.4,
+        "runeOptions": []
     },
     "prometeo_dignitas": {
         "name": "Prometeo Dignitas",

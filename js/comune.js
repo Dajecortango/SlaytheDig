@@ -5,6 +5,25 @@
    Caricato dopo js/libreria.js e prima di js/game.js / js/editor/.
    ========================================================================== */
 
+/* ---------- Numeri casuali della partita ----------
+   rng() al posto di Math.random per tutto ciò che decide la partita (dadi, bottino, mercante, effetti speciali,
+   bersagli dei nemici, simulatore). Senza seme è Math.random; con setRngSeed(n) la sequenza si ripete uguale
+   (test, simulatore, un bug da riprodurre: index.html?seme=123), setRngSeed(null) torna casuale.
+   getRngState / setRngState salvano e rimettono il punto della sequenza (duelli di prova del simulatore).
+   Animazioni, suoni e grafica usano ancora Math.random: non decidono niente. */
+let rngSeedState = null;
+function rng() {
+    if (rngSeedState == null) return Math.random();
+    // mulberry32: veloce e abbastanza buono per un gioco
+    rngSeedState = (rngSeedState + 0x6D2B79F5) | 0;
+    let t = Math.imul(rngSeedState ^ (rngSeedState >>> 15), 1 | rngSeedState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function setRngSeed(seed) { rngSeedState = seed == null ? null : (Number(seed) | 0); }
+function getRngState() { return rngSeedState; }
+function setRngState(s) { rngSeedState = s; }
+
 // Id ricavato da un nome, per gli elementi scritti dentro una campagna, i salvataggi vecchi e gli id automatici
 // dell'editor ("Scudo dell'Atamano" -> "scudo_dell_atamano", come le chiavi della libreria)
 function idFromName(name) {
@@ -47,14 +66,14 @@ const EFFECT_STATS = { str: 'Forza', dmg: 'Danno', int: 'Intelligenza', fth: 'Fe
 
 /* ---------- Effetti speciali "quando → fai" ----------
    Campo "speciali" di oggetti (armeria), reliquie, maledizioni e abilità: un elenco di
-   { quando, fai, val, stat, durata, bersaglio, se, round, prob, limite, volte, rompe }, interpretato da js/speciali.js.
+   { quando, fai, val, stat, durata, bersaglio, se, round, prob, limite, volte, rompe }, interpretato da js/motore/speciali.js.
    quando = il momento (SPECIALI_QUANDO), fai = cosa succede (SPECIALI_FAI), il resto è facoltativo:
      se: una condizione (SPECIALI_SE); round: solo in quel round dello scontro; prob: probabilità in %;
      durata: round del potenziamento (vuoto = fino a fine scontro);
      limite: "scontro" o "capitolo" (al massimo "volte" volte, 1 se manca); rompe: finite le volte (o dopo
      ogni uso, senza limite) la reliquia si rompe, l'oggetto si consuma, la maledizione sparisce.
    Così un oggetto, una reliquia o una passiva nuova si crea dall'editor senza scrivere codice.
-   Un "quando" o un "fai" nuovo invece va scritto in js/speciali.js e aggiunto qui. */
+   Un "quando" o un "fai" nuovo invece va scritto in js/motore/speciali.js e aggiunto qui. */
 
 // I tiri di dado degli eroi, per bonus_tiro (tiro = tutti, tiro_scontro = attacco, difesa e aiuto)
 const SPECIALI_TIRI = ['tiro', 'tiro_scontro', 'attacco', 'difesa', 'aiuto', 'prova', 'contrattazione', 'preghiera', 'capitano'];
@@ -170,7 +189,7 @@ function specialeTesto(s, tipo) {
 /* ---------- Effetti speciali dei nemici ----------
    Campo "speciali" del bestiario (e delle azioni degli elite, che li aggiungono da quella soglia in poi):
    { quando, fai, val, stat, durata, bersaglio, se, round, prob, limite, volte }, interpretato da fireEnemySpecials
-   in js/speciali.js. "eroe" come bersaglio = l'eroe coinvolto: chi colpisce il nemico o chi viene colpito. */
+   in js/motore/speciali.js. "eroe" come bersaglio = l'eroe coinvolto: chi colpisce il nemico o chi viene colpito. */
 const NEMICO_QUANDO = {
     inizio_scontro: 'Inizio scontro',
     inizio_round: 'Inizio di ogni round',
@@ -217,7 +236,7 @@ function nemicoTesto(s) {
 }
 
 // Oggetti scritti nel formato di prima (campi numerici dell'armeria, es. "thorns": 1): i salvataggi
-// tengono le copie degli oggetti, così valgono ancora. itemSpecials (js/speciali.js) li converte al volo.
+// tengono le copie degli oggetti, così valgono ancora. itemSpecials (js/motore/speciali.js) li converte al volo.
 const LEGACY_ITEM_SPECIALS = {
     war_horn: v => ({ quando: 'inizio_scontro', fai: 'potenzia', stat: 'att_bonus', val: v, durata: 1, bersaglio: 'compagnia' }),
     first_hit_dmg: v => ({ quando: 'colpo', fai: 'danni', val: v, limite: 'scontro' }),

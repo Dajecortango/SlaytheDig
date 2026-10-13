@@ -1,6 +1,6 @@
 // Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.
 // Le campagne li richiamano per id in "initialArmory" e "lootItems".
-// "speciali": effetti "quando → fai" (vocabolario in js/comune.js, motore in js/speciali.js).
+// "speciali": effetti "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.armeria = {

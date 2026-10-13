@@ -1,5 +1,5 @@
 // Maledizioni: punizioni delle sfide, condivise dalle campagne.
-// Le sfide le richiamano per id nel campo "punishment".
+// Le sfide le richiamano per id nel campo "punishment". "speciali": effetti "quando → fai" (js/motore/speciali.js).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.maledizioni = {
