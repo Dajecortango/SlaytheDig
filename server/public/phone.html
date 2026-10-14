@@ -433,7 +433,7 @@
                 <div class="action-title">Scegli l'azione di ${currentHero.name}</div>
                 <div class="action-grid">
                     <button class="action-btn" data-action="attack">⚔️ Attacca</button>
-                    <button class="action-btn" data-action="defend" ${pendingAction.onlyAttack ? 'disabled' : ''}>🛡️ Difendi</button>
+                    <button class="action-btn" data-action="defend" ${pendingAction.onlyAttack || pendingAction.noDefend ? 'disabled' : ''}>🛡️ Difendi</button>
                     <button class="action-btn" data-action="help" ${pendingAction.onlyAttack ? 'disabled' : ''}>🤝 Aiuta</button>
                     <button class="action-btn" data-action="ability" ${pendingAction.canUseAbility ? '' : 'disabled'}>★ ${pendingAction.abilityLabel || 'Abilità'}</button>
                 </div>

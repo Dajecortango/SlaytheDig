@@ -103,6 +103,7 @@ const SPECIALI_QUANDO = {
     bottino: 'Bottino di uno scontro',
     pozione: 'Pozione di cura usata',
     mercante: 'Mercante',
+    uscita_mercante: 'Uscita dal mercante',
     tiro: 'Ogni tiro di dado',
     tiro_scontro: 'Tiri in scontro (attacco, abilità, Difendi, Aiuta)',
     attacco: 'Tiro per colpire (attacco e abilità)',
@@ -115,23 +116,29 @@ const SPECIALI_QUANDO = {
 };
 
 // Momenti degli effetti delle abilità attive (campo "effetti" di "combat", abilitySpecialEffects in js/combattimento.js)
-const SPECIALI_QUANDO_ABILITA = { uso: 'Quando la usa', colpo: 'Se colpisce', mancato: 'Se manca' };
+// Con "combat.instabile" (pozioni di Cassio) all'uso si tira un d6 alchemico: 1 = fallimento, 2-5 = normale, 6 = capolavoro
+const SPECIALI_QUANDO_ABILITA = { uso: 'Quando la usa', colpo: 'Se colpisce', mancato: 'Se manca',
+    fallimento: 'Dado alchemico 1 (fallimento)', normale: 'Dado alchemico 2-5', capolavoro: 'Dado alchemico 6 (capolavoro)' };
 
 // Cosa succede. quando = i momenti in cui ha senso; campi = cosa si scrive (val, stat, stat_nemico, durata, bersaglio)
-const SPECIALI_SCONTRO = ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'perde_hp', 'alleato_caduto', 'uso', 'mancato'];
+const SPECIALI_SCONTRO = ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'perde_hp', 'alleato_caduto', 'uso', 'mancato',
+    'fallimento', 'normale', 'capolavoro'];
 const SPECIALI_FAI = {
     danni: { label: 'Danni al nemico', campi: ['val'], quando: SPECIALI_SCONTRO },
     cura: { label: 'Cura HP', campi: ['val', 'bersaglio'], quando: [...SPECIALI_SCONTRO, 'fine_scontro', 'cura_ricevuta', 'nemico_sconfitto'] },
     armatura: { label: 'Armatura subito', campi: ['val', 'bersaglio'], quando: SPECIALI_SCONTRO },
     stordisci: { label: 'Stordisce il nemico', campi: [], quando: ['inizio_scontro', 'inizio_round', 'colpo', 'dopo_colpito', 'perde_hp', 'uso'] },
     malus_nemico: { label: 'Toglie una statistica al nemico', campi: ['stat_nemico', 'val'], quando: SPECIALI_SCONTRO },
-    potenzia: { label: 'Potenziamento', campi: ['stat', 'val', 'durata', 'bersaglio'], quando: SPECIALI_SCONTRO },
+    potenzia: { label: 'Potenziamento (valore negativo = malus)', campi: ['stat', 'val', 'durata', 'bersaglio'], quando: SPECIALI_SCONTRO },
+    rafforza_nemico: { label: 'Aggiunge una statistica al nemico (fino a fine scontro)', campi: ['stat_nemico', 'val'], quando: SPECIALI_SCONTRO },
+    ferisce_se: { label: 'L\'eroe perde HP (non scende sotto 1)', campi: ['val'], quando: SPECIALI_SCONTRO },
     ritira: { label: 'Ritira il dado', campi: [], quando: ['tiro_fallito'] },
     annulla_colpo: { label: 'Annulla il colpo', campi: [], quando: ['colpito'] },
     schiva: { label: 'Schiva con un d6 pari o superiore a', campi: ['val'], quando: ['colpito'] },
     rialza: { label: 'Resta in piedi con HP', campi: ['val'], quando: ['colpo_mortale'] },
     annulla_punizione: { label: 'Niente punizione', campi: [], quando: ['prova_fallita'] },
     prova_riuscita: { label: 'La prova riesce lo stesso', campi: [], quando: ['prova_fallita'] },
+    hp_massimi: { label: 'HP massimi in più (per sempre)', campi: ['val'], quando: ['fine_scontro'] },
     monete: { label: 'Scudi', campi: ['val'], quando: ['inizio_scontro', 'fine_scontro', 'riposo', 'nemico_sconfitto'] },
     carta_bottino: { label: 'Carte in più al bottino', campi: ['val'], quando: ['bottino'] },
     togli_maledizione: { label: 'Toglie una maledizione a caso', campi: [], quando: ['riposo', 'fine_scontro'] },
@@ -139,13 +146,18 @@ const SPECIALI_FAI = {
     bonus_tiro: { label: 'Bonus al tiro', campi: ['val'], quando: SPECIALI_TIRI },
     bonus_cura: { label: 'HP in più alla cura', campi: ['val'], quando: ['riposo', 'pozione'] },
     sconto: { label: 'Sconto in Scudi su ogni articolo', campi: ['val'], quando: ['mercante'] },
-    sconto_percento: { label: 'Sconto in % su ogni articolo', campi: ['val'], quando: ['mercante'] }
+    sconto_percento: { label: 'Sconto in % su ogni articolo', campi: ['val'], quando: ['mercante'] },
+    veleno_nemico: { label: 'Avvelena il nemico (HP persi a inizio round)', campi: ['val', 'durata'], quando: ['inizio_scontro', 'colpo', 'uso'] },
+    oggetto: { label: 'Oggetto nello zaino', campi: ['item', 'val'], quando: ['uscita_mercante'] }
 };
 
 const SPECIALI_SE = {
     elite: 'contro elite e boss',
     nemico_meta: 'con il nemico a metà vita o meno',
+    nemico_quarto: 'con il nemico a un quarto della vita o meno',
+    nemico_meta_quarto: 'con il nemico fra metà e un quarto della vita',
     ferito: 'se l\'eroe è ferito (2 HP o meno)',
+    perso_hp_scontro: 'se l\'eroe ha perso HP in questo scontro',
     senza_armatura: 'se l\'eroe è senza armatura',
     ha_difeso: 'se l\'eroe ha difeso nel round',
     primo_ad_agire: 'se l\'eroe agisce per primo nel round',
@@ -154,7 +166,8 @@ const SPECIALI_SE = {
 };
 
 const SPECIALI_BERSAGLI = { eroe: 'l\'eroe', compagnia: 'tutta la compagnia', meno_hp: 'l\'eroe con meno HP',
-    piu_ferito: 'l\'eroe che ha perso più HP', altro_casuale: 'un altro eroe ferito a caso' };
+    piu_ferito: 'l\'eroe che ha perso più HP', altro_casuale: 'un altro eroe ferito a caso',
+    scelto: 'l\'eroe scelto da chi la usa' };  // "scelto": per le abilità attive (finestra di scelta, hero.potionTarget)
 const SPECIALI_STAT = { str: 'Forza', dmg: 'Danno', att_bonus: 'tiro per colpire', def_bonus: 'Difesa', help_bonus_val: 'Aiuto', regen: 'HP a inizio round' };
 const SPECIALI_STAT_NEMICO = { att: 'Attacco', ca: 'CA', dmg: 'Danno' };
 
@@ -168,13 +181,16 @@ function specialeTesto(s, tipo) {
         armatura: `+${v} armatura subito a ${chi}`,
         stordisci: 'il nemico è stordito e salta il suo prossimo attacco',
         malus_nemico: `−${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat} al nemico`,
-        potenzia: `+${v} ${SPECIALI_STAT[s.stat] || s.stat} a ${chi} ${s.durata ? `per ${s.durata} round` : 'fino a fine scontro'}`,
+        potenzia: `${v >= 0 ? '+' : '−'}${Math.abs(v)} ${SPECIALI_STAT[s.stat] || s.stat} a ${chi} ${s.durata ? `per ${s.durata} round` : 'fino a fine scontro'}`,
+        rafforza_nemico: `+${v} ${SPECIALI_STAT_NEMICO[s.stat] || s.stat} al nemico fino a fine scontro`,
+        ferisce_se: `l'eroe perde ${v} HP (resta almeno a 1)`,
         ritira: 'il dado si ritira da solo',
         annulla_colpo: 'il colpo è assorbito del tutto',
         schiva: `tira un d6: con ${v} o più il colpo è ignorato`,
         rialza: `resta in piedi con ${v} HP`,
         annulla_punizione: 'niente punizione',
         prova_riuscita: 'il fallimento diventa un successo',
+        hp_massimi: `+${v} HP massimi per sempre`,
         monete: `+${v} Scudi`,
         carta_bottino: `${v === 1 ? 'una carta' : `${v} carte`} in più fra cui scegliere`,
         togli_maledizione: 'toglie una maledizione a caso',
@@ -182,7 +198,9 @@ function specialeTesto(s, tipo) {
         bonus_tiro: `${v >= 0 ? '+' : ''}${v} al tiro`,
         bonus_cura: `${v >= 0 ? '+' : ''}${v} HP alla cura`,
         sconto: v >= 0 ? `−${v} Scudi su ogni articolo` : `+${-v} Scudi su ogni articolo`,
-        sconto_percento: `−${v}% sul prezzo di ogni articolo`
+        sconto_percento: `−${v}% sul prezzo di ogni articolo`,
+        veleno_nemico: `avvelena il nemico: −${Math.max(1, v)} HP a inizio di ogni round per ${s.durata || 3} round`,
+        oggetto: `${v > 1 ? `${v} copie di ` : ''}${(((window.LIBRERIA || {}).armeria || {})[s.item] || {}).name || 'un oggetto'} nello zaino dell'eroe`
     }[s.fai] || s.fai;
     const cond = [s.se && SPECIALI_SE[s.se], s.round && `nel round ${s.round}`, s.prob && `${s.prob}% di probabilità`].filter(Boolean);
     const volte = s.volte || 1;
@@ -274,7 +292,9 @@ const HERO_FLAGS = {
     factotum: 'conversione delle statistiche (true o ogni N punti)',
     firstActorStrBonus: 'Forza in più ai tiri se agisce per primo nel round',
     freeFirstMerchantItem: 'primo oggetto di ogni mercante gratis',
-    helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round'
+    helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round',
+    prayerExtraChoices: 'benedizioni in più fra cui scegliere quando prega e riesce',
+    noArmor: 'non porta armature né scudi e non riceve armatura (niente Difendi)'
 };
 
 // Bersagli delle azioni speciali degli elite (data/azioni_elite/azioni_elite.js, interpretate in js/combattimento.js):

@@ -312,6 +312,7 @@ const server = http.createServer((req, res) => {
                 heroName: data.heroName,
                 canUseAbility: !!data.canUseAbility,
                 onlyAttack: !!data.onlyAttack,
+                noDefend: !!data.noDefend,
                 abilityLabel: data.abilityLabel || null,
                 consumables: Array.isArray(data.consumables) ? data.consumables : [],
                 livingAllies: Array.isArray(data.livingAllies) ? data.livingAllies : [],

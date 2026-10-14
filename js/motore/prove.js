@@ -353,11 +353,13 @@
             return true;
         }
 
-        function pickBlessings(major) {
+        // hero = chi ha pregato: con il segnale prayerExtraChoices (Voce degli Asi di Pandora) ne pesca di più
+        function pickBlessings(major, hero = null) {
             const pool = Object.keys(PRAYER_BLESSINGS).map(blessingData)
                 .filter(b => b.livello === (major ? 'maggiore' : 'minore') && blessingUseful(b));
             const out = [];
-            while (pool.length && out.length < PRAYER_CHOICES) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+            const count = PRAYER_CHOICES + ((hero && hero.prayerExtraChoices) || 0);
+            while (pool.length && out.length < count) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
             return out;
         }
 

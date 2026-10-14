@@ -254,6 +254,8 @@ function specialiEditor(obj, f, onChange) {
                     ${campi.includes('stat_nemico') ? `<label>Statistica del nemico<select data-k="stat">${opts(SPECIALI_STAT_NEMICO, s.stat)}</select></label>` : ''}
                     ${campi.includes('durata') ? num('durata', 'Round (vuoto = tutto lo scontro)', s, 'min="1"') : ''}
                     ${campi.includes('bersaglio') ? `<label>A chi<select data-k="bersaglio">${opts(V.bersagli, s.bersaglio || 'eroe')}</select></label>` : ''}
+                    ${campi.includes('item') ? `<label>Oggetto<select data-k="item">${opts({ ...Object.fromEntries(Object.entries(lib.armeria || {}).map(([k, v]) => [k, v.name || k])),
+                        ...(s.item && !(lib.armeria || {})[s.item] ? { [s.item]: `${s.item} (non trovato)` } : {}) }, s.item)}</select></label>` : ''}
                 </div>
                 <div class="ed-special-row">
                     <label>Condizione<select data-k="se">${opts(V.se, s.se, 'Sempre')}</select></label>
@@ -286,6 +288,8 @@ function specialiEditor(obj, f, onChange) {
                     if (keep.includes('stat') && !SPECIALI_STAT[s.stat]) s.stat = 'str';
                     if (!keep.includes('durata')) delete s.durata;
                     if (!keep.includes('bersaglio')) delete s.bersaglio;
+                    if (!keep.includes('item')) delete s.item;
+                    else if (!s.item) s.item = Object.keys(lib.armeria || {})[0];
                 }
                 if (k === 'limite' && !s.limite) delete s.volte;
                 save();

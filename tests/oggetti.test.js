@@ -134,9 +134,30 @@ module.exports = (t, carica) => {
         t.uguale(1, a.items.length);
     });
 
-    t.test('effetto hero_item (Morte fiammeggiante): 2 Polvere Nera in una pila; 3 copie fanno 2 + 1', () => {
+    t.test('Morte fiammeggiante: un Cristallo di Flammaurea a ogni uscita dal mercante, solo a chi ce l\'ha e in piedi', () => {
+        const abil = g.LIBRERIA.abilita.morte_fiammeggiante;
+        t.ok(!abil.effects, 'niente più cristalli all\'inizio');
+        const a = eroe({ chosenAbility: abil }), b = eroe({ name: 'B' }); prepara([a, b]);
+        const r = g.fireSpecialsAll('uscita_mercante');
+        t.uguale(1, r.items.length); t.ok(r.items[0].hero === a); t.uguale('cristallo_flammaurea', r.items[0].item.id);
+        r.items.forEach(d => g.assignItemToHero(d.item, d.hero, () => {}));
+        g.fireSpecialsAll('uscita_mercante').items.forEach(d => g.assignItemToHero(d.item, d.hero, () => {}));
+        t.uguale(1, a.items.length); t.uguale(2, a.items[0].qty, 'due visite: una pila da 2');
+        t.uguale(0, b.items.length);
+        a.hp = 0;
+        t.uguale(0, g.fireSpecialsAll('uscita_mercante').items.length, 'caduto: niente cristallo');
+    });
+
+    t.test('Morte fiammeggiante nel simulatore: zaino pieno, scarta l\'oggetto peggiore', () => {
+        const a = eroe({ chosenAbility: g.LIBRERIA.abilita.morte_fiammeggiante }); prepara([a]);
+        a.items = [copia('olio_bollente'), copia('olio_bollente'), copia('scudo_ferro')].map(it => ({ ...it, qty: 2 }));
+        g.fireSpecialsAll('uscita_mercante').items.forEach(d => g.simAssignItem(d.item, d.hero));
+        t.uguale(3, a.items.length, 'lo zaino resta di 3');
+    });
+
+    t.test('effetto hero_item: 2 Cristalli in una pila; 3 copie fanno 2 + 1', () => {
         const a = eroe(); prepara([a]);
-        g.applyEffects(g.LIBRERIA.abilita.morte_fiammeggiante.effects, a);
+        g.applyEffects([{ effect: 'hero_item', item: 'cristallo_flammaurea', val: 2 }], a);
         t.uguale(1, a.items.length); t.uguale('cristallo_flammaurea', a.items[0].id); t.uguale(2, a.items[0].qty);
         const b = eroe({ name: 'B' }); prepara([b]);
         g.applyEffects([{ effect: 'hero_item', item: 'cristallo_flammaurea', val: 3 }], b);

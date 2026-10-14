@@ -210,6 +210,7 @@
                 heroName: hero.name,
                 canUseAbility,
                 onlyAttack: typeof isRaging === 'function' && isRaging(hero),  // in furia: solo Attacca (e oggetti)
+                noDefend: !!hero.noArmor,  // Lista dei torti: niente armatura, niente Difendi
                 abilityLabel: hero.chosenAbility ? hero.chosenAbility.name : null,
                 consumables,
                 livingAllies

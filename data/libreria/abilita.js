@@ -217,12 +217,149 @@ window.LIBRERIA.abilita = {
     "morte_fiammeggiante": {
         "id": "morte_fiammeggiante",
         "name": "Morte fiammeggiante",
-        "desc": "Passiva: scelta all'inizio dell'avventura, mette nello zaino dell'eroe 2 Cristalli di Flammaurea (3 danni al nemico ciascuno)",
+        "desc": "Passiva: ogni volta che esce da un mercante mette nello zaino un Cristallo di Flammaurea (3 danni al nemico). Con lo zaino pieno sceglie cosa scartare",
         "isCombatActive": false,
-        "effects": [
-            { "effect": "hero_item", "item": "cristallo_flammaurea", "val": 2 }
+        "speciali": [
+            { "quando": "uscita_mercante", "fai": "oggetto", "item": "cristallo_flammaurea", "val": 1 }
         ],
         "icon": "immagini/icone/BTNIncinerate.png"
+    },
+    "pancrazio_lancio_panca": {
+        "id": "pancrazio_lancio_panca",
+        "name": "Lancio della panca",
+        "desc": "Attiva (1 volta per scontro): lancia un oggetto dello zaino contro il nemico, con il normale tiro per colpire. Danni secondo la rarità: scarso 1, comune 2, non comune 3, raro 4, epico 5, leggendario 6. Se colpisce l'oggetto si raccoglie a fine scontro (fino ad allora niente bonus), se manca è perso; un consumabile si consuma sempre",
+        "isCombatActive": true,
+        "actionName": "Lancio della panca (lancia un oggetto)",
+        "icon": "immagini/icone/BTNStormBolt.png",
+        "combat": {
+            "dice": 1,
+            "lancia": true,
+            "useText": "🪑 {eroe} afferra {oggetto} e lo scaglia con forza disumana!",
+            "hitLabel": "CENTRATO!",
+            "hitText": "Colpo pieno: {danni} danni!"
+        }
+    },
+    "pancrazio_lista_torti": {
+        "id": "pancrazio_lista_torti",
+        "name": "Lista dei torti",
+        "desc": "Passiva: non può indossare armature né scudi e non riceve mai armatura (niente Difendi), ma dopo ogni scontro vinto in cui ha perso almeno 1 HP i suoi HP massimi aumentano di 1 per sempre",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "noArmor", "val": 1 }
+        ],
+        "speciali": [
+            { "quando": "fine_scontro", "fai": "hp_massimi", "val": 1, "se": "perso_hp_scontro" }
+        ],
+        "icon": "immagini/icone/BTNScroll.png"
+    },
+    "cassio_fiala_flammaurea": {
+        "id": "cassio_fiala_flammaurea",
+        "name": "Fiala di Flammaurea instabile",
+        "desc": "Attiva (1 volta per scontro): senza tiro per colpire, scaglia una fiala sul nemico. Dado alchemico: 2-5 = 2 danni al nemico; 6 = 3 danni; 1 = la fiala gli esplode in mano e Cassio perde 1 HP (non scende sotto 1). Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Fiala di Flammaurea (danni, instabile)",
+        "icon": "immagini/icone/BTNEnchantedVial.png",
+        "combat": {
+            "senzaTiro": true,
+            "instabile": true,
+            "effetti": [
+                { "quando": "normale", "fai": "danni", "val": 2 },
+                { "quando": "capolavoro", "fai": "danni", "val": 3 },
+                { "quando": "fallimento", "fai": "ferisce_se", "val": 1 }
+            ],
+            "useText": "🧪 {eroe} stappa una fiala di Flammaurea e la scaglia..."
+        }
+    },
+    "cassio_tintura_corteccia": {
+        "id": "cassio_tintura_corteccia",
+        "name": "Tintura di Corteccia",
+        "desc": "Attiva (1 volta per scontro): senza tiro, dà la tintura a un eroe a scelta (anche a sé). Dado alchemico: 2-5 = +2 Armatura; 6 = +3 Armatura; 1 = i fumi irrobustiscono il nemico, +1 CA fino a fine scontro. Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Tintura di Corteccia (armatura, instabile)",
+        "icon": "immagini/icone/BTNPotionGreenSmall.png",
+        "combat": {
+            "senzaTiro": true,
+            "instabile": true,
+            "effetti": [
+                { "quando": "normale", "fai": "armatura", "val": 2, "bersaglio": "scelto" },
+                { "quando": "capolavoro", "fai": "armatura", "val": 3, "bersaglio": "scelto" },
+                { "quando": "fallimento", "fai": "rafforza_nemico", "stat": "ca", "val": 1 }
+            ],
+            "useText": "🧪 {eroe} passa a {bersaglio} una tintura di corteccia densa e amara..."
+        }
+    },
+    "cassio_elisir_toro": {
+        "id": "cassio_elisir_toro",
+        "name": "Elisir del Toro",
+        "desc": "Attiva (1 volta per scontro): senza tiro, dà l'elisir a un eroe a scelta (anche a sé). Dado alchemico: 2-5 = +1 Forza e +1 Danno per 2 round; 6 = +1 Forza e +1 Danno fino a fine scontro; 1 = −1 Forza per 2 round. Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Elisir del Toro (Forza e Danno, instabile)",
+        "icon": "immagini/icone/BTNPotionPurple.png",
+        "combat": {
+            "senzaTiro": true,
+            "instabile": true,
+            "effetti": [
+                { "quando": "normale", "fai": "potenzia", "stat": "str", "val": 1, "durata": 2, "bersaglio": "scelto" },
+                { "quando": "normale", "fai": "potenzia", "stat": "dmg", "val": 1, "durata": 2, "bersaglio": "scelto" },
+                { "quando": "capolavoro", "fai": "potenzia", "stat": "str", "val": 1, "bersaglio": "scelto" },
+                { "quando": "capolavoro", "fai": "potenzia", "stat": "dmg", "val": 1, "bersaglio": "scelto" },
+                { "quando": "fallimento", "fai": "potenzia", "stat": "str", "val": -1, "durata": 2, "bersaglio": "scelto" }
+            ],
+            "useText": "🧪 {eroe} fa bere a {bersaglio} un elisir che sa di sangue e ferro..."
+        }
+    },
+    "ofelia_veleno_cava": {
+        "id": "ofelia_veleno_cava",
+        "name": "Veleno della Cava",
+        "desc": "Attiva (1 volta per scontro): attacca con il normale tiro per colpire; se colpisce, oltre al danno avvelena il nemico, che perde 1 HP a inizio di ognuno dei 3 round successivi",
+        "isCombatActive": true,
+        "actionName": "Veleno della Cava (avvelena per 3 round)",
+        "icon": "immagini/icone/BTNShadowStrike.png",
+        "combat": {
+            "dice": 1,
+            "effetti": [
+                { "quando": "colpo", "fai": "veleno_nemico", "val": 1, "durata": 3 }
+            ],
+            "useText": "🗡️ {eroe} intinge la lama in un veleno della Cava di Glauco...",
+            "hitText": "La lama avvelenata affonda: infliggi {danni} danni e il veleno entra in circolo!"
+        }
+    },
+    "ofelia_infierire_debole": {
+        "id": "ofelia_infierire_debole",
+        "name": "Infierire sul debole",
+        "desc": "Passiva: ogni colpo a segno dell'eroe infligge +1 danno se il nemico è a metà vita o meno, +2 danni se è a un quarto della vita o meno",
+        "isCombatActive": false,
+        "speciali": [
+            { "quando": "colpo", "fai": "danni", "val": 1, "se": "nemico_meta_quarto" },
+            { "quando": "colpo", "fai": "danni", "val": 2, "se": "nemico_quarto" }
+        ],
+        "icon": "immagini/icone/BTNFanOfKnives.png"
+    },
+    "pandora_scudo_mutevole": {
+        "id": "pandora_scudo_mutevole",
+        "name": "Scudo del Mutevole",
+        "desc": "Attiva (1 volta per scontro): senza tirare il dado, +1 Armatura a tutta la compagnia e toglie a tutti stordimento, veleno, silenzio e furia. Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Scudo del Mutevole (+1 Armatura e purifica la compagnia)",
+        "icon": "immagini/icone/BTNDivineIntervention.png",
+        "combat": {
+            "senzaTiro": true,
+            "effetti": [
+                { "quando": "uso", "fai": "armatura", "val": 1, "bersaglio": "compagnia" },
+                { "quando": "uso", "fai": "purifica", "bersaglio": "compagnia" }
+            ],
+            "useText": "🐉 {eroe} invoca Draken il Mutevole: la sua ala si stende sulla compagnia!"
+        }
+    },
+    "pandora_voce_asi": {
+        "id": "pandora_voce_asi",
+        "name": "Voce degli Asi",
+        "desc": "Passiva: quando l'eroe prega a un riposo e riesce, c'è una benedizione in più fra cui scegliere",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "prayerExtraChoices", "val": 1 }
+        ],
+        "icon": "immagini/icone/BTNPriestAdept.png"
     },
     "mano_veloce": {
         "id": "mano_veloce",

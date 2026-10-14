@@ -63,4 +63,66 @@ module.exports = (t, carica) => {
         g.expireTempBuffs(true);
         t.uguale(0, g.heroStatuses(a).length);
     });
+
+    t.test('Veleno della Cava (Ofelia): se colpisce avvelena il nemico, −1 HP a inizio dei 3 round dopo, poi basta', () => {
+        const a = eroe('Ofelia', { str: 3, int: 3, chosenAbility: g.LIBRERIA.abilita.ofelia_veleno_cava });
+        const n = prepara([a], []);
+        t.ok(!g.resolveAbility(a, n, [1]).hit); t.ok(!n.poison, 'mancato: niente veleno');
+        a.abilityUsedThisCombat = false;
+        const r = g.resolveAbility(a, n, [6]);
+        t.ok(r.hit); t.uguale(9, n.hp, 'il danno normale');
+        t.uguale(3, n.poison.rounds);
+        [8, 7, 6, 6].forEach(atteso => { g.startRoundSpecials(); t.uguale(atteso, n.hp); });
+        t.ok(!n.poison, 'finito dopo 3 round');
+    });
+
+    t.test('stati del nemico (icone accanto al nome): stordito e avvelenato con i round che restano', () => {
+        const n = prepara([eroe('A')], []);
+        t.uguale(0, g.enemyStatuses(n).length);
+        n.isStunned = true; n.poison = { val: 1, rounds: 2, name: 'Veleno della Cava' };
+        const s = g.enemyStatuses(n);
+        t.uguale(['stordito', 'avvelenato'], s.map(x => x.key));
+        t.uguale(2, s[1].rounds); t.ok(s[1].icon && /Veleno della Cava/.test(s[1].desc));
+        n.hp = 0;
+        t.uguale(0, g.enemyStatuses(n).length, 'sconfitto: niente icone');
+    });
+
+    t.test('veleno sul nemico: può ucciderlo a inizio round', () => {
+        const n = prepara([eroe('A')], []);
+        n.hp = 1; n.poison = { val: 1, rounds: 3, name: 'Veleno' };
+        g.startRoundSpecials();
+        t.uguale(0, n.hp); t.ok(!n.poison);
+    });
+
+    t.test('Infierire sul debole (Ofelia): +1 danno a metà vita, +2 a un quarto', () => {
+        const a = eroe('Ofelia', { str: 3, chosenAbility: g.LIBRERIA.abilita.ofelia_infierire_debole });
+        const n = prepara([a], []);
+        g.resolveAttack(a, n, [6]);
+        t.uguale(9, n.hp, 'a vita piena: danno normale');
+        n.hp = 5;
+        g.resolveAttack(a, n, [6]);
+        t.uguale(3, n.hp, 'a metà: 1 + 1 danni');
+        n.hp = 3;  // 3 HP su 10: sopra il quarto (2,5)
+        g.resolveAttack(a, n, [6]);
+        t.uguale(1, n.hp, 'sopra il quarto: ancora +1');
+        n.hp = 2;
+        g.resolveAttack(a, n, [6]);
+        t.uguale(-1, n.hp, 'a un quarto: 1 + 2 danni');
+        n.maxHp = 12; n.hp = 3;
+        g.resolveAttack(a, n, [6]);
+        t.uguale(0, n.hp, '3 su 12 = un quarto esatto: 1 + 2 danni');
+    });
+
+    t.test('Scudo del Mutevole (Pandora): senza tiro, +1 Armatura a tutti e via gli stati', () => {
+        const p = eroe('Pandora', { fth: 5, chosenAbility: g.LIBRERIA.abilita.pandora_scudo_mutevole });
+        const b = eroe('B', { poison: { val: 1, rounds: 2 }, stunnedRounds: 1 }), c = eroe('C', { hp: 0 });
+        const n = prepara([p, b, c], []);
+        stato.activeEnemy = n;
+        t.ok(g.abilityIsInstant(p));
+        const r = g.resolveAbility(p, n);
+        t.ok(r.instant);
+        t.uguale(1, p.current_armor); t.uguale(1, b.current_armor); t.uguale(0, c.current_armor, 'i caduti no');
+        t.ok(!b.poison, 'veleno tolto'); t.uguale(0, g.heroStatuses(b).length);
+        t.uguale(10, n.hp, 'nessun danno al nemico');
+    });
 };

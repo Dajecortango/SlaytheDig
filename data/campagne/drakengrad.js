@@ -19,5 +19,6 @@ window.CAMPAIGNS["drakengrad"] = {
     "rests": {},
     "treasures": {},
     "lootItems": null,
-    "mapNodes": []
+    "mapNodes": [],
+    "stories": {}
 };

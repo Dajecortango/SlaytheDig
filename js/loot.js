@@ -69,25 +69,50 @@
             return node ? Math.min(1, node.level / maxLevel) : 0;
         }
 
-        /* ---------- Rarità del bottino degli scontri ----------
-           Probabilità che passano da quelle del primo livello a quelle dell'ultimo secondo
-           l'avanzamento nella mappa (LOOT_RARITY_RANGE in js/regole.js). Gli elite pescano come
-           se fossero LOOT_ELITE_PROGRESS_BONUS più avanti, senza scarsi e comuni.
-           Le rarità che il bottino della campagna non ha vengono saltate (vedi pickByRarity). */
-        function lootRarityWeights(isElite, progress = mapProgress()) {
-            const p = isElite ? Math.min(1, progress + LOOT_ELITE_PROGRESS_BONUS) : progress;
-            const weights = {};
-            for (const [rarity, [from, to]] of Object.entries(LOOT_RARITY_RANGE)) {
-                if (isElite && LOOT_ELITE_EXCLUDED.includes(rarity)) continue;
-                const w = from + (to - from) * p;
-                if (w > 0) weights[rarity] = Math.round(w * 100) / 100;
-            }
-            return weights;
+        /* ---------- Rarità a cascata (bottino, tesori, mercante) ----------
+           Una cascata è un elenco [[rarità, %], ...] dalla più alta: la % vale se le rarità sopra hanno
+           mancato, l'ultima vale 100 (prende il resto). rarityCascade la ricava da una tabella di js/regole.js
+           (LOOT_RARITY_CASCADE, MERCHANT_RARITY_CASCADE) secondo l'avanzamento nella mappa, fermandosi
+           a "floor" se c'è. Una rarità ha [inizio, fine] o [inizio, metà, fine]. */
+        function cascadeChance(range, progress) {
+            if (range.length < 3) return range[0] + (range[1] - range[0]) * progress;
+            return progress <= 0.5 ? range[0] + (range[1] - range[0]) * progress * 2
+                : range[1] + (range[2] - range[1]) * (progress - 0.5) * 2;
         }
 
-        // Pesca un oggetto: prima la rarità secondo i pesi, poi un oggetto a caso di quella rarità
+        function rarityCascade(table, progress, floor) {
+            const out = [];
+            for (const [rarity, range] of Object.entries(table)) {
+                const chance = range ? cascadeChance(range, progress) : 100;
+                out.push([rarity, Math.round(chance * 100) / 100]);
+                if (rarity === floor) break;
+            }
+            out[out.length - 1][1] = 100;
+            return out;
+        }
+
+        // Probabilità finali (in %) di una cascata: per i test e per chi bilancia
+        function cascadeShares(cascade) {
+            const out = {};
+            let left = 100;
+            for (const [rarity, chance] of cascade) {
+                const share = left * chance / 100;
+                if (share > 0) out[rarity] = Math.round(share * 100) / 100;
+                left -= share;
+            }
+            return out;
+        }
+
+        // Bottino degli scontri e dei tesori: gli elite pescano come se fossero LOOT_ELITE_PROGRESS_BONUS
+        // più avanti e la cascata si ferma a LOOT_ELITE_FLOOR (niente scarsi e comuni)
+        function lootRarityCascade(isElite, progress = mapProgress()) {
+            if (!isElite) return rarityCascade(LOOT_RARITY_CASCADE, progress);
+            return rarityCascade(LOOT_RARITY_CASCADE, Math.min(1, progress + LOOT_ELITE_PROGRESS_BONUS), LOOT_ELITE_FLOOR);
+        }
+
+        // Pesca un oggetto: prima la rarità con la cascata, poi un oggetto a caso di quella rarità
         function pickLootItem(isElite) {
-            return pickByRarity(gameItems, lootRarityWeights(isElite));
+            return pickByRarity(gameItems, lootRarityCascade(isElite));
         }
 
         // "count" oggetti del bottino, sempre diversi fra loro, con la tabella delle rarità per livello
@@ -97,7 +122,7 @@
             for (let i = 0; i < count; i++) {
                 const rest = gameItems.filter(it => !out.includes(it));
                 if (!rest.length) break;
-                out.push(pickByRarity(rest, lootRarityWeights(isElite)));
+                out.push(pickByRarity(rest, lootRarityCascade(isElite)));
             }
             return out;
         }
@@ -112,39 +137,25 @@
             return pickDistinctLoot(LOOT_CHOICES + extra, isElite);
         }
 
-        // Pesi in percentuale con il tetto di RARITY_MAX_SHARE: ciò che supera il tetto va alle altre rarità,
-        // in proporzione. Se tutte le rarità hanno un tetto (o non resta altro) i pesi restano quelli di prima.
-        function capRarityShares(weights) {
-            const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
-            if (total <= 0) return weights;
-            const out = {};
-            for (const r in weights) out[r] = weights[r] / total * 100;
-            const capped = Object.keys(out).filter(r => r in RARITY_MAX_SHARE && out[r] > RARITY_MAX_SHARE[r]);
-            const free = Object.keys(out).filter(r => !(r in RARITY_MAX_SHARE) && out[r] > 0);
-            if (capped.length === 0 || free.length === 0) return out;
-            const excess = capped.reduce((sum, r) => sum + out[r] - RARITY_MAX_SHARE[r], 0);
-            const freeTotal = free.reduce((sum, r) => sum + out[r], 0);
-            for (const r of capped) out[r] = RARITY_MAX_SHARE[r];
-            for (const r of free) out[r] += excess * out[r] / freeTotal;
-            return out;
+        // Rarità tirata con la cascata fra quelle che "pool" ha: una rarità assente si salta (il tiro scende);
+        // se sotto non resta niente si prende la più bassa presente della cascata, altrimenti null
+        function rollRarityCascade(pool, cascade) {
+            const present = cascade.filter(([r]) => pool.some(i => itemRarity(i) === r));
+            if (present.length === 0) return null;
+            const last = present[present.length - 1][0];
+            for (const [rarity, chance] of present) {
+                if (rarity === last) return rarity;
+                if (chance > 0 && rng() * 100 < chance) return rarity;
+            }
+            return last;
         }
 
-        // Pesca da "pool": prima la rarità secondo i pesi (solo fra quelle presenti, con il tetto di RARITY_MAX_SHARE),
-        // poi un oggetto a caso di quella rarità
-        function pickByRarity(pool, poolWeights) {
+        // Pesca da "pool": prima la rarità con la cascata (rollRarityCascade), poi un oggetto a caso di quella
+        // rarità. Se il pool non ha nessuna rarità della cascata, un oggetto qualunque
+        function pickByRarity(pool, cascade) {
             if (pool.length === 0) return null;
-            const present = Object.keys(poolWeights).filter(r => poolWeights[r] > 0 && pool.some(i => itemRarity(i) === r));
-            if (present.length === 0) return pool[Math.floor(rng() * pool.length)];
-            const weights = capRarityShares(Object.fromEntries(present.map(r => [r, poolWeights[r]])));
-            const available = Object.keys(weights);
-            const total = available.reduce((sum, r) => sum + weights[r], 0);
-            let pick = rng() * total;
-            let rarity = available[available.length - 1];
-            for (const r of available) {
-                pick -= weights[r];
-                if (pick < 0) { rarity = r; break; }
-            }
-            const sameRarity = pool.filter(i => itemRarity(i) === rarity);
+            const rarity = rollRarityCascade(pool, cascade);
+            const sameRarity = rarity ? pool.filter(i => itemRarity(i) === rarity) : pool;
             return sameRarity[Math.floor(rng() * sameRarity.length)];
         }
 
@@ -156,8 +167,14 @@
 
         // Scontro vinto: effetti "fine_scontro" di eroi in piedi e reliquie (cure del Cerusico da Battaglia e del
         // Dente del grande lupo, Scudi di "Fammi dare un'occhiata"...). Gioco e simulatore. Ritorna i risultati sommati
+        // Fine di uno scontro vinto (gioco e simulatore): effetti "fine_scontro", poi gli oggetti lanciati
+        // che hanno colpito (Lancio della panca) tornano nello zaino
         function combatVictorySpecials() {
-            return fireSpecialsAll('fine_scontro');
+            const res = fireSpecialsAll('fine_scontro');
+            res.notes.push(...returnThrownItems());
+            // Il segno "ha perso HP" vale solo dentro lo scontro: niente residui per riposi, prove o salvataggi
+            stato.party.forEach(h => { delete h.hpLostInCombat; });
+            return res;
         }
 
         function triggerLoot() {
@@ -243,6 +260,7 @@
             const item = lootChoices[idx];
             const hero = stato.party.find(h => h.name === heroName && h.hp > 0);
             if (currentScreenId !== 'screenLoot' || lootTaken || !item || !hero) return false;
+            if (!heroCanUseItem(hero, item)) { uiError(`${hero.name} non può portare ${item.name}`); return false; }
             lootTaken = true;
             currentLootItem = item;
             document.getElementById('lootCardBack').classList.add('hidden');
@@ -266,7 +284,15 @@
             if (!currentLootItem) { uiError('Scegli prima un oggetto'); return; }
             if (lootTaken) return;
             const hero = stato.party.find(p => p.name === document.getElementById('lootHeroSelect').value);
-            if (!hero) return;
+            if (!hero) {
+                // Nessuno in piedi può portarlo (es. un'armatura e resta solo Pancrazio): si lascia e si prosegue
+                if (!stato.party.some(p => p.hp > 0 && heroCanUseItem(p, currentLootItem))) {
+                    lootTaken = true;
+                    uiMessage(`Nessuno può portare ${currentLootItem.name}: resta sul campo`);
+                    advanceNode();
+                }
+                return;
+            }
             lootTaken = true;
             assignItemToHero(currentLootItem, hero, () => {
                 advanceNode();

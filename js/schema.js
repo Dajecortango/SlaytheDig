@@ -18,6 +18,11 @@ const CHIAVE = campo('chiave');  // chiave di un testo della campagna: testo o n
 const OBBL = c => ({ ...c, obbligatorio: true });
 const STATISTICHE_PROVA = { str: 'Forza', int: 'Intelligenza', fth: 'Fede' };
 
+// Libreria contro cui si controllano i riferimenti per id (oggetti, reliquie, maledizioni dentro gli effetti):
+// nell'editor quella in modifica (validateCampaign mette SCHEMA_LIB = lib), altrove window.LIBRERIA
+let SCHEMA_LIB = null;
+const schemaLibreria = () => SCHEMA_LIB || window.LIBRERIA || {};
+
 const SCHEMA_SPECIALI = campo('speciali', { vocab: 'eroe' });
 const SCHEMA_EFFETTI = campo('effetti');
 
@@ -37,7 +42,7 @@ const SCHEMA_FASE = {
 const SCHEMA_COMBAT = {
     dice: NUMERO, attackStat: TESTO, damageStat: TESTO, attackBonus: NUMERO, damageBonus: NUMERO, damageMult: NUMERO,
     stun: BOOL, critical: BOOL, autoHit: BOOL, requiresHitLastTurn: BOOL, damageTakenBonus: BOOL, armorGain: NUMERO,
-    sumTarget: NUMERO, senzaTiro: BOOL, effetti: campo('speciali', { vocab: 'abilita' }), useText: TESTO, hitLabel: TESTO, hitText: TESTO
+    sumTarget: NUMERO, senzaTiro: BOOL, lancia: BOOL, instabile: BOOL, effetti: campo('speciali', { vocab: 'abilita' }), useText: TESTO, hitLabel: TESTO, hitText: TESTO
 };
 const ITEM_TYPES = { consumable_heal: 'Cura', consumable_full: 'Cura tutto', consumable_damage: 'Danno', consumable_buff: 'Potenziamento' };
 
@@ -74,7 +79,7 @@ const DATI_SCHEMA = {
         stordisce: campo('scelta', { valori: () => ELITE_TARGETS }), spezzaArmatura: campo('scelta', { valori: () => ELITE_TARGETS }),
         turno: BOOL, turnoBersaglio: campo('scelta', { valori: () => ELITE_TURN_TARGETS }), turnoDanno: NUMERO, turnoColpi: NUMERO,
         turnoVicini: NUMERO, turnoPreparazione: BOOL, turnoTestoPreparazione: TESTO, turnoCrescitaDanno: NUMERO, turnoRigenera: NUMERO,
-        turnoAura: NUMERO, turnoRubaVita: BOOL, speciali: campo('speciali', { vocab: 'nemico' })
+        turnoAura: NUMERO, turnoRubaVita: BOOL, turnoColpoOdio: NUMERO, speciali: campo('speciali', { vocab: 'nemico' })
     },
     benedizioni: {
         name: OBBL(TESTO), livello: OBBL(campo('scelta', { valori: { minore: 'Minore', maggiore: 'Maggiore' } })),
@@ -121,7 +126,25 @@ function controllaSpeciali(list, vocab, dove, out) {
         if (s.bersaglio && !B[s.bersaglio]) out.push({ livello: 'errore', msg: `${at}: bersaglio "${s.bersaglio}" sconosciuto` });
         if (s.stat && !ST[s.stat]) out.push({ livello: 'errore', msg: `${at}: statistica "${s.stat}" sconosciuta` });
         if (s.limite && !['scontro', 'capitolo'].includes(s.limite)) out.push({ livello: 'errore', msg: `${at}: limite "${s.limite}" sconosciuto` });
+        if (!nemico && s.fai === 'oggetto' && !(schemaLibreria().armeria || {})[s.item]) out.push({ livello: 'errore', msg: `${at}: oggetto "${s.item}" non trovato nell'armeria` });
     });
+}
+
+// Riferimenti per id dentro gli effetti di applyEffects: l'oggetto di hero_item, la reliquia di relic, la maledizione di curse
+function controllaRiferimentiEffetti(list, dove, out = []) {
+    const L = schemaLibreria();
+    const cerca = {
+        hero_item: { campo: 'item', kind: 'armeria', msg: id => `oggetto "${id}" non trovato nell'armeria` },
+        relic: { campo: 'id', kind: 'reliquie', msg: id => `reliquia "${id}" non trovata fra le reliquie` },
+        curse: { campo: 'id', kind: 'maledizioni', msg: id => `maledizione "${id}" non trovata fra le maledizioni` }
+    };
+    (Array.isArray(list) ? list : []).forEach((e, i) => {
+        const c = e && cerca[e.effect];
+        const id = c && e[c.campo];
+        if (!c || id === undefined || (L[c.kind] || {})[id]) return;
+        out.push({ livello: 'errore', msg: `${dove}, effetto ${i + 1}: ${c.msg(id)}` });
+    });
+    return out;
 }
 
 // Effetti di applyEffects: tipo conosciuto e campi richiesti (EFFECT_TYPES)
@@ -131,6 +154,7 @@ function controllaEffetti(list, dove, out) {
         if (!need) { out.push({ livello: 'errore', msg: `${dove}, effetto ${i + 1}: tipo "${e && e.effect}" sconosciuto` }); return; }
         need.filter(k => e[k] === undefined).forEach(k => out.push({ livello: 'errore', msg: `${dove}, effetto ${i + 1}: manca "${k}"` }));
     });
+    controllaRiferimentiEffetti(list, dove, out);
 }
 
 // Controlla un elemento con la sua scheda. Ritorna [{ livello: "errore" | "avviso", msg }]:

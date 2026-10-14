@@ -56,15 +56,28 @@ const PRAYER_CHOICES = 3;
 // Pozioni di cura da questa rarità in su rialzano anche gli eroi caduti (0 HP)
 const REVIVE_MIN_RARITY = 'raro';
 
-// Rarità della merce: probabilità (in %) al primo livello e all'ultimo, in mezzo si passa
-// dall'una all'altra in proporzione all'avanzamento nella mappa (merchantRarityWeights)
-const MERCHANT_RARITY_RANGE = {
-    scarso: [10, 0],
-    comune: [38, 10],
-    non_comune: [27, 35],
-    raro: [20, 44],
-    epico: [5, 8],
-    leggendario: [0, 3]
+// Abilità che lancia un oggetto dello zaino (combat.lancia, Lancio della panca di Pancrazio): danni per rarità dell'oggetto.
+// Se colpisce l'oggetto torna nello zaino a fine scontro (vinto), se manca è perso; un consumabile lanciato si consuma sempre
+const LANCIO_DANNI = { scarso: 1, comune: 2, non_comune: 3, raro: 4, epico: 5, leggendario: 6 };
+
+/* ---------- Rarità a cascata (bottino, tesori e mercante: rarityCascade in js/loot.js) ----------
+   Si tira dall'alto: prima il leggendario, solo se manca l'epico, poi il raro e così via; l'ultima rarità
+   prende tutto ciò che resta. Ogni numero è la probabilità (in %) di quella rarità SE quelle sopra hanno
+   mancato, al primo livello della mappa e all'ultimo: in mezzo si passa in proporzione all'avanzamento.
+   Con tre numeri [inizio, metà, fine] si passa dal primo al secondo fino a metà mappa, poi al terzo.
+   Così aggiungere, togliere o spostare oggetti delle rarità basse non cambia mai quanti leggendari cadono.
+   Le rarità che il bottino della campagna non ha vengono saltate: il tiro scende alla rarità sotto
+   (se sotto non c'è niente, risale alla più vicina). Probabilità finali con cascadeShares. */
+
+// Merce del mercante. Probabilità finali, primo livello → ultimo:
+// leggendario 0 → 3, epico 5 → 8, raro 20 → 44, non comune 27 → 35, comune 38 → 10, scarso 10 → 0
+const MERCHANT_RARITY_CASCADE = {
+    leggendario: [0, 3],
+    epico: [5, 8.2],
+    raro: [21.1, 49.4],
+    non_comune: [36, 77.8],
+    comune: [79.2, 100],
+    scarso: null
 };
 
 // Rinnovo della merce e contrattazione (una sola proposta per mercante)
@@ -72,25 +85,21 @@ const MERCHANT_REROLL_COST = 5;
 const HAGGLE_DISCOUNT = 0.25;   // successo: -25% su tutta la merce
 const HAGGLE_PENALTY = 2;       // fallimento: +2 Scudi su ogni articolo
 
-/* ---------- Rarità del bottino degli scontri e dei tesori (js/loot.js) ----------
-   Probabilità (in %) al primo livello della mappa e all'ultimo: in mezzo si passa dall'una
-   all'altra in proporzione all'avanzamento (come il mercante), così mappe lunghe e corte
-   seguono la stessa curva. Le rarità che il bottino della campagna non ha vengono saltate
-   (vedi pickByRarity). */
-const LOOT_RARITY_RANGE = {
-    scarso: [20, 0],
-    comune: [55, 10],
-    non_comune: [20, 35],
-    raro: [5, 44],
-    epico: [0, 8],
-    leggendario: [0, 3]
+// Bottino degli scontri e dei tesori, a cascata come il mercante. Probabilità finali, inizio → metà → fine:
+// leggendario 0 → 2 → 4, epico 0 → 4 → 8, raro 5 → 26 → 44, non comune 20 → 34 → 35, comune 55 → 29 → 9,
+// scarso 20 → 5 → 0
+const LOOT_RARITY_CASCADE = {
+    leggendario: [0, 2, 4],
+    epico: [0, 4.08, 8.33],
+    raro: [5, 50],
+    non_comune: [21.1, 79.5],
+    comune: [73.3, 100],
+    scarso: null
 };
-// Elite (e boss): la stessa tabella, come se fossero più avanti nella mappa, senza scarsi e comuni
+// Elite (e boss): la stessa cascata, come se fossero più avanti nella mappa, e si ferma a LOOT_ELITE_FLOOR
+// (niente scarsi né comuni: quello che resta va ai non comuni)
 const LOOT_ELITE_PROGRESS_BONUS = 0.4;
-const LOOT_ELITE_EXCLUDED = ['scarso', 'comune'];
-// Probabilità massima (in %) di ogni oggetto pescato, per bottino, tesori e mercante (pickByRarity):
-// vale anche per gli elite e quando la campagna non ha alcune rarità; il resto va alle altre
-const RARITY_MAX_SHARE = { epico: 8, leggendario: 3 };
+const LOOT_ELITE_FLOOR = 'non_comune';
 
 /* ---------- Dadi degli eroi: sacchetto (rollD6 in js/combattimento.js) ----------
    Ogni eroe pesca i suoi d6 da un sacchetto di "size" tiri con esattamente "ones" 1 e "sixes" 6;
