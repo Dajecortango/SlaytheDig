@@ -44,15 +44,19 @@ function checkEffects(effects, where, issues, tab, sel) {
         if (e && e.effect === 'hero_set' && e.stat !== undefined && !HERO_FLAGS[e.stat]) {
             issues.push({ level: 'error', msg: `${where}: segnale "${esc(e.stat)}" sconosciuto al motore (noti: ${Object.keys(HERO_FLAGS).join(', ')})`, tab, sel });
         }
-        if (e && e.effect === 'hero_item' && e.item !== undefined && !(LIBRERIA.armeria || {})[e.item]) {
-            issues.push({ level: 'error', msg: `${where}: oggetto "${esc(e.item)}" non trovato nell'armeria`, tab, sel });
-        }
     });
+}
+
+// Riferimenti per id (oggetto, reliquia, maledizione) negli effetti scritti dentro la campagna (premi e punizioni
+// delle sfide, prezzi delle strade, scelte degli eventi): stesso controllo della scheda dei dati, sulla libreria in modifica
+function checkEffectRefs(effects, where, issues, tab, sel) {
+    controllaRiferimentiEffetti(effects, where, []).forEach(p => issues.push({ level: 'error', msg: esc(p.msg), tab, sel }));
 }
 
 function validateCampaign() {
     const issues = [];
     const add = (level, msg, tab, sel) => issues.push({ level, msg, tab, sel });
+    SCHEMA_LIB = lib;  // la scheda dei dati controlla i riferimenti sulla libreria in modifica, non su quella caricata
     if (!camp.id || !/^[a-z0-9_]+$/.test(camp.id)) add('error', 'Id della campagna mancante o non valido', 'general');
     // Un id già usato da un'altra campagna: "Salva nel progetto" ne sovrascriverebbe il file
     else if (camp.id !== campaignOrigin && rawCampaigns()[camp.id]) add('error', `Id "${esc(camp.id)}" già usato dalla campagna "${esc(rawCampaigns()[camp.id].title || camp.id)}": salvando la sovrascriveresti`, 'general');
@@ -79,7 +83,10 @@ function validateCampaign() {
         [['reward', 'reliquie', 'ricompensa'], ['punishment', 'maledizioni', 'punizione']].forEach(([field, kind, label]) => {
             const v = c[field];
             if (typeof v === 'string' && !lib[kind][v]) add('error', `Sfida <b>${k}</b>: ${label} "${esc(v)}" non trovata in ${LIB_LABELS[kind]}`, 'challenges', k);
-            else if (v && typeof v === 'object') checkEffects(v.effects, `Sfida <b>${k}</b> (${label})`, issues, 'challenges', k);
+            else if (v && typeof v === 'object') {
+                checkEffects(v.effects, `Sfida <b>${k}</b> (${label})`, issues, 'challenges', k);
+                checkEffectRefs(v.effects, `Sfida ${k} (${label})`, issues, 'challenges', k);
+            }
         });
         // Strade: statistica, difficoltà e riferimenti alla libreria
         (c.strade || []).forEach((r, i) => {

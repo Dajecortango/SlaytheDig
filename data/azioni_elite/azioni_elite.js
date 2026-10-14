@@ -8,7 +8,8 @@
 // stordisce e spezzaArmatura (stessi bersagli di colpo).
 // Da quel momento, a ogni turno del nemico ("turno": true; sostituisce il modo di attaccare di prima):
 // turnoBersaglio ("scelto", "piu_debole", "piu_forte", "casuale", "tutti"), turnoDanno, turnoColpi, turnoVicini,
-// turnoPreparazione + turnoTestoPreparazione ({nemico} = nome), turnoCrescitaDanno, turnoRigenera, turnoAura, turnoRubaVita.
+// turnoPreparazione + turnoTestoPreparazione ({nemico} = nome), turnoCrescitaDanno, turnoRigenera, turnoAura, turnoRubaVita,
+// turnoColpoOdio (dopo il colpo normale, un secondo colpo con questi danni all'eroe con più HP + armatura fra gli altri).
 // Il contenuto dopo "=" è JSON puro. Si modifica anche dall'editor delle campagne.
 window.LIBRERIA = window.LIBRERIA || {};
 window.LIBRERIA.azioni_elite = {
@@ -100,5 +101,12 @@ window.LIBRERIA.azioni_elite = {
     "bersaglio_marcato": { "name": "Bersaglio Marcato", "desc": "Da ora attacca sempre l'eroe più forte, con 1 danno in più", "bonusDanno": 1, "turno": true, "turnoBersaglio": "piu_forte" },
     "pioggia_di_frecce": { "name": "Pioggia di Frecce", "desc": "A ogni turno 1 danno a tutta la compagnia, ma il suo attacco fa 1 danno in meno", "bonusDanno": -1, "turno": true, "turnoBersaglio": "scelto", "turnoAura": 1 },
     "furia_ultimo_round": { "name": "Furia dell'Ultimo Round", "desc": "Da usare in una soglia a tempo (es. round 5): +2 danni e travolge anche gli eroi accanto", "bonusDanno": 2, "turno": true, "turnoBersaglio": "scelto", "turnoVicini": 1 },
-    "rito_di_sangue": { "name": "Rito di Sangue", "desc": "Da usare in una soglia a tempo (es. round 3): il rito si compie e recupera 5 HP", "cura": 5 }
+    "rito_di_sangue": { "name": "Rito di Sangue", "desc": "Da usare in una soglia a tempo (es. round 3): il rito si compie e recupera 5 HP", "cura": 5 },
+    "colpo_d_odio": {
+        "name": "Colpo d'Odio",
+        "desc": "A ogni turno, dopo il colpo al bersaglio, 2 danni all'eroe con più HP + armatura fra gli altri: chi difende lo attira su di sé",
+        "turno": true,
+        "turnoBersaglio": "scelto",
+        "turnoColpoOdio": 2
+    }
 };

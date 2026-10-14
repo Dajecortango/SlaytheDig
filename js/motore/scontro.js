@@ -26,7 +26,7 @@
         // Inizio scontro: azzera i limiti "per scontro" e fa scattare gli effetti di inizio scontro. Ritorna le note
         function startCombatSpecials() {
             resetCombatSpecialUses();
-            stato.party.forEach(h => { delete h.defendRound; });
+            stato.party.forEach(h => { delete h.defendRound; delete h.hpLostInCombat; if (h.noArmor) h.current_armor = 0; });
             return [...fireSpecialsAll('inizio_scontro').notes, ...fireEnemySpecials('inizio_scontro', stato.activeEnemy, null)];
         }
 
@@ -146,6 +146,58 @@
             return stat ? (hero[stat] || 0) : 0;
         }
 
+        // Esito del d6 alchemico delle pozioni instabili (combat.instabile): 1 fallimento, 6 capolavoro, il resto normale
+        function alchemyOutcome(roll) {
+            return roll === 1 ? 'fallimento' : roll === 6 ? 'capolavoro' : 'normale';
+        }
+
+        // Un'abilità attiva che va data a un eroe scelto (effetti con bersaglio "scelto", es. le pozioni di Cassio)
+        function abilityNeedsTarget(ability) {
+            const c = abilityCombat(ability);
+            return !!c && (c.effetti || []).some(s => s.bersaglio === 'scelto');
+        }
+
+        /* ---------- Lancio di un oggetto (combat.lancia: Lancio della panca) ----------
+           L'oggetto da lanciare è hero.throwIdx (indice nello zaino, scelto nel pannello del dado; 0 se manca).
+           Danni = LANCIO_DANNI della sua rarità al posto del Danno dell'eroe. */
+        function throwItemIdx(hero) {
+            const i = Number.isInteger(hero.throwIdx) ? hero.throwIdx : 0;
+            return hero.items[i] ? i : (hero.items.length ? 0 : -1);
+        }
+        function throwDamage(item) {
+            return item ? (LANCIO_DANNI[itemRarity(item)] || 1) : 0;
+        }
+        // Dopo il tiro: l'oggetto lascia lo zaino (una copia sola di una pila di consumabili). Colpito e non
+        // consumabile = torna a fine scontro (hero.thrownItems, returnThrownItems); mancato o consumabile = perso
+        function throwItemAway(hero, idx, hit) {
+            const item = hero.items[idx];
+            if (!item) return null;
+            const consumable = (item.type || '').startsWith('consumable');
+            if (consumable && (item.qty || 1) > 1) item.qty--;
+            else {
+                hero.items.splice(idx, 1);
+                if (!consumable) revertItemEffects(item, hero);
+            }
+            const back = hit && !consumable;
+            if (back) (hero.thrownItems = hero.thrownItems || []).push(JSON.parse(JSON.stringify({ ...item, qty: undefined })));
+            delete hero.throwIdx;
+            return back ? `${item.name} lanciato: si raccoglie a fine scontro` : `${item.name} ${consumable ? 'va in pezzi' : 'è perduto'}`;
+        }
+        // Fine di uno scontro vinto: gli oggetti lanciati che hanno colpito tornano nello zaino (se c'è posto)
+        function returnThrownItems() {
+            const notes = [];
+            stato.party.forEach(h => {
+                (h.thrownItems || []).forEach(item => {
+                    if (h.items.length >= BACKPACK_SIZE) { notes.push(`${h.name} non ha posto per ${item.name}: resta sul campo`); return; }
+                    h.items.push(item);
+                    applyItemEffects(item, h);
+                    notes.push(`${h.name} raccoglie ${item.name}`);
+                });
+                delete h.thrownItems;
+            });
+            return notes;
+        }
+
         // Danni subiti dall'eroe nell'ultimo attacco del nemico, se è avvenuto subito prima di questo round
         // (resolveMonsterAttack scrive lastHitRound e lastHitDamage; HP e armatura persi contano entrambi)
         function heroHitLastTurn(hero) {
@@ -160,6 +212,7 @@
             if (isSilenced(hero)) return { ok: false, reason: 'Silenziato: non può usare l\'abilità attiva' };
             if (isRaging(hero)) return { ok: false, reason: 'In furia: può solo attaccare' };
             const c = abilityCombat(ability) || {};
+            if (c.lancia && !hero.items.length) return { ok: false, reason: 'Zaino vuoto: non ha niente da lanciare' };
             if (c.requiresHitLastTurn && !heroHitLastTurn(hero)) return { ok: false, reason: 'Si può usare solo dopo essere stati colpiti dal nemico nel suo ultimo turno' };
             // Somma esatta contro elite e boss: li porta a metà vita, inutile se ci sono già
             const enemy = stato.activeEnemy;
@@ -172,7 +225,9 @@
         // Danno di un colpo a segno dell'abilità (stesso calcolo per il tiro vero e per le anteprime)
         function abilityHitDamage(hero, c, relicDmg) {
             const taken = c.damageTakenBonus ? heroHitLastTurn(hero) : 0;
-            return (hero.dmg + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + helpDmgBonus() + relicDmg) * (c.damageMult || 1);
+            // Lancio di un oggetto: il danno dipende dalla rarità dell'oggetto, non dal Danno dell'eroe
+            const base = c.lancia ? throwDamage(hero.items[throwItemIdx(hero)]) : hero.dmg;
+            return (base + abilityStatBonus(hero, c.damageStat) + (c.damageBonus || 0) + taken + helpDmgBonus() + relicDmg) * (c.damageMult || 1);
         }
 
         // Elite o boss: nodo elite o capitano, oppure lo scontro dell'ultimo livello della mappa
@@ -210,8 +265,24 @@
 
             // Senza tiro (armatura immediata e/o solo effetti): il bonus di Aiuta resta per il prossimo
             if (c.armorGain || c.senzaTiro) {
-                hero.current_armor += c.armorGain || 0;
-                return { abId, instant: true, gained: c.armorGain || 0, hit: false, dmg: 0, relicNotes: [], itemNotes: useNotes };
+                if (!hero.noArmor) hero.current_armor += c.armorGain || 0;
+                // Pozione instabile: d6 alchemico dal sacchetto dell'eroe, poi gli effetti di quell'esito sull'eroe
+                // scelto (hero.potionTarget, dalla finestra di scelta; bersaglio "scelto")
+                let alchemy = null;
+                if (c.instabile) {
+                    const roll = rollD6(rolls, 0, hero);
+                    const esito = alchemyOutcome(roll);
+                    const target = stato.party.find(h => h.name === hero.potionTarget && h.hp > 0) || hero;
+                    const enemyHpBefore = enemy ? enemy.hp : 0;
+                    const r = abilitySpecialEffects(hero, hero.chosenAbility, esito, { enemy, target });
+                    if (r.dmg && enemy) enemy.hp -= r.dmg;
+                    useNotes.push(...r.notes);
+                    if (enemy && enemy.hp < enemyHpBefore) useNotes.push(...afterHeroHit(hero, enemy));
+                    alchemy = { roll, esito, target: target.name, dmg: enemy ? Math.max(0, enemyHpBefore - enemy.hp) : 0 };
+                    delete hero.potionTarget;
+                }
+                return { abId, instant: true, gained: hero.noArmor ? 0 : (c.armorGain || 0), alchemy, hit: false, dmg: alchemy ? alchemy.dmg : 0,
+                    relicNotes: [], itemNotes: useNotes };
             }
             // Somma esatta (es. "7"): conta solo la somma dei due dadi, il bonus di Aiuta resta per il prossimo
             if (c.sumTarget) {
@@ -274,7 +345,14 @@
             } else {
                 itemNotes.push(...abilitySpecialEffects(hero, hero.chosenAbility, 'mancato', { enemy }).notes);
             }
-            return { abId, dice, d1: dice[0], d2: dice[1], roll, total, parts, hit, dmg: finalDmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: naturalRollNote(roll, total, enemy.ca),
+            let thrown = null;
+            if (c.lancia) {
+                const idx = throwItemIdx(hero);
+                thrown = hero.items[idx] ? hero.items[idx].name : null;
+                const note = throwItemAway(hero, idx, hit);
+                if (note) itemNotes.push(note);
+            }
+            return { abId, thrown, dice, d1: dice[0], d2: dice[1], roll, total, parts, hit, dmg: finalDmg, attStat, taken, firstBonus, helpDmgBonus: helpDmg, naturalNote: naturalRollNote(roll, total, enemy.ca),
                 dmgStat: abilityStatBonus(hero, c.damageStat), relicDmgBonus: rb.dmg, relicNotes: rb.notes, itemNotes };
         }
 
@@ -287,6 +365,7 @@
             const events = [];
             const special = list => list.forEach(text => events.push({ type: 'special', text: `✨ ${text}` }));
             let dmg = opts.dmg != null ? opts.dmg : enemy.dmg;
+            if (target.noArmor) target.current_armor = 0;  // Lista dei torti: nessuna armatura assorbe i colpi
             const armorBefore = target.current_armor;
             const hpBefore = target.hp;
 
@@ -317,6 +396,7 @@
             let hpDamage = 0;
             let targetDied = false;
             if (dmg > 0) {
+                target.hpLostInCombat = true;  // per la condizione "perso_hp_scontro" (es. Lista dei torti)
                 // Effetti "colpo_mortale" (Tanto ho tenacia, Marchio di Jag Àntar): resta in piedi con quegli HP
                 const mortal = target.hp - dmg <= 0 ? fireSpecials('colpo_mortale', target, { enemy }) : null;
                 if (mortal && mortal.revive != null) {
@@ -412,6 +492,12 @@
         // Bersaglio "piu_forte": l'eroe vivo con più HP + armatura (a parità, il primo)
         function strongestTarget() {
             const alive = stato.party.filter(h => h.hp > 0);
+            return alive.reduce((best, h) => (!best || h.hp + h.current_armor > best.hp + best.current_armor) ? h : best, null);
+        }
+
+        // Bersaglio del Colpo d'Odio: l'eroe vivo con più HP + armatura escluso "exclude" (il bersaglio del colpo normale)
+        function hatefulTarget(exclude) {
+            const alive = stato.party.filter(h => h.hp > 0 && h !== exclude);
             return alive.reduce((best, h) => (!best || h.hp + h.current_armor > best.hp + best.current_armor) ? h : best, null);
         }
 
@@ -583,6 +669,17 @@
                     hpTaken += res.hpDamage;  // le spine (Scudo a Spina di Kranen) sono in resolveMonsterAttack: "dopo_colpito"
                 });
             }
+            // Colpo d'Odio: dopo il colpo normale, un secondo colpo all'eroe più robusto fra gli altri
+            // (chi ha difeso ha più armatura: è lui a prenderlo)
+            if (r.turnoColpoOdio) {
+                const odio = hatefulTarget(targets.length === 1 ? targets[0] : null);
+                if (odio) {
+                    events.push({ type: 'hateful', text: `💢 Colpo d'Odio: ${enemy.name} si avventa su ${odio.name}, il più robusto!` });
+                    const res = resolveMonsterAttack(enemy, odio, { dmg: r.turnoColpoOdio });
+                    events.push(...res.events);
+                    hpTaken += res.hpDamage;
+                }
+            }
             if (r.turnoRubaVita && hpTaken > 0 && enemy.hp < enemy.maxHp) {
                 const before = enemy.hp;
                 enemy.hp = Math.min(enemy.maxHp, enemy.hp + hpTaken);
@@ -626,8 +723,28 @@
             parti.push(parti.length ? colpo.charAt(0).toLowerCase() + colpo.slice(1) : colpo);
             let testo = parti.join(', poi ');
             if (r.turnoCrescitaDanno) testo += ` (+${r.turnoCrescitaDanno} a ogni turno)`;
+            if (r.turnoColpoOdio) {
+                const odio = hatefulTarget(null);
+                testo += `, poi <b>Colpo d'Odio</b> per ${r.turnoColpoOdio} ${r.turnoColpoOdio === 1 ? 'danno' : 'danni'} all'eroe più robusto fra gli altri${odio ? ` (ora <b>${esc(odio.name)}</b>)` : ''}`;
+            }
             if (r.turnoRubaVita) testo += '; si cura dei danni inflitti';
+            const prossima = nextTimedPhase(enemy);
+            if (prossima) testo += `. ⏳ ${prossima.nome} tra ${prossima.round} round`;
             return testo;
+        }
+
+        // Prossima fase a tempo non ancora scattata: { nome, round = round che mancano } (conto alla rovescia
+        // nell'intenzione), null se non ce ne sono
+        function nextTimedPhase(enemy) {
+            const now = stato.combatRound || 0;
+            let best = null;
+            (enemy.fasi || []).forEach((f, i) => {
+                if (!f.round || (enemy.fasiFatte || []).includes(i) || f.round <= now) return;
+                if (!best || f.round < best.f.round) best = { f, i };
+            });
+            if (!best) return null;
+            const nomi = phaseActions(best.f).map(a => a.name).filter(Boolean);
+            return { nome: nomi.length ? nomi.join(' e ') : 'Cambio di fase', round: best.f.round - now };
         }
 
         // 11. Passando su "Attacca" o sull'abilità, la parte di vita che il colpo toglierebbe lampeggia
@@ -650,14 +767,14 @@
         }
 
     // API del modulo: window.Motore.scontro. Gli stessi nomi restano anche globali (Object.assign su window),
-    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: afterHeroHit, heroHitLastTurn, abilityHitDamage, eliteAction, heroesNextTo, strongestTarget, monsterStrike.
+    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: afterHeroHit, throwItemAway, heroHitLastTurn, abilityHitDamage, eliteAction, heroesNextTo, strongestTarget, monsterStrike.
     const api = {
         firstActorBonus, helpDmgBonus, startCombatSpecials, specialHitEffects, rollPartsText, resolveAttack,
-        defendArmorGain, resolveDefend, resolveHelp, abilityCombat, abilityStatBonus, abilityUsable,
+        defendArmorGain, resolveDefend, resolveHelp, abilityCombat, abilityStatBonus, abilityUsable, throwItemIdx, throwDamage, returnThrownItems, alchemyOutcome, abilityNeedsTarget,
         currentEnemyIsEliteOrBoss, abilityIsInstant, abilitySpecialEffects, resolveAbility, resolveMonsterAttack, legacyPhaseActions,
         phaseActions, eliteTargets, predatorTarget, applyEliteAction, eliteReaction, checkEnemyPhases,
         checkEnemyRoundPhases, enemyTurnRule, enemyIsPreparing, enemyChosenTarget, preparationText, resolveEnemyTurn,
-        applyHeroStuns, enemyIntentText, expectedHitDamage, combatRollUsesTwoDice
+        applyHeroStuns, enemyIntentText, expectedHitDamage, combatRollUsesTwoDice, hatefulTarget, nextTimedPhase
     };
     window.Motore = window.Motore || {};
     window.Motore.scontro = api;

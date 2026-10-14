@@ -18,6 +18,12 @@
         // sono nel motore: js/motore/tiri.js, js/motore/scontro.js, js/motore/speciali.js. Qui l'interfaccia.
 
         function startCombat(enemyKey) {
+    // Nodo di scontro senza nemico (campagna incompleta, l'editor lo segnala come errore): si salta invece di bloccarsi
+    if (!enemies[enemyKey]) {
+        uiError('Questo scontro non ha un nemico (campagna incompleta): si prosegue');
+        advanceNode();
+        return;
+    }
     showScreen('screenCombat');
     stato.activeEnemy = JSON.parse(JSON.stringify(enemies[enemyKey]));
     discover('enemies', String(enemyKey).replace(/__l\d+$/, ''));  // Drakengrad: "cinghiali__l3" -> "cinghiali"
@@ -68,7 +74,9 @@
 
         function updateEnemyInfoUI() {
             let hpPercent = clampPct(stato.activeEnemy.hp, stato.activeEnemy.maxHp);
-            let stunBadge = stato.activeEnemy.isStunned ? `<span class="stun-badge">Stordito</span>` : '';
+            // Stati del nemico (stordito, avvelenato): icone come sulle carte degli eroi, numero = round che restano
+            const statuses = enemyStatuses(stato.activeEnemy);
+            const stunBadge = statuses.length ? `<span class="enemy-statuses">${statuses.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}"><img src="${esc(s.icon)}" alt="${esc(s.name)}">${s.rounds ? `<b>${s.rounds}</b>` : ''}</span>`).join('')}</span>` : '';
 
             document.getElementById('enemyInfo').innerHTML = `
                 <div class="enemy-head">
@@ -162,6 +170,21 @@
             applyPendingBuffs();
             applyRegen().forEach(({ hero, gained }) => logCombat(`🌿 ${hero.name} rigenera ${gained} HP.`));
             startRoundSpecials().forEach(text => logCombat(`✨ ${text}`));
+            // Tutti caduti per il veleno: sconfitta, anche se il veleno ha ucciso pure il nemico (come nel simulatore)
+            if (stato.party.every(p => p.hp <= 0)) { deleteCurrentSave(); showScreen('screenDefeat'); return; }
+            // Nemico ucciso dal veleno a inizio round (veleno_nemico)
+            if (stato.activeEnemy.hp <= 0) {
+                updateEnemyInfoUI();
+                updatePartyStatusBars();
+                document.getElementById('heroTurnSection').classList.remove('hidden');
+                document.getElementById('monsterTurnSection').classList.add('hidden');
+                document.getElementById('heroChoiceArea').classList.add('hidden');
+                document.getElementById('heroActionControlArea').classList.add('hidden');
+                document.getElementById('combatNextBtn').classList.add('hidden');
+                logCombat(`Hai sconfitto ${stato.activeEnemy.name}! Vittoria!`);
+                document.getElementById('combatLootBtn').classList.remove('hidden');
+                return;
+            }
             if (handleEnemyPhasesUI(null, { round: true })) return;  // fasi a tempo degli elite
             if (stato.party.every(p => p.hp <= 0)) { deleteCurrentSave(); showScreen('screenDefeat'); return; }  // caduti per il veleno
             updateEnemyInfoUI();
@@ -232,12 +255,13 @@
                 btnAbility.style.display = "none";
             }
             updateActionPreviews(currentActiveHero);
-            // Furia: solo Attacca (e gli oggetti); i pulsanti spiegano perché
-            const rage = isRaging(currentActiveHero);
-            ['cmdDefend', 'cmdHelp'].forEach(id => {
+            // Furia: solo Attacca (e gli oggetti); niente armatura (Lista dei torti): niente Difendi.
+            // I pulsanti spiegano perché (combatActionAllowed)
+            [['cmdDefend', 'defend'], ['cmdHelp', 'help']].forEach(([id, action]) => {
                 const b = document.getElementById(id);
-                b.disabled = rage;
-                if (rage) b.dataset.tip = `${b.dataset.tip.split('||')[0]}||<span class="tip-hint">${esc(currentActiveHero.name)} è in furia: può solo attaccare</span>`;
+                const allowed = combatActionAllowed(currentActiveHero, action);
+                b.disabled = !allowed.ok;
+                if (!allowed.ok) b.dataset.tip = `${b.dataset.tip.split('||')[0]}||<span class="tip-hint">${esc(allowed.reason)}</span>`;
             });
         }
 
@@ -267,9 +291,9 @@
                 const c = abilityCombat(ability) || {};
                 if (c.armorGain || c.senzaTiro) {
                     const btn = document.getElementById('btnCombatAbility');
-                    btn.querySelector('.cmd-sub').textContent = c.armorGain ? `Sicuro · +${c.armorGain} Arm.` : 'Sicuro';
-                    btn.querySelector('.cmd-sub').dataset.chance = 'high';
-                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">Nessun tiro${c.armorGain ? `: +${c.armorGain} Armatura subito` : ''}. Usa l'azione dell'eroe.</span>`;
+                    btn.querySelector('.cmd-sub').textContent = c.armorGain ? `Sicuro · +${c.armorGain} Arm.` : (c.instabile ? 'Pozione · d6' : 'Sicuro');
+                    btn.querySelector('.cmd-sub').dataset.chance = c.instabile ? 'mid' : 'high';
+                    btn.dataset.tip = `${ability.name} [T]||${ability.desc}<br><span class="tip-hint">${c.instabile ? 'Nessun tiro per colpire: un d6 alchemico decide come va (1 fallimento, 6 capolavoro)' : 'Nessun tiro'}${c.armorGain ? `: +${c.armorGain} Armatura subito` : ''}. Usa l'azione dell'eroe.</span>`;
                 } else if (c.sumTarget) {
                     const pct = Math.round(exactSumChance(c.sumTarget) * 100);
                     const btn = document.getElementById('btnCombatAbility');
@@ -295,7 +319,8 @@
                 return;
             }
             if (action === 'ability' && abilityIsInstant(currentActiveHero)) {
-                useInstantAbility();
+                if (abilityNeedsTarget(currentActiveHero.chosenAbility)) chooseAbilityTarget();  // pozione da dare a qualcuno
+                else useInstantAbility();
                 return 'instant';
             }
             chosenAction = action;
@@ -334,8 +359,32 @@
                 dice2.classList.remove('discarded');
                 dice2.textContent = "6";
                 dice2.classList.toggle('hidden', !twoDice);
+                renderThrowPick(action);
                 document.getElementById('rollCombatBtn').textContent = twoDice ? "Tira (2D6, tieni il migliore)" : "Tira (D6)";
             }
+        }
+
+        // Lancio della panca (combat.lancia): nel pannello del dado si sceglie l'oggetto dello zaino da lanciare,
+        // con i danni della sua rarità (LANCIO_DANNI). Il valore del menu diventa hero.throwIdx al tiro
+        function renderThrowPick(action) {
+            const box = document.getElementById('combatThrowPick');
+            const hero = currentActiveHero;
+            const c = action === 'ability' && hero ? abilityCombat(hero.chosenAbility) || {} : {};
+            box.classList.toggle('hidden', !c.lancia);
+            if (!c.lancia) return;
+            document.getElementById('combatThrowSelect').innerHTML = hero.items.map((it, i) => {
+                const sorte = (it.type || '').startsWith('consumable') ? 'si consuma' : 'se manca è perso';
+                return `<option value="${i}">${esc(it.name)} (${RARITY_LABELS[itemRarity(it)] || ''}): ${throwDamage(it)} danni, ${sorte}</option>`;
+            }).join('');
+            refreshThrowPreview();
+        }
+        function refreshThrowPreview() {
+            const hero = currentActiveHero;
+            if (!hero) return;
+            hero.throwIdx = parseInt(document.getElementById('combatThrowSelect').value) || 0;
+            const item = hero.items[hero.throwIdx];
+            document.getElementById('diceCombatResult').textContent = item
+                ? `Se colpisce: ${expectedHitDamage(hero, 'ability')} danni lanciando ${item.name}` : 'Tira il dado...';
         }
 
         // Prima di tirare si può tornare indietro: dal dado alla scelta dell'azione...
@@ -389,8 +438,16 @@
             const ability = hero.chosenAbility;
             const c = abilityCombat(ability) || {};
             const res = resolveAbility(hero, stato.activeEnemy);
-            const fill = text => String(text).replace(/\{eroe\}/g, hero.name);
+            const a = res.alchemy;
+            const fill = text => String(text).replace(/\{eroe\}/g, hero.name).replace(/\{bersaglio\}/g, a ? a.target : hero.name);
             logCombat(`${fill(c.useText || '✨ {eroe} usa ' + ability.name + '!')}${res.gained ? ` +${res.gained} Armatura.` : ''}`);
+            // Pozione instabile: dado alchemico e annuncio dell'esito
+            if (a) {
+                const ESITI = { fallimento: ['Fallimento!', '#ff4d4d'], normale: ['Riuscita', 'var(--gold)'], capolavoro: ['Capolavoro!', '#7fe07f'] };
+                const [titolo, colore] = ESITI[a.esito];
+                logCombat(`🧪 Dado alchemico: <b>${a.roll}</b> <span style="color:${colore}">${titolo}</span>${a.target !== hero.name ? ` (a ${esc(a.target)})` : ''}`);
+                showRollBanner(a.esito !== 'fallimento', `${ability.name}: ${titolo}`, `Dado alchemico ${a.roll}`);
+            }
             logRelicNotes(res);
             chosenAction = null;
             hero.hasActed = true;
@@ -400,7 +457,31 @@
             updateEnemyInfoUI();
             updatePartyStatusBars();
             if (res.gained) fxFloatOnHero(hero, `+${res.gained} Armatura`, 'buff');
+            // La Fiala di Flammaurea può abbattere il nemico: vittoria come dopo un attacco
+            if (stato.activeEnemy.hp <= 0) {
+                logCombat(`Hai sconfitto ${stato.activeEnemy.name}! Vittoria!`);
+                document.getElementById('combatLootBtn').classList.remove('hidden');
+                return;
+            }
+            if (a && a.dmg && handleEnemyPhasesUI(hero)) return;
             document.getElementById('combatNextBtn').classList.remove('hidden');
+        }
+
+        // Pozione da dare a un eroe (bersaglio "scelto"): finestra con gli eroi in piedi, poi l'abilità senza tiro.
+        // Chi non può ricevere armatura (Lista dei torti) non può prendere una pozione che dà armatura
+        function chooseAbilityTarget() {
+            const hero = currentActiveHero;
+            const ability = hero.chosenAbility;
+            const c = abilityCombat(ability) || {};
+            const armatura = (c.effetti || []).some(s => s.bersaglio === 'scelto' && s.fai === 'armatura');
+            const targets = stato.party.filter(h => h.hp > 0);
+            openModal(ability.name, `<p>${esc(ability.desc || '')}</p><p>A chi la dai?</p>`,
+                [...targets.map(t => {
+                    const vietato = armatura && t.noArmor;
+                    return { label: `${t.name}${t === hero ? ' (sé stesso)' : ''} · HP ${t.hp}/${t.maxHp}${vietato ? ' · niente armatura' : ''}`,
+                        className: 'btn-proceed', disabled: vietato,
+                        onClick: () => { hero.potionTarget = t.name; useInstantAbility(); } };
+                }), { label: 'Annulla' }]);
         }
 
         // Bersaglio del consumabile scelto: il nemico per quelli da danno, un eroe vivo per gli altri
@@ -506,10 +587,12 @@
                     else if(chosenAction === 'ability') {
                         const ability = hero.chosenAbility;
                         const c = abilityCombat(ability) || {};
+                        if (c.lancia) hero.throwIdx = parseInt(document.getElementById('combatThrowSelect').value) || 0;  // oggetto scelto nel pannello
                         const res = resolveAbility(hero, stato.activeEnemy, externalRolls);
+                        document.getElementById('combatThrowPick').classList.add('hidden');
                         logRelicNotes(res);
                         logNaturalRoll(res);
-                        const fill = text => String(text).replace(/\{eroe\}/g, hero.name).replace(/\{danni\}/g, res.dmg);
+                        const fill = text => String(text).replace(/\{eroe\}/g, hero.name).replace(/\{danni\}/g, res.dmg).replace(/\{oggetto\}/g, res.thrown || 'un oggetto');
 
                         if (res.noEffect) {
                             logCombat(`${hero.name} usa ${ability.name}, ma l'abilità non ha effetti in combattimento.`);

@@ -176,6 +176,31 @@ module.exports = (t, carica) => {
         t.uguale(10 - 2 * n.dmg, a.hp);
     });
 
+    t.test('Colpo d\'Odio: dopo il colpo al bersaglio, un secondo colpo al più robusto fra gli altri', () => {
+        const [a, b, c] = prepara([eroe('A', { hp: 6 }), eroe('B', { hp: 4, current_armor: 1 }), eroe('C', { hp: 3 })]);
+        const n = elite(['colpo_d_odio']);
+        g.checkEnemyPhases(n, a);
+        g.resolveEnemyTurn(n, a);
+        t.uguale(6 - n.dmg, a.hp, 'il bersaglio scelto prende il colpo normale');
+        t.uguale(4 + 1 - 2, b.hp, 'B (4 HP + 1 armatura) prende il Colpo d\'Odio, l\'armatura para 1');
+        t.uguale(3, c.hp);
+        // Chi difende attira il colpo: con più armatura C diventa il più robusto
+        c.current_armor = 3;
+        const bPrima = b.hp;
+        g.resolveEnemyTurn(n, a);
+        t.uguale(bPrima, b.hp);
+        t.uguale([3, 1], [c.hp, c.current_armor], 'C ha preso il colpo sull\'armatura');
+        t.ok(/Colpo d'Odio/.test(g.enemyIntentText(n)), 'l\'intenzione lo annuncia');
+    });
+
+    t.test('Colpo d\'Odio: con un solo eroe in piedi non c\'è un secondo bersaglio', () => {
+        const [a] = prepara([eroe('A', { hp: 10, maxHp: 10 })]);
+        const n = elite(['colpo_d_odio']);
+        g.checkEnemyPhases(n, a);
+        g.resolveEnemyTurn(n, a);
+        t.uguale(10 - n.dmg, a.hp);
+    });
+
     t.test('Rigenerazione e Sete di sangue: il nemico si cura a ogni turno', () => {
         const [a] = prepara([eroe('A', { hp: 10, maxHp: 10 })]);
         const r = elite(['rigenerazione']);

@@ -185,15 +185,19 @@
         function loadArmoryOptions() {
             const picked = startingPick(activeHeroForCreation);
             const hasItem = !!picked;
+            // Nessun oggetto che l'eroe possa prendere (armeria vuota, o solo armature per Lista dei torti): si prosegue senza
+            const canPick = campaignArmory.some(item => heroCanUseItem(activeHeroForCreation, item));
             document.getElementById('inventoryCountText').textContent = hasItem ?
-                `Oggetto scelto: ${picked.name} (Clicca di nuovo per deselezionare)` : `Seleziona 1 oggetto iniziale (Max 1):`;
+                `Oggetto scelto: ${picked.name} (Clicca di nuovo per deselezionare)`
+                : canPick ? `Seleziona 1 oggetto iniziale (Max 1):` : 'Nessun oggetto iniziale disponibile: puoi proseguire.';
 
-            document.getElementById('btnProceedHero').disabled = !hasItem;
+            document.getElementById('btnProceedHero').disabled = !hasItem && canPick;
 
             document.getElementById('armoryButtons').innerHTML = campaignArmory.map((item, idx) => {
                 const isSelected = hasItem && picked.name === item.name;
+                const vietato = !heroCanUseItem(activeHeroForCreation, item);
                 return `
-                    <button class="armory-btn ${isSelected ? 'selected' : ''}" ${azione('togglePickItem', idx)}>
+                    <button class="armory-btn ${isSelected ? 'selected' : ''}" ${vietato ? 'disabled data-tip="Non può portare armature"' : azione('togglePickItem', idx)}>
                         ${itemIconHtml(item)}
                         <span class="tile-text">
                             <strong>${item.name}</strong>
@@ -208,6 +212,7 @@
         function togglePickItem(idx) {
             const item = campaignArmory[idx];
             const hero = activeHeroForCreation;
+            if (!heroCanUseItem(hero, item)) { uiError(`${hero.name} non può portare ${item.name}: niente armature`); return; }
             const picked = startingPick(hero);
             if (picked) {
                 revertItemEffects(picked, hero);

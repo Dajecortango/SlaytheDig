@@ -117,6 +117,8 @@ const ABILITY_FIELDS = [
       help: 'Vuoto = abilità normale. Es. 7 (17%), 2 o 12 (3%). Il tiro non usa Forza, bonus o reliquie' },
     { gruppo: 'Avanzate', k: 'combat.damageTakenBonus', avanzato: true, label: 'Aggiunge al danno i danni subiti in quel colpo (HP e armatura persi)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { gruppo: 'Come funziona in combattimento', k: 'combat.senzaTiro', label: 'Senza tiro né attacco: agiscono solo gli effetti "quando la usa" (cure, potenziamenti...)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.lancia', label: 'Lancia un oggetto dello zaino: danni secondo la rarità (da 1 a 6), se colpisce torna a fine scontro, se manca è perso', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
+    { gruppo: 'Come funziona in combattimento', k: 'combat.instabile', label: 'Pozione instabile: quando la usa un d6 alchemico sceglie gli effetti (1 fallimento, 2-5 normale, 6 capolavoro)', type: 'checkbox', omitEmpty: true, showIf: isActive, wide: true },
     { gruppo: 'Come funziona in combattimento', k: 'combat.effetti', label: 'Effetti dell\'abilità (quando la usa, se colpisce, se manca)', type: 'speciali', vocab: 'abilita', tipo: 'abilita', wide: true, showIf: isActive,
       help: 'Si aggiungono all\'attacco: es. se colpisce cura tutta la compagnia, quando la usa +2 armatura all\'eroe con meno HP. Con "Senza tiro" agiscono solo questi.' },
     { gruppo: 'Testi del diario', k: 'combat.useText', label: 'Diario: quando la usa', wide: true, omitEmpty: true, showIf: isActive,
@@ -245,6 +247,7 @@ const ELITE_ACTION_FIELDS = [
     { k: 'turnoRigenera', label: 'A ogni turno: HP che recupera', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoAura', label: 'A ogni turno: danno a tutti prima dell\'attacco', type: 'number', omitEmpty: true, showIf: hasTurn },
     { k: 'turnoRubaVita', label: 'A ogni turno: recupera gli HP che toglie agli eroi', type: 'checkbox', omitEmpty: true, showIf: hasTurn, wide: true },
+    { k: 'turnoColpoOdio', label: "A ogni turno: Colpo d'Odio (danni)", type: 'number', omitEmpty: true, showIf: hasTurn, help: "Dopo il colpo normale, un secondo colpo all'eroe con più HP + armatura fra gli altri: chi difende lo attira su di sé" },
     { k: 'speciali', label: 'Effetti speciali da questa soglia in poi (quando → fai)', type: 'speciali', vocab: 'nemico', tipo: 'nemico', wide: true,
       help: '"Alla soglia" agisce subito una volta (es. 2 danni a tutti, veleno, ruba Scudi); gli altri momenti valgono da lì fino a fine scontro (es. spine, rigenerazione).' }
 ];
@@ -270,6 +273,7 @@ function describeEliteAction(a) {
         if (a.turnoVicini) t.push(`${a.turnoVicini} agli eroi accanto`);
         if (a.turnoCrescitaDanno) t.push(`+${a.turnoCrescitaDanno} danno ogni turno`);
         if (a.turnoRubaVita) t.push('si cura dei danni inflitti');
+        if (a.turnoColpoOdio) t.push(`Colpo d'Odio da ${n(a.turnoColpoOdio, 'danno', 'danni')} al più robusto fra gli altri`);
         parts.push(`a ogni turno: ${t.join(', ')}`);
     }
     return parts.length ? parts.join('; ') : 'nessun effetto';

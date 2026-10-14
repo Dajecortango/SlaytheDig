@@ -22,6 +22,24 @@ const SIM_MAX_NODE_VISITS = 200;   // sicurezza anti-loop su dati di mappa malfo
 const SIM_MAX_COMBAT_ROUNDS = 30;  // sicurezza anti-stallo in combattimento
 
 /* ---------- Helper condivisi tra profili ---------- */
+// Lancio della panca: lancia l'oggetto che rende di più, danni della rarità meno quanto vale tenerlo (simItemValue)
+function simThrowChoice(hero) {
+    let best = 0, score = -Infinity;
+    hero.items.forEach((it, i) => { const v = throwDamage(it) - simItemValue(it); if (v > score) { score = v; best = i; } });
+    return best;
+}
+
+// Pozione da dare a qualcuno (bersaglio "scelto"): l'armatura a chi ha meno HP + armatura (e la può ricevere),
+// i potenziamenti a chi colpisce più forte (Forza + Danno)
+function simPotionTarget(hero) {
+    const c = abilityCombat(hero.chosenAbility) || {};
+    const alive = stato.party.filter(h => h.hp > 0);
+    const armatura = (c.effetti || []).some(s => s.bersaglio === 'scelto' && s.fai === 'armatura');
+    const t = armatura ? simAliveMinBy(alive.filter(h => !h.noArmor), h => h.hp + (h.current_armor || 0))
+        : simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0));
+    return (t || hero).name;
+}
+
 function hasUsableAbility(hero) {
     return abilityUsable(hero).ok;  // stesse condizioni del gioco (es. Dente per dente solo dopo essere stati colpiti)
 }
@@ -160,7 +178,7 @@ function simItemGain(item, hero) {
 // L'eroe vivo che guadagna di più dall'oggetto, con il guadagno
 function simBestRecipient(item) {
     let best = null, bestGain = 0;
-    stato.party.filter(h => h.hp > 0).forEach(h => {
+    stato.party.filter(h => h.hp > 0 && heroCanUseItem(h, item)).forEach(h => {
         const g = simItemGain(item, h);
         if (g > bestGain) { best = h; bestGain = g; }
     });
@@ -178,6 +196,8 @@ function simChooseDiscard(hero) {
 
 // Assegna un oggetto a un eroe; se lo zaino supera 3 oggetti, scarta quello di minor valore (uguale per tutti i profili).
 function simAssignItem(item, hero) {
+    // Chi non può portarlo (Lista dei torti: niente armature) lo passa a un altro in piedi, se c'è
+    if (hero && !heroCanUseItem(hero, item)) hero = stato.party.find(h => h.hp > 0 && heroCanUseItem(h, item));
     if (!hero) return;
     const pila = stackableSlot(hero, item);  // consumabile uguale con posto nella pila: nessuno slot in più
     if (pila) { pila.qty = (pila.qty || 1) + 1; return; }
@@ -422,7 +442,7 @@ function simExpertTarget(alive, dmg) {
 // Prossimo turno del nemico, senza dadi: chi colpirà e con quanto. Fermo (stordito o in preparazione) = nessuno
 function simIncoming() {
     const enemy = stato.activeEnemy;
-    const none = { targets: [], dmg: 0, aura: 0 };
+    const none = { targets: [], dmg: 0, aura: 0, odio: null, odioDmg: 0 };
     if (!enemy || enemy.hp <= 0 || enemy.isStunned) return none;
     const r = enemyTurnRule(enemy);
     if (r.turnoPreparazione && !enemy.charging) return none;
@@ -433,12 +453,14 @@ function simIncoming() {
     const targets = mode === 'tutti' ? alive
         : mode === 'scelto' ? [simExpertTarget(alive, dmg)].filter(Boolean)
         : mode === 'casuale' ? [] : eliteTargets(mode);
-    return { targets, dmg, aura: r.turnoAura || 0 };
+    // Colpo d'Odio: secondo colpo al più robusto fra gli altri (con più bersagli o a caso: il più robusto di tutti)
+    const odio = r.turnoColpoOdio ? hatefulTarget(targets.length === 1 ? targets[0] : null) : null;
+    return { targets, dmg, aura: r.turnoAura || 0, odio, odioDmg: odio ? r.turnoColpoOdio : 0 };
 }
 
 // HP che l'eroe perderebbe al prossimo turno del nemico (stima: l'armatura assorbe una volta)
 function simThreat(hero, inc) {
-    const raw = (inc.targets.includes(hero) ? inc.dmg : 0) + inc.aura;
+    const raw = (inc.targets.includes(hero) ? inc.dmg : 0) + inc.aura + (inc.odio === hero ? inc.odioDmg : 0);
     return raw > 0 ? Math.max(0, raw - (hero.current_armor || 0)) : 0;
 }
 
@@ -705,6 +727,8 @@ function simResolveMerchantNode(campaignData, node, profile, runCtx) {
         simAssignItem(scelta.entry.item, scelta.hero);
         restanti.splice(restanti.indexOf(scelta.entry), 1);
     }
+    // Uscita dal mercante, come leaveMerchant nel gioco (es. il Cristallo di Flammaurea di Temistocle)
+    fireSpecialsAll('uscita_mercante').items.forEach(d => simAssignItem(d.item, d.hero));
 }
 
 // Bottino trovato: all'eroe che ne guadagna di più (come farebbe un giocatore attento); se a nessuno
@@ -752,7 +776,11 @@ function simResolveCaptainNode(profile) {
 
 function simExecuteCombatAction(hero, action) {
     if (!combatActionAllowed(hero, action).ok) action = 'attack';  // in furia si può solo attaccare
-    if (action === 'ability' && hasUsableAbility(hero)) resolveAbility(hero, stato.activeEnemy);
+    if (action === 'ability' && hasUsableAbility(hero)) {
+        if ((abilityCombat(hero.chosenAbility) || {}).lancia) hero.throwIdx = simThrowChoice(hero);
+        if (abilityNeedsTarget(hero.chosenAbility)) hero.potionTarget = simPotionTarget(hero);
+        resolveAbility(hero, stato.activeEnemy);
+    }
     else if (action === 'defend') resolveDefend(hero, stato.activeEnemy);
     else if (action === 'help') resolveHelp(hero, stato.activeEnemy);
     else resolveAttack(hero, stato.activeEnemy);
@@ -789,7 +817,8 @@ function simRunCombat(enemyData, profile, runCtx) {
         if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
         applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);
-        const order = profile.turnOrder ? profile.turnOrder(alive) : alive;
+        // Nemico ucciso dal veleno a inizio round (veleno_nemico): nessuno agisce, si passa alla vittoria
+        const order = stato.activeEnemy.hp <= 0 ? [] : profile.turnOrder ? profile.turnOrder(alive) : alive;
         const champion = simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0));
 
         for (let i = 0; i < order.length; i++) {
@@ -851,7 +880,7 @@ function simPray() {
     if (!praying) return;
     const res = prayerRoll(praying);
     if (!res.success) return;
-    const choices = pickBlessings(res.major);
+    const choices = pickBlessings(res.major, praying);
     // Le benedizioni nuove (create dall'editor) dopo quelle conosciute
     const b = SIM_BLESSING_ORDER.map(id => choices.find(c => c.id === id)).find(Boolean) || choices[0];
     if (!b) return;

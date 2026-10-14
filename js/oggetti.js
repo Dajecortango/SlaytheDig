@@ -13,10 +13,21 @@
             return order.indexOf(itemRarity(item)) >= order.indexOf(REVIVE_MIN_RARITY);
         }
 
+        // Oggetti che danno armatura: armature (armor), scudi (def_armor) e pozioni di armatura
+        function itemGivesArmor(item) {
+            return !!item && ((item.armor || 0) > 0 || (item.def_armor || 0) > 0
+                || (item.type === 'consumable_buff' && ['current_armor', 'def_armor'].includes(item.buff_stat)));
+        }
+        // Un eroe con il segnale noArmor (Lista dei torti di Pancrazio) non porta né usa oggetti che danno armatura
+        function heroCanUseItem(hero, item) {
+            return !(hero && hero.noArmor && itemGivesArmor(item));
+        }
+
         // Eroe su cui si può usare il consumabile: vivo, oppure caduto se la pozione rialza.
         // Le pozioni di cura solo su chi ha perso HP (non si sprecano su chi è al massimo).
         function canTargetWithItem(item, target) {
             if (!target || (target.hp <= 0 && !itemRevives(item))) return false;
+            if (!heroCanUseItem(target, item)) return false;
             const heals = item && (item.type === 'consumable_heal' || item.type === 'consumable_full');
             return !heals || target.hp < target.maxHp;
         }
@@ -402,7 +413,7 @@
         // Capienza dello zaino di ogni eroe: BACKPACK_SIZE in js/regole.js
 
         function heroOptionsForItem(item) {
-            return stato.party.filter(p => p.hp > 0).map(h => {
+            return stato.party.filter(p => p.hp > 0 && heroCanUseItem(p, item)).map(h => {
                 const full = h.items.length >= BACKPACK_SIZE && !stackableSlot(h, item) ? ' · zaino pieno' : '';
                 return `<option value="${h.name}">${h.name} (zaino ${h.items.length}/${BACKPACK_SIZE}) — ${itemDeltaText(item, h)}${full}</option>`;
             }).join('');

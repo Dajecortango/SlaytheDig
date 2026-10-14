@@ -9,7 +9,7 @@ window.CAMPAIGNS["astarte_ch2"] = {
     "title": "Caccia alla Bestia, Capitolo Due",
     "badge": "Capitolo Due",
     "description": "Dalla Linea degli Alberi Morti alla Terrazza dell'Eclissi: la compagnia risale i Picchi del Tramonto attraverso i Crepacci Ululanti, i Dirupi del Cielo Infranto e il Mare Bianco.",
-    "coverImage": "",
+    "coverImage": "immagini/screenshot_2026-10-14_112326.png",
     "introText": "La caccia continua. Lasciata la Valle del Krogg, la compagnia si spinge verso le vette dei Picchi del Tramonto, dove il gelo e il vento non perdonano.",
     "heroes": ["astarte", "icaro", "ascadeo", "dioforo"],
     "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],

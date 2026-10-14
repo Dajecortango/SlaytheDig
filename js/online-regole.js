@@ -39,7 +39,7 @@ const ONLINE_PERMESSI = {
     selectHeroCard: 'creazione', selectAbility: 'creazione', toggleCreationRune: 'creazione',
     confirmCreationRunes: 'creazione', togglePickItem: 'creazione', nextHero: 'creazione',
     // Combattimento
-    selectCombatAction: 'eroeAttivo', executeCombatHeroRoll: 'eroeAttivo', executeCombatUseItem: 'eroeAttivo',
+    selectCombatAction: 'eroeAttivo', executeCombatHeroRoll: 'eroeAttivo', executeCombatUseItem: 'eroeAttivo', refreshThrowPreview: 'eroeAttivo',
     backToCombatActions: 'eroeAttivo', cancelCombatItemSubmenu: 'eroeAttivo', cancelCombatHeroChoice: 'eroeAttivo',
     confirmCombatHeroChoice: 'menu:combatHeroSelect',
     executeMonsterAttack: 'voto:bersaglio',

@@ -33,15 +33,14 @@
             desc: `Cura un eroe ferito o caduto: ${MEDIC_PRICE_PER_HP} Scudi per ogni HP, fino a ${MEDIC_MAX_HP} HP per mercante` };
         const isConsumableItem = item => !!(item.type && item.type.startsWith('consumable'));
 
-        function merchantRarityWeights(progress) {
-            const weights = {};
-            for (const [rarity, [from, to]] of Object.entries(MERCHANT_RARITY_RANGE)) weights[rarity] = from + (to - from) * progress;
-            return weights;
+        // Rarità della merce a cascata (MERCHANT_RARITY_CASCADE in js/regole.js, rarityCascade in js/loot.js)
+        function merchantRarityCascade(progress) {
+            return rarityCascade(MERCHANT_RARITY_CASCADE, progress);
         }
 
         // Usata anche dal simulatore: niente stato dell'interfaccia (contrattazione, carte scoperte) qui dentro
         function generateMerchantStock() {
-            const weights = merchantRarityWeights(mapProgress());
+            const cascade = merchantRarityCascade(mapProgress());
             const equipment = gameItems.filter(i => !isConsumableItem(i));
             // Se il bottino della campagna non ha consumabili, si prendono quelli dell'armeria condivisa
             let consumables = gameItems.filter(isConsumableItem);
@@ -51,7 +50,7 @@
             const pickDistinct = (pool, count) => {
                 for (let i = 0; i < count && pool.length > 0; i++) {
                     const notYetOffered = pool.filter(item => !shopPool.includes(item));
-                    shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : pool, weights));
+                    shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : pool, cascade));
                 }
             };
             pickDistinct(equipment, MERCHANT_EQUIPMENT_SLOTS);
@@ -280,6 +279,7 @@
                 return;
             }
             if (entry.kind === 'medic') return openMedic(idx);
+            if (!stato.party.some(h => h.hp > 0 && heroCanUseItem(h, entry.item))) { uiError(`Nessun eroe in piedi può portare ${entry.item.name}`); return; }
             if (thief && price === 0) {
                 merchantStolen = true;
                 uiMessage(`${thief.name} fa sparire ${entry.item.name} sotto il mantello: è gratis!`);
@@ -418,11 +418,25 @@
             const medicUseful = medicHpLeft() > 0 && stato.party.some(h => h.hp < h.maxHp);
             const affordable = merchantItemsWithPrices.some(entry => entry && entry.revealed
                 && (entry.kind !== 'medic' || medicUseful) && stato.partyCoins >= effectiveMerchantPrice(entry));
-            if (!affordable && !hidden) { advanceNode(); return; }
+            if (!affordable && !hidden) { leaveMerchant(); return; }
             const reasons = [];
             if (hidden) reasons.push(hidden === 1 ? 'c\'è ancora <b>1</b> carta da scoprire' : `ci sono ancora <b>${hidden}</b> carte da scoprire`);
             if (affordable) reasons.push(`hai <b style="color:var(--wc-yellow)">${stato.partyCoins}</b> Scudi e ci sono oggetti che puoi permetterti`);
             openModal('Lasciare il mercante?',
                 `<p>${reasons.join(' e ').replace(/^./, c => c.toUpperCase())}.</p>`,
-                [{ label: 'Resta nel negozio', className: 'btn-proceed' }, { label: 'Esci comunque', className: 'btn-danger', onClick: advanceNode }]);
+                [{ label: 'Resta nel negozio', className: 'btn-proceed' }, { label: 'Esci comunque', className: 'btn-danger', onClick: leaveMerchant }]);
+        }
+
+        // Uscita dal mercante: effetti speciali "uscita_mercante" (es. Morte fiammeggiante di Temistocle,
+        // un Cristallo di Flammaurea), poi gli oggetti uno alla volta (con lo scarto se lo zaino è pieno) e la mappa
+        function leaveMerchant() {
+            const res = fireSpecialsAll('uscita_mercante');
+            if (res.notes.length) uiMessage(res.notes.join(' · '));
+            const coda = res.items.slice();
+            const prossimo = () => {
+                const dono = coda.shift();
+                if (!dono) { advanceNode(); return; }
+                assignItemToHero(dono.item, dono.hero, prossimo);
+            };
+            prossimo();
         }

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "js/editor/moduli.js"
+        ],
+        "createdAt": "2026-10-12T15:43:20.038Z",
+        "reason": "Claude: existing portrait-frame <img> elements get their src assigned from JS right after creation (portraitFrameEditor), not a broken image"
+      }
+    ]
+  }
+}

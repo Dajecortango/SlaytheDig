@@ -2241,6 +2241,9 @@
 
         /* Pulsanti per tornare indietro in combattimento prima di tirare il dado */
         .combat-back-btn { display: block; margin: 4px auto 8px; }
+        /* Lancio della panca: oggetto da lanciare, sopra il pulsante del dado */
+        .combat-throw-pick { display: block; margin: 6px auto 8px; max-width: 420px; font-size: 0.8rem; color: var(--gold); text-align: left; }
+        .combat-throw-pick select { display: block; width: 100%; margin-top: 3px; }
 
         /* ---------- Cinematica d'attacco dell'eroe (solo colpi a segno) ---------- */
         .strike-cine {
@@ -3283,6 +3286,9 @@ body.no-anim .phase-banner { animation: none; }
 /* Stati dell'eroe (stordito, avvelenato, silenziato, furia): sotto i potenziamenti, bordo rosso come i malus */
 .hero-statuses { position: absolute; top: 48px; left: 6px; display: flex; gap: 2px; z-index: 4; }
 .hero-statuses .hero-buff { width: 18px; height: 18px; }
+/* Stati del nemico (stordito, avvelenato: enemyStatuses), accanto al nome */
+.enemy-statuses { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
+.enemy-statuses .hero-buff { width: 22px; height: 22px; }
 .hero-blessing {
     position: relative; width: 18px; height: 18px; background: #0a0807;
     box-shadow: 0 0 0 1px #000, 0 0 0 2px #d4a93a, 0 0 7px rgba(255, 215, 110, 0.7);

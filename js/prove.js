@@ -337,7 +337,7 @@
             const hero = stato.party.find(h => h.name === heroName && h.hp > 0);
             if (currentScreenId !== 'screenRest' || restPrayer || !hero) return null;
             const res = prayerRoll(hero);
-            restPrayer = { hero: hero.name, ...res, choices: res.success ? pickBlessings(res.major) : [], chosen: null, text: '' };
+            restPrayer = { hero: hero.name, ...res, choices: res.success ? pickBlessings(res.major, hero) : [], chosen: null, text: '' };
             renderRestPrayer();
             return restPrayer;
         }

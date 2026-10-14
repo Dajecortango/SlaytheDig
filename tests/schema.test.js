@@ -45,4 +45,23 @@ module.exports = (t, carica) => {
             });
         });
     });
+
+    t.test('riferimenti per id negli effetti: oggetto, reliquia e maledizione che non esistono sono errori', () => {
+        const effetti = [{ effect: 'hero_item', item: 'non_esiste', val: 1 }, { effect: 'relic', id: 'nessuna' }, { effect: 'curse', id: 'nessuna' },
+            { effect: 'hero_item', item: 'cristallo_flammaurea', val: 1 }];
+        const out = g.controllaRiferimentiEffetti(effetti, 'Prova');
+        t.uguale(3, out.length);
+        t.ok(/oggetto "non_esiste" non trovato/.test(out[0].msg), out[0].msg);
+        const abil = { name: 'X', speciali: [{ quando: 'uscita_mercante', fai: 'oggetto', item: 'non_esiste' }] };
+        t.ok(g.controllaElemento(S.abilita, abil, 'X').some(p => /non_esiste/.test(p.msg)), 'anche negli effetti speciali');
+    });
+
+    t.test('riferimenti: nell editor contano gli oggetti della libreria in modifica (SCHEMA_LIB)', () => {
+        const abil = { name: 'X', speciali: [{ quando: 'uscita_mercante', fai: 'oggetto', item: 'nuovo_dall_editor' }] };
+        t.ok(g.controllaElemento(S.abilita, abil, 'X').length > 0, 'con la libreria caricata manca');
+        try {
+            g.eval('SCHEMA_LIB = { armeria: { nuovo_dall_editor: { name: "Nuovo" } } }');
+            t.uguale(0, g.controllaElemento(S.abilita, abil, 'X').length, 'con quella in modifica c è');
+        } finally { g.eval('SCHEMA_LIB = null'); }
+    });
 };

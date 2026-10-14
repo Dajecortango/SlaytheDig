@@ -137,6 +137,17 @@
                     const hp = ctx.enemyHpBefore != null ? ctx.enemyHpBefore : enemy.hp;
                     return hp <= enemy.maxHp / 2;
                 }
+                case 'nemico_quarto': {
+                    if (!enemy) return false;
+                    const hp = ctx.enemyHpBefore != null ? ctx.enemyHpBefore : enemy.hp;
+                    return hp <= enemy.maxHp / 4;
+                }
+                case 'nemico_meta_quarto': {
+                    if (!enemy) return false;
+                    const hp = ctx.enemyHpBefore != null ? ctx.enemyHpBefore : enemy.hp;
+                    return hp <= enemy.maxHp / 2 && hp > enemy.maxHp / 4;
+                }
+                case 'perso_hp_scontro': return !!who && !!who.hpLostInCombat;
                 case 'ferito': return !!who && who.hp > 0 && who.hp <= WOUNDED_HP;
                 case 'senza_armatura': return !!who && (who.current_armor || 0) <= 0;
                 case 'ha_difeso': return !!who && who.defendRound === stato.combatRound;
@@ -238,11 +249,16 @@
 
         /* ---------- Azioni dei momenti ---------- */
 
-        function specialTargets(entry, hero) {
+        function specialTargets(entry, hero, ctx = {}) {
             const who = entry.owner || hero;
             const alive = stato.party.filter(h => h.hp > 0);
             switch (entry.s.bersaglio || (who ? 'eroe' : 'compagnia')) {
                 case 'compagnia': return alive;
+                // Scelto da chi usa l'abilità (ctx.target, dalla finestra di scelta); senza scelta l'eroe stesso
+                case 'scelto': {
+                    const t = ctx.target && ctx.target.hp > 0 ? ctx.target : who;
+                    return t && t.hp > 0 ? [t] : [];
+                }
                 case 'meno_hp': {
                     const wounded = alive.filter(h => h.hp < h.maxHp);
                     return wounded.length ? [wounded.reduce((a, b) => b.hp < a.hp ? b : a)] : [];
@@ -281,7 +297,7 @@
         // Applica le azioni di un elenco di voci (fonti già scelte): usata da fireSpecials e dagli effetti
         // delle abilità attive (abilitySpecialEffects). Stessi risultati di fireSpecials
         function runSpecialEntries(entries, quando, hero, ctx = {}) {
-            const res = { notes: [], dmg: 0, cancel: false, revive: null, skipPunishment: false, success: false, coins: 0, cards: 0, fired: [] };
+            const res = { notes: [], dmg: 0, cancel: false, revive: null, skipPunishment: false, success: false, coins: 0, cards: 0, items: [], fired: [] };
             const enemy = ctx.enemy || stato.activeEnemy;
             for (const e of entries) {
                 if (res.cancel || res.revive != null) break;  // colpo già annullato o eroe già salvato
@@ -300,7 +316,7 @@
                         note = `${v} ${v === 1 ? 'danno' : 'danni'} a ${enemy.name}`;
                         break;
                     case 'cura': {
-                        const healed = specialTargets(e, hero).map(t => {
+                        const healed = specialTargets(e, hero, ctx).map(t => {
                             // Un'eco di cura non fa scattare altre cure (Favore di Valgoren)
                             const g = quando === 'cura_ricevuta' ? Math.min(v, t.maxHp - t.hp) : healHero(t, v);
                             if (quando === 'cura_ricevuta') t.hp += g;
@@ -311,9 +327,9 @@
                         break;
                     }
                     case 'armatura': {
-                        const ts = specialTargets(e, hero);
+                        const ts = specialTargets(e, hero, ctx);
                         if (!ts.length) continue;
-                        ts.forEach(t => { t.current_armor = (t.current_armor || 0) + v; });
+                        ts.forEach(t => { if (!t.noArmor) t.current_armor = (t.current_armor || 0) + v; });  // Lista dei torti: niente armatura
                         note = `+${v} armatura a ${ts.map(t => t.name).join(', ')}`;
                         break;
                     }
@@ -332,11 +348,27 @@
                         note = `${SPECIALI_STAT_NEMICO[s.stat] || s.stat} del nemico −${tolto}`;
                         break;
                     }
+                    // Il nemico si rafforza fino a fine scontro (es. Tintura di Corteccia fallita: +1 CA)
+                    case 'rafforza_nemico': {
+                        if (!enemy || enemy.hp <= 0 || v <= 0) continue;
+                        enemy[s.stat] = (enemy[s.stat] || 0) + v;
+                        note = `${SPECIALI_STAT_NEMICO[s.stat] || s.stat} del nemico +${v}`;
+                        break;
+                    }
+                    // L'eroe si ferisce da solo (es. Fiala di Flammaurea fallita): mai sotto 1 HP
+                    case 'ferisce_se': {
+                        if (!who || who.hp <= 1 || v <= 0) continue;
+                        const lost = Math.min(v, who.hp - 1);
+                        who.hp -= lost;
+                        who.hpLostInCombat = true;
+                        note = `${who.name} perde ${lost} HP`;
+                        break;
+                    }
                     case 'potenzia': {
-                        const ts = specialTargets(e, hero);
+                        const ts = specialTargets(e, hero, ctx);
                         if (!ts.length) continue;
                         ts.forEach(t => addSpecialBuff(t, e));
-                        note = `+${v} ${SPECIALI_STAT[s.stat] || s.stat} a ${ts.length > 1 ? 'tutta la compagnia' : ts[0].name}${s.durata ? ` per ${s.durata} round` : ' fino a fine scontro'}`;
+                        note = `${v >= 0 ? '+' : '−'}${Math.abs(v)} ${SPECIALI_STAT[s.stat] || s.stat} a ${ts.length > 1 ? 'tutta la compagnia' : ts[0].name}${s.durata ? ` per ${s.durata} round` : ' fino a fine scontro'}`;
                         break;
                     }
                     case 'annulla_colpo':
@@ -372,10 +404,17 @@
                         note = `${v === 1 ? 'una carta' : `${v} carte`} in più`;
                         break;
                     case 'purifica': {
-                        const ts = specialTargets(e, hero).filter(t => heroStatuses(t).length);
+                        const ts = specialTargets(e, hero, ctx).filter(t => heroStatuses(t).length);
                         if (!ts.length) continue;
                         ts.forEach(clearHeroStatuses);
                         note = `${ts.map(t => t.name).join(', ')} ${ts.length > 1 ? 'sono liberi' : 'è libero'} da ogni stato`;
+                        break;
+                    }
+                    // HP massimi in più per sempre (e altrettanti HP): Lista dei torti di Pancrazio
+                    case 'hp_massimi': {
+                        if (!who || who.hp <= 0 || v <= 0) continue;
+                        who.maxHp += v; who.hp += v;
+                        note = `${who.name} +${v} HP massimi (ora ${who.maxHp})`;
                         break;
                     }
                     case 'togli_maledizione':
@@ -383,6 +422,23 @@
                         removeCurseAt(Math.floor(rng() * stato.activeCurses.length));
                         note = 'una maledizione svanisce';
                         break;
+                    // Veleno sul nemico: perde HP a inizio di ogni round per "durata" round (3 se manca), senza CA.
+                    // Un nuovo veleno sostituisce quello di prima
+                    case 'veleno_nemico': {
+                        if (!enemy || enemy.hp <= 0 || ctx.splash || ctx.reaction) continue;
+                        enemy.poison = { val: Math.max(1, v), rounds: s.durata || 3, name: e.name };
+                        note = `${enemy.name} è avvelenato (−${enemy.poison.val} HP per ${enemy.poison.rounds} round)`;
+                        break;
+                    }
+                    // Oggetti da mettere nello zaino: li consegna chi chiama (con lo scarto se lo zaino è pieno)
+                    case 'oggetto': {
+                        const item = (LIBRERIA.armeria || {})[s.item];
+                        if (!item || !who || who.hp <= 0) continue;
+                        const n = Math.max(1, v);
+                        for (let k = 0; k < n; k++) res.items.push({ hero: who, item });
+                        note = `${n > 1 ? `${n} ${item.name}` : item.name} a ${who.name}`;
+                        break;
+                    }
                     default:
                         continue;
                 }
@@ -397,8 +453,8 @@
         // Momento della compagnia una volta sola (inizio scontro, inizio round, fine scontro, riposo): gli effetti
         // di ogni eroe in piedi valgono per lui, quelli di reliquie e maledizioni una volta per tutti. Risultati sommati
         function fireSpecialsAll(quando, ctx = {}) {
-            const tot = { notes: [], dmg: 0, coins: 0, cards: 0, fired: [] };
-            const add = r => { tot.notes.push(...r.notes); tot.dmg += r.dmg; tot.coins += r.coins; tot.cards += r.cards; tot.fired.push(...r.fired); };
+            const tot = { notes: [], dmg: 0, coins: 0, cards: 0, items: [], fired: [] };
+            const add = r => { tot.notes.push(...r.notes); tot.dmg += r.dmg; tot.coins += r.coins; tot.cards += r.cards; tot.items.push(...r.items); tot.fired.push(...r.fired); };
             stato.party.filter(h => h.hp > 0).forEach(h => add(fireSpecials(quando, h, { ...ctx, scope: 'own' })));
             add(fireSpecials(quando, null, { ...ctx, scope: 'party' }));
             return tot;
@@ -461,6 +517,17 @@
             return out.map(s => ({ ...HERO_STATUSES[s.key], ...s }));
         }
 
+        // Stati attivi del nemico, nella stessa forma di heroStatuses: stordito (salta il prossimo attacco)
+        // e avvelenato dagli eroi (veleno_nemico, rounds = inizi di round che restano)
+        function enemyStatuses(enemy) {
+            if (!enemy || enemy.hp <= 0) return [];
+            const out = [];
+            if (enemy.isStunned) out.push({ ...HERO_STATUSES.stordito, key: 'stordito', desc: 'Salta il suo prossimo attacco' });
+            if (enemy.poison) out.push({ ...HERO_STATUSES.avvelenato, key: 'avvelenato', rounds: enemy.poison.rounds, val: enemy.poison.val,
+                desc: `Perde HP a inizio di ogni round, la CA non para${enemy.poison.name ? ` (${enemy.poison.name})` : ''}` });
+            return out;
+        }
+
         // Toglie tutti gli stati (effetto "purifica", fine scontro)
         function clearHeroStatuses(h) {
             delete h.poison; delete h.silencedUntil; delete h.rageUntil;
@@ -470,6 +537,8 @@
         // In furia l'eroe può solo attaccare (e usare oggetti, che non consumano l'azione)
         function combatActionAllowed(hero, action) {
             if (isRaging(hero) && ['defend', 'help', 'ability'].includes(action)) return { ok: false, reason: `${hero.name} è in furia: può solo attaccare` };
+            // Lista dei torti (noArmor): Difendi darebbe solo armatura, che non può ricevere
+            if (hero && hero.noArmor && action === 'defend') return { ok: false, reason: `${hero.name} non può ricevere armatura: niente Difendi` };
             return { ok: true, reason: '' };
         }
 
@@ -567,13 +636,22 @@
             return fireEnemySpecials('colpito', enemy, hero, {});
         }
 
-        // Veleno (effetto "veleno" dei nemici): a inizio round gli eroi avvelenati perdono HP, senza armatura
+        // Veleno (effetto "veleno" dei nemici): a inizio round gli eroi avvelenati perdono HP, senza armatura.
+        // Anche il nemico, se un eroe l'ha avvelenato (veleno_nemico, es. Veleno della Cava di Ofelia)
         function applyPoison() {
             const notes = [];
+            const enemy = stato.activeEnemy;
+            if (enemy && enemy.poison && enemy.hp > 0) {
+                const lost = Math.min(enemy.hp, enemy.poison.val);
+                enemy.hp -= lost;
+                notes.push(`☠️ ${enemy.name} perde ${lost} HP per il veleno${enemy.hp <= 0 ? ' e muore' : ''}`);
+                if (--enemy.poison.rounds <= 0 || enemy.hp <= 0) delete enemy.poison;
+            }
             stato.party.forEach(h => {
                 if (!h.poison || h.hp <= 0) return;
                 const lost = Math.min(h.hp, h.poison.val);
                 h.hp -= lost;
+                if (lost > 0) h.hpLostInCombat = true;
                 notes.push(`☠️ ${h.name} perde ${lost} HP per il veleno${h.hp <= 0 ? ' e cade' : ''}`);
                 if (--h.poison.rounds <= 0) delete h.poison;
             });
@@ -595,7 +673,7 @@
     const api = {
         itemSpecials, heroSpecialSources, resetCombatSpecialUses, rollSpecialSources, rollSpecialBonus, spendRollSpecials,
         specialSum, specialPriceFactor, fireSpecials, runSpecialEntries, fireSpecialsAll, specialReroll,
-        specialHitDamagePreview, hasSpecial, isSilenced, isRaging, heroStatuses, combatActionAllowed,
+        specialHitDamagePreview, hasSpecial, isSilenced, isRaging, heroStatuses, enemyStatuses, combatActionAllowed,
         enemySpecialList, fireEnemySpecials, enemyHitReaction, startRoundSpecials, specialTipLines
     };
     window.Motore = window.Motore || {};

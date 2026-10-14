@@ -111,6 +111,7 @@ function breakRelic(relicId) {
         function giveHeroItem(hero, itemId, count) {
             const base = (LIBRERIA.armeria || {})[itemId];
             if (!base) { console.warn('hero_item: oggetto sconosciuto', itemId); return; }
+            if (!heroCanUseItem(hero, base)) { uiMessage(`${hero.name} non può portare ${base.name}`); return; }
             const consumable = (base.type || '').startsWith('consumable');
             let lost = 0;
             for (let i = 0; i < count; i++) {
@@ -165,10 +166,15 @@ function breakRelic(relicId) {
         const DEFAULT_GAME_ITEMS = (LIBRERIA.lootPredefinito || []).map(id => LIBRERIA.armeria[id]).filter(Boolean);
         let gameItems = DEFAULT_GAME_ITEMS;
 
+        // Campagne giocabili: senza eroi (es. una campagna ancora in lavorazione) la creazione del party non partirebbe
+        function playableCampaigns() {
+            return Object.values(campaignsDatabase).filter(c => (c.heroes || []).length > 0);
+        }
+
         function goToCampaigns() {
             showScreen('screenCampaigns');
             const grid = document.getElementById('campaignsGridList');
-            const campaigns = Object.values(campaignsDatabase);
+            const campaigns = playableCampaigns();
             grid.innerHTML = campaigns.map((c, idx) => `
                 <div class="campaign-card" tabindex="0" role="button" data-index="${idx}" ${azione('onCampaignCardClick', idx, c.id)} ${azioneSu('enter', 'selectCampaign', c.id)}>
                     <div>
@@ -259,7 +265,7 @@ function breakRelic(relicId) {
                     campaignsDatabase[camp.id] = camp;
                     // Apre subito la scelta campagna con la campagna di prova al centro
                     goToCampaigns();
-                    const idx = Object.keys(campaignsDatabase).indexOf(camp.id);
+                    const idx = playableCampaigns().findIndex(c => c.id === camp.id);
                     setTimeout(() => goToCampaignSlide(idx), 50);
                 };
             };

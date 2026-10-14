@@ -142,4 +142,13 @@ module.exports = (t, carica) => {
             t.uguale(2, b.hp, 'solo chi ha il dono');
         } finally { delete lib.__prova; }
     });
+    t.test('Voce degli Asi (Pandora): una benedizione in più fra cui scegliere', () => {
+        const [a] = prepara([eroe('Pandora', { fth: 5, hp: 3 })]);
+        g.applyEffects(g.LIBRERIA.abilita.pandora_voce_asi.effects, a);
+        t.uguale(1, a.prayerExtraChoices);
+        const tutte = g.pickBlessings(false, { prayerExtraChoices: 99 }).length;
+        t.ok(tutte >= 4, 'ci sono almeno 4 benedizioni minori utili: ' + tutte);
+        t.uguale(3, g.pickBlessings(false).length);
+        t.uguale(4, g.pickBlessings(false, a).length);
+    });
 };
