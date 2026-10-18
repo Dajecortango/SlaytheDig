@@ -53,7 +53,7 @@
         ultimoSegnale = Date.now();
         const on = (ev, fn) => flusso.addEventListener(ev, e => { ultimoSegnale = Date.now(); try { fn(JSON.parse(e.data)); } catch (err) { console.error(err); } });
         on('parti', p => { codaParti = codaParti.then(() => p && p.z ? decomprimi(p.z) : p).then(applicaParti).catch(err => console.error(err)); });
-        on('stato', s => { stato = s || {}; disegnaBarra(); musica(); });
+        on('stato', s => { stato = s || {}; disegnaBarra(); musica(); segnaEroi(); });
         on('master', m => mostraAvviso(m.online ? '' : (m.chiusa ? 'Il master ha chiuso la partita' : 'Il master non è collegato'), !m.online));
         on('avviso', a => mostraAvviso(a.testo));
         on('ping', () => {});
@@ -133,6 +133,56 @@
             applicaScorrimento(trasforma(vecchio, elementoDa(html)));
         });
         avviaVideo();
+        segnaEroi();
+    }
+
+    /* ---------- Il mio eroe e il turno degli altri ---------- */
+    // Le carte arrivano dal master uguali per tutti: qui si segna quella del giocatore (cornice dorata e "TU") e si
+    // spengono un poco le altre. Nello scontro, quando agisce l'eroe di un altro, i comandi sono grigi con
+    // "Tocca a Luca (Icaro)". Si rifà a ogni aggiornamento (morphdom rimette le classi del master).
+    function segnaEroi() {
+        const owners = stato.owners || {};
+        document.querySelectorAll('.hero-mini-card[data-hero]').forEach(c => {
+            const chi = owners[c.dataset.hero];
+            c.classList.toggle('online-mio', !!nome && chi === nome);
+            c.classList.toggle('online-altro', !!chi && chi !== nome);
+        });
+        turnoAltrui(owners);
+    }
+    function turnoAltrui(owners) {
+        const sezione = $('heroTurnSection');
+        if (!sezione) return;
+        let riga = $('onlineTurnoAltrui');
+        const carte = [...document.querySelectorAll('.hero-mini-card[data-hero]')];
+        const attivo = carte.find(c => c.classList.contains('is-turn'));
+        // Eroi che possono agire adesso: quello scelto, o (prima della scelta) chi non ha ancora agito
+        const possono = attivo ? [attivo] : carte.filter(c => !c.classList.contains('has-acted') && !c.classList.contains('dead'));
+        const altrui = possono.filter(c => owners[c.dataset.hero] && owners[c.dataset.hero] !== nome);
+        const tocca = possono.length && !possono.some(c => owners[c.dataset.hero] === nome) && altrui.length;
+        const comandi = attivo ? sezione.querySelectorAll('#combatActionButtons .cmd-btn, #combatChangeHeroBtn')
+            : sezione.querySelectorAll('#heroChoiceArea button');
+        // Ritratti di chi agisce: spenti quelli degli eroi di un altro giocatore
+        const altro = b => !!b.dataset.hero && !!owners[b.dataset.hero] && owners[b.dataset.hero] !== nome;
+        comandi.forEach(b => {
+            const spegni = tocca || (!attivo && altro(b));
+            // data-online-era: il pulsante era già disattivato dal master (resta così quando torna il proprio turno)
+            if (spegni && !b.classList.contains('online-non-mio')) {
+                b.dataset.onlineEra = b.disabled ? '1' : '';
+                b.disabled = true; b.classList.add('online-non-mio');
+            } else if (!spegni && b.classList.contains('online-non-mio')) {
+                b.classList.remove('online-non-mio');
+                b.disabled = b.dataset.onlineEra === '1';
+                delete b.dataset.onlineEra;
+            }
+        });
+        if (!tocca) { if (riga) riga.remove(); return; }
+        if (!riga) {
+            riga = document.createElement('p');
+            riga.id = 'onlineTurnoAltrui';
+            sezione.prepend(riga);
+        }
+        const testo = 'Tocca a ' + altrui.map(c => `${owners[c.dataset.hero]} (${c.dataset.hero})`).join(', ');
+        if (riga.textContent !== testo) riga.textContent = testo;
     }
 
     // Regione e percorso di un elemento (indici fra i figli, senza SCRIPT e AUDIO): il master trova lo stesso elemento

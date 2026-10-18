@@ -15,8 +15,8 @@ module.exports = (t, carica) => {
     t.test('scontro: si agisce solo con il proprio eroe', () => {
         t.ok(g.onlineCanRun('selectCombatAction', ['attack'], 'Marco', base({ activeHero: 'Icaro' })).ok);
         t.ok(!g.onlineCanRun('selectCombatAction', ['attack'], 'Sara', base({ activeHero: 'Icaro' })).ok);
-        t.ok(g.onlineCanRun('confirmCombatHeroChoice', [], 'Sara', base({ selects: { combatHeroSelect: 'Astarte' } })).ok);
-        t.ok(!g.onlineCanRun('confirmCombatHeroChoice', [], 'Sara', base({ selects: { combatHeroSelect: 'Icaro' } })).ok, 'menu con l\'eroe di un altro');
+        t.ok(g.onlineCanRun('confirmCombatHeroChoice', ['Astarte'], 'Sara', base()).ok);
+        t.ok(!g.onlineCanRun('confirmCombatHeroChoice', ['Icaro'], 'Sara', base()).ok, 'ritratto dell\'eroe di un altro');
     });
 
     t.test('argomento con il nome dell\'eroe, scarto, creazione, finestre', () => {
@@ -176,6 +176,20 @@ module.exports = (t, carica) => {
     });
 
 
+    t.test('turno del nemico: il ritratto cliccato da un giocatore è il suo voto sul bersaglio', () => {
+        const h = carica();
+        conDue(h);
+        h.eval(`stato.party = [{ name: 'Ottavio', hp: 4 }, { name: 'Caino', hp: 3 }, { name: 'Icaro', hp: 0 }];
+            monsterTargetFree = true;
+            onlineVotoSpeciale('bersaglio', 'executeMonsterAttack', ['Caino'], 'Marco');`);
+        t.uguale('bersaglio', h.eval('onlineState.voto.tipo'));
+        t.uguale('Ottavio,Caino', h.eval('onlineState.voto.opzioni.map(o => o.id).join()'));
+        t.uguale('Caino', h.eval('onlineState.voto.voti.Marco'));
+        // Bersaglio deciso dal nemico: il clic di un giocatore non apre voti
+        h.eval(`onlineAnnullaVoto(); monsterTargetFree = false; onlineVotoSpeciale('bersaglio', 'executeMonsterAttack', ['Caino'], 'Sara');`);
+        t.uguale(null, h.eval('onlineState.voto'));
+    });
+
     t.test('revisione #3: un elemento nascosto non si può cliccare da remoto', () => {
         const h = carica();
         const el = (dentroNascosto, disabled = false) => ({ disabled, closest: sel => (dentroNascosto && /hidden/.test(sel)) ? {} : null });
@@ -232,5 +246,18 @@ module.exports = (t, carica) => {
         t.uguale('sts-node node-ignoto upcoming unreachable', h.classiNodoGiocatore('sts-node node-elite upcoming unreachable'));
         t.uguale('sts-node node-combat completed', h.classiNodoGiocatore('sts-node node-combat completed'), 'già fatto: resta');
         t.uguale(null, h.classiNodoGiocatore('sts-node node-combat upcoming node-goal'), 'il boss resta uguale');
+        t.uguale(null, h.classiNodoGiocatore('sts-node node-elite upcoming', true), 'nodo vicino: resta uguale');
+    });
+
+    t.test('mappa dei giocatori: si vedono i nodi aperti e i loro successivi, fino a due passi', () => {
+        const h = carica();
+        const nodi = [
+            { id: 1, done: true, next: [2, 3] },
+            { id: 2, active: true, next: [4] },
+            { id: 3, active: true, next: [5] },
+            { id: 4, next: [6] }, { id: 5, next: [6] }, { id: 6, next: [] },
+        ];
+        t.uguale('2,3,4,5', [...h.nodiVisibiliGiocatori(nodi, 2)].sort().join(','));
+        t.uguale('2,3', [...h.nodiVisibiliGiocatori(nodi, 1)].sort().join(','), 'un passo: solo quelli aperti');
     });
 };

@@ -376,6 +376,101 @@ code { color: var(--gold); font-size: 0.85em; }
 .ed-add-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
 .ed-add-row select { flex: 1; margin: 0; }
 .ed-add-row button { margin: 0 0 4px; flex-shrink: 0; }
+.ed-add-row .ed-menu-cercabile { flex: 1; min-width: 0; }
+
+/* ---------- Menu lunghi con la casella di ricerca (menuCercabile in js/editor/moduli.js) ---------- */
+.ed-menu-cercabile { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; }
+.ed-menu-cercabile > select { grid-column: 1 / -1; margin: 0; }
+.ed-menu-cerca { margin: 0; min-width: 0; }
+.ed-menu-conta { font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
+.ed-menu-cercabile > select.ed-menu-aperto { background-image: none; padding-right: 12px; }
+
+/* ---------- Numeri con − e + (numeroConPulsanti) ---------- */
+.ed-stepper { display: flex; align-items: stretch; gap: 4px; }
+.ed-stepper input { flex: 1; min-width: 3.5em; margin: 0; text-align: center; }
+.ed-num-btn { margin: 0; min-width: 2.2em; padding: 4px 8px; font-size: 1rem; line-height: 1; }
+
+/* ---------- Miniatura dell'elemento scelto in un menu (miniaturaScelta) ---------- */
+.ed-scelta-mini { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.8rem; color: #e6dcc4; }
+.ed-scelta-mini img { width: 64px; height: 44px; object-fit: cover; border: 1px solid #8a6418; box-shadow: 0 0 0 1px #000; }
+
+/* ---------- Eroi della campagna: carte da cliccare (renderHeroesTab in js/editor/campagna.js) ---------- */
+.ed-hero-count { margin: 0 0 10px; font-size: 0.9rem; color: #e6dcc4; }
+.ed-hero-count b { color: var(--wc-yellow); font-family: var(--font-title); }
+.ed-hero-count.empty { color: var(--curse-color); }
+.ed-hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ed-hero-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    background: linear-gradient(#1d1814, #120f0c);
+    border: 1px solid #3a2a12;
+    box-shadow: 0 0 0 1px #000;
+    opacity: 0.75;
+    transition: opacity 0.15s, border-color 0.15s, transform 0.15s;
+}
+.ed-hero-card:hover, .ed-hero-card:focus-visible { opacity: 1; border-color: #f0cf73; transform: translateY(-2px); outline: none; }
+.ed-hero-card.chosen { opacity: 1; border: 2px solid var(--wc-yellow); background: linear-gradient(#3a2c0e, #1a1206); }
+.ed-hero-card img, .ed-hero-initial { width: 84px; height: 84px; object-fit: cover; object-position: 50% 25%; border: 1px solid #8a6418; }
+.ed-hero-initial { display: grid; place-items: center; font-family: var(--font-title); font-size: 2rem; color: var(--gold); background: #0c0a09; }
+.ed-hero-card b { font-family: var(--font-title); font-size: 0.85rem; color: var(--wc-yellow); }
+.ed-hero-card small { font-size: 0.68rem; color: var(--text-dim); }
+.ed-hero-card button { margin: 4px 0 0; }
+.ed-hero-check { position: absolute; top: 6px; right: 6px; display: none; width: 22px; height: 22px; place-items: center;
+    font-weight: 700; color: #1a1206; background: var(--wc-yellow); border: 1px solid #000; border-radius: 50%; }
+.ed-hero-card.chosen .ed-hero-check { display: grid; }
+
+/* ---------- Oggetti della campagna: carte con l'icona (renderItemsTab in js/editor/campagna.js) ---------- */
+.ed-card-tools { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.ed-card-tools .ed-list-filter { flex: 1; margin: 0; position: static; }
+.ed-card-tools .ed-check { margin: 0; white-space: nowrap; }
+.ed-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.ed-item-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+    background: linear-gradient(#1d1814, #120f0c);
+    border: 1px solid #3a2a12;
+    box-shadow: 0 0 0 1px #000;
+    opacity: 0.75;
+    transition: opacity 0.15s, border-color 0.15s, transform 0.15s;
+}
+.ed-item-card:hover, .ed-item-card:focus-visible { opacity: 1; transform: translateY(-2px); outline: none; border-color: var(--rar); }
+.ed-item-card.chosen { opacity: 1; border: 2px solid var(--wc-yellow); background: linear-gradient(#3a2c0e, #1a1206); }
+.ed-item-card.static { cursor: default; opacity: 1; }
+.ed-item-card.static:hover { transform: none; }
+.ed-item-card img, .ed-item-noicon { flex: 0 0 44px; width: 44px; height: 44px; border: 1px solid var(--rar); box-shadow: 0 0 0 1px #000; }
+.ed-item-noicon { display: grid; place-items: center; color: var(--text-dim); background: #0c0a09; }
+.ed-item-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding-right: 22px; }
+.ed-item-text b { font-family: var(--font-title); font-size: 0.82rem; color: var(--rar); }
+.ed-item-text small { font-size: 0.7rem; color: var(--text-dim); line-height: 1.3; }
+.ed-item-text .ed-item-rar { color: var(--rar); opacity: 0.85; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.62rem; }
+.ed-item-card .ed-hero-check { top: 6px; right: 6px; }
+.ed-item-card.chosen .ed-hero-check { display: grid; }
+.ed-item-card button { position: absolute; right: 6px; bottom: 6px; margin: 0; padding: 3px 8px; font-size: 0.66rem; }
+.ed-item-card.chosen .ed-item-text { padding-bottom: 22px; }
+
+/* ---------- Cosa fare adesso (renderNextSteps in js/editor/controlli.js) ---------- */
+.ed-next-steps:empty { display: none; }
+.ed-steps { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 6px; text-align: left; }
+.ed-step { display: flex; gap: 10px; align-items: flex-start; padding: 7px 9px; border: 1px solid #3a2a12; background: linear-gradient(#1d1814, #120f0c); }
+.ed-step.next { border-color: var(--wc-yellow); }
+.ed-step.done { opacity: 0.6; }
+.ed-step-num { flex: 0 0 24px; height: 24px; display: grid; place-items: center; font-family: var(--font-title); font-weight: 700;
+    color: var(--wc-yellow); border: 1px solid #8a6418; border-radius: 50%; }
+.ed-step.done .ed-step-num { color: #1a1206; background: var(--accent-green); border-color: #000; }
+.ed-step-text { display: flex; flex-direction: column; gap: 2px; font-size: 0.84rem; color: #e6dcc4; }
+.ed-step-text small { font-size: 0.74rem; color: var(--text-dim); }
+.ed-step-text button { align-self: flex-start; margin: 4px 0 2px; }
 
 /* ---------- Mappa: trascinamento dei nodi ---------- */
 .ed-map svg { touch-action: none; user-select: none; }
@@ -471,6 +566,10 @@ body.ed-on-home .ed-main { grid-template-columns: 1fr; }
 .ed-home-resume b { color: var(--wc-yellow); font-family: var(--font-title); }
 .ed-home-resume small { color: var(--text-dim); }
 .ed-home-resume button, .ed-home-current button { margin: 0; }
+.ed-home-zip { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0 0; color: #e6dcc4; font-size: 0.85rem; }
+.ed-home-zip button { margin: 0; }
+.ed-zip-choice { display: flex; align-items: baseline; gap: 6px; margin: 8px 0 2px; cursor: pointer; }
+.ed-zip-camp { margin: 2px 0 4px 24px; max-width: calc(100% - 24px); }
 @media (max-width: 1000px) { .ed-home-doors { grid-template-columns: 1fr; } }
 
 /* Guida al primo avvio (js/editor/guida.js) */

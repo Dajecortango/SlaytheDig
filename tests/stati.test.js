@@ -64,16 +64,16 @@ module.exports = (t, carica) => {
         t.uguale(0, g.heroStatuses(a).length);
     });
 
-    t.test('Veleno della Cava (Ofelia): se colpisce avvelena il nemico, −1 HP a inizio dei 3 round dopo, poi basta', () => {
+    t.test('Veleno della Cava (Ofelia): se colpisce avvelena il nemico, −1 HP a inizio dei 2 round dopo, poi basta', () => {
         const a = eroe('Ofelia', { str: 3, int: 3, chosenAbility: g.LIBRERIA.abilita.ofelia_veleno_cava });
         const n = prepara([a], []);
         t.ok(!g.resolveAbility(a, n, [1]).hit); t.ok(!n.poison, 'mancato: niente veleno');
         a.abilityUsedThisCombat = false;
         const r = g.resolveAbility(a, n, [6]);
         t.ok(r.hit); t.uguale(9, n.hp, 'il danno normale');
-        t.uguale(3, n.poison.rounds);
-        [8, 7, 6, 6].forEach(atteso => { g.startRoundSpecials(); t.uguale(atteso, n.hp); });
-        t.ok(!n.poison, 'finito dopo 3 round');
+        t.uguale(2, n.poison.rounds);
+        [8, 7, 7].forEach(atteso => { g.startRoundSpecials(); t.uguale(atteso, n.hp); });
+        t.ok(!n.poison, 'finito dopo 2 round');
     });
 
     t.test('stati del nemico (icone accanto al nome): stordito e avvelenato con i round che restano', () => {

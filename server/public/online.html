@@ -22,6 +22,22 @@
         #onlineAvviso { position: fixed; top: calc(var(--top-h, 56px) + 8px); left: 50%; transform: translateX(-50%); z-index: 1100; }
         #onlineTurno { color: var(--wc-yellow, gold); font-weight: bold; }
         .online-hidden { display: none !important; }
+        /* Il mio eroe (server/public/online.js, segnaEroi): cornice dorata che pulsa e targhetta "TU"; gli altri un poco spenti */
+        .hero-mini-card { position: relative; }
+        .hero-mini-card.online-mio { animation: online-mio 1.8s ease-in-out infinite; }
+        .hero-mini-card.online-mio::before { content: "TU"; position: absolute; top: -9px; right: 8px; z-index: 2; padding: 1px 7px;
+            font-family: var(--font-title); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.08em; color: #1a1206;
+            background: linear-gradient(#ffe27a, #c9982f); border: 1px solid #000; box-shadow: 0 0 6px rgba(255, 204, 0, 0.6); }
+        .hero-mini-card.online-altro:not(.is-turn) { opacity: 0.8; }
+        @keyframes online-mio {
+            0%, 100% { box-shadow: 0 0 0 2px #c9982f, 0 0 10px rgba(255, 204, 0, 0.45), inset 0 0 18px rgba(0, 0, 0, 0.8); }
+            50% { box-shadow: 0 0 0 2px #ffe27a, 0 0 18px rgba(255, 204, 0, 0.8), inset 0 0 18px rgba(0, 0, 0, 0.8); }
+        }
+        @media (prefers-reduced-motion: reduce) { .hero-mini-card.online-mio { animation: none; box-shadow: 0 0 0 2px #ffe27a, 0 0 12px rgba(255, 204, 0, 0.6); } }
+        /* Turno di un altro giocatore: comandi grigi e chi deve agire */
+        #onlineTurnoAltrui { margin: 0 0 6px; padding: 4px 10px; text-align: center; color: var(--wc-yellow, gold);
+            font-family: var(--font-title); border: 1px dashed rgba(201, 152, 47, 0.7); background: rgba(0, 0, 0, 0.45); }
+        .online-non-mio { filter: grayscale(1) brightness(0.6); cursor: not-allowed; }
     </style>
 </head>
 <body class="online-guest">

@@ -66,6 +66,10 @@ function renderHomeTab() {
                     <div class="ed-home-libs">${HOME_LIB_TABS.map(k => `<button type="button" ${azione('switchTab', k)}>${esc(LIB_LABELS[k])}</button>`).join('')}</div>
                 </section>
             </div>
+            <p class="ed-home-zip">
+                <button type="button" class="btn-small" ${azione('downloadZip')}>Scarica .zip…</button>
+                <span>La libreria, un capitolo o tutto il progetto, da mandare a chi tiene il gioco.</span>
+            </p>
         </div>`;
 }
 

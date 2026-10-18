@@ -73,7 +73,7 @@
             color: var(--wc-yellow);
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 180, 40, 0.25);
+            text-shadow: 0 2px 0 #000;
             margin: 0.2em 0 0.6em;
         }
 
@@ -234,7 +234,7 @@
         /* Parole chiave colorate nei testi (vedi decorateKeywords in js/game.js) */
         .kw { font-weight: 700; white-space: nowrap; }
         .kw-str { color: #ff9a6a; }
-        .kw-fth { color: #fff0b0; text-shadow: 0 0 6px rgba(255, 220, 120, 0.45); }
+        .kw-fth { color: #fff0b0; }
         .kw-int { color: #8cc4ff; }
         .kw-hp { color: #8dff78; }
         .kw-armor { color: #a9c8ff; }
@@ -285,12 +285,12 @@
             background: linear-gradient(180deg, rgba(0, 0, 0, 0.38), transparent 45%, rgba(255, 240, 200, 0.1) 100%);
         }
 
-        /* Pulsanti dei menu: cornice d'oro con le borchie (immagini/ui/bottone_menu.png, generata)
+        /* Pulsanti dei menu: cornice d'oro con le borchie (immagini/ui/bottone_menu.webp, generata)
            attorno al metallo rosso, e bagliore interno al passaggio del mouse */
         .wc-menu-btn {
             --btn-depth: 6px;
             border: 8px solid transparent;
-            border-image: url('../immagini/ui/bottone_menu.png') 25 / 8px stretch;
+            border-image: url('../immagini/ui/bottone_menu.webp') 25 / 8px stretch;
             border-radius: 0;
             background-clip: padding-box;
         }

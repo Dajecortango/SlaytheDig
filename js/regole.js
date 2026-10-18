@@ -115,6 +115,8 @@ const PROC_SCALA = {
     ca: p => (p >= 0.8 ? 1 : 0),      // +1 CA nell'ultimo tratto
     cd: p => (p >= 0.6 ? 1 : 0)       // +1 CD alle sfide dell'ultimo tratto
 };
+// Parte delle sfide che diventa un evento (trama con scelte di un altro capitolo), se ce ne sono
+const PROC_EVENTI = 0.35;
 
 /* ---------- Simulatore (js/simulator.js) ----------
    Valore di un oggetto, pesato su quanto conta in combattimento: il danno vale più di tutto
@@ -130,3 +132,4 @@ const VOTE_SECONDS = 30;               // durata di un voto
 const VOTE_SECONDS_TARGET = 15;        // voto sul bersaglio del nemico, più corto per non spezzare lo scontro
 const ONLINE_DISCONNECT_SECONDS = 20;  // senza segnale per tanto, il giocatore è disconnesso
 const ONLINE_FRAME_MS = 100;           // intervallo minimo fra due invii della schermata
+const ONLINE_NODI_VISIBILI = 2;        // i giocatori vedono il contenuto dei nodi fino a tanti passi avanti (1 = solo quelli aperti)

@@ -231,17 +231,11 @@ window.LIBRERIA.abilita = {
         "isCombatActive": true,
         "actionName": "Lancio della panca (lancia un oggetto)",
         "icon": "immagini/icone/BTNStormBolt.png",
-        "combat": {
-            "dice": 1,
-            "lancia": true,
-            "useText": "🪑 {eroe} afferra {oggetto} e lo scaglia con forza disumana!",
-            "hitLabel": "CENTRATO!",
-            "hitText": "Colpo pieno: {danni} danni!"
-        }
+        "combat": { "dice": 1, "lancia": true, "useText": "🪑 {eroe} afferra {oggetto} e lo scaglia con forza disumana!", "hitLabel": "CENTRATO!", "hitText": "Colpo pieno: {danni} danni!" }
     },
     "pancrazio_lista_torti": {
         "id": "pancrazio_lista_torti",
-        "name": "Lista dei torti",
+        "name": "Lista dei Rancori",
         "desc": "Passiva: non può indossare armature né scudi e non riceve mai armatura (niente Difendi), ma dopo ogni scontro vinto in cui ha perso almeno 1 HP i suoi HP massimi aumentano di 1 per sempre",
         "isCombatActive": false,
         "effects": [
@@ -311,14 +305,14 @@ window.LIBRERIA.abilita = {
     "ofelia_veleno_cava": {
         "id": "ofelia_veleno_cava",
         "name": "Veleno della Cava",
-        "desc": "Attiva (1 volta per scontro): attacca con il normale tiro per colpire; se colpisce, oltre al danno avvelena il nemico, che perde 1 HP a inizio di ognuno dei 3 round successivi",
+        "desc": "Attiva (1 volta per scontro): attacca con il normale tiro per colpire; se colpisce, oltre al danno avvelena il nemico, che perde 1 HP a inizio di ognuno dei 2 round successivi",
         "isCombatActive": true,
-        "actionName": "Veleno della Cava (avvelena per 3 round)",
+        "actionName": "Veleno della Cava (avvelena per 2 round)",
         "icon": "immagini/icone/BTNShadowStrike.png",
         "combat": {
             "dice": 1,
             "effetti": [
-                { "quando": "colpo", "fai": "veleno_nemico", "val": 1, "durata": 3 }
+                { "quando": "colpo", "fai": "veleno_nemico", "val": 1, "durata": 2 }
             ],
             "useText": "🗡️ {eroe} intinge la lama in un veleno della Cava di Glauco...",
             "hitText": "La lama avvelenata affonda: infliggi {danni} danni e il veleno entra in circolo!"
@@ -399,5 +393,32 @@ window.LIBRERIA.abilita = {
             { "quando": "fine_scontro", "fai": "cura", "val": 1, "bersaglio": "piu_ferito" }
         ],
         "icon": "immagini/icone/BTNHealingSalve.png"
+    },
+    "enea_hammergradiano_puro": {
+        "id": "enea_hammergradiano_puro",
+        "name": "Hammergradiano Puro",
+        "desc": "Passiva: sangue delle antiche tribù di Hammergrad. +1 Forza, +1 Fede e +1 Danno per sempre",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_stat", "stat": "str", "val": 1 },
+            { "effect": "hero_stat", "stat": "fth", "val": 1 },
+            { "effect": "hero_stat", "stat": "dmg", "val": 1 }
+        ],
+        "icon": "immagini/icone/BTNHeroMountainKing.png"
+    },
+    "enea_scudo_del_nord": {
+        "id": "enea_scudo_del_nord",
+        "name": "Scudo del Nord",
+        "desc": "Attiva (1 volta per scontro): senza tirare il dado, +2 Armatura all'eroe e +1 Armatura agli eroi accanto a lui. Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Scudo del Nord (+2 Armatura, +1 agli eroi accanto)",
+        "icon": "immagini/icone/BTNFrostArmor.png",
+        "combat": {
+            "armorGain": 2,
+            "effetti": [
+                { "quando": "uso", "fai": "armatura", "val": 1, "bersaglio": "vicini" }
+            ],
+            "useText": "🛡️ {eroe} pianta lo Scudo del Nord: chi gli sta accanto è al riparo!"
+        }
     }
 };

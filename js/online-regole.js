@@ -41,7 +41,7 @@ const ONLINE_PERMESSI = {
     // Combattimento
     selectCombatAction: 'eroeAttivo', executeCombatHeroRoll: 'eroeAttivo', executeCombatUseItem: 'eroeAttivo', refreshThrowPreview: 'eroeAttivo',
     backToCombatActions: 'eroeAttivo', cancelCombatItemSubmenu: 'eroeAttivo', cancelCombatHeroChoice: 'eroeAttivo',
-    confirmCombatHeroChoice: 'menu:combatHeroSelect',
+    confirmCombatHeroChoice: 'argomento',  // il ritratto cliccato
     executeMonsterAttack: 'voto:bersaglio',
     // Eroe scelto in un menu o passato come argomento
     confirmLootAssignment: 'menu:lootHeroSelect', confirmTreasureAssignment: 'menu:treasureHeroSelect',
@@ -134,12 +134,25 @@ function capoSpedizione(ordine, giocatori) {
     return (ordine || []).find(n => collegati.has(n)) || null;
 }
 
-// Mappa vista dai giocatori: i nodi non ancora fatti perdono il tipo (node-combat, node-merchant...), così non si sa
-// se arriva uno scontro, una prova o un mercante. Ritorna le classi nuove; null se il nodo resta com'è (il boss:
-// la meta la conoscono tutti). I nodi già fatti restano uguali.
-function classiNodoGiocatore(classi) {
+// Nodi della mappa che i giocatori vedono per intero: quelli aperti (un passo) e i loro successivi, fino a "passi"
+// passi avanti (ONLINE_NODI_VISIBILI). Ritorna gli id
+function nodiVisibiliGiocatori(nodi, passi) {
+    const lista = nodi || [], perId = new Map(lista.map(n => [n.id, n]));
+    let fronte = lista.filter(n => n.active && !n.done);
+    const visti = new Set(fronte.map(n => n.id));
+    for (let p = 1; p < passi; p++) {
+        fronte = fronte.flatMap(n => n.next || []).filter(id => !visti.has(id) && perId.has(id)).map(id => perId.get(id));
+        fronte.forEach(n => visti.add(n.id));
+    }
+    return visti;
+}
+
+// Mappa vista dai giocatori: i nodi non ancora fatti e lontani perdono il tipo (node-combat, node-merchant...), così
+// non si sa se arriva uno scontro, una prova o un mercante. Ritorna le classi nuove; null se il nodo resta com'è (il
+// boss: la meta la conoscono tutti; i nodi vicini, "visibile", nodiVisibiliGiocatori). I nodi già fatti restano uguali.
+function classiNodoGiocatore(classi, visibile) {
     const c = String(classi || '').split(/\s+/).filter(Boolean);
-    if (c.includes('node-goal')) return null;
+    if (c.includes('node-goal') || visibile) return null;
     if (c.includes('completed')) return c.join(' ');
     return c.map(x => /^node-(?!ignoto$)/.test(x) ? 'node-ignoto' : x).join(' ');
 }
@@ -165,5 +178,5 @@ function rendiLeggero(html) {
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
-        elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, classiNodoGiocatore, changedRegions, leggeroUrl, rendiLeggero };
+        elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, classiNodoGiocatore, nodiVisibiliGiocatori, changedRegions, leggeroUrl, rendiLeggero };
 }

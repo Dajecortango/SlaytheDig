@@ -72,6 +72,9 @@ const HERO_LIB_FIELDS = [...HERO_FIELDS, {
     k: 'abilities', label: 'Abilità tra cui scegliere', type: 'reflist', lib: 'abilita', wide: true,
     help: 'Il giocatore ne sceglie una quando recluta l\'eroe. Le abilità si creano e si modificano nella scheda Abilità.'
 }, {
+    k: 'abilitaFisse', label: 'Abilità sempre attive', type: 'reflist', lib: 'abilita', wide: true,
+    help: 'Facoltativo: l\'eroe le ha sempre, oltre a quella che sceglie (es. Enea: Hammergradiano Puro). Di solito passive: i loro effetti si applicano quando l\'eroe viene reclutato.'
+}, {
     k: 'runeOptions', label: 'Rune tra cui scegliere', type: 'reflist', lib: 'abilita', wide: true,
     help: 'Facoltativo, al posto delle abilità: il giocatore sceglie tante rune quante dice "Rune equipaggiate" e a ogni riposo può scambiarne una con una che non ha. Le rune sono passive della scheda Abilità (effetti hero_set o hero_stat).'
 }, {
@@ -377,12 +380,13 @@ const challengeOptions = () => [['', '—'], ...keysOf(camp.challenges).map(k =>
 const NODE_FIELDS = [
     { k: 'type', label: 'Tipo', type: 'select', gruppo: 'Cosa c\'è qui', options: () => Object.entries(NODE_TYPES).map(([k, t]) => [k, t.label]),
       help: 'Cosa trovano gli eroi in questo punto della mappa' },
-    { k: 'enemy', label: 'Nemico', type: 'select', gruppo: 'Cosa c\'è qui', options: enemyOptions, creaNuovo: 'bestiario', wide: true, showIf: n => n.type === 'combat' || n.type === 'elite' },
-    { k: 'challengeId', label: 'Prova', type: 'select', gruppo: 'Cosa c\'è qui', options: challengeOptions, creaNuovo: 'challenges', wide: true, showIf: n => n.type === 'challenge' },
-    { k: 'treasureId', label: 'Testo del tesoro', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('treasures'), showIf: n => n.type === 'treasure' },
-    { k: 'merchantId', label: 'Testo del mercante', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('merchants'), showIf: n => n.type === 'merchant' },
-    { k: 'restId', label: 'Testo del riposo', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('rests'), showIf: n => n.type === 'rest' },
-    { k: 'storyId', label: 'Trama', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('stories'), showIf: n => n.type === 'story',
+    { k: 'enemy', label: 'Nemico', type: 'select', gruppo: 'Cosa c\'è qui', options: enemyOptions, creaNuovo: 'bestiario', wide: true, cercabile: true,
+      miniatura: n => lib.bestiario[n.enemy] && [lib.bestiario[n.enemy].image, lib.bestiario[n.enemy].name], showIf: n => n.type === 'combat' || n.type === 'elite' },
+    { k: 'challengeId', label: 'Prova', type: 'select', gruppo: 'Cosa c\'è qui', options: challengeOptions, creaNuovo: 'challenges', wide: true, cercabile: true, showIf: n => n.type === 'challenge' },
+    { k: 'treasureId', label: 'Testo del tesoro', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('treasures'), cercabile: true, showIf: n => n.type === 'treasure' },
+    { k: 'merchantId', label: 'Testo del mercante', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('merchants'), cercabile: true, showIf: n => n.type === 'merchant' },
+    { k: 'restId', label: 'Testo del riposo', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('rests'), cercabile: true, showIf: n => n.type === 'rest' },
+    { k: 'storyId', label: 'Trama', type: 'select', gruppo: 'Cosa c\'è qui', options: refOptions('stories'), cercabile: true, showIf: n => n.type === 'story',
       help: 'Titolo e descrizione si scrivono qui sotto (più nodi possono usare la stessa trama)' },
     { k: 'title', label: 'Titolo', wide: true, gruppo: 'Aspetto', help: 'Il nome del punto sulla mappa, es. "Il ponte crollato"' },
     { k: 'icon', label: 'Icona', gruppo: 'Aspetto', help: 'Un simbolo (emoji) sul nodo della mappa' },

@@ -2,7 +2,7 @@
 // Apre index.html con un seme, spegne animazioni e audio, poi un "giocatore a caso" clicca i pulsanti visibili
 // (data-action e pulsanti delle finestre) per N passi. Fallisce se la pagina lancia errori JavaScript.
 // Così si controlla l'interfaccia vera, che i test in Node (DOM finto) non vedono.
-// Uso: node tools/prova_browser.mjs [--passi 600] [--seme 123] [--partite 2] [--eroi "id1,id2"] [--browser <percorso>] [--mostra]
+// Uso: node tools/prova_browser.mjs [--passi 600] [--seme 123] [--partite 2] [--eroi "id1,id2"] [--browser <percorso>] [--mostra] [--contrasto] [--foto <cartella>]
 //   --eroi: in ogni campagna solo questi eroi della libreria (per provare eroi nuovi non ancora in una campagna)
 //   --mostra apre la finestra del browser (senza, gira nascosto); a fine prova uno screenshot in tools/prova_browser.png
 import { spawn } from 'node:child_process';
@@ -19,6 +19,16 @@ const PARTITE = Number(arg('partite', 2));
 const MOSTRA = process.argv.includes('--mostra');
 const EROI = (arg('eroi', '') || '').split(',').map(x => x.trim()).filter(Boolean);
 const EDITOR = process.argv.includes('--editor');  // prova l'editor invece del gioco
+// --contrasto: misura la leggibilità del testo (tools/misura_contrasto.js) in ogni schermata e finestra vista
+// e in un tooltip per schermata; elenca i problemi per elemento, non fa fallire la prova
+const CONTRASTO = process.argv.includes('--contrasto');
+// --foto <cartella>: uno screenshot la prima volta che si arriva in ogni schermata (per guardare l'aspetto)
+const FOTO = arg('foto', '');
+// --carico: quanto scarica la pagina all'avvio (prima del primo clic) e in tutta la prova, con i file più pesanti
+const CARICO = process.argv.includes('--carico');
+const scaricati = new Map();  // url -> byte (dalla rete del browser)
+const richieste = new Map();  // requestId -> url
+const perRichiesta = new Map();  // requestId -> byte
 const PORTA = 19333;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -80,7 +90,7 @@ async function valuta(espressione) {
 const BOT = `(() => {
     let s = ${SEME} >>> 0;
     const caso = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-    const VIETATE = /^(tornaAlMenu|openOptions|saveGame|loadGame|openSimTester|simStartTest|vaiAPagina|scrollCampaigns|openCompendium|openHowToPlay|openJournal)$|online|remote|qr|export|import|delete|elimina|salva|carica|slot|sim/i;
+    const VIETATE = /^(tornaAlMenu|askMainMenu|openOptions|saveGame|loadGame|openSimTester|simStartTest|vaiAPagina|scrollCampaigns|openCompendium|openHowToPlay|openJournal)$|online|remote|qr|export|import|delete|elimina|salva|carica|slot|sim/i;
     const visibile = el => {
         if (el.disabled || el.closest('.hidden')) return false;
         const r = el.getBoundingClientRect();
@@ -118,6 +128,49 @@ const BOT = `(() => {
 const errori = [], risorse = [];
 let fallita = false;
 let controllatoScontro = false;
+const MISURA = CONTRASTO ? fs.readFileSync(path.join(ROOT, 'tools', 'misura_contrasto.js'), 'utf8').replace(/^\/\/.*$/gm, '').trim() : '';
+const contrasto = new Map(), misurate = new Set(), fotografate = new Set();
+// Una misura per schermata (e per finestra aperta), più un tooltip della schermata
+async function misuraContrasto(schermata) {
+    const finestra = await valuta(`(() => { const m = document.getElementById('wc3Modal'); return m && !m.classList.contains('hidden') && getComputedStyle(m).display !== 'none' ? document.getElementById('wc3ModalTitle').textContent.trim().slice(0, 30) : ''; })()`);
+    const chiave = schermata + (finestra ? ' / finestra ' + finestra : '');
+    if (misurate.has(chiave)) return;
+    misurate.add(chiave);
+    const voci = await valuta(`${MISURA}('body')`);
+    const tip = await valuta(`(() => {
+        const el = [...document.querySelectorAll('[data-tip]')].find(e => e.offsetParent);
+        if (!el) return [];
+        const r = el.getBoundingClientRect();
+        el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, clientX: r.left + 2, clientY: r.top + 2 }));
+        const v = (${MISURA})('#wc3Tooltip');
+        document.getElementById('wc3Tooltip').classList.remove('show');
+        return v;
+    })()`);
+    [...voci, ...tip].forEach(v => v.problemi.forEach(p => {
+        const k = v.dove + ' — ' + p.replace(/[\d.]+/g, '');
+        const e = contrasto.get(k) || { n: 0, esempio: v.testo, schermate: new Set(), peggiore: p };
+        const val = x => parseFloat((x.match(/contrasto ([\d.]+)/) || [])[1] || 99);
+        e.n++; e.schermate.add(finestra ? 'finestra' : schermata);
+        if (val(p) < val(e.peggiore)) { e.peggiore = p; e.esempio = v.testo; }
+        contrasto.set(k, e);
+    }));
+}
+const nomeFile = u => decodeURIComponent(u.replace(/^.*?slay%20the%20dig\//, '').replace(/^file:\/\/\/.*\/slay the dig\//, ''));
+function stampaCarico(quando) {
+    const tot = [...scaricati.values()].reduce((s, b) => s + b, 0);
+    const locali = [...scaricati].filter(([u]) => u.startsWith('file:'));
+    console.log(`Scaricati ${quando}: ${scaricati.size} file, ${(tot / 1e6).toFixed(2)} MB (dal progetto ${locali.length} file, ${(locali.reduce((s, [, b]) => s + b, 0) / 1e6).toFixed(2)} MB)`);
+    const peso = u => /\.(webp|png|jpe?g|svg|gif)$/i.test(u) ? 'immagini' : /\.(mp4|webm)$/i.test(u) ? 'video' : /\.(ogg|mp3|wav)$/i.test(u) ? 'audio' : /\.(js)$/i.test(u) ? 'codice' : /\.css|fonts/i.test(u) ? 'stile e caratteri' : 'altro';
+    const perTipo = {};
+    scaricati.forEach((b, u) => { const k = peso(u.split('?')[0]); perTipo[k] = (perTipo[k] || 0) + b; });
+    console.log('  per tipo: ' + Object.entries(perTipo).sort((a, b) => b[1] - a[1]).map(([k, b]) => `${k} ${(b / 1e6).toFixed(2)} MB`).join(', '));
+    [...scaricati].sort((a, b) => b[1] - a[1]).slice(0, 10).forEach(([u, b]) => console.log(`  ${(b / 1e3).toFixed(0).padStart(6)} kB  ${nomeFile(u)}`));
+}
+function stampaContrasto() {
+    const voci = [...contrasto].sort((a, b) => b[1].n - a[1].n);
+    console.log(`Leggibilità: ${misurate.size} viste misurate, ${voci.length} problemi`);
+    voci.forEach(([k, e]) => console.log(`  • ${k.split(' — ')[0]}: ${e.peggiore} — "${e.esempio}" (${[...e.schermate].join(', ')})`));
+}
 const ok = (cond, msg) => { console.log(`${cond ? '  ✓' : '  ✗'} ${msg}`); if (!cond) fallita = true; };
 
 // Controlli mirati la prima volta che si arriva in uno scontro (sulla pagina vera, non sul DOM finto dei test)
@@ -197,6 +250,21 @@ async function controlliScontro() {
     })()`);
     ok(pozione.bottoni === pozione.vivi + 1 && pozione.dado && pozione.diff >= 0,
         `Tintura di Corteccia: finestra con ${pozione.bottoni - 1} eroi, "${pozione.riga}", armatura +${pozione.diff}`);
+    // Avanti automatico: il turno del nemico stordito passa da solo agli eroi
+    await valuta(`(() => { stato.activeEnemy.isStunned = true; stato.party.forEach(h => { h.hasActed = true; }); showHeroSelectionPhase(); return true; })()`);
+    await wait(2500);
+    const avanti = await valuta(`({ fase: combatPhase, scelta: !document.getElementById('heroChoiceArea').classList.contains('hidden') })`);
+    ok(avanti.fase === 'heroes' && avanti.scelta, `nemico stordito: si torna da soli alla scelta dell'eroe (fase ${avanti.fase})`);
+    // Pulsante "Menu" della barra: chiede conferma (dentro uno scontro niente salvataggio), "Resta qui" non cambia niente
+    const menu = await valuta(`(() => {
+        document.querySelector('#partyTopBar [data-action="askMainMenu"]').click();
+        const titolo = document.getElementById('wc3ModalTitle').textContent;
+        const pulsanti = [...document.querySelectorAll('#wc3ModalActions button')].map(b => b.textContent);
+        [...document.querySelectorAll('#wc3ModalActions button')].find(b => b.textContent === 'Resta qui').click();
+        return { titolo, pulsanti, schermata: currentScreenId };
+    })()`);
+    ok(/menu principale/.test(menu.titolo) && menu.pulsanti.join() === 'Torna al menu,Resta qui' && menu.schermata === 'screenCombat',
+        `Menu dallo scontro: "${menu.titolo}" con ${menu.pulsanti.join(' / ')}, si resta su ${menu.schermata}`);
     // Nemico ucciso dal veleno a inizio round: vittoria e pulsante del bottino
     const veleno = await valuta(`(() => {
         const e = stato.activeEnemy; e.hp = 1; e.poison = { val: 1, rounds: 3, name: 'Prova' };
@@ -232,6 +300,20 @@ try {
         }
     });
     await cdp('Runtime.enable'); await cdp('Log.enable'); await cdp('Page.enable');
+    if (CARICO) {
+        // Senza cache: ogni partita conta come una prima apertura (come un telefono che apre la pagina online)
+        await cdp('Network.enable'); await cdp('Network.setCacheDisabled', { cacheDisabled: true });
+        ascoltatori.push(m => {
+            if (m.method === 'Network.requestWillBeSent') richieste.set(m.params.requestId, m.params.request.url);
+            // Byte per richiesta (dataReceived a pezzi, loadingFinished alla fine); per file conta la richiesta più grande,
+            // così un brano rimesso da capo o un video in ciclo non si somma più volte
+            const id = m.params && m.params.requestId, u = id && richieste.get(id);
+            if (!u || u.startsWith('data:')) return;
+            if (m.method === 'Network.dataReceived') perRichiesta.set(id, (perRichiesta.get(id) || 0) + (m.params.dataLength || 0));
+            if (m.method === 'Network.loadingFinished') perRichiesta.set(id, Math.max(perRichiesta.get(id) || 0, m.params.encodedDataLength || 0));
+            if (/dataReceived|loadingFinished/.test(m.method)) scaricati.set(u, Math.max(scaricati.get(u) || 0, perRichiesta.get(id)));
+        });
+    }
 
     if (EDITOR) await provaEditor();
     else {
@@ -258,6 +340,7 @@ try {
             return true;
         })()`);
         await valuta(BOT);
+        if (CARICO && p === 0) { await wait(2500); stampaCarico('all\'avvio, prima del primo clic'); }
         let finita = false;
         for (let i = 0; i < PASSI && !finita; i++) {
             const r = await valuta('__bot.passo()');
@@ -266,6 +349,20 @@ try {
             if (!r.cliccato) { if (++fermo > 40) { errori.push(`bloccato su ${r.schermata}: nessun pulsante da cliccare`); break; } }
             else fermo = 0;
             if (['screenVictory', 'screenDefeat'].includes(r.schermata)) finita = true;
+            if (CONTRASTO) await misuraContrasto(r.schermata);
+            // Turno del nemico, scelta di chi affronta la prova e di chi prega hanno una foto loro
+            const parte = FOTO ? await valuta(`(() => {
+                const vede = id => { const el = document.getElementById(id); return !!el && !el.closest('.hidden'); };
+                return vede('monsterTurnSection') ? '_nemico' : vede('challengeStage2') ? '_eroe' : vede('prayerStage2') ? '_preghiera' : '';
+            })()`) : '';
+            const vista = r.schermata + parte;
+            if (FOTO && !fotografate.has(vista)) {
+                fotografate.add(vista);
+                await wait(600);
+                fs.mkdirSync(FOTO, { recursive: true });
+                const foto = await cdp('Page.captureScreenshot', { format: 'png' });
+                fs.writeFileSync(path.join(FOTO, `${vista}.png`), Buffer.from(foto.data, 'base64'));
+            }
             if (r.schermata === 'screenCombat' && !controllatoScontro) { controllatoScontro = true; await controlliScontro(); }
             await wait(r.cliccato ? 120 : 400);
         }
@@ -280,6 +377,8 @@ try {
     console.log('Schermate viste: ' + [...schermate].map(([k, v]) => `${k} (${v})`).join(', '));
     const tocca = ['screenMap', 'screenCombat'];
     tocca.filter(s => !schermate.has(s)).forEach(s => { console.log(`  ✗ mai arrivato a ${s}`); fallita = true; });
+    if (CONTRASTO) stampaContrasto();
+    if (CARICO) stampaCarico('in tutta la prova');
     if (risorse.length) console.log(`Risorse non caricate (${new Set(risorse).size}): ${[...new Set(risorse)].slice(0, 8).join(', ')}`);
     if (errori.length) { fallita = true; console.log(`  ✗ ${errori.length} errori:`); [...new Set(errori)].slice(0, 20).forEach(e => console.log('    ' + e)); }
     else console.log('  ✓ nessun errore JavaScript');

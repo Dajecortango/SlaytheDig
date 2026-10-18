@@ -212,6 +212,34 @@
             document.body.classList.toggle('hero-card-open', !!expandedHeroCard);
         }
 
+        // Riga delle abilità sulla carta: quella scelta e le abilità fisse (Enea) sulla stessa riga, una icona per ognuna;
+        // con più abilità si vedono le icone e il nome dell'ultima, il resto nei tooltip
+        function heroAbilityLineHtml(h) {
+            const fisse = (h.abilitaFisse || []).map(id => LIBRERIA.abilita && LIBRERIA.abilita[id]).filter(Boolean);
+            const tutte = [...fisse, ...(h.chosenAbility ? [h.chosenAbility] : [])];
+            if (!tutte.length) return '';
+            const pezzo = (ab, conNome) => `<span data-tip="${esc(ab.name + "||" + (ab.desc || ""))}">${abilityMarkHtml(ab)}${conNome ? ` ${ab.name}` : ''}</span>`;
+            return `<div class="hero-ability">${tutte.map((ab, i) => pezzo(ab, i === tutte.length - 1)).join(' ')}</div>`;
+        }
+
+        // Scelta di un eroe con i ritratti al posto di un menu a tendina (chi agisce, chi riceve il colpo,
+        // chi affronta la prova, chi prega): un pulsante per eroe, il clic chiama l'azione col suo nome.
+        // opts: sub(h) = riga sotto il nome (testo già protetto), tip(h) = descrizione del tooltip,
+        // chance(h) = % di riuscita (colora la riga: alta, media, bassa), cls = classe in più su ogni pulsante.
+        function heroPickHtml(heroes, action, opts = {}) {
+            return heroes.map(h => {
+                const pct = opts.chance ? opts.chance(h) : null;
+                const livello = pct === null ? '' : (pct >= 67 ? 'high' : (pct >= 34 ? 'mid' : 'low'));
+                const tip = opts.tip ? opts.tip(h) : `HP ${h.hp}/${h.maxHp}`;
+                return `<button class="hero-pick-btn${opts.cls ? ' ' + opts.cls : ''}" data-hero="${esc(h.name)}" ${azione(action, h.name)}
+                    data-tip="${esc(h.name)}||${esc(tip)}">
+                    <span class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</span>
+                    <span class="hero-pick-name">${esc(h.name)}</span>
+                    <span class="hero-pick-sub"${livello ? ` data-chance="${livello}"` : ''}>${opts.sub ? opts.sub(h) : `HP ${h.hp}/${h.maxHp}`}</span>
+                </button>`;
+            }).join('');
+        }
+
         function heroCardHtml(h) {
             const hpPct = clampPct(h.hp, h.maxHp);
             const armorMax = Math.max(h.base_armor, h.current_armor);
@@ -251,7 +279,7 @@
                         ${heroStatHtml(h, 'fth', 'FED', 'Fede', 'Usata nelle prove di fede.')}
                         ${heroStatHtml(h, 'dmg', 'DAN', 'Danno', 'Danni inflitti con un attacco riuscito.')}
                     </div>
-                    ${h.chosenAbility ? `<div class="hero-ability" data-tip="${esc(h.chosenAbility.name + "||" + (h.chosenAbility.desc || ""))}">${abilityMarkHtml(h.chosenAbility)} ${h.chosenAbility.name}</div>` : ""}
+                    ${heroAbilityLineHtml(h)}
                     <div class="hero-inventory">${slots}<span class="inv-label ${h.items.length >= BACKPACK_SIZE ? 'full' : ''}">Zaino ${h.items.length}/${BACKPACK_SIZE}</span></div>
                 </div>`;
         }
@@ -365,7 +393,8 @@
 
             // Esc in combattimento, prima del tiro: dal dado torna alle azioni, dalle azioni alla scelta dell'eroe
             if (e.key === 'Escape') {
-                const back = ['combatDiceBackBtn', 'combatChangeHeroBtn'].map(id => document.getElementById(id)).find(isUsable);
+                const back = ['combatDiceBackBtn', 'combatChangeHeroBtn', 'challengeDiceBackBtn', 'challengeHeroBackBtn',
+                    'prayerDiceBackBtn', 'prayerHeroBackBtn', 'captainDiceBackBtn'].map(id => document.getElementById(id)).find(isUsable);
                 if (back) { e.preventDefault(); back.click(); return; }
             }
 

@@ -141,11 +141,12 @@ function validateCampaign() {
         if (e.fasi != null) {
             if (!Array.isArray(e.fasi)) add('error', `Nemico <b>${k}</b>: "fasi" deve essere un elenco`, 'bestiario', k);
             else e.fasi.forEach((f, i) => {
-                if (typeof f.soglia !== 'number') add('error', `Nemico <b>${k}</b>: fase ${i + 1} senza "soglia" numerica`, 'bestiario', k);
+                // Fase a vita (soglia %) o a tempo (round)
+                if (typeof f.soglia !== 'number' && typeof f.round !== 'number') add('error', `Nemico <b>${k}</b>: fase ${i + 1} senza "soglia" (vita) né "round" numerici`, 'bestiario', k);
                 [...(f.azioni || []), f.schema, f.reazione].filter(ref => typeof ref === 'string').forEach(ref => {
                     if (!lib.azioni_elite[ref]) add('error', `Elite <b>${k}</b>: soglia ${i + 1}, azione "${esc(ref)}" non trovata in Azioni elite`, 'elite', k);
                 });
-                if (!(f.azioni || []).length && !f.schema && !f.reazione && !f.bonusDanno && !f.ruggito) add('warn', `Elite <b>${k}</b>: la soglia ${i + 1} (${f.soglia}%) non ha azioni`, 'elite', k);
+                if (!(f.azioni || []).length && !f.schema && !f.reazione && !f.bonusDanno && !f.ruggito) add('warn', `Elite <b>${k}</b>: la soglia ${i + 1} (${typeof f.round === 'number' ? `round ${f.round}` : `${f.soglia}%`}) non ha azioni`, 'elite', k);
             });
         }
     });
@@ -213,9 +214,41 @@ function validateCampaign() {
     return issues;
 }
 
+/* ---------- Cosa fare adesso: tre passi guidati sopra "Da sistemare" ----------
+   1. eroi scelti, 2. mappa senza errori, 3. provata nel gioco. Ogni passo ha il pulsante che porta lì;
+   quando sono fatti tutti resta solo il ricordo di salvare. */
+function nextSteps(c, issues, provata) {
+    const erroriMappa = issues.filter(i => i.level === 'error' && i.tab === 'map').length;
+    return [
+        { fatto: (c.heroes || []).length > 0, titolo: 'Scegli gli eroi', testo: 'Chi può partire in questa campagna.', azione: azione('switchTab', 'heroes'), pulsante: 'Vai agli eroi' },
+        { fatto: (c.mapNodes || []).length > 0 && erroriMappa === 0, titolo: 'Sistema la mappa',
+          testo: erroriMappa ? `${erroriMappa} ${erroriMappa === 1 ? 'punto' : 'punti'} da sistemare (nemico, prova o collegamento).` : 'Scontri, prove, riposi e il boss alla fine.',
+          azione: azione('switchTab', 'map'), pulsante: 'Vai alla mappa' },
+        { fatto: !!provata, titolo: 'Provala nel gioco', testo: 'Gioca la campagna così com\'è, senza salvare.', azione: azione('playtest'), pulsante: 'Prova nel gioco' }
+    ];
+}
+
+function renderNextSteps(issues) {
+    const box = document.getElementById('edNextSteps');
+    if (!box) return;
+    if (!campaignChosen || currentTab === 'home') { box.innerHTML = ''; return; }
+    const passi = nextSteps(camp, issues, playtestedIds.has(camp.id));
+    const prossimo = passi.findIndex(p => !p.fatto);
+    box.innerHTML = `<h2 class="ed-heading">Cosa fare adesso</h2>
+        <ol class="ed-steps">${passi.map((p, i) => `
+            <li class="ed-step ${p.fatto ? 'done' : ''} ${i === prossimo ? 'next' : ''}">
+                <span class="ed-step-num">${p.fatto ? '✓' : i + 1}</span>
+                <span class="ed-step-text"><b>${esc(p.titolo)}</b><small>${esc(p.testo)}</small>
+                ${i === prossimo ? `<button class="btn-small" ${p.azione}>${esc(p.pulsante)}</button>` : ''}</span>
+            </li>`).join('')}
+        </ol>
+        ${prossimo < 0 ? `<p class="ed-ok">Fatto! Ricordati di premere <b>Salva</b>.</p>` : ''}`;
+}
+
 function renderIssues() {
     if (!camp) return;
     const issues = validateCampaign().sort((a, b) => (a.level === 'error' ? 0 : 1) - (b.level === 'error' ? 0 : 1));
+    renderNextSteps(issues);
     const errors = issues.filter(i => i.level === 'error').length;
     document.getElementById('edIssueCount').textContent = issues.length ? `(${errors})` : '';
     const unsavedLib = libDirty.size ? `<p class="ed-lib-unsaved">Da salvare: ${[...libDirty].map(k => LIB_LABELS[k]).join(', ')}</p>` : '';

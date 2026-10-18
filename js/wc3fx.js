@@ -62,7 +62,13 @@
             gsap.timeline({ delay: 0.08 + i * 0.22 })
                 .fromTo(hang, { y: fromY, rotation: 0, opacity: 0 }, { y: 0, duration: 0.75, ease: 'bounce.out' })
                 .to(hang, { opacity: 1, duration: 0.25, ease: 'none' }, 0)
-                .call(() => { if (typeof synthSfx === 'function') synthSfx('chain'); }, null, 0.45)
+                // Sbuffo di polvere all'atterraggio (css/style.css, .wc-landed); la classe viaggia
+                // anche verso i giocatori online, che vedono lo stesso sbuffo
+                .call(() => {
+                    if (typeof synthSfx === 'function') synthSfx('chain');
+                    hang.classList.add('wc-landed');
+                    setTimeout(() => hang.classList.remove('wc-landed'), 900);
+                }, null, 0.45)
                 .fromTo(hang, { rotation: (i % 2 ? -1 : 1) * 2.4 }, { rotation: 0, duration: 2.4, ease: 'elastic.out(1, 0.18)' }, 0.5);
             startIdleSway(sway, i);
         });

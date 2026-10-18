@@ -59,4 +59,17 @@ module.exports = (t, carica) => {
         t.ok(stato.stsMapNodes.includes(scelto), 'nodo della partita di adesso');
         t.uguale(prima, g.simSnapshot(ctx), 'stato com\'era');
     });
+
+    t.test('misure degli scontri: una partita riporta round e HP persi di ogni scontro (tools/difficolta.mjs e tools/scontro.mjs)', () => {
+        const id = Object.keys(g.CAMPAIGNS)[0];
+        const data = g.simCampaignData(id);
+        const sel = data.heroes.slice(0, 3).map(h => ({ name: h.name, abilityIdx: 0, itemIdx: data.armory.length ? 0 : -1 }));
+        const res = g.simRunOne(data, sel, g.eval('SIM_PROFILES').esperto);
+        t.ok(Array.isArray(res.scontri) && res.scontri.length > 0, `scontri registrati: ${res.scontri.length}`);
+        res.scontri.forEach(s => {
+            t.ok(s.rounds >= 1, `round ${s.rounds}`);
+            t.ok(s.hpPersi >= 0, `HP persi ${s.hpPersi}`);
+            t.ok(typeof s.vinto === 'boolean' && typeof s.elite === 'boolean' && s.enemy, 'campi completi');
+        });
+    });
 };

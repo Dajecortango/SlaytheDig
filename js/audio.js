@@ -142,14 +142,17 @@
             else setMusic(null);
         }
 
-        // Sulla mappa il browser carica in anticipo i brani che possono servire al prossimo nodo
-        // (prossimo tema degli scontri a rotazione, elite, riposo, prove): al cambio niente silenzio d'attesa.
+        // Sulla mappa il browser carica in anticipo solo i brani dei nodi raggiungibili adesso
+        // (prossimo tema degli scontri a rotazione, elite, riposo, prove...): al cambio niente silenzio d'attesa,
+        // e niente brani scaricati per nodi lontani (conta sui telefoni della partita online).
         // Ogni brano si carica una volta sola; i lettori tengono il riferimento perché non venga scartato.
         const preloadedThemes = {};
         function preloadNextThemes() {
             if (soundMuted || !gameOptions.musicVolume) return;
             const nextCombat = COMBAT_THEMES[((stato.expeditionStats && stato.expeditionStats.combatThemes) || 0) % COMBAT_THEMES.length];
-            [nextCombat, ELITE_THEME, REST_THEME, CHALLENGE_THEME, MERCHANT_THEME, TREASURE_THEME].forEach(src => {
+            const perTipo = { combat: nextCombat, elite: ELITE_THEME, rest: REST_THEME, challenge: CHALLENGE_THEME, merchant: MERCHANT_THEME, treasure: TREASURE_THEME };
+            const temi = (stato.stsMapNodes || []).filter(n => n.active && !n.done).map(n => perTipo[n.type]).filter(Boolean);
+            [...new Set(temi)].forEach(src => {
                 if (preloadedThemes[src]) return;
                 const a = new Audio();
                 a.preload = 'auto';
@@ -286,6 +289,18 @@
             if (kind === 'chain') {
                 // Tintinnio di catene: colpetti metallici acuti, sempre più deboli
                 [0, 0.05, 0.1, 0.17, 0.25, 0.34].forEach((s, i) => tick(s, 2600 + Math.random() * 1800, 0.35 / (1 + i * 0.5)));
+                return;
+            }
+
+            if (kind === 'fall') {
+                // Eroe caduto: rintocco grave che si spegne piano, con una quinta sotto
+                tick(0, 500, 0.5);
+                const low = ctx.createBiquadFilter();
+                low.type = 'lowpass';
+                low.frequency.value = 700;
+                low.connect(out);
+                tone('triangle', 147, 140, 0.02, 1.6, 0.3, low);
+                tone('sine', 98, 94, 0.02, 1.9, 0.22, low);
                 return;
             }
 

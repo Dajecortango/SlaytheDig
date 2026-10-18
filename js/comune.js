@@ -167,6 +167,7 @@ const SPECIALI_SE = {
 
 const SPECIALI_BERSAGLI = { eroe: 'l\'eroe', compagnia: 'tutta la compagnia', meno_hp: 'l\'eroe con meno HP',
     piu_ferito: 'l\'eroe che ha perso più HP', altro_casuale: 'un altro eroe ferito a caso',
+    vicini: 'gli eroi accanto a lui',  // nell'ordine della compagnia, come i colpi "agli eroi accanto" dei nemici
     scelto: 'l\'eroe scelto da chi la usa' };  // "scelto": per le abilità attive (finestra di scelta, hero.potionTarget)
 const SPECIALI_STAT = { str: 'Forza', dmg: 'Danno', att_bonus: 'tiro per colpire', def_bonus: 'Difesa', help_bonus_val: 'Aiuto', regen: 'HP a inizio round' };
 const SPECIALI_STAT_NEMICO = { att: 'Attacco', ca: 'CA', dmg: 'Danno' };

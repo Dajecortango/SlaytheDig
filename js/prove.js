@@ -35,8 +35,13 @@
             };
 
             document.getElementById('challengeTitle').textContent = stato.challengeState.title;
-            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.desc)}`;
+            roadPaidSnapshot = null;
+            renderChallengeStart();
+        }
 
+        // Prima scelta della prova: come affrontarla (strade) o lasciar perdere. Anche tornando indietro dalla scelta dell'eroe.
+        function renderChallengeStart() {
+            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(stato.challengeState.desc)}`;
             document.getElementById('challengeStage1').classList.remove('hidden');
             // Strade: un pulsante per ogni approccio al posto di "Uno di voi si avvicina"
             const roads = stato.challengeState.strade || [];
@@ -66,10 +71,13 @@
             document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> Un membro della compagnia si fa avanti per affrontare la prova.`;
             document.getElementById('challengeStage1').classList.add('hidden');
             document.getElementById('challengeStage2').classList.remove('hidden');
-            document.getElementById('challengeHeroSelect').innerHTML = stato.party.filter(p => p.hp > 0).map(h => {
-                const mods = challengeModifiers(h);
-                return `<option value="${h.name}">${h.name} (${STAT_LABELS[stato.challengeState.stat] || 'Stat'} ${mods.statValue}) · ${challengeChanceInfo(mods).short}</option>`;
-            }).join('');
+            selectedChallengeHero = null;
+            // Ritratti con statistica e probabilità: si vede subito chi è più adatto
+            const label = STAT_LABELS[stato.challengeState.stat] || 'Stat';
+            document.getElementById('challengeHeroPick').innerHTML = heroPickHtml(stato.party.filter(p => p.hp > 0), 'confirmChallengeHero', {
+                chance: h => challengeChanceInfo(challengeModifiers(h)).pct,
+                sub: h => { const mods = challengeModifiers(h); return `${esc(label)} ${mods.statValue} · ${challengeChanceInfo(mods).pct}%`; },
+                tip: h => challengeChanceInfo(challengeModifiers(h)).long });
         }
 
         // Scelta di una strada: la prova prende statistica, difficoltà, testi, premio e punizione di quella strada
@@ -79,8 +87,9 @@
             if (!road) return;
             if (roadCoinCost(road) > stato.partyCoins) { uiError('Non avete abbastanza Scudi'); return; }
             stato.challengeState = { ...challengeWithRoad(original, i), base: original };
-            // Il prezzo della strada si paga subito, prima del tiro
+            // Il prezzo della strada si paga subito, prima del tiro (tornando indietro si restituisce: roadPaidSnapshot)
             if ((road.prezzo || []).length) {
+                roadPaidSnapshot = partySnapshot();
                 applyEffects(road.prezzo);
                 updatePartyStatusBars();
                 uiMessage(`${road.testo || 'Strada scelta'}: ${roadPriceText(road)}`);
@@ -88,11 +97,49 @@
             challengeChoose(true);
         }
 
+        // Fotografia della compagnia prima di pagare il prezzo di una strada: "Indietro" la rimette com'era
+        let roadPaidSnapshot = null;
+        function partySnapshot() {
+            return JSON.parse(JSON.stringify({ party: stato.party, coins: stato.partyCoins, relics: stato.unlockedRelics,
+                curses: stato.activeCurses, stats: stato.expeditionStats }));
+        }
+        function restorePartySnapshot(snap) {
+            // Gli eroi restano gli stessi oggetti (altri riferimenti li puntano): si rimettono i loro campi
+            stato.party.forEach((h, i) => {
+                if (!snap.party[i]) return;
+                Object.keys(h).forEach(k => { delete h[k]; });
+                Object.assign(h, snap.party[i]);
+            });
+            stato.partyCoins = snap.coins;
+            stato.unlockedRelics = snap.relics;
+            stato.activeCurses = snap.curses;
+            stato.expeditionStats = snap.stats;
+        }
+
+        // Indietro dalla scelta dell'eroe: di nuovo la scelta di come affrontare la prova, con la sfida com'era
+        function challengeBackToStart() {
+            if (currentScreenId !== 'screenChallenge' || selectedChallengeHero) return;
+            if (roadPaidSnapshot) { restorePartySnapshot(roadPaidSnapshot); roadPaidSnapshot = null; updatePartyStatusBars(); }
+            if (stato.challengeState.base) stato.challengeState = stato.challengeState.base;
+            document.getElementById('challengeStage2').classList.add('hidden');
+            renderChallengeStart();
+        }
+
+        // Indietro dal dado (prima di tirare): di nuovo la scelta dell'eroe
+        function challengeBackToHeroes() {
+            if (document.getElementById('rollChallengeBtn').disabled || challengeRetryPending || !selectedChallengeHero) return;
+            selectedChallengeHero = null;
+            document.getElementById('diceChallengeSection').classList.add('hidden');
+            challengeChoose(true);
+        }
+
         let selectedChallengeHero = null;
         let challengeRetryPending = false;   // Era solo una prova!: il primo tiro è fallito, si aspetta il secondo
-        function confirmChallengeHero() {
+        function confirmChallengeHero(nome) {
+            const scelto = stato.party.find(p => p.hp > 0 && p.name === nome);
+            if (!scelto) return;
             challengeRetryPending = false;
-            selectedChallengeHero = stato.party.filter(p => p.hp > 0).find(p => p.name === document.getElementById('challengeHeroSelect').value);
+            selectedChallengeHero = scelto;
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('diceChallengeSection').classList.remove('hidden');
             revealInView('rollChallengeBtn');
@@ -112,6 +159,7 @@
             log.innerHTML = '';
             log.classList.add('hidden');
             document.getElementById('rollChallengeBtn').disabled = false;
+            document.getElementById('challengeDiceBackBtn').classList.remove('hidden');
             document.getElementById('diceChallenge').textContent = "6";
 
             // Con vantaggio o svantaggio si mostrano due dadi già prima del tiro
@@ -163,6 +211,8 @@
             const rollMode = challengeRollMode(selectedChallengeHero);
             const twoDice = rollMode.mode !== 'single';
             rollBtn.disabled = true; diceBox.classList.add('rolling');
+            document.getElementById('challengeDiceBackBtn').classList.add('hidden');  // tirato il dado non si torna indietro
+            roadPaidSnapshot = null;  // e il prezzo della strada resta pagato
             if (twoDice) diceBox2.classList.add('rolling');
             synthSfx('dice');
 
@@ -393,17 +443,33 @@
             if (restPrayer) return;
             document.getElementById('prayerStage1').classList.add('hidden');
             document.getElementById('prayerStage2').classList.remove('hidden');
-            document.getElementById('prayerHeroSelect').innerHTML = stato.party.filter(h => h.hp > 0).map(h =>
-                `<option value="${esc(h.name)}">${esc(h.name)} (Fede ${h.fth || 0}) · ${prayerChance(h).short}</option>`).join('');
+            selectedPrayerHero = null;
+            document.getElementById('prayerHeroPick').innerHTML = heroPickHtml(stato.party.filter(h => h.hp > 0), 'confirmPrayerHero', {
+                chance: h => prayerChance(h).pct,
+                sub: h => `Fede ${h.fth || 0} · ${prayerChance(h).pct}%`,
+                tip: h => prayerChance(h).long });
+        }
+
+        // Indietro dalla scelta di chi prega: nessuno prega, per ora
+        function prayerBackToStart() {
+            if (restPrayer || selectedPrayerHero) return;
+            document.getElementById('prayerStage2').classList.add('hidden');
+            document.getElementById('prayerStage1').classList.remove('hidden');
+        }
+        // Indietro dal dado (prima di tirare): di nuovo la scelta di chi prega
+        function prayerBackToHeroes() {
+            if (restPrayer || !selectedPrayerHero || document.getElementById('rollPrayerBtn').disabled) return;
+            selectedPrayerHero = null;
+            document.getElementById('dicePrayerSection').classList.add('hidden');
+            startPrayer();
         }
 
         const prayerChance = hero => chanceText(PRAYER_CD - (hero.fth || 0) - relicDiceBonus('preghiera', hero) - itemPrayerBonus(hero));
 
         let selectedPrayerHero = null;
-        // heroName: chi prega quando arriva dal telefono (remotePray), altrimenti la scelta nel menu
+        // heroName: il ritratto cliccato, o chi prega dal telefono (remotePray)
         function confirmPrayerHero(heroName) {
-            const name = typeof heroName === 'string' ? heroName : document.getElementById('prayerHeroSelect').value;
-            selectedPrayerHero = stato.party.find(h => h.hp > 0 && h.name === name);
+            selectedPrayerHero = stato.party.find(h => h.hp > 0 && h.name === heroName);
             if (!selectedPrayerHero) return;
             document.getElementById('prayerStage2').classList.add('hidden');
             document.getElementById('dicePrayerSection').classList.remove('hidden');
@@ -414,6 +480,7 @@
             chanceEl.dataset.chance = info.pct >= 67 ? 'high' : (info.pct >= 34 ? 'mid' : 'low');
             document.getElementById('dicePrayer').textContent = '6';
             document.getElementById('rollPrayerBtn').disabled = false;
+            document.getElementById('prayerDiceBackBtn').classList.remove('hidden');
             revealInView('rollPrayerBtn');
         }
 
@@ -428,6 +495,7 @@
             const btn = document.getElementById('rollPrayerBtn');
             if (btn.disabled || !selectedPrayerHero) return;
             btn.disabled = true;
+            document.getElementById('prayerDiceBackBtn').classList.add('hidden');  // tirato il dado non si torna indietro
             const diceBox = document.getElementById('dicePrayer');
             diceBox.classList.add('rolling');
             synthSfx('dice');
@@ -509,6 +577,7 @@
             showScreen('screenCaptain');
             // La schermata può essere già stata usata in una partita precedente della stessa pagina: torna come all'inizio
             document.getElementById('captainHeroSelect').style.display = '';
+            document.querySelectorAll('#screenCaptain [data-action="captainAction"]').forEach(b => b.classList.remove('hidden'));
             document.getElementById('diceCaptainSection').classList.add('hidden');
             document.getElementById('rollCaptainBtn').disabled = false;
             document.getElementById('resultCaptainLog').innerHTML = '';
@@ -521,14 +590,26 @@
             captainActionType = type;
             selectedCaptainHero = stato.party.find(p => p.name === document.getElementById('captainHeroSelect').value);
             document.getElementById('captainHeroSelect').style.display = 'none';
+            document.querySelectorAll('#screenCaptain [data-action="captainAction"]').forEach(b => b.classList.add('hidden'));
+            document.getElementById('captainDiceBackBtn').classList.remove('hidden');
             document.getElementById('diceCaptainSection').classList.remove('hidden');
             revealInView('diceCaptainSection');
         }
 
+        // Indietro dal dado del capitano (prima di tirare): di nuovo eroe e sfida
+        function captainBack() {
+            if (document.getElementById('rollCaptainBtn').disabled) return;
+            document.getElementById('diceCaptainSection').classList.add('hidden');
+            document.getElementById('captainHeroSelect').style.display = '';
+            document.querySelectorAll('#screenCaptain [data-action="captainAction"]').forEach(b => b.classList.remove('hidden'));
+        }
+
         function executeCaptainRoll() {
             const rollBtn = document.getElementById('rollCaptainBtn');
+            if (rollBtn.disabled) return;
             const diceBox = document.getElementById('diceCaptain');
             rollBtn.disabled = true; diceBox.classList.add('rolling');
+            document.getElementById('captainDiceBackBtn').classList.add('hidden');  // tirato il dado non si torna indietro
             synthSfx('dice');
 
             let counter = 0;

@@ -239,4 +239,69 @@ module.exports = (t) => {
     t.test('il nodo ha un solo campo per i collegamenti', () => {
         t.uguale(1, ed.eval('NODE_FIELDS').filter(f => f.k === 'next').length);
     });
+
+    // ---------- Ancora più semplice: menu cercabili, eroi a carte, passi guidati ----------
+    t.test('menu: ordine alfabetico, "Nessuna" in cima e "Crea nuova…" in fondo', () => {
+        const opts = ed.ordinaOpzioni([['__new', '+ Crea nuova…'], ['z', 'Zanna'], ['', '— Nessuna —'], ['a', 'àncora'], ['b', 'Bestia'], ['__custom', 'Personalizzata…']]);
+        t.uguale(',a,b,z,__new,__custom', opts.map(o => o[0]).join(','));
+    });
+
+    t.test('menu: la ricerca ignora maiuscole e accenti e tiene le voci fisse', () => {
+        const opts = [['', '—'], ['lupo', 'Lupo grigio'], ['orso', 'Orso'], ['sciamano', 'Sciamàno'], ['__new', '+ Crea nuovo…']];
+        t.uguale(',lupo,__new', ed.opzioniTrovate(opts, 'LUP').map(o => o[0]).join(','));
+        t.uguale(',sciamano,__new', ed.opzioniTrovate(opts, 'sciamano').map(o => o[0]).join(','));
+        t.uguale(5, ed.opzioniTrovate(opts, '').length);
+    });
+
+    t.test('i menu di nemici, prove e testi del nodo sono cercabili; il tipo di nodo no (ha un ordine suo)', () => {
+        const campi = ed.eval('NODE_FIELDS');
+        ['enemy', 'challengeId', 'treasureId', 'merchantId', 'restId', 'storyId'].forEach(k => t.ok(campi.find(f => f.k === k).cercabile, k));
+        t.ok(!campi.find(f => f.k === 'type').cercabile, 'type');
+        const nemico = Object.keys(ed.eval('lib').bestiario)[0];
+        const [, nome] = campi.find(f => f.k === 'enemy').miniatura({ enemy: nemico });
+        t.uguale(ed.eval('lib').bestiario[nemico].name, nome);
+    });
+
+    t.test('eroi della campagna: carte in ordine alfabetico, un clic li aggiunge e li toglie', () => {
+        const p = caricaPagina('editor.html');
+        const nomi = p.heroCardsOrder(p.eval('lib').eroi).map(([, h]) => h.name);
+        t.uguale(JSON.stringify([...nomi].sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }))), JSON.stringify(nomi));
+        const id = Object.keys(p.eval('lib').eroi).find(k => !p.eval('camp.heroes').includes(k));
+        if (!id) return;
+        p.toggleCampaignHero(id);
+        t.ok(p.eval('camp.heroes').includes(id), 'aggiunto');
+        p.toggleCampaignHero(id);
+        t.ok(!p.eval('camp.heroes').includes(id), 'tolto');
+    });
+
+    t.test('oggetti della campagna: carte con icona in ordine alfabetico, un clic li aggiunge e li toglie', () => {
+        const p = caricaPagina('editor.html');
+        const voci = p.itemCardsOrder(p.eval('lib').armeria);
+        const nomi = voci.map(([, it]) => it.name);
+        t.uguale(JSON.stringify([...nomi].sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }))), JSON.stringify(nomi));
+        const [id, it] = voci[0];
+        const html = p.edItemCardHtml(id, it, false, true);
+        t.ok(!it.icon || html.includes(it.icon), 'icona nella carta');
+        p.eval(`selection.itemList = 'initialArmory'`);
+        const nuovo = voci.map(([k]) => k).find(k => !p.eval('camp.initialArmory').includes(k));
+        p.toggleCampaignItem(nuovo);
+        t.ok(p.eval('camp.initialArmory').includes(nuovo), 'aggiunto');
+        p.toggleCampaignItem(nuovo);
+        t.ok(!p.eval('camp.initialArmory').includes(nuovo), 'tolto');
+        p.eval(`selection.itemList = 'lootItems'; camp.lootItems = null`);
+        p.toggleCampaignItem(nuovo);
+        t.ok(p.eval('camp.lootItems') === null, 'il bottino predefinito non si cambia da qui');
+    });
+
+    t.test('cosa fare adesso: eroi, mappa senza errori, prova nel gioco', () => {
+        const c = mappaProva();
+        c.heroes = [];
+        let passi = ed.nextSteps(c, [], false);
+        t.uguale('false,true,false', passi.map(p => p.fatto).join(','));
+        c.heroes = ['qualcuno'];
+        passi = ed.nextSteps(c, [{ level: 'error', tab: 'map' }, { level: 'warn', tab: 'map' }], false);
+        t.uguale('true,false,false', passi.map(p => p.fatto).join(','));
+        t.ok(/1 punto/.test(passi[1].testo), passi[1].testo);
+        t.uguale('true,true,true', ed.nextSteps(c, [], true).map(p => p.fatto).join(','));
+    });
 };

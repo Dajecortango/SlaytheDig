@@ -271,7 +271,7 @@
                 const when = left === '∞' ? 'fino alla fine dello scontro' : (left === 1 ? 'ultimo round' : `ancora ${left} round`);
                 const tip = `${b.name}||${b.val > 0 ? '+' : ''}${b.val} ${BUFF_STATS[b.stat] || b.stat}, ${when}`;
                 const img = b.icon ? `<img src="${esc(b.icon)}" alt="">` : '';
-                return `<span class="hero-buff ${b.val < 0 ? 'debuff' : ''}" data-tip="${esc(tip)}">${img}<b>${left}</b></span>`;
+                return `<span class="hero-buff ${b.val < 0 ? 'debuff' : ''}" data-tip="${esc(tip)}">${img}<b class="${left === 1 ? 'last' : ''}">${left}</b></span>`;
             }).join('')}</div>`;
         }
 
@@ -280,7 +280,7 @@
             const list = heroStatuses(h);
             if (!list.length) return '';
             return `<div class="hero-statuses">${list.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}">
-                <img src="${esc(s.icon)}" alt="">${s.rounds ? `<b>${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
+                <img src="${esc(s.icon)}" alt="">${s.rounds ? `<b class="${s.rounds === 1 ? 'last' : ''}">${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
         }
 
         // Benedizioni della preghiera ancora da usare (hero.blessings, js/prove.js): icone dorate sulla carta dell'eroe,

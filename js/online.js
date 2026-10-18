@@ -51,9 +51,10 @@ function onlineSerializza(el) {
         else c.setAttribute('value', o.value);
     });
     copia.querySelectorAll('script, audio').forEach(n => n.remove());
-    // Mappa: i giocatori non vedono cosa c'è nei nodi ancora da fare (solo il master lo sa)
+    // Mappa: i giocatori non vedono cosa c'è nei nodi lontani ancora da fare (solo il master lo sa)
+    const vicini = nodiVisibiliGiocatori(stato.stsMapNodes, typeof ONLINE_NODI_VISIBILI === 'number' ? ONLINE_NODI_VISIBILI : 1);
     copia.querySelectorAll('.sts-node').forEach(n => {
-        const classi = classiNodoGiocatore(n.className);
+        const classi = classiNodoGiocatore(n.className, vicini.has(Number(n.dataset.nodeId)) || vicini.has(n.dataset.nodeId));
         if (!classi || classi === n.className) return;
         n.className = classi;
         n.innerHTML = typeof svgIcon === 'function' ? svgIcon('question') : '?';
@@ -66,9 +67,11 @@ function onlineSerializza(el) {
 }
 // Sovrimpressioni (titolo del capitolo, nodo scelto, cinematica d'attacco...): solo ciò che il gioco aggiunge al body
 // dopo il caricamento. Gli elementi fissi della pagina (barre, .game-layout con tutte le schermate) hanno le loro regioni.
+// Eccezione: .fx-layer (numeri fluttuanti, js/effetti.js) nasce al caricamento ma il suo contenuto cambia durante
+// il gioco: si manda sempre, così anche i giocatori vedono danni, cure e critici.
 const ONLINE_FIGLI_STATICI = typeof document !== 'undefined' && document.body ? new Set(document.body.children) : new Set();
 function onlineSovrimpressioni(figli, statici) {
-    return [...figli].filter(c => !statici.has(c) && c.id !== 'onlineMasterBar'
+    return [...figli].filter(c => (!statici.has(c) || c.classList.contains('fx-layer')) && c.id !== 'onlineMasterBar'
         && !['SCRIPT', 'AUDIO', 'VIDEO'].includes(c.tagName) && !c.classList.contains('hidden'));
 }
 // Scena dei menu (video di sfondo, paesaggio): fissa nella pagina, si manda una volta. Senza le gocce della pioggia,
@@ -135,8 +138,8 @@ function contestoOnline() {
         screen: currentScreenId,
         owners: stato.onlineOwners || {},
         activeHero: currentActiveHero ? currentActiveHero.name : null,
-        selects: Object.fromEntries(['combatHeroSelect', 'lootHeroSelect', 'treasureHeroSelect', 'merchantHeroSelect',
-            'challengeHeroSelect', 'captainHeroSelect', 'prayerHeroSelect'].map(id => [id, onlineValoreMenu(id)])),
+        selects: Object.fromEntries(['lootHeroSelect', 'treasureHeroSelect', 'merchantHeroSelect',
+            'captainHeroSelect'].map(id => [id, onlineValoreMenu(id)])),
         creationTurn: onlineTurnoCreazione(),
         discardHero: heroNeedingDiscard ? heroNeedingDiscard.name : null,
         challengeHero: selectedChallengeHero ? selectedChallengeHero.name : null,
@@ -425,12 +428,19 @@ const onlineEroiInPiedi = () => stato.party.filter(h => h.hp > 0).map(h => ({ id
 
 function onlineApriVotoBersaglio() {
     onlineApriVoto({ tipo: 'bersaglio', domanda: 'Chi riceve il colpo del nemico?', opzioni: onlineEroiInPiedi(), secondi: VOTE_SECONDS_TARGET,
-        esegui: id => { const sel = document.getElementById('monsterTargetSelect'); if (sel) sel.value = id; executeMonsterAttack(); } });
+        esegui: id => executeMonsterAttack(id) });
 }
 
 function onlineVotoSpeciale(tipo, nome, args, giocatore) {
+    if (tipo === 'bersaglio') {
+        // Il ritratto cliccato dal giocatore è il suo voto (il voto si apre se non c'è ancora);
+        // con il bersaglio deciso dal nemico o contro tutti conferma solo il master
+        if (!monsterTargetFree) return;
+        if (!onlineState.voto) onlineApriVotoBersaglio();
+        if (onlineState.voto && onlineState.voto.tipo === tipo && args && args[0]) onlineVota(giocatore, onlineState.voto.id, args[0]);
+        return;
+    }
     if (onlineState.voto && onlineState.voto.tipo === tipo) return;
-    if (tipo === 'bersaglio') { onlineApriVotoBersaglio(); return; }
     if (tipo === 'contratta') {
         if (merchantHaggle !== null) return;
         onlineApriVoto({ tipo, domanda: 'Contrattiamo con il mercante?', opzioni: [{ id: '__no', label: 'No' },
@@ -446,9 +456,8 @@ function onlineVotoSpeciale(tipo, nome, args, giocatore) {
 
 // Il voto sul bersaglio si apre da solo al turno del nemico (quando il bersaglio lo sceglie la compagnia)
 [['startMonsterTurn', () => {
-     const sel = document.getElementById('monsterTargetSelect');
      const area = document.getElementById('monsterTargetArea');
-     if (sel && !sel.disabled && area && !area.classList.contains('hidden')) onlineApriVotoBersaglio();
+     if (monsterTargetFree && area && !area.classList.contains('hidden')) onlineApriVotoBersaglio();
  }]].forEach(([nome, dopo]) => {
     if (typeof window[nome] !== 'function') return;
     const orig = window[nome];

@@ -7,18 +7,30 @@
    (l'avvio vero e proprio è in js/avvio.js, caricato per ultimo).
    ========================================================================== */
 
-        // Mentre il giocatore guarda la mappa si caricano immagini e suoni dei nodi raggiungibili,
-        // così la scena dello scontro o della sfida compare subito, senza apparire a scatti.
+        // Mentre il giocatore guarda la mappa si caricano immagini, video e suoni dei soli nodi raggiungibili
+        // (e i ritratti da ferito della compagnia), così la scena compare subito senza caricare tutto all'avvio:
+        // le immagini delle schermate in index.html sono loading="lazy" e partono solo quando servono.
         const preloadedAssets = new Set();
+        const preloadedVideos = [];  // riferimenti tenuti perché il browser non scarti il caricamento
+        function preloadImage(src) {
+            if (!src || preloadedAssets.has(src)) return;
+            preloadedAssets.add(src);
+            new Image().src = src;
+        }
         function preloadAvailableNodes() {
+            (stato.party || []).forEach(h => preloadImage((HERO_PORTRAITS[h.name] || {}).woundedSrc));
             stato.stsMapNodes.filter(n => n.active && !n.done).forEach(n => {
                 const enemy = n.enemy && enemies[n.enemy];
-                [n.image, enemy && enemy.image].filter(Boolean).forEach(src => {
-                    if (preloadedAssets.has(src)) return;
-                    preloadedAssets.add(src);
-                    new Image().src = src;
-                });
+                [n.image, enemy && enemy.image].forEach(preloadImage);
                 if (!enemy) return;
+                if (enemy.video && !preloadedAssets.has(enemy.video)) {
+                    preloadedAssets.add(enemy.video);
+                    const v = document.createElement('video');
+                    v.muted = true;
+                    v.preload = 'auto';
+                    v.src = enemy.video;
+                    preloadedVideos.push(v);
+                }
                 ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(slot => {
                     const src = enemy[slot];
                     if (!src || preloadedAssets.has(src)) return;
@@ -410,6 +422,34 @@
                 <span><span class="sts-node node-${type} legend-dot">${svgIcon(NODE_ICON[type])}</span>${NODE_LABEL[type]}</span>
             `).join('') + `<span><span class="sts-node node-goal legend-dot">${svgIcon('crown')}</span>Meta</span>`;
         }
+
+        /* ---------- Passaggio del mouse su un nodo ----------
+           Le strade che partono dal nodo si illuminano d'oro e i nodi a cui portano si accendono:
+           si vede dove si può andare dopo. Vale per i nodi non ancora fatti. */
+        function mapHoverNode(nodeEl) {
+            const container = document.getElementById('stsMapNodesContainer');
+            if (!container) return;
+            container.querySelectorAll('.path-hover').forEach(l => l.classList.remove('path-hover'));
+            container.querySelectorAll('.node-linked').forEach(n => n.classList.remove('node-linked'));
+            if (!nodeEl || nodeEl.classList.contains('completed') || nodeEl.classList.contains('excluded')) return;
+            container.querySelectorAll(`#stsMapSvg line[data-from="${nodeEl.dataset.nodeId}"]`).forEach(line => {
+                line.classList.add('path-hover');
+                const next = container.querySelector(`.sts-node[data-node-id="${line.dataset.to}"]`);
+                if (next) next.classList.add('node-linked');
+            });
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('stsMapNodesContainer');
+            if (!container) return;
+            container.addEventListener('mouseover', e => {
+                const nodeEl = e.target.closest('.sts-node[data-node-id]');
+                if (nodeEl && !nodeEl.contains(e.relatedTarget)) mapHoverNode(nodeEl);
+            });
+            container.addEventListener('mouseout', e => {
+                const nodeEl = e.target.closest('.sts-node[data-node-id]');
+                if (nodeEl && !nodeEl.contains(e.relatedTarget)) mapHoverNode(null);
+            });
+        });
 
         /* ---------- Segnaposto per le immagini dei nodi che mancano ----------
            Se il file dell'immagine non esiste (nodo o nemico del bestiario) si mostra

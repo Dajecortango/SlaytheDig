@@ -6,7 +6,7 @@
    ========================================================================== */
 
         /* ---------- 19. Opzioni di gioco ---------- */
-        const DEFAULT_OPTIONS = { textSpeed: 2, textSize: 1, musicVolume: 0.5, sfxVolume: 0.8, animations: true, floatingNumbers: true, fastAnimations: false };
+        const DEFAULT_OPTIONS = { textSpeed: 2, textSize: 1, musicVolume: 0.5, sfxVolume: 0.8, animations: true, floatingNumbers: true, fastAnimations: false, autoAdvance: true };
         let gameOptions = Object.assign({}, DEFAULT_OPTIONS);
         try { Object.assign(gameOptions, JSON.parse(localStorage.getItem('dignitas_options') || '{}')); } catch (e) {}
 
@@ -179,6 +179,10 @@
                         <label class="option-toggle"><input type="checkbox" id="optFast" ${gameOptions.fastAnimations ? 'checked' : ''}> Attive</label>
                     </div>
                     <div class="option-row">
+                        <span class="option-label">Avanti automatico<small>Il turno del nemico stordito o in carica passa da solo</small></span>
+                        <label class="option-toggle"><input type="checkbox" id="optAutoAdvance" ${gameOptions.autoAdvance ? 'checked' : ''}> Attivo</label>
+                    </div>
+                    <div class="option-row">
                         <span class="option-label">Numeri fluttuanti<small>Danni, cure e armatura sopra i bersagli</small></span>
                         <label class="option-toggle"><input type="checkbox" id="optNumbers" ${gameOptions.floatingNumbers ? 'checked' : ''}> Attivi</label>
                     </div>
@@ -192,6 +196,7 @@
             bind('optTextSpeed', 'change', el => { gameOptions.textSpeed = Number(el.value); });
             bind('optTextSize', 'change', el => { gameOptions.textSize = Number(el.value); applyOptions(); });
             bind('optFast', 'change', el => { gameOptions.fastAnimations = el.checked; applyOptions(); });
+            bind('optAutoAdvance', 'change', el => { gameOptions.autoAdvance = el.checked; });
             document.getElementById('optMuted').addEventListener('change', e => setSoundMuted(e.target.checked));
             bind('optMusic', 'input', el => {
                 gameOptions.musicVolume = el.value / 100;

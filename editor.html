@@ -34,7 +34,7 @@
             <button class="btn-small" id="edPlaytestBtn" data-action="playtest" title="Apre il gioco in una nuova scheda con la campagna così com'è ora, senza salvarla">Prova nel gioco</button>
             <button class="btn-small ed-save ed-simple-only" id="edSaveBtn" data-action="saveToProject" title="Scrive la campagna, i nemici e gli oggetti cambiati e le immagini caricate nella cartella del gioco (la prima volta te la chiede: scegli quella con index.html). Se il browser non può, scarica uno .zip: mandalo a chi tiene il gioco.">Salva</button>
             <button class="btn-small ed-save ed-adv-only" data-action="saveToProject" title="Scrive data/campagne/&lt;id&gt;.js e le immagini caricate nella cartella del gioco">Salva nel progetto</button>
-            <button class="btn-small ed-adv-only" data-action="downloadZip" title="Archivio con il file della campagna e le immagini, da estrarre nella cartella del gioco">Scarica .zip</button>
+            <button class="btn-small ed-adv-only" data-action="downloadZip" title="Archivio da estrarre nella cartella del gioco: scegli se la libreria, un capitolo o tutto il progetto">Scarica .zip</button>
             <a class="ed-link" href="index.html">Torna al gioco</a>
         </div>
     </header>
@@ -72,6 +72,7 @@
         <aside class="ed-frame ed-side">
             <div id="edSidePreview" class="ed-side-preview"></div>
             <div id="edQuickNav" class="ed-quick-nav"></div>
+            <div id="edNextSteps" class="ed-next-steps"></div>
             <h2 class="ed-heading" id="edIssuesHeading">Da sistemare <span id="edIssueCount"></span></h2>
             <div id="edIssues"></div>
             <p class="ed-hint ed-adv-only">

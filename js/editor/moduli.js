@@ -575,6 +575,96 @@ const pickBannerHtml = (kind, key) => pendingPick && pendingPick.done && pending
     ? `<p class="ed-pick-banner">Fatto: è già scelto in ${esc(pendingPick.label)}. Sistemalo qui e poi <button type="button" class="btn-small ed-save" ${azione('returnFromPick')}>Torna indietro</button></p>`
     : '';
 
+/* ---------- Menu lunghi: ordine alfabetico e casella di ricerca ----------
+   ordinaOpzioni mette le voci [valore, testo] in ordine alfabetico; "— Nessuna —" (valore vuoto) resta in cima,
+   "+ Crea nuova…" e "Personalizzata…" in fondo. menuCercabile aggiunge sopra il menu una casella "Cerca…"
+   quando le voci sono più di MENU_CERCA_DA: scrivendo, il menu si apre come elenco con solo le voci che
+   contengono il testo (senza maiuscole né accenti); un clic su una voce la sceglie come prima. */
+const MENU_CERCA_DA = 8;
+const MENU_VOCI_FISSE = ['', '__new', '__custom'];
+function ordinaOpzioni(opts) {
+    const testa = opts.filter(([v]) => v === '');
+    const coda = opts.filter(([v]) => v === '__new' || v === '__custom');
+    const resto = opts.filter(([v]) => !MENU_VOCI_FISSE.includes(v))
+        .sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'it', { sensitivity: 'base' }));
+    return [...testa, ...resto, ...coda];
+}
+// Voci del menu che contengono il testo cercato (le voci fisse restano sempre)
+function opzioniTrovate(opts, testo) {
+    const q = searchText(testo);
+    return opts.filter(([v, l]) => !q || MENU_VOCI_FISSE.includes(v) || searchText(l).includes(q));
+}
+function menuCercabile(select) {
+    const voci = [...select.options].filter(o => !MENU_VOCI_FISSE.includes(o.value));
+    if (voci.length <= MENU_CERCA_DA) return select;
+    const box = document.createElement('div');
+    box.className = 'ed-menu-cercabile';
+    const cerca = document.createElement('input');
+    cerca.type = 'search';
+    cerca.className = 'ed-menu-cerca';
+    cerca.placeholder = `Cerca fra ${voci.length}…`;
+    const conta = document.createElement('span');
+    conta.className = 'ed-menu-conta';
+    cerca.addEventListener('input', () => {
+        const q = searchText(cerca.value);
+        let visibili = 0, trovati = 0;
+        [...select.options].forEach(o => {
+            const fissa = MENU_VOCI_FISSE.includes(o.value);
+            o.hidden = !!q && !fissa && !searchText(o.textContent).includes(q);
+            if (!o.hidden) { visibili++; if (!fissa) trovati++; }
+        });
+        // Con un testo cercato il menu resta aperto come elenco: le voci trovate si vedono subito
+        select.size = q ? Math.max(2, Math.min(8, visibili)) : 0;
+        select.classList.toggle('ed-menu-aperto', !!q);
+        conta.textContent = q ? (trovati ? `${trovati} ${trovati === 1 ? 'trovato' : 'trovati'}` : 'Nessuno trovato') : '';
+    });
+    cerca.addEventListener('keydown', e => { if (e.key === 'Escape') { cerca.value = ''; cerca.dispatchEvent(new Event('input')); } });
+    box.append(cerca, conta, select);
+    return box;
+}
+
+/* ---------- Numeri: pulsanti − e + accanto alla casella ----------
+   Ogni clic cambia di 1 e manda lo stesso evento "input" della tastiera (salvataggio, avvisi e aiuti si aggiornano). */
+function numeroConPulsanti(input) {
+    const box = document.createElement('div');
+    box.className = 'ed-stepper';
+    const passo = d => () => {
+        input.value = String((Number(input.value) || 0) + d);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const meno = document.createElement('button');
+    meno.type = 'button';
+    meno.className = 'btn-small ed-num-btn';
+    meno.textContent = '−';
+    meno.title = 'Togli 1';
+    meno.addEventListener('click', passo(-1));
+    const piu = document.createElement('button');
+    piu.type = 'button';
+    piu.className = 'btn-small ed-num-btn';
+    piu.textContent = '+';
+    piu.title = 'Aggiungi 1';
+    piu.addEventListener('click', passo(1));
+    box.append(meno, input, piu);
+    return box;
+}
+
+// Miniatura dell'elemento scelto in un menu (nemico di un nodo, reliquia di una prova): si vede subito se è quello giusto
+function miniaturaScelta(src, nome) {
+    const box = document.createElement('div');
+    box.className = 'ed-scelta-mini';
+    if (src) {
+        const img = document.createElement('img');
+        img.src = assetUrl(src);
+        img.alt = '';
+        img.onerror = () => { img.remove(); };
+        box.appendChild(img);
+    }
+    const testo = document.createElement('span');
+    testo.textContent = nome;
+    box.appendChild(testo);
+    return box;
+}
+
 // Gruppi che restano chiusi finché i loro campi sono vuoti
 const FORM_CLOSED_GROUPS = ['Altri bonus', 'Suoni e video'];
 const isEmptyValue = v => v == null || v === '' || v === 0 || v === false || (Array.isArray(v) && !v.length);
@@ -625,7 +715,7 @@ function renderForm(container, obj, fields, onChange) {
             const entries = Object.entries(lib[f.lib]).map(([k, v]) => [k, `${v.name} — ${v.desc || ''}`]);
             const mode = value == null ? '' : typeof value === 'string' ? value : '__custom';
             if (typeof value === 'string' && !lib[f.lib][value]) entries.push([value, `${value} (non trovato)`]);
-            input.innerHTML = [['', '— Nessuna —'], ...entries, ['__new', '+ Crea nuova…'], ['__custom', 'Personalizzata (scritta nella sfida)…']]
+            input.innerHTML = ordinaOpzioni([['', '— Nessuna —'], ...entries, ['__new', '+ Crea nuova…'], ['__custom', 'Personalizzata (scritta nella sfida)…']])
                 .map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
             input.value = mode;
             input.id = id;
@@ -637,7 +727,9 @@ function renderForm(container, obj, fields, onChange) {
                 onChange(f.k);
                 render();
             });
-            wrap.appendChild(input);
+            wrap.appendChild(menuCercabile(input));
+            const scelto = typeof value === 'string' && lib[f.lib][value];
+            if (scelto) wrap.appendChild(miniaturaScelta(scelto.icon || scelto.image, scelto.name));
             if (mode === '__custom') {
                 const ta = document.createElement('textarea');
                 ta.className = 'ed-json';
@@ -757,14 +849,15 @@ function renderForm(container, obj, fields, onChange) {
             row.className = 'ed-add-row';
             const select = document.createElement('select');
             select.id = id;
-            select.innerHTML = available.map(([k, v]) => `<option value="${esc(k)}">${esc(v.name)} — ${v.isCombatActive ? 'Attiva' : 'Passiva'}</option>`).join('');
+            select.innerHTML = ordinaOpzioni(available.map(([k, v]) => [k, `${v.name} — ${v.isCombatActive ? 'Attiva' : 'Passiva'}`]))
+                .map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join('');
             const add = document.createElement('button');
             add.type = 'button';
             add.className = 'btn-small';
             add.textContent = `Aggiungi da ${LIB_LABELS[f.lib]}`;
             add.disabled = !available.length;
             add.addEventListener('click', () => { if (!select.value) return; if (!Array.isArray(obj[f.k])) obj[f.k] = list; list.push(select.value); onChange(f.k); render(); });
-            row.append(select, add);
+            row.append(menuCercabile(select), add);
             wrap.append(box, row);
             form.appendChild(wrap);
             return;
@@ -782,9 +875,11 @@ function renderForm(container, obj, fields, onChange) {
                 break;
             case 'select': {
                 input = document.createElement('select');
-                const opts = f.options();
+                let opts = f.options();
                 if (value != null && value !== '' && !opts.some(([v]) => v === String(value))) opts.push([String(value), `${value} (non trovato)`]);
                 if (f.creaNuovo) opts.push(['__new', '+ Crea nuovo…']);
+                // Menu di elementi (nemici, prove, testi): in ordine alfabetico; quelli con un ordine loro restano com'erano
+                if (f.cercabile) opts = ordinaOpzioni(opts);
                 input.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
                 input.value = value ?? '';
                 break;
@@ -828,7 +923,14 @@ function renderForm(container, obj, fields, onChange) {
             onChange(f.k);
         };
         input.addEventListener(f.type === 'select' || f.type === 'checkbox' ? 'change' : 'input', commit);
-        wrap.appendChild(input);
+        // Numeri: − e + accanto (non per i numeri tecnici delle Avanzate: id, livello, posizione)
+        if (f.type === 'number' && !f.avanzato) wrap.appendChild(numeroConPulsanti(input));
+        else if (f.cercabile) wrap.appendChild(menuCercabile(input));
+        else wrap.appendChild(input);
+        if (f.miniatura && value) {
+            const [src, nome] = f.miniatura(obj) || [];
+            if (nome) wrap.appendChild(miniaturaScelta(src, nome));
+        }
 
         // Campo immagine o suono: percorso + pulsante di caricamento + anteprima (miniatura o ascolto)
         if (f.type === 'audio') {

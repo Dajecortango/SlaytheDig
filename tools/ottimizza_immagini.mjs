@@ -25,7 +25,7 @@ const QUALITY = value('--qualita', 75);
 const MIN_GAIN = 0.15;
 // Immagini usate con border-image: il taglio (es. --frame-slice: 150) è in pixel dell'immagine,
 // quindi non si rimpiccioliscono (si ricomprimono soltanto)
-const NON_RIDIMENSIONARE = ['immagini/ui/console_wc3.webp', 'immagini/ui/bottone_menu.png', 'immagini/ui/targa_barra_web.png'];
+const NON_RIDIMENSIONARE = ['immagini/ui/console_wc3.webp', 'immagini/ui/bottone_menu.webp', 'immagini/ui/targa_barra_web.webp'];
 const rel = f => path.relative(ROOT, f).replace(/\\/g, '/');
 
 function walk(dir) {

@@ -68,7 +68,7 @@ const DATI_SCHEMA = {
     eroi: {
         name: OBBL(TESTO), str: NUMERO, int: NUMERO, fth: NUMERO, maxHp: NUMERO, hp: NUMERO, dmg: NUMERO, base_armor: NUMERO,
         current_armor: NUMERO, att_penalty: NUMERO, def_bonus: NUMERO, help_bonus_val: NUMERO, items: campo('elenco'),
-        abilities: campo('elenco'), runeOptions: campo('elenco'), runeSlots: NUMERO,
+        abilities: campo('elenco'), abilitaFisse: campo('elenco'), runeOptions: campo('elenco'), runeSlots: NUMERO,
         portrait: PERCORSO, portraitWounded: PERCORSO, portraitPos: TESTO, portraitZoom: NUMERO,
         portraitWoundedPos: TESTO, portraitWoundedZoom: NUMERO, portraitStrikeZoom: NUMERO
     },

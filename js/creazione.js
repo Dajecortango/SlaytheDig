@@ -83,6 +83,17 @@
             return !!(hero && hero.runeOptions && hero.runeOptions.length && hero.runeSlots > 0);
         }
 
+        /* ---------- Abilità fisse ("abilitaFisse" nella libreria Eroi) ----------
+           L'eroe le ha sempre, oltre a quella che sceglie (es. Enea: Hammergradiano Puro + Scudo del Nord).
+           I loro "effects" si applicano una volta alla creazione, come quelli delle rune; gli "speciali"
+           agiscono sempre (heroAbilityRefs in js/motore/speciali.js). Usata anche dal simulatore. */
+        function fixedAbilities(hero) {
+            return ((hero && hero.abilitaFisse) || []).map(runeData).filter(Boolean);
+        }
+        function applyFixedAbilities(hero) {
+            ((hero && hero.abilitaFisse) || []).forEach(id => applyRune(hero, id, 1));
+        }
+
         function renderRuneChoice() {
             const hero = activeHeroForCreation;
             const chosen = hero.equippedRunes || [];
@@ -133,16 +144,27 @@
         let activeHeroForCreation = null;
         function selectHeroCard(heroName) {
             activeHeroForCreation = JSON.parse(JSON.stringify(campaignHeroes.find(h => h.name === heroName)));
+            applyFixedAbilities(activeHeroForCreation);
             document.getElementById('heroCreationArea').classList.add('hidden');
 
             const heroAbilities = campaignAbilities[heroName] || [];
+            // Abilità fisse: si vedono sopra la scelta, già prese
+            const fixedHtml = fixedAbilities(activeHeroForCreation).map(ab => `
+                <div class="armory-btn selected fixed-ability" style="width:100%; margin:5px 0;">
+                    ${abilityIconHtml(ab)}
+                    <span class="tile-text">
+                        <strong>${ab.name}</strong>
+                        ${ab.desc ? `<span class="tile-sub">${ab.desc}</span>` : ''}
+                        <span class="tile-tag">Sempre attiva</span>
+                    </span>
+                </div>`).join('');
             if (heroHasRunes(activeHeroForCreation)) {
                 activeHeroForCreation.equippedRunes = [];
                 document.getElementById('abilityArea').classList.remove('hidden');
                 renderRuneChoice();
             } else if(heroAbilities.length > 0) {
                 document.getElementById('abilityArea').classList.remove('hidden');
-                document.getElementById('abilityButtons').innerHTML = heroAbilities.map((ab, idx) => `
+                document.getElementById('abilityButtons').innerHTML = fixedHtml + heroAbilities.map((ab, idx) => `
                     <button class="armory-btn" ${azione('selectAbility', idx)} style="width:100%; margin:5px 0;">
                         ${abilityIconHtml(ab)}
                         <span class="tile-text">

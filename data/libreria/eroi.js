@@ -253,8 +253,8 @@ window.LIBRERIA.eroi = {
         "help_bonus_val": 0,
         "items": [],
         "abilities": ["pancrazio_lancio_panca", "pancrazio_lista_torti"],
-        "portrait": "immagini/ritratti/pancrazio.jfif",
-        "portraitWounded": "immagini/ritratti/pancrazio_ferito.jfif",
+        "portrait": "immagini/ritratti/pancrazio.webp",
+        "portraitWounded": "immagini/ritratti/pancrazio_ferito.webp",
         "portraitZoom": 1.35
     },
     "cassio_dignitas": {
@@ -288,10 +288,10 @@ window.LIBRERIA.eroi = {
         "help_bonus_val": 0,
         "items": [],
         "abilities": ["ofelia_veleno_cava", "ofelia_infierire_debole"],
-        "portrait": "immagini/ritratti/ofelia.jfif",
+        "portrait": "immagini/ritratti/ofelia.webp",
         "portraitZoom": 1.45,
         "portraitPos": "61.4% 22.3%",
-        "portraitWounded": "immagini/ritratti/ofelia_ferita.jfif",
+        "portraitWounded": "immagini/ritratti/ofelia_ferita.webp",
         "portraitWoundedPos": "60.9% 22.3%",
         "portraitWoundedZoom": 1.45
     },
@@ -310,9 +310,28 @@ window.LIBRERIA.eroi = {
         "help_bonus_val": 0,
         "items": [],
         "abilities": ["pandora_scudo_mutevole", "pandora_voce_asi"],
-        "portrait": "immagini/ritratti/pandora.jfif",
-        "portraitWounded": "immagini/ritratti/pandora_ferita.jfif",
+        "portrait": "immagini/ritratti/pandora.webp",
+        "portraitWounded": "immagini/ritratti/pandora_ferita.webp",
         "portraitPos": "58.1% 31.5%",
         "portraitZoom": 1.5
+    },
+    "enea_dignitas": {
+        "name": "Enea Dignitas",
+        "str": 4,
+        "int": 1,
+        "fth": 2,
+        "maxHp": 5,
+        "hp": 5,
+        "dmg": 1,
+        "base_armor": 0,
+        "current_armor": 0,
+        "att_penalty": 0,
+        "def_bonus": 0,
+        "help_bonus_val": 0,
+        "items": [],
+        "abilitaFisse": ["enea_hammergradiano_puro"],
+        "abilities": ["enea_scudo_del_nord"],
+        "portrait": "immagini/ritratti/enea.webp",
+        "portraitWounded": "immagini/ritratti/enea_ferito.webp"
     }
 };

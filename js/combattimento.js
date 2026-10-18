@@ -76,7 +76,7 @@
             let hpPercent = clampPct(stato.activeEnemy.hp, stato.activeEnemy.maxHp);
             // Stati del nemico (stordito, avvelenato): icone come sulle carte degli eroi, numero = round che restano
             const statuses = enemyStatuses(stato.activeEnemy);
-            const stunBadge = statuses.length ? `<span class="enemy-statuses">${statuses.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}"><img src="${esc(s.icon)}" alt="${esc(s.name)}">${s.rounds ? `<b>${s.rounds}</b>` : ''}</span>`).join('')}</span>` : '';
+            const stunBadge = statuses.length ? `<span class="enemy-statuses">${statuses.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}"><img src="${esc(s.icon)}" alt="${esc(s.name)}">${s.rounds ? `<b class="${s.rounds === 1 ? 'last' : ''}">${s.rounds}</b>` : ''}</span>`).join('')}</span>` : '';
 
             document.getElementById('enemyInfo').innerHTML = `
                 <div class="enemy-head">
@@ -204,12 +204,17 @@
             if(available.length === 0) { startMonsterTurn(); return; }
             combatPhase = 'heroes';
             currentActiveHero = null;
-            document.getElementById('combatHeroSelect').innerHTML = available.map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
+            document.getElementById('combatHeroPick').innerHTML = heroPickHtml(available, 'confirmCombatHeroChoice', {
+                sub: h => `HP ${h.hp}/${h.maxHp}${h.current_armor ? ` · 🛡${h.current_armor}` : ''}`,
+                tip: h => `Forza ${h.str || 0} · Danno ${h.dmg || 0}${h.current_armor ? ` · Armatura ${h.current_armor}` : ''}` });
             updatePartyStatusBars();
         }
 
-        function confirmCombatHeroChoice() {
-            currentActiveHero = stato.party.find(p => p.name === document.getElementById('combatHeroSelect').value);
+        // nome: l'eroe del ritratto cliccato; senza nome (dopo un oggetto usato) resta quello di prima
+        function confirmCombatHeroChoice(nome) {
+            const scelto = typeof nome === 'string' ? stato.party.find(p => p.name === nome && p.hp > 0 && !p.hasActed) : currentActiveHero;
+            if (!scelto) return;
+            currentActiveHero = scelto;
             document.getElementById('heroChoiceArea').classList.add('hidden');
             document.getElementById('heroActionControlArea').classList.remove('hidden');
             document.getElementById('combatActionButtons').classList.remove('hidden');
@@ -701,8 +706,23 @@
             }, 50);
         }
 
+        // Turno del nemico senza niente da decidere (stordito, in preparazione): dopo un momento per leggere
+        // il diario si torna da soli agli eroi (opzione "Avanti automatico"); il pulsante "Avanti" resta per chi ha fretta.
+        let autoResumeTimer = null;
+        function scheduleAutoResume() {
+            clearTimeout(autoResumeTimer);
+            if (!gameOptions.autoAdvance) return;
+            const round = stato.combatRound;
+            autoResumeTimer = setTimeout(() => {
+                const btn = document.getElementById('combatNextBtn');
+                if (currentScreenId === 'screenCombat' && combatPhase === 'monster' && stato.combatRound === round
+                    && !btn.classList.contains('hidden') && btn.dataset.action === 'resumeHeroesTurn') resumeHeroesTurn();
+            }, animTime(1800));
+        }
+
         // "Avanti" dopo il turno del nemico (o dopo un turno saltato): il pulsante torna a proceedCombatPhase e riparte il giro degli eroi
         function resumeHeroesTurn() {
+            clearTimeout(autoResumeTimer);
             const btn = document.getElementById('combatNextBtn');
             btn.classList.add('hidden');
             document.getElementById('monsterTargetArea').classList.remove('hidden');
@@ -732,6 +752,7 @@
                 document.getElementById('monsterTargetArea').classList.add('hidden');
                 document.getElementById('combatNextBtn').classList.remove('hidden');
                 impostaAzione(document.getElementById('combatNextBtn'), 'resumeHeroesTurn');
+                scheduleAutoResume();
                 return;
             }
 
@@ -746,37 +767,54 @@
                 document.getElementById('monsterTargetArea').classList.add('hidden');
                 document.getElementById('combatNextBtn').classList.remove('hidden');
                 impostaAzione(document.getElementById('combatNextBtn'), 'resumeHeroesTurn');
+                scheduleAutoResume();
                 return;
             }
 
             document.getElementById('monsterTargetArea').classList.remove('hidden');
             document.getElementById('monsterTurnText').textContent = `Turno di ${enemy.name}!`;
-            const select = document.getElementById('monsterTargetSelect');
             // Bersaglio scelto dal nemico (più debole, più forte, a caso) o tutta la compagnia
             const mode = enemyTurnRule(enemy).turnoBersaglio || 'scelto';
             const preda = enemyChosenTarget(enemy);
             if (preda) enemy.announcedPrey = preda.name;  // resolveEnemyTurn colpisce lui
             if (mode === 'tutti') {
-                select.innerHTML = '<option value="">Tutta la compagnia</option>';
-                select.disabled = true;
+                renderMonsterTargets([], 'Tutta la compagnia');
                 document.getElementById('monsterTurnText').textContent = `${enemy.name} si scaglia contro tutta la compagnia!`;
                 return;
             }
-            const candidati = preda ? [preda] : stato.party.filter(p => p.hp > 0);
-            select.innerHTML = candidati.map(h => `<option value="${h.name}">${h.name} (HP: ${h.hp})</option>`).join('');
-            select.disabled = !!preda;
+            renderMonsterTargets(preda ? [preda] : stato.party.filter(p => p.hp > 0), null, !!preda);
             const perche = { piu_debole: 'il più debole', piu_forte: 'il più forte', casuale: 'scelto a caso' }[mode];
             if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, ${perche}!`;
         }
 
-        function executeMonsterAttack() {
-            const target = stato.party.find(p => p.name === document.getElementById('monsterTargetSelect').value);
+        // Bersagli del colpo del nemico: un ritratto per eroe in piedi, il clic assegna il danno.
+        // Con il bersaglio deciso dal nemico (forzato) o contro tutti c'è un solo pulsante.
+        // monsterTargetFree dice se la compagnia sceglie (lo legge js/online.js per aprire il voto).
+        let monsterTargetFree = false;
+        function renderMonsterTargets(heroes, tuttiLabel, forzato = false) {
+            const box = document.getElementById('monsterTargetPick');
+            monsterTargetFree = !tuttiLabel && !forzato;
+            document.querySelector('#monsterTargetArea .hero-pick-hint').classList.toggle('hidden', !monsterTargetFree);
+            if (tuttiLabel) {
+                box.innerHTML = `<button class="btn-block btn-danger" ${azione('executeMonsterAttack', '')}>Subisci il colpo: ${esc(tuttiLabel)}</button>`;
+                return;
+            }
+            box.innerHTML = heroPickHtml(heroes, 'executeMonsterAttack', { cls: forzato ? 'target forced' : 'target',
+                sub: h => `HP ${h.hp}/${h.maxHp}${h.current_armor ? ` · 🛡${h.current_armor}` : ''}`,
+                tip: h => `HP ${h.hp}/${h.maxHp}${h.current_armor ? ` · Armatura ${h.current_armor}` : ''}` });
+        }
+
+        function executeMonsterAttack(nome) {
+            if (combatPhase !== 'monster') return;  // doppio clic: il colpo è già stato assegnato
+            const target = stato.party.find(p => p.name === nome && p.hp > 0);
+            if (nome && !target) return;
+            document.getElementById('monsterTargetPick').innerHTML = '';
+            monsterTargetFree = false;
             logCombat(`--- ${stato.activeEnemy.name} attacca ${target ? target.name : 'tutta la compagnia'}! ---`);
             playEnemySfx('sfxAttack');
 
             const result = resolveEnemyTurn(stato.activeEnemy, target);
             result.events.forEach(ev => logCombat(ev.text));
-            document.getElementById('monsterTargetSelect').disabled = false;
             updateEnemyInfoUI();
 
             updatePartyStatusBars();

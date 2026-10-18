@@ -880,5 +880,22 @@ window.LIBRERIA.bestiario = {
             { "soglia": 66, "testo": "La Madre dei Silfidi solleva la tempesta: il vento travolge tutta la compagnia!", "azioni": ["travolge"] },
             { "soglia": 33, "testo": "L'urlo della tempesta vi gela il sangue!", "azioni": ["furia", "ruggito_primordiale"] }
         ]
+    },
+    "arcanitradico": {
+        "name": "Arcanitradico, l'Albero dell'Impiccato",
+        "hp": 17,
+        "maxHp": 17,
+        "att": 8,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Al centro di una radura senza un filo d'erba si leva un sempreverde contorto, più alto di qualunque abete. A mezz'altezza un nodulo della corteccia ghigna come un volto. La candela che portate brucia blu. Gli antichi del Nord lo chiamano Angarde Traad, l'Albero dell'Impiccato: lento alla rabbia, ma dalla vendetta letale. Chi ne ferisce la corteccia viene investito dall'energia arcana che ha bevuto dal sottosuolo.",
+        "speciali": [
+            { "quando": "colpito", "prob": 35, "fai": "danni", "val": 1, "bersaglio": "eroe" }
+        ],
+        "fasi": [
+            { "soglia": 70, "testo": "Il nodulo ghignante si spalanca: le radici dell'Impiccato si muovono sotto i vostri piedi!", "azioni": ["radici_dell_impiccato"] },
+            { "soglia": 40, "testo": "La foresta ruggisce con lui! L'albero beve dalla radura e richiude le ferite.", "azioni": ["la_foresta_ruggisce"] },
+            { "round": 12, "testo": "Lento alla rabbia, letale nella vendetta: la radura muore e vi prosciuga con lei!", "azioni": ["radura_morta"] }
+        ]
     }
 };

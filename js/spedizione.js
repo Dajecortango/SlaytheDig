@@ -292,6 +292,27 @@
             ['victorySummary', 'defeatSummary'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
         }
 
+        // Pulsante "Menu" della barra in alto. Si salva solo dalla mappa (saveGame rifiuta le altre schermate):
+        // lì si può salvare prima di uscire, altrove si avvisa che si riparte dall'ultimo salvataggio.
+        function askMainMenu() {
+            if (!stato.currentCampaign) { tornaAlMenu(); return; }
+            const suMappa = currentScreenId === 'screenMap';
+            openModal('Tornare al menu principale?',
+                `<p>La spedizione si interrompe. ${suMappa
+                    ? 'Puoi salvarla adesso e riprenderla da "Carica Partita".'
+                    : 'Si può salvare solo dalla mappa: quello che è successo dall\'ultimo salvataggio va perso.'}</p>`,
+                [
+                    // Con uno slot già in uso si salva lì e si esce; altrimenti si sceglie lo slot (poi di nuovo "Menu")
+                    ...(suMappa && currentSaveSlot ? [{ label: `Salva nello slot ${currentSaveSlot} e torna al menu`, className: 'btn-proceed', onClick: () => {
+                        try { writeSave(currentSaveSlot, buildSaveData()); } catch (e) { uiError('Salvataggio non riuscito'); return; }
+                        tornaAlMenu();
+                    } }] : []),
+                    ...(suMappa && !currentSaveSlot ? [{ label: 'Prima salva', className: 'btn-proceed', onClick: () => setTimeout(saveGame, 0) }] : []),
+                    { label: 'Torna al menu', className: 'btn-danger', onClick: () => tornaAlMenu() },
+                    { label: 'Resta qui' }
+                ]);
+        }
+
         function tornaAlMenu() {
             azzeraPartita();
             closeModal();

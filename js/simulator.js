@@ -588,6 +588,8 @@ function simBuildHero(campaignData, heroName, abilityIdx, itemIdx) {
     hero.items = [];
     hero.current_armor = hero.base_armor || 0;
     hero.abilityUsedThisCombat = false;
+    // Abilità fisse (Enea: Hammergradiano Puro), come alla creazione del party
+    if (typeof applyFixedAbilities === 'function') applyFixedAbilities(hero);
 
     const abilities = campaignData.abilities[heroName] || [];
     if (abilityIdx != null && abilities[abilityIdx]) {
@@ -804,6 +806,20 @@ function simRunCombat(enemyData, profile, runCtx) {
     applyCombatBlessings();
     startCombatSpecials();  // come startCombat: effetti speciali di inizio scontro (Calma del Margine, Corno...)
 
+    // Misure dello scontro (round e HP persi, per tools/difficolta.mjs e tools/scontro.mjs):
+    // gli HP si contano prima delle cure del bottino, così misurano quanto ha morso lo scontro
+    const hpPrima = stato.party.reduce((s, h) => s + Math.max(0, h.hp), 0);
+    const chiudi = defeat => {
+        if (runCtx && runCtx.scontri) runCtx.scontri.push({
+            enemy: enemyData.id || enemyData.name,
+            elite: currentEnemyIsEliteOrBoss(),
+            rounds: stato.combatRound,
+            hpPersi: Math.max(0, hpPrima - stato.party.reduce((s, h) => s + Math.max(0, h.hp), 0)),
+            vinto: !defeat
+        });
+        return { defeat };
+    };
+
     let rounds = 0;
     while (rounds++ < SIM_MAX_COMBAT_ROUNDS) {
         stato.combatRound++;
@@ -814,7 +830,7 @@ function simRunCombat(enemyData, profile, runCtx) {
         stato.party.forEach(h => { h.hasActed = false; });  // come startHeroesTurnCycle: anche i caduti (Libertas in furor)
         startRoundSpecials();
         checkEnemyRoundPhases(stato.activeEnemy);
-        if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
+        if (stato.party.every(h => h.hp <= 0)) return chiudi(true);
         applyHeroStuns();
         const alive = stato.party.filter(h => h.hp > 0);
         // Nemico ucciso dal veleno a inizio round (veleno_nemico): nessuno agisce, si passa alla vittoria
@@ -839,7 +855,7 @@ function simRunCombat(enemyData, profile, runCtx) {
             simUseCombatConsumables(hero);
             if (stato.activeEnemy.hp <= 0) break;
             checkEnemyPhases(stato.activeEnemy, hero);
-            if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
+            if (stato.party.every(h => h.hp <= 0)) return chiudi(true);
 
             const remaining = order.slice(i + 1).filter(h => h.hp > 0 && !h.hasActed);
             const action = profile.combatAction(hero, stato.activeEnemy, { combatRound: stato.combatRound, isLastActor: remaining.length === 0, champion, remaining });
@@ -847,13 +863,14 @@ function simRunCombat(enemyData, profile, runCtx) {
             hero.hasActed = true;
             if (stato.activeEnemy.hp <= 0) break;
             checkEnemyPhases(stato.activeEnemy, hero);
-            if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
+            if (stato.party.every(h => h.hp <= 0)) return chiudi(true);
         }
 
         if (stato.activeEnemy.hp <= 0) {
             expireTempBuffs(true);
+            const esito = chiudi(false);
             simResolveVictoryLoot(profile, runCtx);
-            return { defeat: false };
+            return esito;
         }
 
         if (stato.activeEnemy.isStunned) {
@@ -862,15 +879,16 @@ function simRunCombat(enemyData, profile, runCtx) {
         } else {
             const target = profile.monsterTarget(stato.party, runCtx);
             resolveEnemyTurn(stato.activeEnemy, target);
-            if (stato.party.every(h => h.hp <= 0)) return { defeat: true };
+            if (stato.party.every(h => h.hp <= 0)) return chiudi(true);
             if (stato.activeEnemy.hp <= 0) {  // caduto sulle spine (Scudo a Spina di Kranen)
                 expireTempBuffs(true);
+                const esito = chiudi(false);
                 simResolveVictoryLoot(profile, runCtx);
-                return { defeat: false };
+                return esito;
             }
         }
     }
-    return { defeat: true }; // stallo oltre il limite di round: conta come sconfitta per non falsare il report
+    return chiudi(true); // stallo oltre il limite di round: conta come sconfitta per non falsare il report
 }
 
 // Preghiera al riposo: prega l'eroe con più Fede; tra le benedizioni pescate tiene la prima utile in quest'ordine
@@ -922,7 +940,7 @@ function simAdvance(node) {
     return false;
 }
 
-function simCollectResult(victory, lastNode, campaignData) {
+function simCollectResult(victory, lastNode, campaignData, runCtx) {
     const doneLevels = stato.stsMapNodes.filter(n => n.done).map(n => n.level);
     const levelReached = doneLevels.length ? Math.max(...doneLevels) + 1 : 0;
     const totalLevels = stato.stsMapNodes.length ? Math.max(...stato.stsMapNodes.map(n => n.level)) + 1 : 0;
@@ -936,6 +954,7 @@ function simCollectResult(victory, lastNode, campaignData) {
         victory,
         levelReached,
         totalLevels,
+        scontri: (runCtx && runCtx.scontri) || [],  // un elemento per scontro: enemy, elite, rounds, hpPersi, vinto
         combatsWon: stato.expeditionStats.combatsWon,
         challengesPassed: stato.expeditionStats.challengesPassed,
         challengesFailed: stato.expeditionStats.challengesFailed,
@@ -974,7 +993,7 @@ function simRunOne(campaignData, heroSelection, profile) {
 
     simRunCampaign = campaignData;
 
-    const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0 };
+    const runCtx = { visitCounts: {}, lootRotationIdx: 0, monsterTargetRotationIdx: 0, scontri: [] };
     return simPlayFrom(campaignData, profile, runCtx);
 }
 
@@ -990,17 +1009,17 @@ function simPlayFrom(campaignData, profile, runCtx, first = null) {
             first = null;
         } else {
             const available = stato.stsMapNodes.filter(n => n.active && !n.done);
-            if (available.length === 0) return simCollectResult(false, null, campaignData);
+            if (available.length === 0) return simCollectResult(false, null, campaignData, runCtx);
             node = simChooseNextNode(available, profile, runCtx);
         }
         const outcome = simResolveNode(campaignData, node, nodeProfile, runCtx);
-        if (outcome.defeat) return simCollectResult(false, node, campaignData);
-        if (outcome.finalVictory) return simCollectResult(true, node, campaignData);
+        if (outcome.defeat) return simCollectResult(false, node, campaignData, runCtx);
+        if (outcome.finalVictory) return simCollectResult(true, node, campaignData, runCtx);
 
         const isEnd = simAdvance(node);
-        if (isEnd) return simCollectResult(true, node, campaignData);
+        if (isEnd) return simCollectResult(true, node, campaignData, runCtx);
     }
-    return simCollectResult(false, null, campaignData); // difesa: non dovrebbe accadere con dati di mappa validi
+    return simCollectResult(false, null, campaignData, runCtx); // difesa: non dovrebbe accadere con dati di mappa validi
 }
 
 /* ==========================================================================

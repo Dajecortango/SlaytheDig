@@ -22,7 +22,7 @@
                 p.woundedSrc = h.portraitWounded;
                 p.woundedPos = h.portraitWoundedPos || pos;
                 p.woundedZoom = Number(h.portraitWoundedZoom) || zoom;
-                new Image().src = h.portraitWounded; // precaricato per evitare lo sfarfallio al cambio
+                // Precaricato solo per gli eroi della compagnia, dalla mappa (preloadAvailableNodes in js/mappa.js)
             }
             return p;
         }
@@ -78,9 +78,10 @@
             // Volto ingrandito come nell'icona (ma meno): la banda è larga e bassa
             const zoom = Number(p.strikeZoom) || strikeZoomFor(wounded ? (p.woundedZoom || p.zoom) : p.zoom);
 
-            const sparks = ability
-                ? Array.from({ length: 14 }, (_, i) => `<span style="--a:${i * (360 / 14)}deg; --d:${140 + (i % 3) * 70}px;"></span>`).join('')
-                : '';
+            // Scintille all'impatto: 14 e lunghe con un'abilità, 8 e corte per il colpo normale
+            const nSparks = ability ? 14 : 8;
+            const sparks = Array.from({ length: nSparks },
+                (_, i) => `<span style="--a:${i * (360 / nSparks)}deg; --d:${(ability ? 140 : 90) + (i % 3) * (ability ? 70 : 40)}px;"></span>`).join('');
             const overlay = document.createElement('div');
             overlay.className = `strike-cine${ability ? ' ability' : ''}`;
             overlay.setAttribute('aria-hidden', 'true');
@@ -93,7 +94,9 @@
                     ${ability ? `<div class="strike-ability"><span>Abilità</span>${esc(ability.name)}</div>` : ''}
                 </div>
                 <div class="strike-slash"></div>
-                ${ability ? '<div class="strike-slash second"></div><div class="strike-sparks">' + sparks + '</div>' : ''}
+                ${ability ? '<div class="strike-slash second"></div>' : ''}
+                <div class="strike-sparks${ability ? '' : ' simple'}">${sparks}</div>
+                <div class="strike-impact"></div>
                 <div class="strike-flash"></div>`;
             document.body.appendChild(overlay);
             speedUpAnimations(overlay);

@@ -10,7 +10,7 @@
 function libraryUsage(kind, key) {
     // Le abilità sono usate dagli eroi della libreria, non direttamente dalle campagne
     if (kind === 'abilita') {
-        return Object.entries(lib.eroi).filter(([, h]) => [...(h.abilities || []), ...(h.runeOptions || [])].includes(key))
+        return Object.entries(lib.eroi).filter(([, h]) => [...(h.abilities || []), ...(h.abilitaFisse || []), ...(h.runeOptions || [])].includes(key))
             .map(([id, h]) => ({ id, title: h.name, n: 1, current: true }));
     }
     // Le benedizioni si pescano tutte nella preghiera ai riposi, in ogni campagna
@@ -63,14 +63,14 @@ function formatJson(value, indent = 0) {
     return '{\n' + entries.map(([k, x]) => padIn + JSON.stringify(k) + ': ' + formatJson(x, indent + 4)).join(',\n') + '\n' + pad + '}';
 }
 
-function campaignFileText() {
-    return `// Campagna "${camp.title}".
+function campaignFileText(c = camp) {
+    return `// Campagna "${c.title}".
 // Il contenuto dopo "=" è JSON puro: niente funzioni, gli effetti sono descritti nei campi "effects"
 // e interpretati da applyEffects() in js/game.js. È un file .js (e non .json) perché il gioco
 // si apre con doppio click da file:// e il browser blocca fetch() di file locali.
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
-window.CAMPAIGNS[${JSON.stringify(camp.id)}] = ${formatJson(camp)};
+window.CAMPAIGNS[${JSON.stringify(c.id)}] = ${formatJson(c)};
 `;
 }
 
@@ -99,13 +99,13 @@ window.LIBRERIA.${kind} = ${formatJson(lib[kind])};
 ${extra}`;
 }
 
-const campaignFilePath = () => `data/campagne/${camp.id}.js`;
+const campaignFilePath = (c = camp) => `data/campagne/${c.id}.js`;
 // Le azioni degli elite hanno una cartella loro
 const libraryFilePath = kind => kind === 'azioni_elite' ? 'data/azioni_elite/azioni_elite.js' : `data/libreria/${kind}.js`;
 
 // Immagini caricate che la campagna usa ancora (le altre non vengono scritte)
-function usedPendingAssets() {
-    const used = new Set([camp.coverImage, ...camp.mapNodes.map(n => n.image),
+function usedPendingAssets(withCampaign = true) {
+    const used = new Set([...(withCampaign ? [camp.coverImage, ...camp.mapNodes.map(n => n.image)] : []),
         ...Object.values(lib.bestiario).flatMap(e => [e.image, e.video, e.sfxAttack, e.sfxHit, e.sfxDeath]),
         ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded]),
         ...Object.values(lib.abilita || {}).map(a => a.icon), ...Object.values(lib.azioni_elite || {}).map(a => a.icon)]);
@@ -194,17 +194,22 @@ async function readProjectText(root, path) {
 
 // Aggiunge <script src="data/campagne/<id>.js"> in una pagina, prima dello script indicato
 async function ensureScriptTag(root, page, beforeSrc) {
-    const text = await readProjectText(root, page);
-    const src = campaignFilePath();
-    if (text.includes(`"${src}"`)) return false;
+    const text = withScriptTag(await readProjectText(root, page), page, campaignFilePath(), beforeSrc);
+    if (text === null) return false;
+    await writeProjectFile(root, page, text);
+    return true;
+}
+
+// Testo della pagina con <script src="src"> aggiunto prima di beforeSrc; null se c'è già
+function withScriptTag(text, page, src, beforeSrc) {
+    if (text.includes(`"${src}"`)) return null;
     const anchor = `<script src="${beforeSrc}"></script>`;
     const at = text.indexOf(anchor);
     if (at < 0) throw new Error(`in ${page} non trovo ${anchor}`);
     const lineStart = text.lastIndexOf('\n', at) + 1;
     const indent = text.slice(lineStart, at);
     const eol = text.includes('\r\n') ? '\r\n' : '\n';
-    await writeProjectFile(root, page, text.slice(0, lineStart) + `${indent}<script src="${src}"></script>${eol}` + text.slice(lineStart));
-    return true;
+    return text.slice(0, lineStart) + `${indent}<script src="${src}"></script>${eol}` + text.slice(lineStart);
 }
 
 // File da scrivere: la campagna, i file di libreria modificati, le immagini caricate
@@ -231,7 +236,7 @@ async function saveToProject() {
     if (!camp || !confirmErrors('Salvare')) return;
     if (!window.showDirectoryPicker) {
         alert('Questo browser non può scrivere nella cartella del progetto: scarico uno .zip da estrarre nella cartella del gioco.');
-        return downloadZip();
+        return downloadSaveZip();
     }
     const root = await projectDir(true);
     if (!root) return;
@@ -267,9 +272,15 @@ function crc32(bytes) {
     for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
     return (c ^ 0xFFFFFFFF) >>> 0;
 }
+// Data e ora nel formato MS-DOS dello .zip (senza, gli estrattori mostrano date senza senso)
+function dosDateTime(d = new Date()) {
+    return { time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+        date: ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate() };
+}
 async function buildZip(files) {  // files: [[percorso, Blob | stringa]]
     const enc = new TextEncoder();
     const parts = [], central = [];
+    const { time, date } = dosDateTime();
     let offset = 0;
     for (const [path, content] of files) {
         const data = typeof content === 'string' ? enc.encode(content) : new Uint8Array(await content.arrayBuffer());
@@ -277,10 +288,12 @@ async function buildZip(files) {  // files: [[percorso, Blob | stringa]]
         const crc = crc32(data);
         const local = new DataView(new ArrayBuffer(30));
         local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(6, 0x0800, true);
+        local.setUint16(10, time, true); local.setUint16(12, date, true);
         local.setUint32(14, crc, true); local.setUint32(18, data.length, true); local.setUint32(22, data.length, true);
         local.setUint16(26, name.length, true);
         const head = new DataView(new ArrayBuffer(46));
         head.setUint32(0, 0x02014b50, true); head.setUint16(4, 20, true); head.setUint16(6, 20, true); head.setUint16(8, 0x0800, true);
+        head.setUint16(12, time, true); head.setUint16(14, date, true);
         head.setUint32(16, crc, true); head.setUint32(20, data.length, true); head.setUint32(24, data.length, true);
         head.setUint16(28, name.length, true); head.setUint32(42, offset, true);
         parts.push(local, name, data);
@@ -294,19 +307,193 @@ async function buildZip(files) {  // files: [[percorso, Blob | stringa]]
     return new Blob([...parts, ...central, end], { type: 'application/zip' });
 }
 
-async function downloadZip() {
+function zipReadme(campaigns, libKinds) {
+    return 'Estrai questo archivio nella cartella del gioco (quella con index.html), sovrascrivendo i file.\n' +
+        (campaigns.length ? '\nSe una campagna è nuova, aggiungi in index.html ed editor.html, subito prima di js/libreria.js:\n' +
+            campaigns.map(c => `<script src="${campaignFilePath(c)}"></script>\n`).join('') : '') +
+        (libKinds.length ? `\nL'archivio contiene anche la libreria (${libKinds.join(', ')}), che vale per tutte le campagne.\n` : '');
+}
+
+// "Salva" senza File System Access API: lo .zip con quello che si salverebbe nel progetto
+async function downloadSaveZip() {
     if (!camp || !confirmErrors('Scaricare')) return;
-    const readme = `Estrai questo archivio nella cartella del gioco (quella con index.html), sovrascrivendo i file.\n\n` +
-        `Se la campagna "${camp.id}" è nuova, aggiungi in index.html ed editor.html, subito prima di js/libreria.js:\n` +
-        `<script src="${campaignFilePath()}"></script>\n` +
-        (libDirty.size ? `\nL'archivio contiene anche la libreria modificata (${[...libDirty].join(', ')}), che vale per tutte le campagne.\n` : '');
-    download(await buildZip([...filesToSave(), ["LEGGIMI_campagna.txt", readme]]), `${campaignChosen ? camp.id || "campagna" : "libreria"}.zip`);
+    const campaigns = campaignChosen ? [camp] : [];
+    download(await buildZip([...filesToSave(), ['LEGGIMI_campagna.txt', zipReadme(campaigns, [...libDirty])]]),
+        `${campaignChosen ? camp.id || 'campagna' : 'libreria'}.zip`);
     afterSave();
 }
 
+/* "Scarica .zip": si sceglie cosa mettere nell'archivio. "libreria" = tutti i file della libreria condivisa;
+   "capitolo" = una campagna (quella aperta con le modifiche, le altre come sono nel progetto) e la libreria cambiata;
+   "tutto" = libreria e tutte le campagne. Con le immagini caricate e non ancora salvate. */
+let zipChoice = { kind: 'capitolo', id: '' };
+
+function downloadZip() {
+    const campaigns = Object.values(rawCampaigns());
+    const current = campaignChosen && camp ? camp.id : '';
+    const ids = [...new Set([...(current ? [current] : []), ...campaigns.map(c => c.id)])];
+    const title = id => id === current ? camp.title : (rawCampaigns()[id] || {}).title || id;
+    zipChoice = { kind: ids.length ? 'capitolo' : 'libreria', id: ids[0] || '' };
+    const radio = (kind, label, extra = '') => `<label class="ed-zip-choice"><input type="radio" name="edZipKind" value="${kind}" ${zipChoice.kind === kind ? 'checked' : ''} ${azioneSu('change', 'setZipChoice', 'kind', '$value')}> ${label}</label>${extra}`;
+    edConfirm({
+        title: 'Cosa vuoi scaricare?',
+        html: `<p>Lo .zip va estratto nella cartella del gioco (quella con index.html).</p>
+            ${radio('libreria', '<b>La libreria</b>: nemici, oggetti, eroi, abilità e tutto il resto condiviso')}
+            ${ids.length ? radio('capitolo', '<b>Un capitolo</b>, con la libreria cambiata:', `
+                <select class="ed-zip-camp" ${azioneSu('change', 'setZipChoice', 'id', '$value')}>${ids.map(id => `<option value="${esc(id)}">${esc(title(id))}${id === current && hasUnsaved() ? ' (con le modifiche)' : ''}</option>`).join('')}</select>`) : ''}
+            ${radio('tutto', '<b>Tutto il progetto</b>: il gioco completo (pagine, codice, immagini, musica, video, dati) con le modifiche non salvate, pronto da aprire con index.html. Ti chiederà la cartella del progetto')}`,
+        ok: 'Scarica'
+    }, () => downloadZipOf(zipChoice.kind, zipChoice.id));
+}
+
+function setZipChoice(field, value) {
+    zipChoice[field] = value;
+    if (field === 'id') {
+        zipChoice.kind = 'capitolo';
+        const r = document.querySelector('input[name="edZipKind"][value="capitolo"]');
+        if (r) r.checked = true;
+    }
+}
+
+async function downloadZipOf(kind, id) {
+    if (kind === 'tutto') return downloadProjectZip();
+    const current = campaignChosen && camp ? camp.id : '';
+    const campaignById = cid => cid === current ? camp : rawCampaigns()[cid];
+    let campaigns = [], libKinds = [];
+    if (kind === 'libreria') libKinds = LIB_KINDS;
+    else if (kind === 'capitolo') { campaigns = [campaignById(id)].filter(Boolean); libKinds = [...libDirty]; }
+    else { campaigns = [...new Set([current, ...Object.keys(rawCampaigns())].filter(Boolean))].map(campaignById).filter(Boolean); libKinds = LIB_KINDS; }
+    // I controlli guardano la campagna aperta: contano solo se finisce nell'archivio
+    if (campaigns.includes(camp) && campaignChosen && !confirmErrors('Scaricare')) return;
+    const withCamp = campaigns.includes(camp) && campaignChosen;
+    const files = [
+        ...campaigns.map(c => [campaignFilePath(c), campaignFileText(c)]),
+        ...libKinds.map(k => [libraryFilePath(k), libraryFileText(k)]),
+        ...usedPendingAssets(withCamp).map(([p, a]) => [p, a.blob])
+    ];
+    const name = kind === 'libreria' ? 'libreria' : kind === 'tutto' ? 'slay_the_dig_dati' : (campaigns[0] || {}).id || 'campagna';
+    download(await buildZip([...files, ['LEGGIMI_campagna.txt', zipReadme(campaigns, libKinds)]]), `${name}.zip`);
+    // Le modifiche sono tutte nell'archivio solo se ci sono la campagna aperta e la libreria cambiata
+    if ([...libDirty].every(k => libKinds.includes(k)) && (withCamp || !dirty)) afterSave();
+}
+
+/* "Tutto il progetto": ogni file della cartella del gioco (letta con la File System Access API, o con la
+   scelta di una cartella negli altri browser: da file:// l'editor non può leggere i file da solo), tranne
+   .git e quello che .gitignore esclude (chiavi API, lore privato, archivio delle icone, profilo del browser).
+   Sopra ci vanno le modifiche non salvate: campagna aperta, libreria cambiata, immagini caricate, e il
+   <script> di una campagna nuova in index.html ed editor.html. */
+const ZIP_ALWAYS_SKIP = ['.git/'];
+
+// Regole di .gitignore, nella forma usata dal progetto: "cartella/", "file", "*.tmp", "percorso/file"
+function gitignoreRules(text) {
+    return [...ZIP_ALWAYS_SKIP, ...String(text || '').split(/\r?\n/)]
+        .map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('!'))
+        .map(l => {
+            const dir = l.endsWith('/');
+            const pat = l.replace(/^\/|\/$/g, '');
+            const re = new RegExp('^' + pat.split('*').map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('[^/]*') + '$');
+            return { dir, anchored: pat.includes('/'), re };
+        });
+}
+
+// Il percorso (relativo, con "/") va escluso? Basta che una sua cartella o il file corrispondano a una regola
+function zipIgnored(rules, path) {
+    const segs = path.split('/');
+    return rules.some(r => segs.some((_, i) => {
+        const isDir = i < segs.length - 1;
+        if (r.dir && !isDir) return false;
+        return r.re.test(r.anchored ? segs.slice(0, i + 1).join('/') : segs[i]);
+    }));
+}
+
+async function readDirFiles(dir, rules, prefix = '', out = []) {
+    for await (const [name, handle] of dir.entries()) {
+        const path = prefix + name;
+        if (zipIgnored(rules, handle.kind === 'directory' ? path + '/x' : path)) continue;
+        if (handle.kind === 'directory') await readDirFiles(handle, rules, path + '/', out);
+        else out.push([path, await handle.getFile()]);
+    }
+    return out;
+}
+
+// Negli altri browser: <input webkitdirectory>, i file arrivano con "cartella/percorso"
+function pickFolderFiles() {
+    return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.multiple = true;
+        input.addEventListener('change', () => resolve([...input.files]));
+        input.addEventListener('cancel', () => resolve([]));
+        input.click();
+    });
+}
+
+async function projectFilesForZip() {
+    if (window.showDirectoryPicker) {
+        let root = null;
+        try {
+            const saved = await kvGet('projectDir');
+            if (saved && (!openedFolderName() || saved.name === openedFolderName()) &&
+                (await saved.queryPermission({ mode: 'read' }) === 'granted' || await saved.requestPermission({ mode: 'read' }) === 'granted')) root = saved;
+        } catch (e) {}
+        if (!root) {
+            try { root = await window.showDirectoryPicker({ id: 'slay-the-dig', mode: 'read' }); } catch (e) { return null; }
+        }
+        try { await root.getFileHandle('index.html'); await root.getFileHandle('editor.html'); } catch (e) {
+            alert('Scegli la cartella principale del progetto, quella che contiene index.html ed editor.html.');
+            return null;
+        }
+        let ignore = '';
+        try { ignore = await readProjectText(root, '.gitignore'); } catch (e) {}
+        return readDirFiles(root, gitignoreRules(ignore));
+    }
+    alert('Scegli la cartella principale del progetto, quella che contiene index.html ed editor.html.\nIl browser chiederà di "caricare" i file: restano sul tuo PC, servono solo per fare lo .zip.');
+    const picked = await pickFolderFiles();
+    if (!picked.length) return null;
+    const files = picked.map(f => [f.webkitRelativePath.split('/').slice(1).join('/'), f]);
+    const gi = files.find(([p]) => p === '.gitignore');
+    const rules = gitignoreRules(gi ? await gi[1].text() : '');
+    const kept = files.filter(([p]) => p && !zipIgnored(rules, p));
+    if (!kept.some(([p]) => p === 'index.html') || !kept.some(([p]) => p === 'editor.html')) {
+        alert('Nella cartella scelta non ci sono index.html ed editor.html: scegli la cartella principale del progetto.');
+        return null;
+    }
+    return kept;
+}
+
+async function downloadProjectZip() {
+    if (campaignChosen && camp && !confirmErrors('Scaricare')) return;
+    const disk = await projectFilesForZip();
+    if (!disk) return;
+    const files = new Map(disk);
+    // Modifiche dell'editor sopra i file del disco
+    const withCamp = !!(campaignChosen && camp);
+    if (withCamp) {
+        files.set(campaignFilePath(), campaignFileText());
+        for (const page of ['index.html', 'editor.html']) {
+            const text = withScriptTag(await files.get(page).text(), page, campaignFilePath(), 'js/libreria.js');
+            if (text !== null) files.set(page, text);
+        }
+    }
+    [...libDirty].forEach(k => files.set(libraryFilePath(k), libraryFileText(k)));
+    usedPendingAssets(withCamp).forEach(([p, a]) => files.set(p, a.blob));
+    edToast(`Preparo lo .zip con ${files.size} file…`);
+    try {
+        download(await buildZip([...files].sort(([a], [b]) => a.localeCompare(b))), 'slay_the_dig.zip');
+    } catch (err) {
+        alert(`Non riesco a creare lo .zip: ${err.message}`);
+        return;
+    }
+    edToast(`Scaricato slay_the_dig.zip: ${files.size} file, tutto il gioco. Estrailo e apri index.html.`);
+}
+
 /* Prova nel gioco: il gioco legge la campagna (e la libreria modificata) dalla chiave "playtest" (vedi js/game.js) */
+const playtestedIds = new Set();   // campagne provate in questa sessione (passo 3 di "Cosa fare adesso")
 async function playtest() {
     if (!camp) return;
+    playtestedIds.add(camp.id);
+    renderIssues();
     try {
         await kvSet('playtest', {
             campaign: deepCopy(camp),

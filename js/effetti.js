@@ -37,12 +37,14 @@
             setTimeout(() => float.remove(), 1200 + delay);
         }
 
-        function fxHit(el) {
+        // critico = scossone più forte e lampo dorato (.fx-hit-crit in css/style.css)
+        function fxHit(el, critico) {
             if (!el || !animationsEnabled()) return;
-            el.classList.remove('fx-hit');
+            el.classList.remove('fx-hit', 'fx-hit-crit');
             void el.offsetWidth;
             el.classList.add('fx-hit');
-            setTimeout(() => el.classList.remove('fx-hit'), 450);
+            if (critico) el.classList.add('fx-hit-crit');
+            setTimeout(() => el.classList.remove('fx-hit', 'fx-hit-crit'), critico ? 650 : 450);
         }
 
         // Lampo sulla carta dell'eroe: rosso quando perde vita, verde quando la recupera.
@@ -81,6 +83,32 @@
                 if (dArmor > 0) fxFloatOn(card, `+${dArmor} Armatura`, 'armor');
                 if (dHp < 0) fxFloatOn(card, `${dHp}`, 'dmg', dArmor !== 0 ? 180 : 0);
                 if (dHp > 0) fxFloatOn(card, `+${dHp}`, 'heal');
+                if (prev.hp > 0 && hero.hp <= 0) fxHeroFell(card);
+            });
+            fxResumeFalls();
+        }
+
+        // Eroe caduto: la carta si spegne piano nel grigio (al posto del grigio di colpo di .dead), "Caduto" e un rintocco.
+        // La carta si ridisegna spesso (updatePartyStatusBars): l'animazione riprende dal punto in cui era (fxFallen)
+        const FX_FALL_MS = 1400;
+        const fxFallen = new Map();   // nome dell'eroe -> momento della caduta
+        function fxHeroFell(card) {
+            if (!card) return;
+            setTimeout(() => synthSfx('fall'), 250);
+            fxFloatOn(card, 'Caduto', 'fell', 300);
+            if (!animationsEnabled()) return;
+            fxFallen.set(card.dataset.hero, performance.now());
+        }
+        function fxResumeFalls() {
+            const now = performance.now();
+            fxFallen.forEach((at, name) => {
+                const passed = (now - at) * (gameOptions.fastAnimations ? 2 : 1);
+                if (passed >= FX_FALL_MS) { fxFallen.delete(name); return; }
+                const card = document.querySelector(`.hero-mini-card[data-hero="${CSS.escape(name)}"]`);
+                if (!card || !card.classList.contains('dead')) return;
+                card.style.animationDelay = `-${Math.round(passed)}ms`;
+                card.classList.add('fx-fall');
+                speedUpAnimations(card);
             });
         }
 
@@ -103,7 +131,7 @@
             if (stato.activeEnemy.hp <= 0 && prev.hp > 0) onEnemyDefeated(box);
             const dHp = stato.activeEnemy.hp - prev.hp;
             if (dHp < 0) {
-                fxHit(box);
+                fxHit(box, fxNextEnemyHitCritical);
                 // Alla morte "sfxDeath" (o, se manca, "sfxHit"); altrimenti "sfxHit"; senza file il suono generato
                 const dead = stato.activeEnemy.hp <= 0;
                 if (!(dead && playEnemySfx('sfxDeath')) && !playEnemySfx('sfxHit')) synthSfx('enemy');

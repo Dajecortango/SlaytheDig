@@ -45,11 +45,13 @@
             return fromLib || (curse && curse.speciali) || [];
         }
 
-        // Abilità che agiscono sempre: quella scelta e le rune equipaggiate
+        // Abilità che agiscono sempre: quella scelta, le rune equipaggiate e le abilità fisse dell'eroe
+        // ("abilitaFisse" nella libreria Eroi: le ha sempre, oltre a quella scelta; es. Hammergradiano Puro di Enea)
         function heroAbilityRefs(hero) {
             const out = [];
             if (hero.chosenAbility) out.push(hero.chosenAbility);
             (hero.equippedRunes || []).forEach(id => out.push({ id, ...((LIBRERIA.abilita || {})[id] || {}) }));
+            (hero.abilitaFisse || []).forEach(id => out.push({ id, ...((LIBRERIA.abilita || {})[id] || {}) }));
             return out;
         }
 
@@ -270,6 +272,12 @@
                 case 'altro_casuale': {
                     const others = alive.filter(h => h !== who && h.hp < h.maxHp);
                     return others.length ? [others[Math.floor(rng() * others.length)]] : [];
+                }
+                // Gli eroi in piedi subito prima e subito dopo di lui nell'ordine della compagnia (Scudo del Nord)
+                case 'vicini': {
+                    const idx = stato.party.indexOf(who);
+                    if (idx < 0) return [];
+                    return [stato.party[idx - 1], stato.party[idx + 1]].filter(h => h && h.hp > 0);
                 }
                 default: return who && who.hp > 0 ? [who] : [];
             }

@@ -40,11 +40,26 @@ const esito = (vinte, n) => {
     return `${Math.round(p * 100)}% ± ${Math.round(margine * 100)} (${vinte}/${n})`;
 };
 
-function partite(campaignId, sel, profile, n) {
+function partite(campaignId, sel, profile, n, scontri = null) {
     const data = g.simCampaignData(campaignId);
     let vinte = 0;
-    for (let i = 0; i < n; i++) if (g.simRunOne(data, sel, profile).victory) vinte++;
+    for (let i = 0; i < n; i++) {
+        const res = g.simRunOne(data, sel, profile);
+        if (res.victory) vinte++;
+        if (scontri) scontri.push(...res.scontri);
+    }
     return vinte;
+}
+
+// Round medi e HP persi medi per scontro, tutti e solo elite e boss. Un boss "lungo" sta sugli 8-12 round:
+// se l'Esperto chiude in 4, le fasi non stanno mordendo.
+const media = (list, campo) => list.length ? (list.reduce((s, x) => s + x[campo], 0) / list.length) : 0;
+function rigaScontri(scontri) {
+    const eliti = scontri.filter(s => s.elite);
+    const f = x => x.toFixed(1);
+    let riga = `     Scontri: round medi ${f(media(scontri, 'rounds'))}, HP persi medi ${f(media(scontri, 'hpPersi'))} (${scontri.length} scontri)`;
+    if (eliti.length) riga += `\n     Elite e boss: round medi ${f(media(eliti, 'rounds'))}, HP persi medi ${f(media(eliti, 'hpPersi'))} (${eliti.length})`;
+    return riga;
 }
 
 for (const id of ids.length ? ids : Object.keys(g.CAMPAIGNS)) {
@@ -59,8 +74,10 @@ for (const id of ids.length ? ids : Object.keys(g.CAMPAIGNS)) {
 
     const t0 = Date.now();
     const nEsperto = PARTITE * 10;
-    const vinte1 = partite(id, sel, ESPERTO, nEsperto);
+    const scontri = [];
+    const vinte1 = partite(id, sel, ESPERTO, nEsperto, scontri);
     console.log(`  1. Esperto, prime scelte iniziali:    ${esito(vinte1, nEsperto)}`);
+    if (scontri.length) console.log(rigaScontri(scontri));
 
     const migliori = g.simBestStart(data, sel, ESPERTO, 60);
     const scelte = migliori.map(s => {

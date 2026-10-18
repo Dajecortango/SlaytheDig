@@ -108,5 +108,31 @@ window.LIBRERIA.azioni_elite = {
         "turno": true,
         "turnoBersaglio": "scelto",
         "turnoColpoOdio": 2
+    },
+    "radici_dell_impiccato": {
+        "name": "Radici dell'Impiccato",
+        "desc": "Un turno raccoglie le radici (niente attacco), quello dopo le solleva: 1 danno a tutta la compagnia (l'armatura conta). Stordirlo mentre le raccoglie annulla il colpo",
+        "turno": true,
+        "turnoBersaglio": "tutti",
+        "turnoDanno": 1,
+        "turnoPreparazione": true,
+        "turnoTestoPreparazione": "{nemico} affonda le radici nella radura: al prossimo turno la terra si solleverà sotto tutta la compagnia!"
+    },
+    "radura_morta": {
+        "name": "Radura Morta",
+        "desc": "La radura è prosciugata: a ogni round 1 danno a tutta la compagnia (l'armatura conta)",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "la_foresta_ruggisce": {
+        "name": "La Foresta Ruggisce",
+        "desc": "Alla soglia 1 danno a tutta la compagnia e recupera 3 HP; da ora a ogni round può stordire un eroe a caso (35%)",
+        "colpo": "tutti",
+        "colpoDanno": 1,
+        "cura": 3,
+        "speciali": [
+            { "quando": "inizio_round", "prob": 35, "fai": "stordisci", "bersaglio": "casuale" }
+        ]
     }
 };

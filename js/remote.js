@@ -368,6 +368,16 @@
         };
     });
 
+    // Indietro prima del tiro (prova, scontro): il tiro chiesto al telefono non vale più
+    ['challengeBackToHeroes', 'challengeBackToStart', 'backToCombatActions', 'cancelCombatHeroChoice'].forEach(name => {
+        if (typeof window[name] !== 'function') return;
+        const original = window[name];
+        window[name] = function () {
+            if (currentRollRequestId) { clearRemotePending('roll', currentRollRequestId); currentRollRequestId = null; }
+            return original.apply(this, arguments);
+        };
+    });
+
     // Fuori da scontro e prova nessuna richiesta resta aperta sui telefoni
     if (typeof showScreen === 'function') {
         const originalShowScreen = showScreen;
