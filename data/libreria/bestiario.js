@@ -382,11 +382,12 @@ window.LIBRERIA.bestiario = {
         "hp": 14,
         "maxHp": 14,
         "att": 7,
-        "dmg": 3,
+        "dmg": 1,
         "ca": 8,
         "desc": "Mentre attraversate un passo, notate strani movimenti sulle pendici. Inizialmente non ci fate caso, ma quando aguzzate lo sguardo notate degli esseri simili a lucertole ma bianchi come la neve. Li riconoscete, sono Cenofori delle Slavine, delle fiere innocue, che abitano i picchi innevati. La preoccupazione sale quando tre o quattro di loro, particolarmente grossi, sembrano guardare verso di voi. Mentre camminate, sentite cedere della neve lungo le pendici. È la tattica di caccia dei Cenofori: provocare slavine per poi attaccare le proprie prede.",
         "fasi": [
-            { "soglia": 50, "testo": "I Cenofori fiutano il sangue: puntano il più debole!", "azioni": ["predatore"] }
+            { "soglia": 99, "testo": "I Cenofori fiutano il sangue: puntano il più debole!", "azioni": ["predatore"] },
+            { "soglia": 55, "testo": "", "azioni": ["furia"] }
         ],
         "sfxAttack": "",
         "sfxHit": "",
@@ -473,7 +474,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Oltrepassata la prima linea di abeti neri della foresta morta, il sentiero di fango ghiacciato si fa subito ripido. Da dietro i resti di un albero caduto vi tende un agguato un gruppo di cacciatori di frodo Vitghen, avvolti in pellicce consunte, disperati e pronti a uccidere per rubarvi le provviste.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 5 }
+        ]
     },
     "banditi_kin_brachidani": {
         "name": "Banditi Kin e Brachidani",
@@ -496,7 +500,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Il terreno nella fitta nebbia della foresta si fa irregolare, irto di radici nere coperte di brina. Dei predoni delle nevi, armati di asce arrugginite, emergono da dietro gli alberi morti esigendo un pedaggio di sangue per attraversare quelli che sono, a detta loro, i loro boschi.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
     },
     "troll_giovani": {
         "name": "Troll giovani",
@@ -506,7 +513,10 @@ window.LIBRERIA.bestiario = {
         "att": 6,
         "dmg": 1,
         "ca": 6,
-        "desc": "Sfiorando la base scavata di un colossale abete ormai pietrificato dal gelo, sentite il rumore di ossa frantumate. Un branco di Troll giovani sta divorando una carcassa, rannicchiato tra le enormi radici; notandovi, si avventano su di voi con gli occhi iniettati di sangue."
+        "desc": "Sfiorando la base scavata di un colossale abete ormai pietrificato dal gelo, sentite il rumore di ossa frantumate. Un branco di Troll giovani sta divorando una carcassa, rannicchiato tra le enormi radici; notandovi, si avventano su di voi con gli occhi iniettati di sangue.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "cura", "val": 1 }
+        ]
     },
     "banditi_kin_warg": {
         "name": "Banditi Kin con Warg",
@@ -519,7 +529,10 @@ window.LIBRERIA.bestiario = {
         "desc": "L'aria si fa più tagliente mentre la nebbia si dirada leggermente tra i rami morti della foresta. Sotto un cielo grigio piombo, incrociate dei banditi Kin che utilizzano feroci Warg al guinzaglio, annusando il fango ghiacciato per braccare i viaggiatori. Vi hanno appena fiutato.",
         "sfxAttack": "audio/nemici/lupo_attacco.ogg",
         "sfxHit": "audio/nemici/lupo_colpito.ogg",
-        "sfxDeath": "audio/nemici/lupo_morte.ogg"
+        "sfxDeath": "audio/nemici/lupo_morte.ogg",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
     },
     "disertori_vitghen_radura": {
         "name": "Disertori Vitghen",
@@ -532,7 +545,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Attraversando una radura dove gli alberi pietrificati sono stati abbattuti dal vento, affrontate dei disertori Vitghen impazziti. Hanno perso la ragione a causa del freddo e del sussurro costante dei Picchi del Tramonto, attaccando senza curarsi dei graffi inferti dai rovi ghiacciati.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 5 }
+        ]
     },
     "esiliati_seachtuir_foresta": {
         "name": "Esiliati Seachtuir",
@@ -545,7 +561,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Siete al confine esatto in cui la foresta muore del tutto e la pietra prende il sopravvento. Guerrieri esiliati del Clan Seachtuir, coperti di pelli pesanti, sfruttano gli ultimi tronchi spezzati come copertura per braccarvi e saccheggiare i vostri corpi prima che possiate addentrarvi nelle viscere della montagna.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "potenzia", "stat": "dmg", "val": 1, "se": "sotto_meta", "limite": "scontro", "volte": 2 }
+        ]
     },
     "branco_ghofuuri": {
         "name": "Branco di Ghofuuri",
@@ -571,7 +590,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Lasciandovi gli alberi morti alle spalle, vi calate nell'abisso dei Crepacci Ululanti su instabili passerelle naturali. L'ululato del vento vi assorda. Predoni Vitghen, attrezzati con funi e ramponi, calano dall'alto della faglia cercando di spingervi nel vuoto infinito.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 5 }
+        ]
     },
     "silfidi_eterei_crepaccio": {
         "name": "Silfidi Eterei",
@@ -581,7 +603,10 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Il fondo del crepaccio diventa infido, costituito da sottili strati di brina tesi sopra il vuoto. Silfidi Eterei, spiriti manifestati come raffiche di vento gelido e tagliente incanalate nelle pareti strette, turbinano nella gola per congelarvi il sangue e farvi precipitare di sotto."
+        "desc": "Il fondo del crepaccio diventa infido, costituito da sottili strati di brina tesi sopra il vuoto. Silfidi Eterei, spiriti manifestati come raffiche di vento gelido e tagliente incanalate nelle pareti strette, turbinano nella gola per congelarvi il sangue e farvi precipitare di sotto.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
     },
     "mastini_nevi": {
         "name": "Mastini delle Nevi",
@@ -589,12 +614,15 @@ window.LIBRERIA.bestiario = {
         "hp": 10,
         "maxHp": 10,
         "att": 7,
-        "dmg": 1,
+        "dmg": 0,
         "ca": 7,
         "desc": "Scalando una ripida parete di ghiaccio per risalire il crepaccio, un ululato bestiale si fonde con l'eco del vento. Branchi di feroci mastini delle nevi, sguinzagliati dai loro padroni lungo gli stretti passaggi, cercano di sbranarvi in uno spazio dove schivare è impossibile.",
         "sfxAttack": "audio/nemici/lupo_attacco.ogg",
         "sfxHit": "audio/nemici/lupo_colpito.ogg",
-        "sfxDeath": "audio/nemici/lupo_morte.ogg"
+        "sfxDeath": "audio/nemici/lupo_morte.ogg",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole" }
+        ]
     },
     "hrost": {
         "name": "Hrost",
@@ -604,7 +632,10 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Strisciando in una grotta nascosta nel ghiaccio millenario del crepaccio, urtate involontariamente una scultura. Si tratta di uno Hrost, un formidabile abitante mimetico delle nevi sotterranee che si anima furiosamente per difendere il suo angusto territorio."
+        "desc": "Strisciando in una grotta nascosta nel ghiaccio millenario del crepaccio, urtate involontariamente una scultura. Si tratta di uno Hrost, un formidabile abitante mimetico delle nevi sotterranee che si anima furiosamente per difendere il suo angusto territorio.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "infuria" }
+        ]
     },
     "predoni_kin_crepaccio": {
         "name": "Predoni Kin",
@@ -617,7 +648,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Risalendo i fianchi della gola, uscite brevemente allo scoperto per aggirare una faglia. Dall'alto dei bordi del crepaccio, predoni Kin fanno rotolare enormi massi per schiacciarvi, prima di calarsi con le funi a finirvi nell'oscurità.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "colpito", "se": "sotto_meta", "fai": "potenzia", "stat": "dmg", "val": 1, "limite": "scontro" }
+        ]
     },
     "sopravvissuti_kin": {
         "name": "Sopravvissuti Kin",
@@ -642,7 +676,8 @@ window.LIBRERIA.bestiario = {
         "ca": 8,
         "desc": "Sull'unica grande via d'uscita che vi riporterà all'aperto, incombe il Signore del Crepaccio. A guardia del passaggio si erge un Kreehorn, un imponente Silfide del Gelo dalle corna gargantuesche che sbuffa cristalli ghiacciati e taglienti. È intrappolato qui quanto voi, e sarà uno scontro senza pietà.",
         "fasi": [
-            { "soglia": 50, "testo": "Il Kreehorn sbuffa una tempesta di cristalli: travolge chiunque gli stia accanto!", "azioni": ["travolge"] }
+            { "soglia": 61, "testo": "Il Kreehorn sbuffa una tempesta di cristalli: travolge chiunque gli stia accanto!", "azioni": ["travolge", "contrattacco"] },
+            { "soglia": 31, "testo": "", "azioni": ["frantuma_scudi"] }
         ]
     },
     "kornugan": {
@@ -655,7 +690,7 @@ window.LIBRERIA.bestiario = {
         "ca": 8,
         "desc": "Finalmente fuori dall'oscurità dei crepacci, vi ritrovate appesi alle pareti verticali esterne della montagna, i Dirupi del Cielo Infranto. Costretti su una strettissima cengia a strapiombo sulle nuvole, un maestoso Kornugan dalle corna imponenti vi sbarra la strada.",
         "fasi": [
-            { "soglia": 50, "testo": "Il Kornugan abbassa le corna e raspa la roccia: si prepara a caricare!", "azioni": ["carica"] }
+            { "soglia": 80, "testo": "Il Kornugan abbassa le corna e raspa la roccia: si prepara a caricare!", "azioni": ["carica"] }
         ]
     },
     "disertori_vitghen_dirupi": {
@@ -694,7 +729,7 @@ window.LIBRERIA.bestiario = {
         "ca": 8,
         "desc": "Sulla rupe scoscesa dei Dirupi che state scalando, l'aria rarefatta vi riempie i polmoni. Siete braccati dai predatori delle vette: un branco di spaventosi Warg mutati, dal respiro pesante per l'altitudine, che si lancia in una spietata caccia coordinata per farvi scivolare giù.",
         "fasi": [
-            { "soglia": 50, "testo": "Il branco fiuta il sangue: i Warg puntano il più debole!", "azioni": ["predatore"] }
+            { "soglia": 99, "testo": "Il branco fiuta il sangue: i Warg puntano il più debole!", "azioni": ["predatore"] }
         ],
         "sfxAttack": "audio/nemici/lupo_attacco.ogg",
         "sfxHit": "audio/nemici/lupo_colpito.ogg",
@@ -711,7 +746,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Una vertiginosa lingua di roccia larga due spanne, sospesa nel vuoto della parete esterna, vi costringe ad affrontare in fila indiana un gruppo di letali guerrieri del Clan Seachtuir esiliati. Un solo capogiro dovuto all'altitudine significa morte certa.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "potenzia", "val": 1, "stat": "dmg", "limite": "scontro", "volte": 2 }
+        ]
     },
     "avatar_tramonto": {
         "name": "Avatar del Tramonto",
@@ -737,17 +775,23 @@ window.LIBRERIA.bestiario = {
         "desc": "Sulla parete della montagna, resa viscida dal ghiaccio sciolto dal sole e poi ricongelato, vi attaccano assassini ricoperti di cicatrici da assideramento. Utilizzano dardi paralizzanti, sperando che i vostri muscoli cedano all'ipossia e vi facciano precipitare dai Dirupi.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "colpito", "se": "sotto_meta", "fai": "potenzia", "stat": "dmg", "val": 1, "limite": "scontro" }
+        ]
     },
     "silfidi_eterei_gradinata": {
         "name": "Silfidi Eterei",
         "image": "",
-        "hp": 10,
-        "maxHp": 10,
+        "hp": 9,
+        "maxHp": 9,
         "att": 7,
-        "dmg": 2,
+        "dmg": 1,
         "ca": 8,
-        "desc": "Su una gelida gradinata scolpita nel fianco nudo della montagna, la temperatura precipita brutalmente. Creature del vento e Silfidi Eterei assumono forme taglienti, vorticando attorno a voi per asfissiarvi e strapparvi l'ultimo calore vitale ad alta quota."
+        "desc": "Su una gelida gradinata scolpita nel fianco nudo della montagna, la temperatura precipita brutalmente. Creature del vento e Silfidi Eterei assumono forme taglienti, vorticando attorno a voi per asfissiarvi e strapparvi l'ultimo calore vitale ad alta quota.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
     },
     "criogolem": {
         "name": "Criogolem",
@@ -759,7 +803,8 @@ window.LIBRERIA.bestiario = {
         "ca": 9,
         "desc": "Scavalcato il cornicione, la verticalità finisce e vi immettete nel Mare Bianco. In questa landa glaciale piana e sconfinata, avanzando a fatica nella neve alta, emerge una figura titanica: un letale Criogolem.",
         "fasi": [
-            { "soglia": 50, "testo": "Il ghiaccio del Criogolem si incrina e lo rende furioso: ogni colpo è più pesante del precedente!", "azioni": ["furia"] }
+            { "soglia": 50, "testo": "Il ghiaccio del Criogolem si incrina e lo rende furioso: ogni colpo è più pesante del precedente!", "azioni": ["furia"] },
+            { "soglia": 25, "testo": "", "azioni": ["pelle_di_brina"] }
         ]
     },
     "cenofori_mare_bianco": {
@@ -768,11 +813,12 @@ window.LIBRERIA.bestiario = {
         "hp": 15,
         "maxHp": 15,
         "att": 7,
-        "dmg": 2,
+        "dmg": 1,
         "ca": 8,
         "desc": "Terminata la scalata e calpestando il frastagliato ghiaccio perenne che lastrica l'inizio del Mare Bianco, venite travolti da una slavina. Vi mettete al riparo giusto in tempo, ma vi accorgete che non era una slavina naturale: è stata causata da un branco di Cenofori delle Slavine, che vuole fare di voi il suo pasto.",
         "fasi": [
-            { "soglia": 50, "testo": "I Cenofori fiutano il sangue: puntano il più debole!", "azioni": ["predatore"] }
+            { "soglia": 71, "testo": "I Cenofori fiutano il sangue: puntano il più debole!", "azioni": ["predatore"] },
+            { "soglia": 35, "testo": "", "azioni": ["furore"] }
         ]
     },
     "gheist_gelo": {
@@ -793,7 +839,11 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "In una profonda trincea scavata dalle bufere nel ghiaccio del plateau, assistete a uno scontro brutale: orgogliosi guerrieri del Clan Seachtuir esiliati lottano per la sopravvivenza contro dei Troll corazzati di ghiaccio. Accecati dalla fame del Mare Bianco, vi attaccano tutti indistintamente."
+        "desc": "In una profonda trincea scavata dalle bufere nel ghiaccio del plateau, assistete a uno scontro brutale: orgogliosi guerrieri del Clan Seachtuir esiliati lottano per la sopravvivenza contro dei Troll corazzati di ghiaccio. Accecati dalla fame del Mare Bianco, vi attaccano tutti indistintamente.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" },
+            { "quando": "inizio_round", "fai": "cura", "val": 1 }
+        ]
     },
     "superstiti_kin": {
         "name": "Superstiti Kin",
@@ -816,7 +866,12 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Tra enormi dune di neve fresca modellate dai venti polari che sferzano la piana del Mare Bianco, subite l'assalto strisciante degli Spettri dei Tumuli. Si innalzano dal candore del terreno come mietitori silenziosi, attraversando la neve e il vostro equipaggiamento per drenarvi l'anima."
+        "desc": "Tra enormi dune di neve fresca modellate dai venti polari che sferzano la piana del Mare Bianco, subite l'assalto strisciante degli Spettri dei Tumuli. Si innalzano dal candore del terreno come mietitori silenziosi, attraversando la neve e il vostro equipaggiamento per drenarvi l'anima.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1 },
+            { "quando": "colpito", "fai": "silenzia", "durata": 1 },
+            { "quando": "colpisce", "fai": "spezza_armatura" }
+        ]
     },
     "custodi_necrogemini": {
         "name": "Custodi Necrogemini",
@@ -828,7 +883,8 @@ window.LIBRERIA.bestiario = {
         "ca": 9,
         "desc": "Tra le rare rovine di pietra sepolte dalla tormenta infinita del Mare Bianco dimorano due Custodi Necrogemini. Due enormi campioni defunti, che indossano armature pesanti forgiate dai Cultori della Fiamma, affrontano la bufera lottando in perfetta simbiosi. Abbatterne uno farà infuriare l'altro.",
         "fasi": [
-            { "soglia": 50, "testo": "Un Custode cade: il gemello si infuria e risponde subito al colpo!", "azioni": ["furore", "contrattacco"] }
+            { "soglia": 70, "testo": "Un Custode cade: il gemello si infuria e risponde subito al colpo!", "azioni": ["furore", "contrattacco"] },
+            { "soglia": 40, "testo": "", "azioni": ["terrore"] }
         ]
     },
     "esiliati_seachtuir_confine": {
@@ -842,7 +898,10 @@ window.LIBRERIA.bestiario = {
         "desc": "Ai piedi della grande gradinata di ghiaccio nerastro che segna il confine finale del Mare Bianco, incrociate degli Esiliati Seachtuir. Colossi Lungobarbi con pesanti spallacci ricoperti di neve perenne, incatenati qui.",
         "sfxAttack": "audio/nemici/umano_attacco.ogg",
         "sfxHit": "audio/nemici/umano_colpito.ogg",
-        "sfxDeath": "audio/nemici/umano_morte.ogg"
+        "sfxDeath": "audio/nemici/umano_morte.ogg",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "potenzia", "val": 1, "stat": "dmg", "limite": "scontro", "volte": 2 }
+        ]
     },
     "fiere_selvagge": {
         "name": "Fiere Selvagge",
@@ -868,17 +927,21 @@ window.LIBRERIA.bestiario = {
         "desc": "Alla fine del plateau di ghiaccio del Mare Bianco, l'ululato della tormenta raggiunge il suo apice assoluto. Enormi Silfidi Flussidi, spiriti elementali fatti di neve tagliente, ghiaccio nero e raffiche spietate, si scagliano contro di voi."
     },
     "madre_silfidi": {
-        "name": "Madre dei Silfidi",
+        "name": "Aracnomantropo",
         "image": "",
         "hp": 20,
         "maxHp": 20,
         "att": 7,
-        "dmg": 3,
+        "dmg": 2,
         "ca": 8,
-        "desc": "Il cupo e silenzioso plateau di roccia scura della Terrazza dell'Eclissi converge in un immenso altipiano. In questa aria totalmente immobile, inizia a spirare lentamente del vento, che però è un crescendo. Da brezza a tempesta, l'aria sembra farsi tangibile, fino a creare quella che sembra essere la figura eterea di una donna, alta almeno tre metri. Non sembra essere un semplice Silfide Flusside, ma un gradino superiore. Avete sconfinato in quello che sembra essere il suo territorio.",
+        "desc": "Dall’imboccatura della caverna emerge lentamente un Aracnomantropo, piegato in avanti per attraversare il basso arco di roccia. La parte superiore del corpo conserva qualcosa di vagamente umano: un torso scarno, pelle grigiastra e braccia troppo lunghe, terminate da dita sottili e uncinate. Dal bacino, però, si diramano sei zampe aracnidi, nere e nodose, che tastano la pietra una dopo l’altra con movimenti rapidi e innaturalmente precisi. La creatura rimane immobile per qualche istante, osservando il sentiero, poi inclina lentamente la testa e comincia ad avanzare con quel movimento spezzato e silenzioso tipico dei ragni.",
         "fasi": [
-            { "soglia": 66, "testo": "La Madre dei Silfidi solleva la tempesta: il vento travolge tutta la compagnia!", "azioni": ["travolge"] },
-            { "soglia": 33, "testo": "L'urlo della tempesta vi gela il sangue!", "azioni": ["furia", "ruggito_primordiale"] }
+            { "soglia": 80, "testo": "Il volto è quasi privo di espressione, deformato da più piccoli occhi scuri.", "azioni": [] },
+            { "soglia": 51, "testo": "", "azioni": ["furia"] },
+            { "soglia": 10, "testo": "L'urlo della tempesta vi gela il sangue!", "azioni": ["ruggito_primordiale"] }
+        ],
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 1 }
         ]
     },
     "arcanitradico": {

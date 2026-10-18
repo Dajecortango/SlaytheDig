@@ -3,13 +3,14 @@
 // Uso (dalla cartella del progetto):
 //   node tools/ottimizza_immagini.mjs              mostra cosa cambierebbe e quanto si risparmia, senza toccare niente
 //   node tools/ottimizza_immagini.mjs --applica    riscrive le immagini
-//   aggiungere --max 1280 per il lato massimo (predefinito 1280 px) e --qualita 75 per WebP e JPG (predefinito 75)
+//   aggiungere --max 1024 per il lato massimo (predefinito 1024 px: il riquadro della scena ne mostra circa 700) e --qualita 75 per WebP e JPG (predefinito 75)
 // Regole: WebP e JPG/JFIF con il lato più lungo oltre il massimo vengono rimpiccioliti e tutti vengono
 // ricompressi (stesso formato, stesso nome); un file si riscrive solo se diventa almeno il 15% più leggero.
 // I PNG (trasparenze dell'interfaccia) si rimpiccioliscono solo se superano il massimo, senza ricomprimerli.
 // Un JPG nuovo va convertito in WebP (ffmpeg -i x.jpg -c:v libwebp -quality 75 x.webp) e va cambiato
 // il percorso nei dati: questo strumento non cambia i nomi dei file.
-// Le immagini originali restano nella cronologia di git.
+// L'interfaccia (immagini/ui/) non si tocca: è WebP lossless per i tagli dei border-image e le trasparenze.
+// Prima di riscrivere un'immagine l'originale si copia in sorgenti/immagini/ (fuori da git), se non c'è già.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,7 +21,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const value = (n, d) => { const i = args.indexOf(n); return i >= 0 ? Number(args[i + 1]) : d; };
 const APPLY = args.includes('--applica');
-const MAX = value('--max', 1280);
+const MAX = value('--max', 1024);
 const QUALITY = value('--qualita', 75);
 const MIN_GAIN = 0.15;
 // Immagini usate con border-image: il taglio (es. --frame-slice: 150) è in pixel dell'immagine,
@@ -31,7 +32,7 @@ const rel = f => path.relative(ROOT, f).replace(/\\/g, '/');
 function walk(dir) {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => {
         const p = path.join(dir, e.name);
-        if (e.isDirectory()) return e.name === 'segnaposto' ? [] : walk(p);
+        if (e.isDirectory()) return e.name === 'segnaposto' || rel(p) === 'immagini/ui' ? [] : walk(p);
         return /\.(jpe?g|jfif|png|webp)$/i.test(e.name) ? [p] : [];
     });
 }
@@ -115,7 +116,11 @@ for (const line of [...output.split(/\r?\n/).filter(Boolean), ...webpLines()]) {
     changed++;
     const resized = w !== nw ? ` ${w}×${h} → ${nw}×${nh},` : '';
     console.log(`${APPLY ? 'riscritta' : 'da ridurre'}  ${rel(file)}:${resized} ${kb(s)} → ${kb(ns)} (-${Math.round(gain * 100)}%)`);
-    if (APPLY) fs.copyFileSync(out, file);
+    if (APPLY) {
+        const backup = path.join(ROOT, 'sorgenti', rel(file));
+        if (!fs.existsSync(backup)) { fs.mkdirSync(path.dirname(backup), { recursive: true }); fs.copyFileSync(file, backup); }
+        fs.copyFileSync(out, file);
+    }
 }
 fs.rmSync(tmp, { recursive: true, force: true });
 

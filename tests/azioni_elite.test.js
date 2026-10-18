@@ -17,7 +17,8 @@ module.exports = (t, carica) => {
 
     t.test('ogni fase del bestiario richiama azioni che esistono', () => {
         Object.entries(g.LIBRERIA.bestiario).forEach(([k, e]) => (e.fasi || []).forEach(f => {
-            t.ok(Array.isArray(f.azioni) && f.azioni.length, `${k}: soglia ${f.soglia} con azioni`);
+            // Una fase senza azioni ha senso solo con un testo (un momento del racconto, senza effetti)
+            t.ok(Array.isArray(f.azioni) && (f.azioni.length || (f.testo || '').trim()), `${k}: soglia ${f.soglia} con azioni o testo`);
             f.azioni.forEach(id => t.ok(azioni[id], `${k}: azione ${id}`));
         }));
     });
