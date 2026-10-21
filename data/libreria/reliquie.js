@@ -262,5 +262,37 @@ window.LIBRERIA.reliquie = {
         "effects": [
             { "effect": "party_stat", "stat": "dmg", "val": 1 }
         ]
+    },
+    "erbe_di_montagna": {
+        "type": "relic",
+        "name": "Provviste di Giuditta",
+        "desc": "Cibo per ristorare mente e corpo.",
+        "effects": [
+            { "effect": "party_max_hp", "val": 2 }
+        ]
+    },
+    "lascito_del_caduto": {
+        "type": "relic",
+        "name": "Lascito del Caduto",
+        "desc": "La prova della tenacia di un Dignitas",
+        "effects": [
+            { "effect": "party_stat", "val": 1, "stat": "str" }
+        ]
+    },
+    "radice_delle_montagne": {
+        "type": "relic",
+        "name": "Radice delle Montagne",
+        "desc": "Un tè per fortificare i vostri cuori stanchi",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "purifica", "bersaglio": "meno_hp" }
+        ]
+    },
+    "nuova_reliquia": {
+        "type": "relic",
+        "name": "Spada Spezzata ",
+        "desc": "50% di possibilità di ottenere Armatura ad ogni turno",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "armatura", "se": "elite", "prob": 50, "val": 2, "bersaglio": "meno_hp" }
+        ]
     }
 };

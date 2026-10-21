@@ -682,7 +682,7 @@ window.LIBRERIA.bestiario = {
     },
     "kornugan": {
         "name": "Kornugan",
-        "image": "",
+        "image": "immagini/bestiario/25_scontroelite_kornugan_1_.webp",
         "hp": 13,
         "maxHp": 13,
         "att": 7,
@@ -690,7 +690,8 @@ window.LIBRERIA.bestiario = {
         "ca": 8,
         "desc": "Finalmente fuori dall'oscurità dei crepacci, vi ritrovate appesi alle pareti verticali esterne della montagna, i Dirupi del Cielo Infranto. Costretti su una strettissima cengia a strapiombo sulle nuvole, un maestoso Kornugan dalle corna imponenti vi sbarra la strada.",
         "fasi": [
-            { "soglia": 80, "testo": "Il Kornugan abbassa le corna e raspa la roccia: si prepara a caricare!", "azioni": ["carica"] }
+            { "soglia": 80, "testo": "Il Kornugan abbassa le corna e raspa la roccia: si prepara a caricare!", "azioni": ["travolge"] },
+            { "soglia": 50, "testo": "", "azioni": ["frantuma_scudi"] }
         ]
     },
     "disertori_vitghen_dirupi": {
@@ -721,7 +722,7 @@ window.LIBRERIA.bestiario = {
     },
     "warg_mutati": {
         "name": "Warg Mutati",
-        "image": "",
+        "image": "immagini/bestiario/43_scontroelite_warg_mutati_1_.webp",
         "hp": 14,
         "maxHp": 14,
         "att": 7,
@@ -729,7 +730,9 @@ window.LIBRERIA.bestiario = {
         "ca": 8,
         "desc": "Sulla rupe scoscesa dei Dirupi che state scalando, l'aria rarefatta vi riempie i polmoni. Siete braccati dai predatori delle vette: un branco di spaventosi Warg mutati, dal respiro pesante per l'altitudine, che si lancia in una spietata caccia coordinata per farvi scivolare giù.",
         "fasi": [
-            { "soglia": 99, "testo": "Il branco fiuta il sangue: i Warg puntano il più debole!", "azioni": ["predatore"] }
+            { "soglia": 75, "testo": "Il branco fiuta il sangue: i Warg puntano il più debole!", "azioni": ["secondo_vento"] },
+            { "soglia": 50, "testo": "", "azioni": ["imprevedibile"] },
+            { "soglia": 25, "testo": "", "azioni": ["vendetta_sul_debole"] }
         ],
         "sfxAttack": "audio/nemici/lupo_attacco.ogg",
         "sfxHit": "audio/nemici/lupo_colpito.ogg",
@@ -959,6 +962,223 @@ window.LIBRERIA.bestiario = {
             { "soglia": 70, "testo": "Il nodulo ghignante si spalanca: le radici dell'Impiccato si muovono sotto i vostri piedi!", "azioni": ["radici_dell_impiccato"] },
             { "soglia": 40, "testo": "La foresta ruggisce con lui! L'albero beve dalla radura e richiude le ferite.", "azioni": ["la_foresta_ruggisce"] },
             { "round": 12, "testo": "Lento alla rabbia, letale nella vendetta: la radura muore e vi prosciuga con lei!", "azioni": ["radura_morta"] }
+        ]
+    },
+    "branco_di_warg_d_altura": {
+        "name": "Branco di Warg d'Altura",
+        "hp": 8,
+        "maxHp": 8,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Oltrepassata l'ultima fascia di roccia nuda, l'aria si fa così sottile da bruciare la gola a ogni respiro. Tra le creste spazzate dal vento gelido vi sbarra il passo un branco di Warg adattati alle quote estreme, spinti fin quassù dalla totale assenza di prede più a valle. Hanno il pelo ispido incrostato di brina e le gengive nere scoperte per la fame: non ringhiano per non sprecare fiato nell'aria rarefatta, ma si aprono a ventaglio sulla neve dura, pronti ad azzannarvi ai tendini per trascinarvi nel precipizio."
+    },
+    "brachidanio_delle_vette": {
+        "name": "Brachidanio delle Vette",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Risalendo un canalone di scisto spaccato dal gelo perenne, uno dei massi grigiastri lungo la cengia si solleva di scatto con un raschio sordo. È un Brachidanio che riposava acciambellato al riparo dal vento, indistinguibile dalla pietra circostante. Infastidito dal vostro passaggio in uno spazio così angusto, inarca il carapace osseo irto di aculei e carica a testa bassa lungo il pendio, facendo franare il pietrisco sul baratro e menando colpi pesanti con la coda corazzata.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "stordisci", "bersaglio": "casuale", "prob": 50 }
+        ]
+    },
+    "warg_solengo": {
+        "name": "Warg Solengo",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Un ringhio profondo si confonde con il muggito del vento tra i pinnacoli di pietra. Davanti a voi non c'è una muta, ma un singolo Warg di taglia mostruosa, con il muso segnato da vecchie cicatrici bianche e un canino spezzato. È un vecchio maschio dominante, un solengo salito a vivere sulle creste più alte dopo aver abbandonato il branco. Molto più astuto, massiccio e prudente dei suoi simili più giovani, sfrutta gli spuntoni di roccia per coprirsi dai tiri a distanza e vi studia in silenzio, pronto a caricare il primo che mostra un segno di debolezza.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1 }
+        ]
+    },
+    "vespertilio_magno": {
+        "name": "Vespertilio Magno",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Per aggirare un torrione di roccia verticale impossibile da scalare con il vento traverso, siete costretti a infilarvi in un inghiottitoio naturale che taglia la cresta della montagna. Nel buio gelido della caverna, l'aria è satura di un odore acre di ammoniaca e sangue vecchio. Dal soffitto di pietra si stacca improvvisamente una sagoma membranosa grande quanto un vitello: è un Vespertilio Magno, il mostruoso dominante di una colonia di pipistrelli delle vette. Emette uno stridio acutissimo che rimbomba nelle pareti strette per stordirvi, lanciandosi in picchiata nel buio per squarciarvi le gole.",
+        "fasi": [
+            { "soglia": 66, "testo": "", "azioni": ["contrattacco"] },
+            { "soglia": 33, "testo": "", "azioni": ["imprevedibile"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_round", "fai": "stordisci", "bersaglio": "piu_forte", "prob": 35 }
+        ]
+    },
+    "tremolisco_nella_foschia": {
+        "name": "Tremolisco nella Foschia",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Proprio mentre percorrete una sella stretta tra due picchi, un banco di nuvole basse e densissime sale dal baratro avvolgendovi in un biancore cieco che muove controvento. Nel silenzio ovattato della nebbia, dove non riuscite nemmeno a vedere la punta della vostra spada, esplode un suono agghiacciante: un frenetico e metallico sbattere di denti che sembra provenire da ogni direzione. Un Tremolisco sta vorticando nella foschia per isolarvi e farvi precipitare nel vuoto; dovrete tenere la formazione serrata e usare il ferro per respingere i suoi assalti invisibili."
+    },
+    "aviano_moork": {
+        "name": "Aviano Moork",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "L'ululato del vento cessa di colpo dietro un bastione di roccia nera, sostituito da un silenzio innaturale che porta con sé un'ondata improvvisa di angoscia, rimorso e disperazione. Appollaiato su un dente di pietra sopra le vostre teste c'è un Aviano Moork, uno degli ultimi esemplari degenerati di una razza antica che abita le gole più fredde e inaccessibili delle vette. Vi fissa dall'alto con occhi vitrei, aspettando che la sua aura opprimente vi pieghi le ginocchia o vi spinga a gettarvi nel vuoto, prima di calare in picchiata con gli artigli protesi per strapparvi la carne."
+    },
+    "esiliati_braggart_superstiti": {
+        "name": "Esiliati Braggart Superstiti",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Su una cresta affilata dove passa a malapena un uomo alla volta, due colossi avvolti in pelli di cinghiale irrigidite dal ghiaccio vi sbarrano il cammino. Sono guerrieri esiliati del Clan Braggart, quasi sterminato dalla Famiglia durante la Guerra dei Quaranta Giorni, saliti su queste vette impossibili in cerca di una bestia leggendaria da abbattere per riscattare il proprio onore con un'impresa folle. Riconoscendo su di voi i simboli di Dignitas, gli occhi iniettati di sangue si illuminano di furia: per loro, morire uccidendo dei Dignitas sulla cima del mondo vale quanto abbattere un mostro."
+    },
+    "kreehorn_territoriale": {
+        "name": "Kreehorn Territoriale",
+        "hp": 24,
+        "maxHp": 24,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Attraversando un nevaio incassato tra due pareti verticali di ghiaccio azzurro, vi ritrovate faccia a faccia con un imponente Kreehorn. La bestia supera i tre metri d'altezza al palco delle corna, il corpo massiccio coperto da una folta lanugine di filamenti gelati e il dorso irto di speroni di ghiaccio durissimo. Sebbene i Kreehorn siano solitamente schivi, la gola stretta non gli lascia alcuna via di fuga: sbuffa vapore bianco dalle narici, abbassa la testa coronata di lance glaciali e carica con una forza capace di sfondare uno scudo di ferro.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "golem_terrigeno_delle_vette": {
+        "name": "Golem Terrigeno delle Vette",
+        "hp": 24,
+        "maxHp": 24,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Proprio nel punto in cui il sentiero taglia una ricca vena superficiale di quarzo e Pietre dell'Aquila, una porzione della parete rocciosa si stacca con uno schianto secco, sollevandosi su due arti tozzi e massicci. È un Golem Terrigeno d'alta quota, composto di granito scuro e ghiaccio compatto, attratto istintivamente dai minerali preziosi della vetta che difende con furia cieca. In uno spazio così angusto schivare i suoi colpi pesanti come frane richiede riflessi perfetti, e il freddo estremo rende la sua scorza di pietra ancora più dura da scalfire.",
+        "fasi": [
+            { "soglia": 75, "testo": "", "azioni": ["travolge"] },
+            { "soglia": 50, "testo": "", "azioni": ["bersaglio_marcato"] },
+            { "soglia": 25, "testo": "", "azioni": ["pelle_di_brina"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "kranh_grodd_delle_vette": {
+        "name": "Kranh-Grodd delle Vette",
+        "hp": 18,
+        "maxHp": 25,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Un ringhio gorgogliante e innaturale spezza il silenzio del passo. Da dietro un ammasso di rocce nere avanza barcollando un grosso Warg, ma il suo aspetto è ributtante: il corpo è scarno fino alle ossa, il pelo cade a chiazze rivelando ferite infette che colano un umore denso prima di congelarsi, e nelle sue iridi brilla un bagliore violaceo. È un Kranh-Grodd, una fiera corrotta dal morbo e fuggita fin sulle vette più isolate in preda a un tormento incessante. La malattia lo sta uccidendo lentamente, ma ha cancellato in lui ogni percezione del dolore o istinto di conservazione, rendendolo una furia cieca.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2, "prob": 50 },
+            { "quando": "colpisce", "fai": "cura", "val": 4, "prob": 50 }
+        ]
+    },
+    "muta_di_ghofuuri": {
+        "name": "Muta di Ghofuuri",
+        "hp": 15,
+        "maxHp": 25,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Il sole sta ormai calando dietro le vette occidentali dei Picchi del Tramonto, gettando i canaloni in una penombra livida e gelida. Con il ritirarsi della luce, da una spaccatura profonda nella montagna esce allo scoperto un branco di Ghofuuri, grossi canidi neri dalle pupille rosse con il muso incrostato di sangue secco e ghiacciato. Queste bestie notturne aspettavano il buio per risalire verso l'altopiano sommitale a divorare gli scarti lasciati dal predatore della vetta; trovandovi sulla loro strada, vi circondano emettendo latrati gutturali e coordinati, pronti a sbranarvi nell'oscurità.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 3 },
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "bersaglio": "casuale", "durata": 2, "prob": 50 }
+        ]
+    },
+    "spettro_dei_tumuli": {
+        "name": "Spettro dei Tumuli",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Su una sella ventosa che precede l'altopiano finale sorgono i resti crollati di un antico tumulo di pietre a secco, eretto secoli fa da qualche spedizione perduta per seppellire un proprio campione. I massi della tomba sono stati recentemente ribaltati e sparsi nella neve da qualcuno che ha scavato fino alle ossa per divorarle. Dal fondo della camera funeraria profanata si innalza una densa manifestazione d'ombra: uno Spettro dei Tumuli, uno spirito antico e instancabile legato al proprio simulacro violato, che si scaglia contro di voi con tutta la furia del Margine.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 },
+            { "quando": "colpisce", "fai": "cura", "val": 2, "se": "eroe_ferito" }
+        ]
+    },
+    "mantombra_delle_spelonche": {
+        "name": "Mantombra delle Spelonche",
+        "hp": 30,
+        "maxHp": 30,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Per superare uno sbarramento di ghiaccio vivo siete costretti a strisciare dentro una galleria di roccia nera che buca il fianco della cima. Appena entrati, la luce delle vostre lanterne sembra rimpicciolirsi e soffocare, come se il buio stesso della caverna la stesse assorbendo. Alzando lo sguardo verso le stalattiti di ghiaccio del soffitto, scorgete una massa nera e membranosa pronta a lasciarsi cadere sulle vostre teste: è una Mantombra, un Silfide Nècubro delle spelonche che punta ad avvinghiarvi il volto e il torace per soffocarvi e prosciugarvi nel buio assoluto.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1 },
+            { "quando": "inizio_round", "fai": "infuria", "bersaglio": "casuale", "durata": 1 }
+        ]
+    },
+    "coppia_di_ghoul_dell_ossario": {
+        "name": "Coppia di Ghoul dell'Ossario",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Attirati dall'abbondanza di carcasse e ossa spaccate che il grande predatore della vetta lascia dietro di sé, alcuni Mangiaufi sono saliti fin su questo altopiano per banchettare con gli avanzi. Da dietro un cumulo di crani d'orso e costole di bue sbucano due Ghoul dalla pelle grigiastra e coriacea, con i denti marci incrostati di carne congelata. Più astuti delle normali bestie, hanno atteso che superaste il loro nascondiglio per tagliarvi la via di fuga e attaccarvi alle spalle con morsi feroci.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "cura", "val": 2 }
+        ]
+    },
+    "aracnomantropo_delle_rovine": {
+        "name": "Aracnomantropo delle Rovine",
+        "hp": 25,
+        "maxHp": 25,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Il sentiero passa in mezzo ai ruderi crollati di una fortezza d'avvistamento antichissima, risalente ai tempi in cui i primi clan Vitghen tentarono invano di presidiare queste vette. Tra le mura di pietra nera mezze sepolte dal ghiaccio notate spessi fili biancastri misti a ossa ripulite. Dall'ombra di una torre sventrata balza giù con agilità spaventosa un Aracnomantropo: un abominio ibrido dotato di torso e intelletto umano su un corpo chitinoso da ragno, con una coda uncinata che stilla veleno paralizzante. Rifugge la luce diretta, ma sfrutta gli angoli ciechi delle macerie per saltare da un muro all'altro e colpirvi dall'alto con fredda astuzia.",
+        "fasi": [
+            { "soglia": 75, "testo": "", "azioni": ["contrattacco"] },
+            { "soglia": 50, "testo": "", "azioni": ["imprevedibile"] },
+            { "soglia": 25, "testo": "", "azioni": ["sete_di_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_round", "fai": "spezza_armatura", "bersaglio": "casuale", "se": "sotto_meta", "prob": 25 }
+        ]
+    },
+    "hungrabarn_dei_picchi": {
+        "name": "Hungrabarn dei Picchi",
+        "hp": 30,
+        "maxHp": 30,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Scavalcate l'ultimo crinale di roccia e vi affacciate nella conca sommitale mentre gli ultimi raggi rossi del sole spariscono dietro le montagne. Il fetore di macello, grasso rancido e sangue vecchio è quasi insopportabile anche nel gelo estremo. Il fondo della depressione è un immenso ossario a cielo aperto: carcasse di cavalli, buoi interi trascinati fin quassù dalla valle, gabbie toraciche di orsi e decine di crani umani spaccati a metà tappezzano la neve calpestata. Dal fondo di una caverna bassa e larga sotto la vetta principale emerge chinandosi una figura che toglie il respiro. Non è un lupo, né uno spirito del vento: è un Hungrabarn, un esemplare relitto di una razza di giganti carnivori ritenuta estinta da generazioni, fuggito fin su queste vette inaccessibili dalle forre dell'Ugin.\n\nQuando si raddrizza in tutta la sua statura raggiunge i quindici piedi d'altezza, pesante e massiccio quanto un intero gregge di pecore. È avvolto in pelli di bue cucite rozzamente con tendini e filo di ferro rubato, la pelle grigiastra e callosa segnata da vecchie cicatrici di lance che non sono bastate a fermarlo; il volto umanoide è largo e brutale, con una mascella sproporzionata fatta per frantumare ossa e piccoli occhi infossati che vi fissano con una fame lucida e spietata. Nella mano destra stringe come una clava l'intero asse ferrato di un carro mercantile strappato ai viandanti del Krogg. Annusa l'aria gelida della sera, emette un grugnito profondo che fa vibrare la ghiaia sotto i vostri stivali e avanza per divorarvi. Ecco il vostro materiale da leggenda: riportate il suo teschio ad Aebeltoff e ogni Lungobarbo dovrà chinare il capo davanti al nome dei Dignitas.",
+        "fasi": [
+            { "soglia": 80, "testo": "", "azioni": ["contrattacco"] },
+            { "soglia": 60, "testo": "", "azioni": ["contrattacco"] },
+            { "soglia": 40, "testo": "", "azioni": ["contrattacco"] },
+            { "soglia": 20, "testo": "", "azioni": ["ultimo_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 2, "bersaglio": "tutti", "limite": "scontro", "volte": 1, "round": 1 },
+            { "quando": "inizio_round", "fai": "cura", "val": 2 }
+        ]
+    },
+    "coppia_di_garriatori": {
+        "name": "Coppia di Garriatori",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "L'aria rarefatta della quota estrema e la fatica della salita vi provocano un torpore improvviso, appesantendo le palpebre mentre attraversate una stretta gola d'ombra. Dalle fessure nella roccia sgusciano fuori due Garriatori, esseri scarni e rachitici grandi quanto bambini, abituati a vivere sulle vette più inaccessibili. Speravano che il mal di montagna vi facesse assopire nella neve per immobilizzarvi nel sonno e sgozzarvi; vedendo che siete ancora vigili, stridono furiosi nel vento e vi saltano addosso insieme, brandendo schegge di pietra affilata.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "casuale" }
         ]
     }
 };

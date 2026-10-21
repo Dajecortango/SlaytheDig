@@ -56,7 +56,7 @@ function renderNodeForm(node) {
             applyNodeType(node, node.type);
             renderNodeForm(node);
         }
-        if (key === 'enemy' || key === 'storyId') renderNodeForm(node);
+        if (key === 'enemy' || key === 'storyId' || key === 'restId') renderNodeForm(node);
         if (key === 'id') selection.map = node.id;
         markDirty();
     });
@@ -65,6 +65,45 @@ function renderNodeForm(node) {
     if (probs.length) document.getElementById('edDetail').insertAdjacentHTML('afterbegin',
         `<ul class="ed-node-problems">${probs.map(p => `<li class="${p.livello === 'errore' ? 'err' : 'warn'}">${esc(p.msg)}</li>`).join('')}</ul>`);
     if (node.type === 'story') renderStoryForm(node);
+    if (node.type === 'rest') renderRestForm(node);
+}
+
+// Nodo di riposo: il messaggio si scrive qui, in camp.rests[restId].
+// Se il testo è "default" o lo usano anche altri riposi, alla prima modifica il nodo
+// prende un testo tutto suo ("riposo_<id>"): così si cambia solo questo riposo.
+function renderRestForm(node) {
+    camp.rests = camp.rests || {};
+    const key = node.restId || 'default';
+    const shared = camp.mapNodes.filter(n => n !== node && n.type === 'rest' && (n.restId || 'default') === key).length;
+    const data = { text: camp.rests[key] || '' };
+    const box = document.createElement('div');
+    box.className = 'ed-story';
+    const note = key === 'default' ? 'testo comune a tutti i riposi'
+        : shared === 1 ? 'usato anche da un altro riposo'
+        : shared ? `usato anche da altri ${shared} riposi` : esc(key);
+    box.innerHTML = `<h3>Messaggio del riposo <small>(${note})</small></h3><div></div>`;
+    document.getElementById('edDetail').appendChild(box);
+    renderForm(box.lastElementChild, data, [
+        { k: 'text', label: 'Descrizione', type: 'textarea', wide: true,
+          help: 'Il testo mostrato all\'arrivo al riposo, dopo "Descrizione:". Scrivendo qui cambia solo questo riposo. Vuoto = testo comune dei riposi.' }
+    ], () => {
+        if (key === 'default' || shared) {
+            let own = `riposo_${node.id}`;
+            for (let i = 2; camp.rests[own] != null; i++) own = `riposo_${node.id}_${i}`;
+            camp.rests[own] = data.text;
+            node.restId = own;
+            markDirty();
+            // Nuova chiave: ridisegna il modulo e torna a scrivere nella casella
+            renderNodeForm(node);
+            const ta = document.querySelector('#edDetail .ed-story textarea');
+            if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+            return;
+        }
+        camp.rests[key] = data.text;
+        markDirty();
+    });
+    const ta = box.querySelector('textarea');
+    if (ta) ta.placeholder = camp.rests.default || 'Trovate un luogo sicuro dove riposare e recuperare le forze.';
 }
 
 // Nodo di trama: titolo e descrizione si scrivono qui, in camp.stories[storyId].

@@ -552,7 +552,7 @@
         function startRest(restId) {
             showScreen('screenRest');
             restRuneSwapped = [];
-            const restDesc = restsData[restId] || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
+            const restDesc = restsData[restId] || restsData.default || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
             document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(restDesc)}`;
 
             const res = resolveRest();

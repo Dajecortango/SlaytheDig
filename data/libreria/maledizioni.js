@@ -179,5 +179,13 @@ window.LIBRERIA.maledizioni = {
             { "effect": "add_curse", "text": "Maledizione Congelante (-1 Forza)" },
             { "effect": "party_stat", "stat": "str", "val": -1 }
         ]
+    },
+    "bruciature_da_gelo": {
+        "type": "curse",
+        "name": "Bruciature da Gelo",
+        "desc": "la compagnia subisce 2 danni",
+        "effects": [
+            { "effect": "party_damage", "val": 2 }
+        ]
     }
 };

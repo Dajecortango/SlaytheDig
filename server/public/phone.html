@@ -48,18 +48,18 @@
         overflow: hidden;
     }
     .mini-bar-container.armor { height: 8px; }
-    .mini-bar-fill { height: 100%; background: linear-gradient(#8dff78, #22b01c 50%, #0c6a0a); box-shadow: inset 0 1px 0 rgba(255,255,255,0.45); transition: width 0.35s; }
+    .mini-bar-fill { height: 100%; background: linear-gradient(#8dff78, #22b01c 50%, #0c6a0a); box-shadow: inset 0 1px 0 rgba(255,255,255,0.45); transition: width 0.35s var(--ease-out); }
     .mini-bar-fill.hp-mid { background: linear-gradient(#fff28a, #d8b40a 50%, #7a6205); }
     .mini-bar-fill.hp-low { background: linear-gradient(#ff9a8a, #d0180f 50%, #6a0805); }
     .mini-bar-fill.armor-fill { background: linear-gradient(#b8dcff, #2f6fd6 50%, #123a80); }
-    .mini-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; text-shadow: 0 1px 1px #000; }
+    .mini-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 1px 1px #000; }
 
     .hero-stats-row {
         display: flex; justify-content: space-between; padding: 4px 6px; margin-bottom: 8px;
         font-size: 0.78rem; color: #f3e2b0; background: rgba(0,0,0,0.4);
         border-top: 1px solid rgba(226,185,81,0.18); border-bottom: 1px solid rgba(226,185,81,0.18);
     }
-    .hero-stats-row i { font-style: normal; font-weight: 700; font-size: 0.6rem; color: var(--dim); margin-right: 3px; }
+    .hero-stats-row i { font-style: normal; font-weight: 700; font-size: 0.68rem; color: var(--dim); margin-right: 3px; }
     .hero-ability-line { font-size: 0.72rem; color: #e0bcff; }
     .items { font-size: 0.85rem; line-height: 1.6; }
     /* Zaino: icone come nel gioco, bordo del colore della rarità, pozioni utilizzabili fuori dal combattimento */
@@ -78,7 +78,7 @@
     .bag-text b { color: #f3e2b0; }
     .bag-text small { display: block; color: var(--dim); font-size: 0.72rem; }
     .use-btn { padding: 8px 12px; font-size: 0.75rem; background: var(--noise-fine), linear-gradient(#236628, #103816 55%, #0a240d); }
-    .use-btn:disabled { opacity: 0.35; }
+    .use-btn:disabled { filter: grayscale(1) brightness(0.55); }
     .use-target { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
     .use-target button { flex: 1; padding: 10px 8px; font-size: 0.75rem; }
     .bag-note { font-size: 0.72rem; color: var(--dim); margin-top: 6px; }
@@ -86,8 +86,8 @@
     .hero-portrait-mini img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
     .hero-ability-desc { font-size: 0.7rem; color: var(--dim); margin-top: 2px; }
     .roll-area { text-align: center; }
-    .roll-btn { width: 100%; padding: 18px; font-size: 1.05rem; opacity: 0.45; }
-    .roll-btn.active { opacity: 1; background: var(--noise-fine), linear-gradient(#236628, #103816 55%, #0a240d); animation: pulse 1.2s infinite; }
+    .roll-btn { width: 100%; padding: 18px; font-size: 1.05rem; filter: grayscale(0.8) brightness(0.6); }
+    .roll-btn.active { filter: none; background: var(--noise-fine), linear-gradient(#236628, #103816 55%, #0a240d); animation: pulse 1.2s infinite; }
     @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6);} 50% { box-shadow: 0 0 0 10px rgba(212,175,55,0);} }
     .empty { text-align: center; color: var(--dim); padding: 30px 10px; }
 
@@ -102,7 +102,8 @@
     }
     .dice-box.hidden { display: none; }
     .dice-box.rolling { animation: diceShake 0.15s infinite; color: #fff; }
-    .dice-box.landed { animation: diceLand 0.3s ease; }
+    .dice-box.landed { animation: diceLand 0.3s var(--ease-out); }
+    @media (prefers-reduced-motion: reduce) { .roll-btn.active, .dice-box.rolling { animation: none; } }
     @keyframes diceShake {
         0% { transform: rotate(-8deg) scale(1); }
         50% { transform: rotate(8deg) scale(1.08); }
