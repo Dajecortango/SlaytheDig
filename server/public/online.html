@@ -11,6 +11,8 @@
         #onlineJoin { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; background: rgba(0,0,0,.85); }
         #onlineJoin .wc-panel { padding: 24px; max-width: 360px; width: calc(100% - 32px); }
         #onlineJoin input { width: 100%; margin: 12px 0; padding: 8px; font-size: 1.1em; }
+        #onlineEntraModeratoreBtn { width: 100%; margin-top: 8px; }
+        .online-join-hint { margin: 10px 0 0; font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
         /* Barra del giocatore: compatta, nella barra in alto accanto alle icone, sopra barra e console del gioco
            (z-index 1000): sempre raggiungibile e lontana dai pannelli centrali. Sui telefoni scende sotto la barra. */
         #onlineBar { position: fixed; left: 210px; top: 6px; z-index: 1100; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: calc(50% - 360px); }
@@ -38,6 +40,22 @@
         #onlineTurnoAltrui { margin: 0 0 6px; padding: 4px 10px; text-align: center; color: var(--wc-yellow, gold);
             font-family: var(--font-title); border: 1px dashed rgba(201, 152, 47, 0.7); background: rgba(0, 0, 0, 0.45); }
         .online-non-mio { filter: grayscale(1) brightness(0.6); cursor: not-allowed; }
+        /* Pannello privato del moderatore: solo sul suo schermo, mai specchiato (niente regioni di onlineRegioni) */
+        #onlineModPanel { position: fixed; right: 8px; top: calc(var(--top-h, 56px) + 8px); z-index: 1150;
+            width: 290px; max-width: calc(100% - 16px); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        #onlineModToggle { margin: 0; }
+        #onlineModBox { max-height: calc(100vh - 160px); overflow-y: auto; width: 100%; }
+        #onlineModPanel .wc-panel { padding: 12px; }
+        #onlineModPanel h3 { margin: 0 0 4px; font-size: 0.95em; }
+        .onmod-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 0;
+            border-bottom: 1px solid rgba(226, 185, 81, 0.15); flex-wrap: wrap; }
+        .onmod-row:last-child { border-bottom: none; }
+        .onmod-name { font-family: var(--font-title); font-size: 0.8em; color: var(--wc-yellow); }
+        .onmod-controls { display: flex; align-items: center; gap: 3px; }
+        .onmod-controls button { padding: 2px 7px; font-size: 0.72em; min-width: 0; margin: 0; }
+        .onmod-controls input { width: 42px; text-align: center; padding: 2px; font-size: 0.78em; }
+        .onmod-actions { display: flex; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
+        .onmod-actions button { flex: 1; padding: 6px 8px; font-size: 0.74em; min-width: 0; margin: 0; }
     </style>
 </head>
 <body class="online-guest">
@@ -47,6 +65,8 @@
             <p>Scrivi il tuo nome: il master ti assegnerà un eroe.</p>
             <input id="onlineNome" maxlength="24" autocomplete="nickname">
             <button class="btn-proceed" id="onlineEntraBtn">Entra</button>
+            <button class="btn-small" id="onlineEntraModeratoreBtn">Entra come Moderatore</button>
+            <p class="online-join-hint">Il moderatore aiuta chi guida la partita: non gioca un eroe, ma può aprire il Pannello di Controllo (vita della squadra e del nemico, stati) da qui.</p>
             <p id="onlineJoinErrore" class="kw-curse"></p>
         </div>
     </div>
@@ -61,6 +81,15 @@
     <div id="onlineOverlays"></div>
     <div id="onlineAvviso" class="online-hidden wc-panel"></div>
     <div id="onlineBar"></div>
+    <!-- Pannello del moderatore: solo sui dati che arrivano via "gmstato" (SSE), mai una finestra specchiata.
+         Il pulsante lo apre/chiude solo su questa pagina: nessuno (master o altri giocatori) lo vede o lo sa. -->
+    <div id="onlineModPanel" class="online-hidden">
+        <button type="button" class="btn-small" id="onlineModToggle">🛠 Pannello di Controllo</button>
+        <div id="onlineModBox" class="wc-panel online-hidden">
+            <h3 class="wc-heading">Pannello di Controllo</h3>
+            <div id="onlineModBody"></div>
+        </div>
+    </div>
     <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
     <audio id="onlineMusica" loop preload="none"></audio>
     <script src="js/online-regole.js"></script>

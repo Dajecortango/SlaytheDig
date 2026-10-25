@@ -57,9 +57,11 @@ function apriFlusso(req, res) {
     return flusso;
 }
 
-const elencoGiocatori = () => stanza ? [...stanza.giocatori.values()].map(gi => ({ name: gi.name, connected: gi.connected })) : [];
+const elencoGiocatori = () => stanza ? [...stanza.giocatori.values()].map(gi => ({ name: gi.name, connected: gi.connected, ruolo: gi.ruolo || 'giocatore' })) : [];
 const alMaster = (evento, dati) => masters.forEach(f => f.scrivi(evento, dati));
 const aiGiocatori = (evento, dati) => stanza && stanza.giocatori.forEach(gi => gi.flussi.forEach(f => f.scrivi(evento, dati)));
+// Solo ai moderatori (il pannello privato di server/public/online.js): mai agli altri giocatori, mai al master
+const aiModeratori = (evento, dati) => stanza && stanza.giocatori.forEach(gi => { if (gi.ruolo === 'moderatore') gi.flussi.forEach(f => f.scrivi(evento, dati)); });
 // Regioni della schermata: compresse (deflate + base64) per i browser che sanno decomprimerle, in chiaro per gli altri
 const comprimi = parti => ({ z: zlib.deflateRawSync(Buffer.from(JSON.stringify(parti), 'utf8')).toString('base64') });
 function scriviParti(f, parti, compresse) { f.scrivi('parti', f.z ? (compresse || comprimi(parti)) : parti); }
@@ -136,11 +138,11 @@ function leggero(req, res, pathname) {
 function gestisci(req, res, pathname) {
     if (pathname.startsWith('/leggero/')) { leggero(req, res, pathname); return true; }
     // ----- Master (Host locale) -----
-    if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso'].includes(pathname.slice(12))) {
+    if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso', 'gmstato'].includes(pathname.slice(12))) {
         const cosa = pathname.slice(12);
         if (!eLocale(req) || (cosa !== 'apri' && !haSegreto(req))) { json(res, 403, { error: 'Solo il master' }); return true; }
         if (cosa === 'apri' && req.method === 'POST') {
-            if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), segreto: crypto.randomBytes(16).toString('hex'), giocatori: new Map(), regioni: {}, stato: null };
+            if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), segreto: crypto.randomBytes(16).toString('hex'), giocatori: new Map(), regioni: {}, stato: null, gmStato: null };
             json(res, 200, { code: stanza.code, segreto: stanza.segreto });
             return true;
         }
@@ -169,6 +171,11 @@ function gestisci(req, res, pathname) {
                 aiGiocatori('stato', data);
             } else if (cosa === 'avviso') {
                 stanza.giocatori.forEach(gi => { if (gi.name === data.giocatore) gi.flussi.forEach(f => f.scrivi('avviso', { testo: String(data.testo || '') })); });
+            } else if (cosa === 'gmstato') {
+                // Dati del pannello privato del moderatore (HP di squadra e nemico): mai alla mirroring
+                // dei giocatori normali, solo ai flussi con ruolo 'moderatore' (aiModeratori)
+                stanza.gmStato = data;
+                aiModeratori('gmstato', data);
             }
             json(res, 200, { ok: true });
         });
@@ -198,15 +205,19 @@ function gestisci(req, res, pathname) {
         leggiJson(req, data => {
             if (!data || !stanza || data.code !== stanza.code) { json(res, 200, { error: 'Stanza non trovata' }); return; }
             const vecchio = data.token && stanza.giocatori.get(data.token);
-            if (vecchio) { json(res, 200, { token: data.token, nome: vecchio.name }); return; }
+            if (vecchio) { json(res, 200, { token: data.token, nome: vecchio.name, ruolo: vecchio.ruolo || 'giocatore' }); return; }
             const nome = pulisciNome(data.nome);
             if (!nome) { json(res, 200, { error: 'Scrivi un nome' }); return; }
             if (!nomeGiocatoreValido(nome)) { json(res, 200, { error: 'Questo nome è riservato' }); return; }
             if ([...stanza.giocatori.values()].some(gi => gi.name.toLowerCase() === nome.toLowerCase())) { json(res, 200, { error: 'Nome già usato da un altro giocatore' }); return; }
             const token = crypto.randomBytes(16).toString('hex');
-            stanza.giocatori.set(token, { name: nome, connected: false, flussi: new Set(), timer: null });
+            // Moderatore (server/public/online.html, "Entra come Moderatore"): niente eroe, non conta per la
+            // dimensione della squadra né per i voti/pronti/capo (js/online.js, onlineGiocatoriCollegati);
+            // può solo usare il Pannello di Controllo (whitelist ONLINE_AZIONI_MODERATORE in js/online-regole.js)
+            const ruolo = data.ruolo === 'moderatore' ? 'moderatore' : 'giocatore';
+            stanza.giocatori.set(token, { name: nome, connected: false, flussi: new Set(), timer: null, ruolo });
             avvisaStanza();
-            json(res, 200, { token, nome });
+            json(res, 200, { token, nome, ruolo });
         });
         return true;
     }
@@ -221,6 +232,7 @@ function gestisci(req, res, pathname) {
         if (!gi.connected) { gi.connected = true; avvisaStanza(); }
         scriviParti(f, stanza.regioni);
         if (stanza.stato) f.scrivi('stato', stanza.stato);
+        if (gi.ruolo === 'moderatore' && stanza.gmStato) f.scrivi('gmstato', stanza.gmStato);
         f.scrivi('master', { online: masters.size > 0 });
         req.on('close', () => {
             gi.flussi.delete(f);
@@ -238,6 +250,20 @@ function gestisci(req, res, pathname) {
             alMaster('clic', { giocatore: gi.name, azione: String(data.azione || ''), tipo: data.tipo || 'click',
                 regione: data.regione || null, percorso: Array.isArray(data.percorso) ? data.percorso : [],
                 args: Array.isArray(data.args) ? data.args : [], valori: data.valori || {} });
+            json(res, 200, { ok: true });
+        });
+        return true;
+    }
+    // Azione del pannello privato del moderatore (server/public/online.js): niente percorso/regione nel DOM
+    // specchiato (non è un clic su uno schermo condiviso), solo nome dell'azione e argomenti. Il master la
+    // esegue "silenziosa" (opts.silent, js/combattimento.js): mai una finestra visibile a lui o ai giocatori.
+    if (pathname === '/api/online/moderatore-azione' && req.method === 'POST') {
+        leggiJson(req, data => {
+            const gi = data && giocatoreDaToken(data.code, data.token);
+            if (!gi || gi.ruolo !== 'moderatore') { json(res, 403, { error: 'Token non valido' }); return; }
+            if (!masters.size) { json(res, 200, { error: 'Il master non è collegato' }); return; }
+            alMaster('clic-moderatore', { giocatore: gi.name, azione: String((data && data.azione) || ''),
+                args: Array.isArray(data && data.args) ? data.args : [] });
             json(res, 200, { ok: true });
         });
         return true;

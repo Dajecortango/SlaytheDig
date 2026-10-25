@@ -13,7 +13,11 @@ const onlineDopoClic = [];
 let onlineMasterStream = null;
 
 const onlineAttivo = () => onlineState.attivo;
-const onlineGiocatoriCollegati = () => onlineState.giocatori.filter(gi => gi.connected).map(gi => gi.name);
+// Il moderatore (ruolo 'moderatore', "Entra come Moderatore" nella lobby) non ha un eroe: resta fuori dai
+// giocatori "veri" così non conta per la dimensione della squadra, la creazione a turno, i voti, i "pronti"
+// o il capo spedizione (tutti derivati da queste due funzioni). Può solo usare il Pannello di Controllo (onlineGate).
+const onlineGiocatoriCollegati = () => onlineState.giocatori.filter(gi => gi.connected && gi.ruolo !== 'moderatore').map(gi => gi.name);
+const onlineRuolo = nome => { const gi = onlineState.giocatori.find(g => g.name === nome); return (gi && gi.ruolo) || 'giocatore'; };
 
 function onlinePost(url, body) {
     const headers = { 'Content-Type': 'application/json', ...(onlineState.segreto ? { 'X-Online-Segreto': onlineState.segreto } : {}) };
@@ -88,6 +92,9 @@ function onlineScenaMenu() {
 function onlineRegioni() {
     const screen = document.querySelector('#gameContainer > div:not(.hidden)');
     const modal = document.getElementById('wc3Modal');
+    // Pannello di Controllo (js/combattimento.js, gmOpenPanel): resta privato sullo schermo del master,
+    // non si specchia mai ai giocatori collegati (il moderatore ha il suo pannello a parte, vedi gmstato)
+    const modaleGM = !modal.classList.contains('hidden') && modal.querySelector('.gm-panel-modal');
     const overlays = onlineSovrimpressioni(document.body.children, ONLINE_FIGLI_STATICI);
     return {
         body: document.body.className,
@@ -95,7 +102,7 @@ function onlineRegioni() {
         topbar: onlineSerializza(document.getElementById('partyTopBar')),
         console: onlineSerializza(document.getElementById('partyConsole')),
         screen: onlineSerializza(screen),
-        modal: modal.classList.contains('hidden') ? null : onlineSerializza(modal),
+        modal: (modal.classList.contains('hidden') || modaleGM) ? null : onlineSerializza(modal),
         overlays: overlays.map(onlineSerializza).join('') || null
     };
 }
@@ -161,6 +168,13 @@ window.onlineGate = function (nome, args) {
         return true;
     }
     const giocatore = onlineState.attore;
+    // Moderatore: solo il Pannello di Controllo (ONLINE_AZIONI_MODERATORE, js/online-regole.js), mai le
+    // azioni di un giocatore (non ha un eroe) né quelle libere del master
+    if (onlineRuolo(giocatore) === 'moderatore') {
+        if (ONLINE_AZIONI_MODERATORE.includes(nome)) return true;
+        onlineAvvisa(giocatore, 'Solo il master può farlo');
+        return false;
+    }
     const r = onlineCanRun(nome, args, giocatore, contestoOnline());
     if (r.ok) return true;
     if (r.voto) { onlineVotoDaClic(r.voto, nome, args, giocatore); return false; }
@@ -206,6 +220,36 @@ function onlineEseguiClic(c) {
     onlineInviaStato();
 }
 
+/* ---------- Pannello privato del moderatore ----------
+   Niente clic su uno schermo condiviso: il moderatore chiama direttamente una delle
+   ONLINE_AZIONI_MODERATORE (js/online-regole.js) con opts.silent, così js/combattimento.js
+   non apre/aggiorna la finestra #wc3Modal (quella la vedrebbero anche il master e, specchiata,
+   tutti i giocatori). I dati del suo pannello arrivano solo a lui via onlinePianificaGmStato. */
+function onlineEseguiClicModeratore(c) {
+    if (!c || onlineRuolo(c.giocatore) !== 'moderatore') return;
+    if (!ONLINE_AZIONI_MODERATORE.includes(c.azione) || typeof window[c.azione] !== 'function') return;
+    const args = Array.isArray(c.args) ? c.args : [];
+    window[c.azione](...args, { silent: true });
+}
+
+// Squadra e nemico attuali per il pannello del moderatore (solo i dati, mai una finestra)
+function onlineGmStatoPayload() {
+    const enemy = (typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat' && stato.activeEnemy)
+        ? { name: stato.activeEnemy.name, hp: Math.max(0, stato.activeEnemy.hp), maxHp: stato.activeEnemy.maxHp } : null;
+    return { heroes: (stato.party || []).map(h => ({ name: h.name, hp: h.hp, maxHp: h.maxHp })), enemy };
+}
+let onlineGmStatoTimer = null;
+function onlinePianificaGmStato() {
+    if (!onlineState.attivo || onlineGmStatoTimer) return;
+    onlineGmStatoTimer = setTimeout(() => { onlineGmStatoTimer = null; onlinePost('/api/online/gmstato', onlineGmStatoPayload()); }, 150);
+}
+// La squadra e il nemico cambiano con questi due aggiornamenti dell'interfaccia: basta agganciarsi a loro
+['updatePartyStatusBars', 'updateEnemyInfoUI'].forEach(nome => {
+    if (typeof window[nome] !== 'function') return;
+    const originale = window[nome];
+    window[nome] = function (...args) { const r = originale.apply(this, args); onlinePianificaGmStato(); return r; };
+});
+
 /* ---------- Finestre aperte da un giocatore ---------- */
 if (typeof openModal === 'function') {
     const apriOrig = openModal;
@@ -236,6 +280,7 @@ function onlineApri() {
         onlineMasterStream = new EventSource(`${ONLINE_BASE}/api/online/master?segreto=${encodeURIComponent(onlineState.segreto)}`);
         onlineMasterStream.addEventListener('stanza', e => { onlineState.giocatori = JSON.parse(e.data).giocatori; onlineStanzaCambiata(); });
         onlineMasterStream.addEventListener('clic', e => onlineEseguiClic(JSON.parse(e.data)));
+        onlineMasterStream.addEventListener('clic-moderatore', e => onlineEseguiClicModeratore(JSON.parse(e.data)));
         if (onlineOsservatore) onlineOsservatore.observe(document.body, ONLINE_OSSERVA);
         document.addEventListener('scroll', onlinePianificaInvio, true);  // lo scorrimento non cambia il DOM
         onlineUltimeRegioni = {};
@@ -266,8 +311,8 @@ function onlineMostraLink() {
 /* ---------- Funzioni completate nei passi successivi (creazione, voti, pronti, capo, barra) ---------- */
 
 /* ---------- Stanza, creazione a turno, chi deve agire ---------- */
-// Giocatori in ordine d'ingresso (anche i disconnessi: il loro posto resta)
-const onlineOrdine = () => onlineState.giocatori.map(gi => gi.name);
+// Giocatori in ordine d'ingresso (anche i disconnessi: il loro posto resta; niente moderatori, vedi onlineGiocatoriCollegati)
+const onlineOrdine = () => onlineState.giocatori.filter(gi => gi.ruolo !== 'moderatore').map(gi => gi.name);
 
 // Creazione degli eroi: a turno, il primo giocatore senza eroe nell'ordine d'ingresso
 function onlineTurnoCreazione() {
@@ -299,6 +344,7 @@ function onlineStanzaCambiata() {
     onlineAvvisoConnessioni();
     onlineDisegnaLobby();
     onlineInviaStato();
+    onlinePianificaGmStato();  // un moderatore appena entrato riceve subito i dati del suo pannello
 }
 function onlineDisegnaLobby() {
     const area = document.getElementById('partyConfigArea');
@@ -306,7 +352,7 @@ function onlineDisegnaLobby() {
     let box = document.getElementById('onlineLobby');
     if (!onlineState.attivo) { if (box) box.remove(); return; }
     if (!box) { box = document.createElement('div'); box.id = 'onlineLobby'; box.className = 'wc-inset'; area.prepend(box); }
-    const righe = onlineState.giocatori.map(gi => `<li>${esc(gi.name)} ${gi.connected ? '🟢' : '⚪'}</li>`).join('') || '<li>Nessun giocatore: manda il link</li>';
+    const righe = onlineState.giocatori.map(gi => `<li>${esc(gi.name)}${gi.ruolo === 'moderatore' ? ' (Moderatore)' : ''} ${gi.connected ? '🟢' : '⚪'}</li>`).join('') || '<li>Nessun giocatore: manda il link</li>';
     box.innerHTML = `<p><b>Giocatori nella stanza</b> (un eroe a testa)</p><ul>${righe}</ul>`;
 }
 
@@ -416,7 +462,7 @@ function onlineDisegnaBarraMaster() {
         bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:40;padding:8px 14px;max-width:calc(100% - 32px)';
         document.body.appendChild(bar); }
     const v = onlineState.voto;
-    const giocatori = onlineState.giocatori.map(gi => `${esc(gi.name)}${gi.connected ? '' : ' (disconnesso)'}${onlineCapo() === gi.name ? ' 👑' : ''}`).join(', ');
+    const giocatori = onlineState.giocatori.map(gi => `${esc(gi.name)}${gi.ruolo === 'moderatore' ? ' (Moderatore)' : ''}${gi.connected ? '' : ' (disconnesso)'}${onlineCapo() === gi.name ? ' 👑' : ''}`).join(', ');
     bar.innerHTML = `<b>Master</b> · ${giocatori || 'nessun giocatore'}`
         + (v ? `<br>${esc(v.domanda)} ${v.opzioni.map(o => `<button class="btn-small" ${azione('onlineForzaVoto', o.id)}>${esc(o.label)} · ${Object.values(v.voti).filter(x => x === o.id).length}</button>`).join(' ')}` : '')
         + (onlineState.pronti ? `<br>Pronti ${onlineState.pronti.size}/${onlineGiocatoriCollegati().length} <button class="btn-small" ${azione('onlineForzaPronti')}>Si parte</button>` : '');

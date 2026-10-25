@@ -311,6 +311,10 @@
         function openModal(title, bodyHtml, actions, options = {}) {
             const box = document.querySelector('#wc3Modal .modal-box');
             box.classList.toggle('wide', !!options.wide);
+            // Segnaposto del Pannello di Controllo (js/combattimento.js, gmOpenPanel): tolto a ogni apertura,
+            // lo rimette solo gmOpenPanel. Partita online: js/online.js lo controlla per non specchiare
+            // questa finestra (resta privata sullo schermo del master, mai ai giocatori collegati)
+            box.classList.remove('gm-panel-modal');
             if (document.getElementById('wc3Modal').classList.contains('hidden')) {
                 box.classList.remove('modal-drop');
                 void box.offsetWidth;

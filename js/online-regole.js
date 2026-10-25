@@ -58,6 +58,16 @@ const ONLINE_PERMESSI = {
     __modal: 'modale', __vota: 'tutti'
 };
 
+// Azioni che un moderatore può eseguire da remoto (server/public/online.html, "Entra come Moderatore"):
+// solo le mutazioni del Pannello di Controllo di js/combattimento.js (vita della squadra e del nemico,
+// stati), mai le azioni di un giocatore o del master. Niente gmOpenPanel: il moderatore ha un pannello
+// tutto suo (server/public/online.js, non una finestra mirata a video sullo schermo del master o mandata
+// agli altri giocatori) che chiama queste azioni "silenziose" (opts.silent) senza aprire alcuna finestra
+// condivisa. Il moderatore non ha un eroe: js/online.js lo esclude da onlineGiocatoriCollegati/onlineOrdine,
+// così non conta per dimensione squadra, voti, pronti o capo.
+const ONLINE_AZIONI_MODERATORE = ['gmClearPartyStatuses', 'gmRefillParty',
+    'gmAdjustHeroHp', 'gmSetHeroHp', 'gmAdjustEnemyHp', 'gmSetEnemyHp'];
+
 function onlineRegola(azione, ctx) {
     const r = ONLINE_PERMESSI[azione];
     if (!r) return 'master';
@@ -177,6 +187,6 @@ function rendiLeggero(html) {
 
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
+    module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, ONLINE_AZIONI_MODERATORE, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
         elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, classiNodoGiocatore, nodiVisibiliGiocatori, changedRegions, leggeroUrl, rendiLeggero };
 }

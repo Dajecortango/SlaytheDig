@@ -7,7 +7,7 @@
     const code = location.pathname.split('/')[2] || '';
     const CHIAVE = `dignitas_online_${code}`;
     const NGROK = { 'ngrok-skip-browser-warning': 'true' };
-    let token = null, nome = null, stato = {}, flusso = null, ultimoSegnale = 0;
+    let token = null, nome = null, ruolo = 'giocatore', stato = {}, flusso = null, ultimoSegnale = 0;
     const $ = id => document.getElementById(id);
 
     const salvato = () => { try { return JSON.parse(localStorage.getItem(CHIAVE) || 'null'); } catch (e) { return null; } };
@@ -21,18 +21,24 @@
     }
 
     /* ---------- Ingresso ---------- */
-    window.onlineEntra = function () {
+    // ruolo 'moderatore' (pulsante "Entra come Moderatore"): niente eroe, può solo aprire il Pannello
+    // di Controllo del master (js/online.js, onlineGate + ONLINE_AZIONI_MODERATORE)
+    window.onlineEntra = function (ruoloRichiesto) {
         const n = $('onlineNome').value;
-        post('/api/online/entra', { code, nome: n }).then(r => {
+        const corpo = { code, nome: n };
+        if (ruoloRichiesto === 'moderatore') corpo.ruolo = 'moderatore';
+        post('/api/online/entra', corpo).then(r => {
             if (r.error) { $('onlineJoinErrore').textContent = r.error; return; }
-            token = r.token; nome = r.nome; salva({ token, nome });
+            token = r.token; nome = r.nome; ruolo = r.ruolo || 'giocatore'; salva({ token, nome });
             $('onlineJoin').classList.add('online-hidden');
+            applicaRuolo();
             collega();
         }).catch(() => { $('onlineJoinErrore').textContent = 'Connessione non riuscita, riprova'; });
     };
 
     // La pagina del giocatore non carica js/azioni.js: il modulo d'ingresso ha i suoi ascoltatori
     document.getElementById('onlineEntraBtn').addEventListener('click', () => window.onlineEntra());
+    document.getElementById('onlineEntraModeratoreBtn').addEventListener('click', () => window.onlineEntra('moderatore'));
     document.getElementById('onlineNome').addEventListener('keydown', e => { if (e.key === 'Enter') window.onlineEntra(); });
 
     function avvio() {
@@ -40,7 +46,9 @@
         if (!s) { $('onlineJoin').classList.remove('online-hidden'); $('onlineNome').focus(); return; }
         post('/api/online/entra', { code, nome: s.nome, token: s.token }).then(r => {
             if (r.error) { localStorage.removeItem(CHIAVE); $('onlineJoin').classList.remove('online-hidden'); return; }
-            token = r.token; nome = r.nome; salva({ token, nome }); collega();
+            token = r.token; nome = r.nome; ruolo = r.ruolo || 'giocatore'; salva({ token, nome });
+            applicaRuolo();
+            collega();
         }).catch(() => setTimeout(avvio, 3000));
     }
 
@@ -56,6 +64,7 @@
         on('stato', s => { stato = s || {}; disegnaBarra(); musica(); segnaEroi(); });
         on('master', m => mostraAvviso(m.online ? '' : (m.chiusa ? 'Il master ha chiuso la partita' : 'Il master non è collegato'), !m.online));
         on('avviso', a => mostraAvviso(a.testo));
+        on('gmstato', renderModPanel);  // solo per il moderatore: il server manda questo evento solo ai suoi flussi
         on('ping', () => {});
         flusso.onerror = () => { if (flusso.readyState === 2) setTimeout(collega, 3000); };
     }
@@ -267,6 +276,62 @@
         if (a.getAttribute('src') !== src) { a.setAttribute('src', src); a.volume = 0.5; }
         a.play().catch(() => {});
     }
+
+    /* ---------- Pannello privato del moderatore ----------
+       Non è una regione specchiata (onlineRegioni/applicaParti): esiste solo su questa pagina, popolato
+       dall'evento "gmstato" che il server manda solo ai flussi con ruolo 'moderatore' (mai al master
+       né agli altri giocatori). I pulsanti chiamano direttamente window.onlineModAzione, senza passare
+       dall'inoltro dei clic (inoltra) che simula un clic sullo schermo del master. */
+    function applicaRuolo() {
+        $('onlineModPanel').classList.toggle('online-hidden', ruolo !== 'moderatore');
+    }
+    // Il pulsante apre/chiude il pannello solo su questa pagina: nessun'altra ha idea che esista
+    $('onlineModToggle').addEventListener('click', () => $('onlineModBox').classList.toggle('online-hidden'));
+    function renderModPanel(dati) {
+        if (ruolo !== 'moderatore') return;
+        const box = $('onlineModBody');
+        if (!box) return;
+        const d = dati || { heroes: [], enemy: null };
+        const riga = (nomeEroe, hp, maxHp, prefissoArgs, caduto) => `
+            <div class="onmod-row">
+                <span class="onmod-name">${esc(nomeEroe)}${caduto && hp <= 0 ? ' (caduto)' : ''}</span>
+                <span class="onmod-controls">
+                    <button data-mod="${prefissoArgs.adjust}" data-args='${esc(JSON.stringify([...prefissoArgs.base, -5]))}'>-5</button>
+                    <button data-mod="${prefissoArgs.adjust}" data-args='${esc(JSON.stringify([...prefissoArgs.base, -1]))}'>-1</button>
+                    <input type="number" value="${hp}" data-mod="${prefissoArgs.set}" data-args-base='${esc(JSON.stringify(prefissoArgs.base))}'>
+                    <span>/ ${maxHp}</span>
+                    <button data-mod="${prefissoArgs.adjust}" data-args='${esc(JSON.stringify([...prefissoArgs.base, 1]))}'>+1</button>
+                    <button data-mod="${prefissoArgs.adjust}" data-args='${esc(JSON.stringify([...prefissoArgs.base, 5]))}'>+5</button>
+                </span>
+            </div>`;
+        const heroRows = (d.heroes || []).map(h => riga(h.name, h.hp, h.maxHp, { adjust: 'gmAdjustHeroHp', set: 'gmSetHeroHp', base: [h.name] }, true))
+            .join('') || '<p class="online-join-hint">Nessuna squadra in gioco.</p>';
+        const enemyHtml = d.enemy ? riga(d.enemy.name, d.enemy.hp, d.enemy.maxHp, { adjust: 'gmAdjustEnemyHp', set: 'gmSetEnemyHp', base: [] }, false)
+            : '<p class="online-join-hint">Nessuno scontro in corso.</p>';
+        box.innerHTML = `
+            <p class="online-join-hint">Squadra</p>
+            ${heroRows}
+            <div class="onmod-actions">
+                <button class="btn-small" data-mod="gmRefillParty" data-args="[]">Rifornisci HP</button>
+                <button class="btn-small" data-mod="gmClearPartyStatuses" data-args="[]">Pulisci Stati</button>
+            </div>
+            <p class="online-join-hint">Nemico</p>
+            ${enemyHtml}`;
+    }
+    window.onlineModAzione = (azione, args) => post('/api/online/moderatore-azione', { code, token, azione, args })
+        .then(r => { if (r && r.error) mostraAvviso(r.error); }).catch(() => mostraAvviso('Connessione persa, riprova'));
+    $('onlineModPanel').addEventListener('click', e => {
+        const b = e.target.closest('button[data-mod]');
+        if (!b) return;
+        let a = []; try { a = JSON.parse(b.dataset.args || '[]'); } catch (err) {}
+        window.onlineModAzione(b.dataset.mod, a);
+    });
+    $('onlineModPanel').addEventListener('change', e => {
+        const inp = e.target.closest('input[data-mod]');
+        if (!inp) return;
+        let base = []; try { base = JSON.parse(inp.dataset.argsBase || '[]'); } catch (err) {}
+        window.onlineModAzione(inp.dataset.mod, [...base, Number(inp.value) || 0]);
+    });
 
     /* ---------- Avvisi e tooltip ---------- */
     let avvisoTimer = null;

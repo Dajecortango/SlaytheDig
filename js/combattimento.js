@@ -804,6 +804,142 @@
                 tip: h => `HP ${h.hp}/${h.maxHp}${h.current_armor ? ` · Armatura ${h.current_armor}` : ''}` });
         }
 
+        /* ==========================================================================
+           PANNELLO DI CONTROLLO (per chi guida la partita)
+           Finestra modale (openModal) per intervenire a mano durante il gioco: pulire gli
+           stati della squadra, alzare o abbassare gli HP di eroi e nemico, rifornire la
+           compagnia. Richiamabile dalla barra superiore (gmOpenPanel) in ogni schermata di
+           gioco; i controlli del nemico compaiono solo durante uno scontro.
+           ========================================================================== */
+        function gmPanelHtml() {
+            if (!stato.party.length) return '<p class="journal-empty">Nessuna squadra in gioco.</p>';
+            const heroRows = stato.party.map(h => `
+                <div class="gm-row">
+                    <span class="gm-row-name">${esc(h.name)}${h.hp <= 0 ? ' <small>(caduto)</small>' : ''}</span>
+                    <span class="gm-row-controls">
+                        <button ${azione('gmAdjustHeroHp', h.name, -5)}>-5</button>
+                        <button ${azione('gmAdjustHeroHp', h.name, -1)}>-1</button>
+                        <input type="number" class="gm-hp-input" value="${h.hp}" min="0" max="${h.maxHp}" ${azioneSu('change', 'gmSetHeroHp', h.name, '$value')}>
+                        <span class="gm-row-max">/ ${h.maxHp}</span>
+                        <button ${azione('gmAdjustHeroHp', h.name, 1)}>+1</button>
+                        <button ${azione('gmAdjustHeroHp', h.name, 5)}>+5</button>
+                    </span>
+                </div>`).join('');
+
+            const enemy = stato.activeEnemy;
+            const enemyBlock = (enemy && currentScreenId === 'screenCombat')
+                ? `<div class="gm-row">
+                        <span class="gm-row-name">${esc(enemy.name)}</span>
+                        <span class="gm-row-controls">
+                            <button ${azione('gmAdjustEnemyHp', -10)}>-10</button>
+                            <button ${azione('gmAdjustEnemyHp', -1)}>-1</button>
+                            <input type="number" class="gm-hp-input" value="${Math.max(0, enemy.hp)}" min="0" max="${enemy.maxHp}" ${azioneSu('change', 'gmSetEnemyHp', '$value')}>
+                            <span class="gm-row-max">/ ${enemy.maxHp}</span>
+                            <button ${azione('gmAdjustEnemyHp', 1)}>+1</button>
+                            <button ${azione('gmAdjustEnemyHp', 10)}>+10</button>
+                        </span>
+                    </div>`
+                : '<p class="journal-empty">Nessuno scontro in corso.</p>';
+
+            return `
+                <div class="gm-panel">
+                    <div class="journal-section">
+                        <h4>Squadra</h4>
+                        ${heroRows}
+                        <div class="gm-actions-row">
+                            <button class="btn-proceed" ${azione('gmRefillParty')}>Rifornisci HP Squadra</button>
+                            <button ${azione('gmClearPartyStatuses')}>Pulisci Stati Squadra</button>
+                        </div>
+                    </div>
+                    <div class="journal-section">
+                        <h4>Nemico</h4>
+                        ${enemyBlock}
+                    </div>
+                </div>`;
+        }
+
+        function gmOpenPanel() {
+            openModal('Pannello di Controllo', gmPanelHtml(), [{ label: 'Chiudi' }], { wide: true });
+            // Partita online: segna la finestra così js/online.js non la specchia ai giocatori collegati
+            // (resta privata sullo schermo di chi guida la partita)
+            document.querySelector('#wc3Modal .modal-box').classList.add('gm-panel-modal');
+        }
+
+        // Tutta la compagnia a terra per mano del pannello: stessa gestione della sconfitta in combattimento
+        function gmCheckPartyWipe() {
+            if (stato.party.length && stato.party.every(p => p.hp <= 0)) {
+                closeModal();
+                deleteCurrentSave();
+                showScreen('screenDefeat');
+                return true;
+            }
+            return false;
+        }
+
+        // opts.silent: chiamato dal moderatore online (js/online.js, onlineEseguiClicModeratore) senza
+        // aprire/aggiornare la finestra locale, che altrimenti comparirebbe anche sullo schermo del master
+        // e, specchiata, su quello di tutti i giocatori (server/public/online.js manda solo i dati al
+        // pannello privato del moderatore, mai una finestra condivisa)
+        function gmClearPartyStatuses(opts) {
+            stato.party.forEach(h => { if (h.hp > 0) clearHeroStatuses(h); });
+            if (currentScreenId === 'screenCombat') logCombat('🛠 Pannello di controllo: stati della squadra azzerati.');
+            updatePartyStatusBars();
+            if (!(opts && opts.silent)) gmOpenPanel();
+        }
+
+        function gmRefillParty(opts) {
+            stato.party.forEach(h => { h.hp = h.maxHp; });
+            if (currentScreenId === 'screenCombat') logCombat('🛠 Pannello di controllo: HP della squadra rifornite al massimo.');
+            updatePartyStatusBars();
+            if (!(opts && opts.silent)) gmOpenPanel();
+        }
+
+        function gmApplyHeroHp(name, newHp, opts) {
+            const h = stato.party.find(p => p.name === name);
+            if (!h) return;
+            const before = h.hp;
+            h.hp = Math.max(0, Math.min(h.maxHp, Math.round(newHp)));
+            if (h.hp === before) { if (!(opts && opts.silent)) gmOpenPanel(); return; }
+            if (currentScreenId === 'screenCombat') logCombat(`🛠 Pannello di controllo: HP di ${h.name} ${before} → ${h.hp}.`);
+            updatePartyStatusBars();
+            if (gmCheckPartyWipe()) return;
+            if (!(opts && opts.silent)) gmOpenPanel();
+        }
+        function gmAdjustHeroHp(name, delta, opts) {
+            const h = stato.party.find(p => p.name === name);
+            if (h) gmApplyHeroHp(name, h.hp + delta, opts);
+        }
+        function gmSetHeroHp(name, value, opts) {
+            gmApplyHeroHp(name, Number(value) || 0, opts);
+        }
+
+        function gmApplyEnemyHp(newHp, opts) {
+            const enemy = stato.activeEnemy;
+            if (!enemy || currentScreenId !== 'screenCombat') return;
+            const before = enemy.hp;
+            enemy.hp = Math.max(0, Math.min(enemy.maxHp, Math.round(newHp)));
+            if (enemy.hp === before) { if (!(opts && opts.silent)) gmOpenPanel(); return; }
+            logCombat(`🛠 Pannello di controllo: HP di ${enemy.name} ${before} → ${enemy.hp}.`);
+            updateEnemyInfoUI();
+            if (enemy.hp <= 0) {
+                logCombat(`Hai sconfitto ${enemy.name}! Vittoria!`);
+                document.getElementById('heroActionControlArea').classList.add('hidden');
+                document.getElementById('monsterTurnSection').classList.add('hidden');
+                document.getElementById('combatNextBtn').classList.add('hidden');
+                document.getElementById('combatLootBtn').classList.remove('hidden');
+                closeModal();
+                return;
+            }
+            if (!(opts && opts.silent)) gmOpenPanel();
+        }
+        function gmAdjustEnemyHp(delta, opts) {
+            const enemy = stato.activeEnemy;
+            if (enemy) gmApplyEnemyHp(enemy.hp + delta, opts);
+        }
+        function gmSetEnemyHp(value, opts) {
+            gmApplyEnemyHp(Number(value) || 0, opts);
+        }
+
         function executeMonsterAttack(nome) {
             if (combatPhase !== 'monster') return;  // doppio clic: il colpo è già stato assegnato
             const target = stato.party.find(p => p.name === nome && p.hp > 0);

@@ -2142,6 +2142,36 @@
         .journal-stat b { display: block; font-family: var(--font-title); font-size: 1.4rem; color: var(--wc-yellow); }
         .journal-stat span { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
 
+        /* ---------- Pannello di Controllo ---------- */
+        .gm-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #3a2e1c;
+            flex-wrap: wrap;
+        }
+        .gm-row-name { font-family: var(--font-title); color: var(--wc-yellow); font-size: 0.9rem; }
+        .gm-row-name small { color: var(--text-dim); font-family: inherit; text-transform: none; letter-spacing: 0; }
+        .gm-row-controls { display: flex; align-items: center; gap: 4px; }
+        .gm-row-controls button { width: auto; min-width: 0; margin: 0; padding: 3px 9px; font-size: 0.8rem; }
+        .gm-row-max { font-size: 0.78rem; color: var(--text-dim); }
+        .gm-hp-input {
+            width: 56px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #3a2e1c;
+            color: #e6dcc4;
+            font-family: var(--font-title);
+            padding: 3px 2px;
+        }
+        .gm-actions-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .gm-actions-row button { width: auto; min-width: 0; margin: 0; padding: 8px 16px; font-size: 0.82rem; }
+
         .options-grid { display: grid; gap: 14px; text-align: left; }
         .option-row { display: grid; grid-template-columns: 1fr 1.2fr; align-items: center; gap: 12px; }
         .option-label { font-family: var(--font-title); font-size: 0.82rem; color: var(--wc-yellow); letter-spacing: 0.05em; }
