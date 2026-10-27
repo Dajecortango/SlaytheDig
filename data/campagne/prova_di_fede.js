@@ -4,8 +4,8 @@
 // si apre con doppio click da file:// e il browser blocca fetch() di file locali.
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
-window.CAMPAIGNS["prova di fede"] = {
-    "id": "prova di fede",
+window.CAMPAIGNS["prova_di_fede"] = {
+    "id": "prova_di_fede",
     "title": "Nuova campagna",
     "badge": "Nuova Campagna",
     "description": "",

@@ -811,8 +811,15 @@
            compagnia. Richiamabile dalla barra superiore (gmOpenPanel) in ogni schermata di
            gioco; i controlli del nemico compaiono solo durante uno scontro.
            ========================================================================== */
+        // Fuori dalla spedizione (menu, creazione del party a metà, fine partita) il pannello non tocca la squadra:
+        // portare a 0 HP la compagnia in creazione la mandava in sconfitta prima della mappa
+        const GM_FUORI_PARTITA = ['screenStart', 'screenCampaigns', 'screenSimSetup', 'screenSimReport', 'screenParty', 'screenDefeat', 'screenVictory'];
+        function gmInPartita() {
+            return stato.party.length > 0 && !GM_FUORI_PARTITA.includes(currentScreenId);
+        }
+
         function gmPanelHtml() {
-            if (!stato.party.length) return '<p class="journal-empty">Nessuna squadra in gioco.</p>';
+            if (!gmInPartita()) return '<p class="journal-empty">Nessuna squadra in gioco.</p>';
             const heroRows = stato.party.map(h => `
                 <div class="gm-row">
                     <span class="gm-row-name">${esc(h.name)}${h.hp <= 0 ? ' <small>(caduto)</small>' : ''}</span>
@@ -881,6 +888,7 @@
         // e, specchiata, su quello di tutti i giocatori (server/public/online.js manda solo i dati al
         // pannello privato del moderatore, mai una finestra condivisa)
         function gmClearPartyStatuses(opts) {
+            if (!gmInPartita()) return;
             stato.party.forEach(h => { if (h.hp > 0) clearHeroStatuses(h); });
             if (currentScreenId === 'screenCombat') logCombat('🛠 Pannello di controllo: stati della squadra azzerati.');
             updatePartyStatusBars();
@@ -888,6 +896,7 @@
         }
 
         function gmRefillParty(opts) {
+            if (!gmInPartita()) return;
             stato.party.forEach(h => { h.hp = h.maxHp; });
             if (currentScreenId === 'screenCombat') logCombat('🛠 Pannello di controllo: HP della squadra rifornite al massimo.');
             updatePartyStatusBars();
@@ -896,7 +905,7 @@
 
         function gmApplyHeroHp(name, newHp, opts) {
             const h = stato.party.find(p => p.name === name);
-            if (!h) return;
+            if (!h || !gmInPartita()) return;
             const before = h.hp;
             h.hp = Math.max(0, Math.min(h.maxHp, Math.round(newHp)));
             if (h.hp === before) { if (!(opts && opts.silent)) gmOpenPanel(); return; }

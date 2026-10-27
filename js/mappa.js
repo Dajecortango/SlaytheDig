@@ -364,6 +364,7 @@
                 startStory(node);
             }
             else if(node.type === 'captain') {
+                setSceneImage('captainImg', node.image, 'elite');
                 startCaptainFinale();
             }
         }
@@ -454,7 +455,7 @@
         /* ---------- Segnaposto per le immagini dei nodi che mancano ----------
            Se il file dell'immagine non esiste (nodo o nemico del bestiario) si mostra
            immagini/segnaposto/<tipo>.svg: scena cupa con l'icona del tipo di nodo. */
-        const EVENT_IMG_PLACEHOLDER = { combatImg: 'combat', challengeImg: 'challenge', restImg: 'rest', merchantImg: 'merchant', treasureImg: 'treasure', storyImg: 'treasure' };
+        const EVENT_IMG_PLACEHOLDER = { combatImg: 'combat', challengeImg: 'challenge', restImg: 'rest', merchantImg: 'merchant', treasureImg: 'treasure', treasureLootImg: 'treasure', storyImg: 'treasure', captainImg: 'elite' };
         document.addEventListener('DOMContentLoaded', () => {
             Object.entries(EVENT_IMG_PLACEHOLDER).forEach(([imgId, type]) => {
                 const img = document.getElementById(imgId);

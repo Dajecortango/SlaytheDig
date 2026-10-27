@@ -321,6 +321,8 @@
 
         function openTreasure() {
             showScreen('screenTreasureLoot');
+            // Il forziere aperto mostra la stessa scena del nodo del tesoro
+            document.getElementById('treasureLootImg').src = document.getElementById('treasureImg').src;
             const offer = generateTreasureOffer();
             const coins = offer.coins;
             stato.partyCoins += coins;
