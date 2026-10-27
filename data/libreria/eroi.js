@@ -188,8 +188,8 @@ window.LIBRERIA.eroi = {
         "help_bonus_val": 0,
         "items": [],
         "abilities": ["zeno_colpo_benedetto", "zeno_addestramento"],
-        "portrait": "immagini/ritratti/screenshot_2026-10-27_153151.png",
-        "portraitWounded": "immagini/ritratti/screenshot_2026-10-27_153252.png",
+        "portrait": "immagini/ritratti/zeno.webp",
+        "portraitWounded": "immagini/ritratti/zeno_ferito.webp",
         "portraitPos": "54% 34%",
         "portraitZoom": 1.4,
         "portraitWoundedPos": "53% 30%"
