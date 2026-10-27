@@ -26,7 +26,7 @@
         // Inizio scontro: azzera i limiti "per scontro" e fa scattare gli effetti di inizio scontro. Ritorna le note
         function startCombatSpecials() {
             resetCombatSpecialUses();
-            stato.party.forEach(h => { delete h.defendRound; delete h.hpLostInCombat; if (h.noArmor) h.current_armor = 0; });
+            stato.party.forEach(h => { delete h.defendRound; delete h.hpLostInCombat; if (h.noArmor) h.current_armor = 0; iraAzzera(h); });
             return [...fireSpecialsAll('inizio_scontro').notes, ...fireEnemySpecials('inizio_scontro', stato.activeEnemy, null)];
         }
 
@@ -64,14 +64,20 @@
             const spent = spendNextRollRelics('attacco', hero);
 
             const hit = naturalRollSuccess(roll, total, enemy.ca);
+            const sfiga = malasorteDopoTiro(hero, hit);
+            if (sfiga) itemNotes.push(sfiga);
+            // Ira Traboccante: l'attacco in Furia è lo sfogo (danni in più, poi la Collera si azzera) e non conta come errore
+            const sfogo = !!(hero.iraTraboccante && hero.iraSfogo);
+            if (sfogo) iraSfogoConsumato(hero); else itemNotes.push(...iraDopoTiro(hero, hit));
             let dmg = 0;
             if (hit) {
                 const ie = specialHitEffects(hero, enemy, enemy.hp);
                 itemNotes.push(...ie.notes);
-                dmg = hero.dmg + helpDmg + ie.dmg;
+                dmg = hero.dmg + helpDmg + ie.dmg + (sfogo ? IRA_DANNI_SFOGO : 0);
+                if (sfogo) itemNotes.push(`💢 Sfogo della Collera: +${IRA_DANNI_SFOGO} danni`);
                 enemy.hp -= dmg;
                 itemNotes.push(...afterHeroHit(hero, enemy));
-            }
+            } else if (sfogo) itemNotes.push('💢 La Collera si sfoga a vuoto');
             return { roll, total, parts, hit, dmg, firstBonus: first, helpDmgBonus: helpDmg, relicAttBonus: rb.att, relicNotes: [...rb.notes, ...spent], itemNotes, naturalNote: naturalRollNote(roll, total, enemy.ca) };
         }
 
@@ -95,7 +101,11 @@
             const gained = success ? defendArmorGain(hero) : 0;
             hero.current_armor += gained;
             hero.defendRound = stato.combatRound;  // condizione "ha_difeso" degli effetti speciali (Scudo a Spina di Kranen)
-            return { roll, total, parts, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att), itemNotes: rr.note ? [rr.note] : [],
+            const itemNotes = rr.note ? [rr.note] : [];
+            const sfiga = malasorteDopoTiro(hero, success);
+            if (sfiga) itemNotes.push(sfiga);
+            itemNotes.push(...iraDopoTiro(hero, success));
+            return { roll, total, parts, success, gained, naturalNote: naturalRollNote(roll, total, enemy.att), itemNotes,
                 relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
@@ -117,7 +127,11 @@
                 dmgBonus = hero.helpDmgBonus || 0;
                 if (dmgBonus) stato.helpDmgBonus = dmgBonus;
             }
-            return { roll, total, parts, success, dmgBonus, naturalNote: naturalRollNote(roll, total, enemy.att), itemNotes: rr.note ? [rr.note] : [],
+            const itemNotes = rr.note ? [rr.note] : [];
+            const sfiga = malasorteDopoTiro(hero, success);
+            if (sfiga) itemNotes.push(sfiga);
+            itemNotes.push(...iraDopoTiro(hero, success));
+            return { roll, total, parts, success, dmgBonus, naturalNote: naturalRollNote(roll, total, enemy.att), itemNotes,
                 relicNotes: [...sources.map(r => `${r.name} (+${r.val} al tiro)`), ...spent] };
         }
 
@@ -261,7 +275,11 @@
             const c = abilityCombat(hero.chosenAbility);
             if (!c) return { abId, hit: false, dmg: 0, noEffect: true, relicNotes: [] };
             // Effetti "quando la usa" (cure, potenziamenti, danni...): prima di tutto il resto
-            const useNotes = abilitySpecialEffects(hero, hero.chosenAbility, 'uso', { enemy }).notes;
+            // L'eroe scelto nella finestra (bersaglio "scelto", hero.potionTarget) vale anche qui (Mano di Draken);
+            // le pozioni instabili lo usano più sotto, dopo il dado alchemico
+            const chosen = stato.party.find(h => h.name === hero.potionTarget && h.hp > 0);
+            const useNotes = abilitySpecialEffects(hero, hero.chosenAbility, 'uso', { enemy, target: chosen }).notes;
+            if (!c.instabile) delete hero.potionTarget;
 
             // Senza tiro (armatura immediata e/o solo effetti): il bonus di Aiuta resta per il prossimo
             if (c.armorGain || c.senzaTiro) {
@@ -332,6 +350,9 @@
             stato.helpBonus = 0;
             rb.notes.push(...spendNextRollRelics('attacco', hero));
             const hit = naturalRollSuccess(roll, total, enemy.ca);
+            const sfiga = malasorteDopoTiro(hero, hit);
+            if (sfiga) itemNotes.push(sfiga);
+            itemNotes.push(...iraDopoTiro(hero, hit));
             let finalDmg = dmg;
             if (hit) {
                 const hpBefore = enemy.hp;

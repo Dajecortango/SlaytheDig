@@ -479,6 +479,50 @@
             return { roll: nuovo, total: total - roll + nuovo, note: `${e.name}: ${hero.name} ritira il ${roll} e fa ${nuovo}${broken ? ` (${broken})` : ''}` };
         }
 
+        // Malasorte (segnale hero_set "malasorte", passiva di Aiace): conta i tiri falliti dell'eroe
+        // in hero.malasorteFalliti; ogni MALASORTE_FALLIMENTI fallimenti +1 Forza permanente, al massimo
+        // MALASORTE_MAX volte per capitolo (hero.malasorteGuadagni). Chiamata dai resolver di scontro
+        // (attacco, difesa, aiuto, abilità), prove e preghiera dopo l'esito del tiro; i contatori stanno
+        // sull'eroe e si salvano con la partita. Ritorna la nota per il diario, o null.
+        function malasorteDopoTiro(hero, success) {
+            if (!hero || !hero.malasorte || success) return null;
+            hero.malasorteFalliti = (hero.malasorteFalliti || 0) + 1;
+            if (hero.malasorteFalliti % MALASORTE_FALLIMENTI !== 0) return null;
+            if ((hero.malasorteGuadagni || 0) >= MALASORTE_MAX) return null;
+            hero.malasorteGuadagni = (hero.malasorteGuadagni || 0) + 1;
+            hero.str = (hero.str || 0) + 1;
+            if (typeof refreshScaledBonuses === 'function') refreshScaledBonuses(hero);
+            return `🖤 Malasorte: ${hero.name} impara dal fallimento (+1 Forza, ${hero.malasorteGuadagni}/${MALASORTE_MAX})`;
+        }
+
+        // Ira Traboccante (segnale hero_set "iraTraboccante", passiva di Aurelio): ogni tiro fallito della compagnia in
+        // scontro (anche il suo) dà +1 Collera (hero.collera, al massimo IRA_MAX). Ogni carica è +1 al suo tiro per colpire
+        // (relicCombatBonus in js/motore/tiri.js). Al massimo va in Furia (rageUntil fino al round dopo) e il suo
+        // prossimo attacco è lo sfogo (hero.iraSfogo: +IRA_DANNI_SFOGO danni, poi Collera a 0, iraSfogoConsumato).
+        // Chiamata dai resolver di scontro dopo l'esito. Ritorna le note per il diario
+        function iraDopoTiro(roller, success) {
+            if (success) return [];
+            return stato.party.filter(h => h.iraTraboccante && h.hp > 0 && !h.iraSfogo).map(h => {
+                h.collera = Math.min(IRA_MAX, (h.collera || 0) + 1);
+                if (h.collera < IRA_MAX) return `💢 ${h.name} ribolle per l'errore${roller && roller !== h ? ` di ${roller.name}` : ''}: Collera ${h.collera}/${IRA_MAX}`;
+                h.iraSfogo = true;
+                h.rageUntil = Math.max(h.rageUntil || 0, (stato.combatRound || 0) + 1);
+                return `💢 ${h.name} non ne può più: Furia! Il suo prossimo attacco fa +${IRA_DANNI_SFOGO} danni`;
+            });
+        }
+
+        // Dopo l'attacco di sfogo: la Collera si azzera e la Furia finisce
+        function iraSfogoConsumato(hero) {
+            hero.collera = 0;
+            hero.iraSfogo = false;
+            delete hero.rageUntil;
+        }
+
+        function iraAzzera(h) {
+            delete h.collera;
+            delete h.iraSfogo;
+        }
+
         // Danni in più che un colpo a segno farebbe adesso (anteprime e simulatore): solo gli effetti sicuri,
         // senza probabilità, senza consumarli
         function specialHitDamagePreview(hero, enemy) {
@@ -503,7 +547,9 @@
             stordito: { name: 'Stordito', icon: 'immagini/icone/BTNStun.png', desc: 'Salta il prossimo turno' },
             avvelenato: { name: 'Avvelenato', icon: 'immagini/icone/BTNPoisonSting.png', desc: 'Perde HP a inizio di ogni round, l\'armatura non para' },
             silenziato: { name: 'Silenziato', icon: 'immagini/icone/BTNSilence.png', desc: 'Non può usare l\'abilità attiva' },
-            furia: { name: 'Furia', icon: 'immagini/icone/BTNBerserk.png', desc: 'Può solo attaccare: niente Difendi, Aiuta né abilità' }
+            furia: { name: 'Furia', icon: 'immagini/icone/BTNBerserk.png', desc: 'Può solo attaccare: niente Difendi, Aiuta né abilità' },
+            collera: { name: 'Collera', icon: 'immagini/icone/BTNBloodLust.png', buff: true,
+                desc: 'Ira Traboccante: +1 al tiro per colpire per carica. Al massimo va in Furia e il prossimo attacco fa danni in più' }
         };
 
         function statusUntil(rounds) {
@@ -522,6 +568,7 @@
             if (h.poison) out.push({ key: 'avvelenato', rounds: h.poison.rounds, val: h.poison.val });
             if (isSilenced(h)) out.push({ key: 'silenziato', rounds: left(h.silencedUntil) });
             if (isRaging(h)) out.push({ key: 'furia', rounds: left(h.rageUntil) });
+            if (h.iraTraboccante && h.collera > 0) out.push({ key: 'collera', count: h.collera });
             return out.map(s => ({ ...HERO_STATUSES[s.key], ...s }));
         }
 
@@ -677,10 +724,11 @@
         }
 
     // API del modulo: window.Motore.speciali. Gli stessi nomi restano anche globali (Object.assign su window),
-    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: abilitySpecials, relicSpecials, curseSpecials, heroAbilityRefs, partySpecialSources, SPECIALI_DI_COMPAGNIA, specialSources, specialWhenMatches, specialUsesStore, specialAvailable, specialUsesLeft, specialConditionsMet, specialEntries, markSpecialUsed, exhaustSpecialSource, specialTargets, addSpecialBuff, SPECIALI_BONUS, HERO_STATUSES, statusUntil, clearHeroStatuses, applyPoison.
+    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: abilitySpecials, relicSpecials, curseSpecials, heroAbilityRefs, partySpecialSources, SPECIALI_DI_COMPAGNIA, specialSources, specialWhenMatches, specialUsesStore, specialAvailable, specialUsesLeft, specialConditionsMet, specialEntries, markSpecialUsed, exhaustSpecialSource, specialTargets, addSpecialBuff, SPECIALI_BONUS, HERO_STATUSES, statusUntil, applyPoison.
     const api = {
         itemSpecials, heroSpecialSources, resetCombatSpecialUses, rollSpecialSources, rollSpecialBonus, spendRollSpecials,
-        specialSum, specialPriceFactor, fireSpecials, runSpecialEntries, fireSpecialsAll, specialReroll,
+        specialSum, specialPriceFactor, fireSpecials, runSpecialEntries, fireSpecialsAll, specialReroll, malasorteDopoTiro,
+        iraDopoTiro, iraSfogoConsumato, iraAzzera, clearHeroStatuses,
         specialHitDamagePreview, hasSpecial, isSilenced, isRaging, heroStatuses, enemyStatuses, combatActionAllowed,
         enemySpecialList, fireEnemySpecials, enemyHitReaction, startRoundSpecials, specialTipLines
     };

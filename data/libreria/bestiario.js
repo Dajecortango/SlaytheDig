@@ -1180,5 +1180,718 @@ window.LIBRERIA.bestiario = {
         "speciali": [
             { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "casuale" }
         ]
+    },
+    "rissa_ruga_cantinieri": {
+        "name": "Rissaioli della Ruga dei Cantinieri",
+        "image": "",
+        "hp": 7,
+        "maxHp": 7,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Seguite la scia di Kesia fino al Barro Frescada, lungo la Ruga dei Cantinieri gremita di locande con le frasche esposte per il Kvass fresco. L'influsso della figlia di Fredlös ha trasformato i brindisi in una gigantesca rissa senza controllo: un gruppo di avventori e mercenari ubriachi di Kvass, galvanizzati dalla sua magia, vi sbarra la strada verso le porte cittadine brandendo sgabelli, boccali e lame.",
+        "speciali": [
+            { "quando": "colpito", "fai": "cura", "val": 1, "prob": 30 }
+        ]
+    },
+    "marinai_barro_molare": {
+        "name": "Marinai del Barro Molare",
+        "image": "",
+        "hp": 8,
+        "maxHp": 8,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "L'inseguimento vi porta verso nord sulla Ruga Gelida del Barro Molare, affacciata sulle acque piene d'iceberg del Sund di Strela. Davanti al fondaco del Mandraccio, una ciurma di rudi marinai e scaricatori del porto, aizzati dal passaggio beffardo di Kesia, vi attacca sul selciato completamente ghiacciato.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "warg_del_sira": {
+        "name": "Warg del Sira",
+        "image": "",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Costeggiando le sponde del fiume Sira, teatro di innumerevoli conflitti passati, il silenzio della valle viene spezzato da ringhi feroci: un branco di Warg affamati, scesi dai pendii in cerca di bestiame negli allevamenti del Krogg, vi accerchia tra la brina.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "razziatori_picchi_tramonto": {
+        "name": "Razziatori dei Picchi del Tramonto",
+        "image": "",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Passando vicino a Enisov Alta, edificata sul dorso roccioso dei Picchi del Tramonto, incappate in una banda di predoni e sbandati che ha superato i valichi meridionali per saccheggiare i granai della valle.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
+        ]
+    },
+    "coppia_di_kreehorn": {
+        "name": "Coppia di Kreehorn",
+        "image": "",
+        "hp": 16,
+        "maxHp": 16,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Lungo un tratto sopraelevato e spazzato dal gelo, la magia caotica di Kesia ha innervosito una coppia di imponenti Kreehorn alti oltre tre metri. Di solito circospetti e incruenti, i Silfidi del Gelo abbassano i loro enormi palchi di corna di ghiaccio durissimo e vi caricano per difendere il sentiero.",
+        "fasi": [
+            { "soglia": 70, "testo": "Il maschio raspa la neve e abbassa le corna.", "azioni": ["carica"] },
+            { "soglia": 35, "testo": "La femmina si unisce alla carica, furiosa.", "azioni": ["furore"] }
+        ]
+    },
+    "fuorilegge_ponte_piotr": {
+        "name": "Fuorilegge del Ponte di Piotr",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Sulle arcate di pietra del Ponte di Piotr, avvolte dalla foschia del fiume, un gruppo di disertori e fuorilegge Vitghen presidia il passaggio per imporre pedaggi abusivi ai mercanti delle Trecittà. Appena tentate di attraversare, calano le picche e vi assalgono.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "cenofori_slavine_krogg": {
+        "name": "Cenofori delle Slavine del Krogg",
+        "image": "immagini/bestiario/cenofori.webp",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Lasciata la valle pianeggiante, il sentiero costeggia dei pendii innevati precari. Dei grossi Cenofori delle Slavine hanno scavato il manto nevoso sopra di voi: al vostro passaggio fanno precipitare una coltre di neve per immobilizzarvi e mordervi nella tormenta.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "minatori_di_gerslev": {
+        "name": "Minatori di Gerslev",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "A Gerslev l'aria è sempre tesa, ma il passaggio di Kesia ha fatto traboccare il vaso: una fazione di minatori fedeli ai Traich di Ravndal e una fedele ai Seachtuir di Aebeltoff si stanno affrontando a colpi di piccone e ascia tra le strade del borgo, e vi trascinano a forza nella mischia.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "spezza_armatura", "bersaglio": "eroe", "prob": 30 }
+        ]
+    },
+    "golem_monti_scintillanti": {
+        "name": "Golem dei Monti Scintillanti",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "L'abbondanza di giacimenti d'oro, rame e gemme nei Monti Scintillanti ha attirato una coppia di massicci Golem Terrigeni. Svegliati dal frastuono provocato da Kesia, i colossi di roccia e minerale si ergono sul sentiero per schiacciarvi."
+    },
+    "predatore_dei_picchi": {
+        "name": "Il Predatore dei Picchi",
+        "image": "",
+        "hp": 18,
+        "maxHp": 18,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Tra le forre rocciose sotto la Faucebigia, una banda di feroci banditi a cavallo di enormi Warg sta scendendo dai crinali per razziare i sentieri isolati. Vedendovi soli nella neve, lanciano un urlo di guerra e caricano lungo il pendio.",
+        "fasi": [
+            { "soglia": 66, "testo": "Il capo della banda lancia l'urlo di guerra.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 33, "testo": "I Warg fiutano il sangue del più debole.", "azioni": ["predatore"] }
+        ]
+    },
+    "sentinelle_forte_antico": {
+        "name": "Sentinelle del Forte Antico",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Tra i bastioni semidiroccati e battuti dal vento di Granbarricata, delle ombre antiche si muovono tra le pietre: Spettri dei Tumuli e Ghoul del gelo, annidati nelle cripte dei vecchi difensori di Bohka, emergono dalle mura per sbarrarvi il passo.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 }
+        ]
+    },
+    "gropiceri_dei_crinali": {
+        "name": "Gropiceri dei Crinali",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Scendendo lungo i sentieri pietrosi verso il letto dell'Hemsil, il vento gelido porta un rumore fastidioso e acuto: un gruppo di Gropiceri (Rettiladre) visibili nel pieno della loro attività viene spaventato dal vostro arrivo e, affiancato da feroci Brachidani svegliati dal frastuono, vi attacca tra le rocce.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 4 }
+        ]
+    },
+    "troll_del_guado": {
+        "name": "Il Troll del Guado",
+        "image": "",
+        "hp": 22,
+        "maxHp": 22,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Sotto una parete rocciosa che sovrasta una strettoia dell'Hemsil, un enorme e infido Troll delle nevi ha stabilito la propria tana colma di cianfrusaglie, ossa e ricchezze accumulate depredando i viandanti. Stuzzicato dal passaggio di Kesia, il mostro balza fuori dalla grotta pronto a rigenerare le proprie ferite e a vomitare bile acida su di voi.",
+        "fasi": [
+            { "soglia": 60, "testo": "Il Troll vomita un fiotto di bile acida.", "azioni": ["nube_tossica"] },
+            { "soglia": 25, "testo": "Ferito a morte, il Troll ruggisce e si rialza.", "azioni": ["ultimo_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_round", "fai": "cura", "val": 1 }
+        ]
+    },
+    "pattuglia_crinocorno": {
+        "name": "Pattuglia di confine dei Crinocorno",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Avvicinandovi al guado che porta verso le Brughiere del Lander, incrociate una pattuglia a cavallo del clan Traich di Ravndal. Visto il pessimo sangue che scorre tra Ravndal e chi proviene da Aebeltoff, i guerrieri Crinocorno non credono alla vostra storia su Kesia e vi caricano lance in resta.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "campione_folle_di_kesia": {
+        "name": "Il Campione Folle di Kesia",
+        "image": "",
+        "hp": 28,
+        "maxHp": 28,
+        "att": 8,
+        "dmg": 3,
+        "ca": 9,
+        "desc": "Raggiungete il grande ponte fortificato che attraversa le acque gelide del fiume Hemsil, confine ultimo della Valle del Krogg. Sulla sponda opposta vedete Kesia, avvolta in un mantello dai colori sgargianti, che ride divertita seduta su un cippo di confine. Prima di correre via verso le sconfinate Brughiere del Lander e il Massiccio Semprebrina, la figlia di Fredlös schiocca le dita, sprigionando al massimo la sua magia galvanizzante sulla guarnigione del ponte e sulla natura circostante. A sbarrarvi il passo si erge un leggendario Capoguerra Vitghen posseduto dal Furore di Kesia, un colosso armato di un'enorme ascia in Ferro Stellare rubata e scortato dai suoi guerrieri e da feroci bestie da guerra, tutti resi totalmente immuni al dolore e accecati da un'euforia bellica incontrollabile che ha trasformato il presidio in un'arena mortale.\n\n\"Vediamo se sapete combattere bene quanto sapete raccontare storie, Dignitas!\" vi grida Kesia da lontano mentre sparisce nella steppa: per continuare l'inseguimento oltre l'Hemsil, dovrete sopravvivere alla sua festa di sangue.",
+        "fasi": [
+            { "soglia": 75, "testo": "Il Capoguerra solleva l'ascia in Ferro Stellare e la guarnigione urla con lui.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 50, "testo": "L'ascia descrive archi enormi: nessuno è al sicuro accanto a lui.", "azioni": ["colpo_area"] },
+            { "soglia": 25, "testo": "Il Furore di Kesia lo divora: ogni colpo è più forte del precedente.", "azioni": ["furia"] }
+        ],
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 30 }
+        ]
+    },
+    "briganti_mulattiere": {
+        "name": "Briganti delle Mulattiere",
+        "image": "",
+        "hp": 7,
+        "maxHp": 7,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Decidete di evitare la via principale per non dare nell'occhio, imboccando una vecchia mulattiera. Come vi aveva avvertito l'Eparca Marzio, le campagne sono ormai terra di nessuno: un gruppo di briganti e tagliagole emerge dalla boscaglia, armi in pugno, convinto che siate dei semplici mercanti da depredare.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 2 }
+        ]
+    },
+    "ghofuuri_strada_concia": {
+        "name": "Ghofuuri della Strada della Concia",
+        "image": "",
+        "hp": 7,
+        "maxHp": 7,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Costeggiate il primo tratto della Strada della Concia. L'odore acre delle pelli lavorate viene presto coperto dal fetore di carogna: un branco di Ghofuuri, enormi segugi neri dalle pupille rosse e dal muso incrostato di sangue secco, sta banchettando sui resti di un carro abbandonato e si volta ringhiando nella vostra direzione.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "warg_colline_ondulate": {
+        "name": "Warg delle Colline Ondulate",
+        "image": "",
+        "hp": 8,
+        "maxHp": 8,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Vi addentrate tra le colline erbose lontano dalle rotte battute. Degli ululati agghiaccianti squarciano il cielo grigio: un branco di Warg, guidato da un massiccio maschio dominante dal pelo ispido, vi ha fiutati e scende in carica lungo il pendio per sbranarvi.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "disertori_avamposto_pianura": {
+        "name": "Disertori dell'Avamposto",
+        "image": "",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Raggiungete una vecchia stazione di posta lungo la pianura verso Valdrune. Invece delle guardie cittadine, trovate una banda organizzata di disertori e mercenari che ha occupato la struttura, esigendo con le armi un \"pedaggio\" di sangue da chiunque tenti di passare.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
+        ]
+    },
+    "burofonte_tremabosco": {
+        "name": "Il Burofonte Tremabosco",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Tagliando per una fitta boscaglia che costeggia il fiume, commettete l'errore di sconfinare in un territorio marcato da alberi sradicati. Un enorme Tremabosco, massiccio come un orso e dotato di zanne ricurve grandi quanto spade, emette un grugnito furioso e vi carica a testa bassa per difendere il proprio branco.",
+        "fasi": [
+            { "soglia": 60, "testo": "Il Tremabosco raspa il terreno e abbassa le zanne.", "azioni": ["carica"] },
+            { "soglia": 30, "testo": "Ferito, il Burofonte diventa una furia.", "azioni": ["furore"] }
+        ]
+    },
+    "sirenidi_ponti_neferu": {
+        "name": "Sirenidi dei Ponti di Neferu",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Arrivate davanti ai celebri Ponti di Neferu, un complesso di ponti sospesi costruiti in pregiato legno di betulla bianca sopra le rapide del Nederjin. Mentre siete a metà dell'attraversamento, dalle acque sottostanti e dalle travi superiori calano delle creature viscide: dei Sirenidi cercano di ammaliarvi e trascinarvi nel fiume, mentre una Mantombra di fiume tenta di avvilupparsi ai vostri stivali.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "ragno_nero_brumafosca": {
+        "name": "Ragno Nero Imperiale di Brumafosca",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Il sentiero si stringe tra alberi contorti coperti da una sostanza biancastra e vischiosa. Sopra le vostre teste udite un sinistro ticchettio: un mastodontico Ragno Nero Imperiale, grande quanto un cerbiatto, si cala dalle fronde per intrappolarvi nella sua tela venefica.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
+        ]
+    },
+    "tremolischi_foschia": {
+        "name": "Tremolischi nella Foschia",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "La nebbia intorno a voi inizia a vorticare in modo innaturale, muovendosi persino controvento. Dal cuore del banco di foschia proviene un suono agghiacciante di denti che sbattono freneticamente: dei Tremolischi vi hanno circondati e si preparano ad assalirvi dal buio.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 2, "bersaglio": "tutti" }
+        ]
+    },
+    "bestie_albero_impiccato": {
+        "name": "Bestie dell'Albero dell'Impiccato",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Il bosco si apre improvvisamente in un pianoro brumoso e desolato, al cui centro svetta un colossale sempreverde dal tronco contorto che ricorda un volto rugoso e ghignante. È un Arcanitradico: avvertendo la vostra intrusione, l'albero sprigiona la sua collera arcana, aizzando contro di voi le bestie del sottobosco impazzite.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "tutti", "prob": 20 }
+        ]
+    },
+    "brachidani_rocce_assopite": {
+        "name": "Brachidani delle Rocce Assopite",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 1,
+        "ca": 9,
+        "desc": "Avanzate lungo un pendio roccioso dove grandi massi tondeggianti sembrano riposare sotto la pioggia. Quando vi passate accanto, le \"rocce\" si schiudono rivelando carapaci irti di aculei e code ossee: avete svegliato una coppia di Brachidani, che iniziano a rotolare verso di voi per travolgervi.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 40 }
+        ]
+    },
+    "aviano_moork_gola": {
+        "name": "L'Aviano Moork della Gola",
+        "image": "",
+        "hp": 18,
+        "maxHp": 18,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Il sentiero attraversa una gola fredda e cupa dove gli alberi formano una volta impenetrabile. Un senso di colpa opprimente e innaturale vi assale la mente, facendovi tremare le mani sulle armi: dalle fronde più alte plana con uno stridio acuto un Aviano Oscuro (Moork), pronto a dilaniarvi mentre la sua aura negativa tenta di spezzare la vostra volontà.",
+        "fasi": [
+            { "soglia": 66, "testo": "L'aura del Moork si fa soffocante.", "azioni": ["terrore"] },
+            { "soglia": 33, "testo": "L'Aviano punta chi vacilla di più.", "azioni": ["predatore"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 2, "bersaglio": "tutti" }
+        ]
+    },
+    "ghoul_tumulo_profanato": {
+        "name": "Ghoul del Tumulo Profanato",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Costeggiate i resti di un antico luogo di sepoltura risalente alle guerre tra il Regno di Eòghar e i Kin. Dalle cripte mezze crollate emergono dei Ghoul, creature magre e semi-senzienti dai denti marci, che avevano preparato delle trappole rudimentali lungo il sentiero per procurarsi carne fresca.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "zerbene_sanguisuga": {
+        "name": "Sciame di Zerbene Sanguisuga",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Il terreno digrada in una palude arboricola piena di alberi secchi e carcasse d'animali prosciugate. Un ronzio assordante preannuncia l'attacco di uno sciame di Zerbene Sanguisuga, insetti grandi e voraci che agiscono come un'unica mente per dissanguare ogni essere vivente nel loro territorio.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 1 }
+        ]
+    },
+    "pattuglia_di_foscoclivo": {
+        "name": "La Pattuglia di Foscoclivo",
+        "image": "",
+        "hp": 20,
+        "maxHp": 20,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Non siete gli unici ad essere tornati a Loch Ein. Lungo il crinale che domina la riva, vi scontrate con un'avanguardia armata di Foscoclivo: esploratori scelti inviati dal Cenn al seguito dei Cavalcantici, incaricati di presidiare il perimetro esterno del lago ed eliminare qualsiasi membro della Famiglia Dignitas a vista.",
+        "fasi": [
+            { "soglia": 66, "testo": "Il capo pattuglia chiama a raccolta i suoi.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 33, "testo": "Gli esploratori attaccano insieme, da due lati.", "azioni": ["doppio_assalto"] }
+        ]
+    },
+    "serpulidi_di_goli_ja": {
+        "name": "Serpulidi di Goli'ja",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Costeggiate una zona di acque basse e stagnanti dove la vegetazione acquatica cresce in modo anomalo. Dal fango emergono con agilità letale dei Serpulidi di Goli'ja, creature gregarie e sadiche dotate di code poderose e lunghi artigli capaci di lacerare le carni e causare profonde emorragie.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
+        ]
+    },
+    "morrkath_della_riva": {
+        "name": "Morrkath della Riva",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Mentre cala l'oscurità sul lago, una coppia di Morrkath – esseri simili a grossi gatti corvini fatti di pura tenebra e dotati di tre paia di occhi luminosi come stelle – vi sbarra il passo sopra un masso muschioso, emettendo miagolii sinistri che insinuano il panico e la follia nelle vostre menti.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 35 }
+        ]
+    },
+    "aguglia_gigante_corrotta": {
+        "name": "L'Aguglia Gigante Corrotta",
+        "image": "",
+        "hp": 28,
+        "maxHp": 28,
+        "att": 8,
+        "dmg": 3,
+        "ca": 9,
+        "desc": "Prendete il largo sulle acque nere e silenziose di Loch Ein fino a raggiungere il punto esatto sopra l'arco di roccia sommerso, la porta d'accesso ai tunnel sotterranei e alla caverna con la sacca d'aria. Proprio mentre vi preparate a calare la campana subacquea rinforzata, le acque del lago iniziano a ribollire violentemente. L'energia infetta che si sta propagando dalle profondità di Loch Ein ha attirato e mutato il predatore alfa del lago: una colossale Aguglia Gigante Corrotta (lunga più di venti cubiti, con scaglie iridescenti dure come acciaio, zanne simili a coltelli e gli occhi iniettati del bagliore violaceo tipico delle creature corrotte) emerge con uno schianto dalle acque scure, avvinghiandosi attorno al varco sommerso. Per scendere nelle viscere della Caduta dai Cieli, dovrete prima tingere le acque del lago con il suo sangue.",
+        "fasi": [
+            { "soglia": 70, "testo": "L'Aguglia sferza la barca con la coda.", "azioni": ["contrattacco"] },
+            { "soglia": 45, "testo": "Il corpo immenso si avvolge attorno a voi.", "azioni": ["colpo_area"] },
+            { "soglia": 20, "testo": "La corruzione la rende frenetica: morde due volte, ma si scopre.", "azioni": ["frenesia"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "mantombre_stalattiti": {
+        "name": "Mantombre delle Stalattiti",
+        "image": "",
+        "hp": 7,
+        "maxHp": 7,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Appena accendete le torce tra le mura sgretolate e le colonne spezzate della caverna, la luce sembra affievolirsi in modo innaturale. Guardando in alto, vi accorgete che attorno alle stalattiti del soffitto sono aggrovigliate delle Mantombre: le creature si lasciano cadere in silenzio sopra le vostre teste per avvinghiarvi e prosciugarvi dei fluidi vitali.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "golem_dei_giacimenti": {
+        "name": "Golem dei Giacimenti",
+        "image": "",
+        "hp": 9,
+        "maxHp": 9,
+        "att": 6,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Il luccichio dorato della pirite nelle pareti non ha attirato solo il vostro sguardo. Dal suolo argilloso e roccioso si sollevano dei Golem Terrigeni, attratti irrazionalmente dai corpi minerari del sottosuolo e pronti a schiacciare chiunque si avvicini ai filoni cristallini."
+    },
+    "stormo_della_spelonca": {
+        "name": "Lo Stormo della Spelonca",
+        "image": "",
+        "hp": 8,
+        "maxHp": 8,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Dal soffitto oscuro della grotta risuonano versi striduli e vibrazioni. Uno stormo di enormi pipistrelli vi piomba addosso, guidato da un Vespertilio Magno grande quanto un vitello, deciso a dissanguarvi prima di lasciare le vostre carcasse al resto dello stormo.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 1 }
+        ]
+    },
+    "mastini_bokgar_rovine": {
+        "name": "Mastini di Bokgar delle Rovine",
+        "image": "",
+        "hp": 9,
+        "maxHp": 9,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "L'odore di ferro e putrefazione vi preannuncia il pericolo. Dalle case inclinate sbucano dei Mastini di Bokgar, bestie feroci mutate nell'oscurità dei ruderi sepolti, attirate nelle profondità di Loch Ein dall'eco dei recenti combattimenti.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "sentinelle_cavalcantici": {
+        "name": "Sentinelle dei Cavalcantici",
+        "image": "",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Il tintinnio di armature e il fruscio di mantelli contro la pietra vi fanno immobilizzare. Una pattuglia di guerrieri di Foscoclivo sta ispezionando i vicoli alla ricerca di superstiti o tracce di Morwenna; appena vi scorgono, sguainano le lame senza esitare."
+    },
+    "agente_ombra_anoeth": {
+        "name": "L'Agente dell'Ombra",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Tra le statue di antiche divinità dagli occhi vuoti, un assassino scelto inviato dall'Ombra del Cenn di Anoeth vi tende un agguato. Veloce e letale, sfrutta le pendenze delle sale in rovina e l'oscurità per colpire i vostri punti vitali.",
+        "fasi": [
+            { "soglia": 66, "testo": "L'assassino sparisce nell'ombra e sceglie la preda.", "azioni": ["predatore"] },
+            { "soglia": 33, "testo": "Ferito, colpisce chi è già allo stremo.", "azioni": ["vendetta_sul_debole"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "piu_debole" }
+        ]
+    },
+    "ghoul_sangue_versato": {
+        "name": "Ghoul del Sangue Versato",
+        "image": "",
+        "hp": 10,
+        "maxHp": 10,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Raggiungete il luogo dove il sangue dei combattimenti della prima spedizione macchia ancora la pietra. Un gruppo di Ghoul famelici si scaglia contro di voi con le fauci spalancate.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 1 }
+        ]
+    },
+    "gropiceri_degli_abissi": {
+        "name": "Gropiceri degli Abissi",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Dalle crepe allagate del pavimento emergono dei Gropiceri (Rettiladre), grosse lucertole dal dorso iridescente e quattro occhi color brace, attirate dal luccichio del vostro equipaggiamento, accompagnate da predatori cavernicoli aggressivi pronti a difendere il proprio nido.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
+        ]
+    },
+    "spettro_tra_le_colonne": {
+        "name": "Spettro tra le Colonne",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Tra gli edifici crollati del quartiere matematico, le ombre si animano: vi trovate faccia a faccia con uno Spettro dei Tumuli, una manifestazione d'ombra antica e instancabile legata alle rovine sepolte dal giorno del Disastro.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 }
+        ]
+    },
+    "necubri_inondazione": {
+        "name": "Nècubri dell'Inondazione",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Un'onda d'acqua fredda invade la strada inclinata su cui state marciando, portando con sé creature dell'oscurità: Mantombre e Morrkath sfruttano il buio e il caos dell'allagamento per assalirvi da ogni direzione.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
+        ]
+    },
+    "aracnomantropi_gradinate": {
+        "name": "Aracnomantropi delle Gradinate",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Mentre scendete lungo le file di sedili in marmo crollati, delle creature simili a ragni dal volto umanoide – gli Aracnomantropi – calano silenziosamente dalle colonne inclinate sopra di voi, cercando di paralizzarvi con le loro code uncinate.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "stordisci", "bersaglio": "eroe", "prob": 25 }
+        ]
+    },
+    "predatori_acque_arena": {
+        "name": "Predatori delle Acque dell'Arena",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Nella parte più bassa e allagata dell'anfiteatro, dove i rivoli d'acqua sgorgano dalle crepe nelle pareti, dei predatori acquatici mutati simili agli Acreozomi e ai Serpulidi hanno trovato una nuova tana e vi attaccano emergendo dalle pozze scure.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 35 }
+        ]
+    },
+    "campione_di_foscoclivo": {
+        "name": "Il Campione di Foscoclivo",
+        "image": "",
+        "hp": 18,
+        "maxHp": 18,
+        "att": 8,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "All'uscita dell'anfiteatro vi sbarra la strada un veterano corazzato di Foscoclivo, rimasto a presidiare il settore occidentale dopo il ritiro di Lance. Piantato saldamente sul terreno traditore con spada pesante e armatura scura, vi sfida a singolar tenzone per impedirvi di raggiungere il centro della città.",
+        "fasi": [
+            { "soglia": 66, "testo": "Il Campione punta la spada contro il più forte di voi.", "azioni": ["duellante"] },
+            { "soglia": 33, "testo": "Ferito nell'orgoglio, il veterano colpisce con rabbia.", "azioni": ["furore"] }
+        ]
+    },
+    "tessitori_del_buio": {
+        "name": "I Tessitori del Buio",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Le strette vie tra le torri astronomiche sono avvolte da ragnatele spesse come corde d'acciaio. Una colonia di Ragni Neri Imperiali e Aracnomantropi ha colonizzato le altezze del quartiere e cala dall'alto per accerchiarvi.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
+        ]
+    },
+    "fiere_corrotte_abisso": {
+        "name": "Fiere Corrotte dall'Abisso",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Lungo il viale che porta verso il centro, incontrate creature cavernicole che mostrano gli stessi orribili sintomi dei Kranen della Cicatrice: corpi scarni, ferite infette percolanti e un inquietante bagliore violaceo nelle iridi. Rese folli dall'energia che filtra dal profondo, vi caricano senza alcun istinto di conservazione.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 25 }
+        ]
+    },
+    "ronda_della_piazza": {
+        "name": "La Ronda della Piazza",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "La grande piazza non è incustodita: una squadra mista di fanteria pesante dei Kin e segugi da guerra pattuglia i bordi lastricati per impedire a chiunque di avvicinarsi al Palazzo. Sfruttando la pendenza a loro favore, si lanciano in carica verso di voi.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "golem_cristallo_pirite": {
+        "name": "Il Golem di Cristallo e Pirite",
+        "image": "",
+        "hp": 22,
+        "maxHp": 22,
+        "att": 8,
+        "dmg": 3,
+        "ca": 9,
+        "desc": "Lungo il bordo monumentale della piazza, dove si concentrano le antiche incisioni cittadine, l'energia dell'Yrtite ha fuso insieme i minerali della caverna e i mosaici crollati dando vita a un colossale Golem Terrigeno incrostato di pirite e cristalli luminescenti, che presidia la scalinata d'accesso al Palazzo.",
+        "fasi": [
+            { "soglia": 60, "testo": "I cristalli si saldano sul corpo del Golem come una corazza.", "azioni": ["corazza_di_pietra"] },
+            { "soglia": 30, "testo": "Il Golem abbatte i pugni sulla scalinata: le schegge volano ovunque.", "azioni": ["colpo_area"] }
+        ]
+    },
+    "esuridi_acque_alte": {
+        "name": "Esùridi delle Acque Alte",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "La parte inferiore della piazza circolare è ormai completamente sommersa dall'acqua che cade a cascata dalla volta. Dalle acque torbide emergono degli Esùridi (Progenie Non Morta), antichi abitanti e guerrieri di Loch Ein risvegliati nelle rovine sepolte dall'energia infetta che permea la città.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "cura", "val": 1 }
+        ]
+    },
+    "imboscata_sui_gradoni": {
+        "name": "L'Imboscata sui Gradoni",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Proprio come accaduto durante la prima spedizione, dalle ombre sopra la scalinata del Palazzo vengono scagliati pesanti massi di pietra per schiacciarvi, seguiti dall'assalto frontale di guerrieri scelti di Foscoclivo appostati tra le rovine.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "ombre_della_cascata": {
+        "name": "Le Ombre della Cascata",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Tra il fragore assordante della cascata che scende dalla volta incrinata e il bagliore della pirite sulle pareti, un branco di predatori d'ombra e Nefasti Esùridi emerge dal velo d'acqua per impedirvi di raggiungere il portico del Palazzo.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
+        ]
+    },
+    "eldric_dei_cavalcantici": {
+        "name": "Eldric dei Cavalcantici",
+        "image": "",
+        "hp": 28,
+        "maxHp": 28,
+        "att": 8,
+        "dmg": 3,
+        "ca": 9,
+        "desc": "Varcate il colonnato allagato per entrare nell'atrio di marmo del Palazzo dei Firmamentisti, verso la grande porta di bronzo che conduce alla Sala del Consiglio. Ma ad attendervi sulla soglia, illuminato dal bagliore dorato della pirite e circondato da una guardia scelta di Foscoclivo, c'è una figura imponente quanto una montagna: Eldric dei Cavalcantici. Sopravvissuto alla prima spedizione grazie al crollo della colonna su Pancrazio, il gigante corazzato ha il volto sfigurato da una brutale cicatrice sul naso e sulla mascella – il segno indelebile del colpo di scudo ricevuto. Brandendo la sua colossale spada a due mani e accecato da una sete di vendetta furiosa contro l'intera Famiglia Dignitas, Eldric ruggisce sopra il fragore della cascata e si lancia alla carica per spezzarvi le ossa e seppellirvi definitivamente sotto le acque di Loch Ein.",
+        "fasi": [
+            { "soglia": 75, "testo": "Eldric ruggisce e la guardia di Foscoclivo serra i ranghi.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 50, "testo": "Eldric riconosce il più forte di voi e lo marca come preda.", "azioni": ["bersaglio_marcato"] },
+            { "soglia": 25, "testo": "Sanguinante, Eldric si rialza con la furia di chi non ha più niente da perdere.", "azioni": ["ultimo_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "piu_forte" }
+        ]
     }
 };

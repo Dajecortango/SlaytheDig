@@ -273,7 +273,7 @@
         // Stessi calcoli usati da executeCombatHeroRoll, mostrati prima del tiro
         function updateActionPreviews(hero) {
             if (!hero || !stato.activeEnemy) return;
-            const rb = relicCombatBonus();
+            const rb = relicCombatBonus(hero);
             const first = firstActorBonus(hero);  // Libertas in furor: +Forza se è il primo ad agire
             const attackNeeded = stato.activeEnemy.ca - hero.str - first - stato.helpBonus - attackMod(hero) - rb.att;
             const defendNeeded = stato.activeEnemy.att - hero.str - first - (hero.def_bonus || 0) - relicDiceBonus();

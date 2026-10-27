@@ -12,6 +12,18 @@
 // Un eroe è ferito (ritratto da ferito) con WOUNDED_HP o meno, ma ancora in piedi
 const WOUNDED_HP = 2;
 
+// Passiva "Malasorte" (Aiace, segnale hero_set "malasorte"): ogni MALASORTE_FALLIMENTI tiri falliti
+// (scontro, prove, preghiera) +1 Forza permanente, al massimo MALASORTE_MAX volte per capitolo
+// (malasorteDopoTiro in js/motore/speciali.js)
+const MALASORTE_FALLIMENTI = 3;
+const MALASORTE_MAX = 3;
+
+// Passiva "Ira Traboccante" (Aurelio, segnale hero_set "iraTraboccante"): ogni tiro fallito della compagnia in scontro
+// dà +1 Collera (+1 al suo tiro per colpire per carica); a IRA_MAX cariche va in Furia: il suo prossimo attacco
+// fa IRA_DANNI_SFOGO danni in più, poi la Collera torna a 0 (iraDopoTiro in js/motore/speciali.js)
+const IRA_MAX = 3;
+const IRA_DANNI_SFOGO = 2;
+
 /* ---------- Zaino e consumabili ---------- */
 // Capienza dello zaino di ogni eroe: oltre si deve scartare un oggetto
 const BACKPACK_SIZE = 3;

@@ -35,9 +35,15 @@ function simPotionTarget(hero) {
     const c = abilityCombat(hero.chosenAbility) || {};
     const alive = stato.party.filter(h => h.hp > 0);
     const armatura = (c.effetti || []).some(s => s.bersaglio === 'scelto' && s.fai === 'armatura');
-    const t = armatura ? simAliveMinBy(alive.filter(h => !h.noArmor), h => h.hp + (h.current_armor || 0))
+    const t = simChosenHeal(c) ? simAliveMaxBy(alive, h => h.maxHp - h.hp)
+        : armatura ? simAliveMinBy(alive.filter(h => !h.noArmor), h => h.hp + (h.current_armor || 0))
         : simAliveMaxBy(alive, h => (h.str || 0) + (h.dmg || 0));
     return (t || hero).name;
+}
+
+// Attiva che cura un eroe scelto (Mano di Draken): conviene usarla solo quando qualcuno ha perso almeno 2 HP
+function simChosenHeal(c) {
+    return (c.effetti || []).some(s => s.bersaglio === 'scelto' && s.fai === 'cura');
 }
 
 function hasUsableAbility(hero) {
@@ -472,7 +478,9 @@ function simExpertAction(hero, enemy, ctx) {
     // Abilità attiva (una per scontro): l'armatura immediata solo quando serve, le altre subito
     if (hasUsableAbility(hero)) {
         const c = abilityCombat(hero.chosenAbility) || {};
-        if (!c.armorGain || loss > 0) return 'ability';
+        if (simChosenHeal(c)) {
+            if (stato.party.some(h => h.hp > 0 && h.maxHp - h.hp >= 2)) return 'ability';
+        } else if (!c.armorGain || loss > 0) return 'ability';
     }
     // Colpo che chiude lo scontro
     if (enemy.hp <= hitDmg && pHit >= 0.5) return 'attack';

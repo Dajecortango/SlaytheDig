@@ -250,7 +250,7 @@
         function expireTempBuffs(all = false) {
             const expired = [];
             stato.party.forEach(h => {
-                if (all) { h.pendingBuffs = []; delete h.poison; delete h.silencedUntil; delete h.rageUntil; }  // fine scontro: anche gli stati
+                if (all) { h.pendingBuffs = []; delete h.poison; delete h.silencedUntil; delete h.rageUntil; iraAzzera(h); }  // fine scontro: anche gli stati e la Collera
                 if (!h.tempBuffs || !h.tempBuffs.length) return;
                 h.tempBuffs = h.tempBuffs.filter(b => {
                     if (!all && b.expiresAfterRound >= stato.combatRound) return true;
@@ -279,8 +279,8 @@
         function heroStatusesHtml(h) {
             const list = heroStatuses(h);
             if (!list.length) return '';
-            return `<div class="hero-statuses">${list.map(s => `<span class="hero-buff debuff hero-status" data-tip="${esc(`${s.name}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}">
-                <img src="${esc(s.icon)}" alt="">${s.rounds ? `<b class="${s.rounds === 1 ? 'last' : ''}">${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
+            return `<div class="hero-statuses">${list.map(s => `<span class="hero-buff ${s.buff ? '' : 'debuff'} hero-status" data-tip="${esc(`${s.name}${s.count ? ` ${s.count}` : ''}||${s.desc}${s.val ? ` (−${s.val} HP)` : ''}${s.rounds ? `, ancora ${s.rounds} round` : ''}`)}">
+                <img src="${esc(s.icon)}" alt="">${s.count ? `<b>${s.count}</b>` : s.rounds ? `<b class="${s.rounds === 1 ? 'last' : ''}">${s.rounds}</b>` : ''}</span>`).join('')}</div>`;
         }
 
         // Benedizioni della preghiera ancora da usare (hero.blessings, js/prove.js): icone dorate sulla carta dell'eroe,

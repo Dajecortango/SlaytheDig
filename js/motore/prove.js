@@ -189,6 +189,10 @@
                 }
             }
 
+            // Malasorte (Aiace): il tiro fallito conta verso il +1 Forza
+            const sfiga = malasorteDopoTiro(hero, success);
+            if (sfiga) events.push({ type: 'special', text: `✨ ${sfiga}` });
+
             events.push({ type: 'outcome', text: success ? '<b class="log-success">Successo</b>' : '<b class="log-fail">Fallimento</b>' });
 
             let rewardGranted = null, punishmentApplied = null;
@@ -371,6 +375,8 @@
             const total = roll + (hero.fth || 0) + relics + items;
             const notes = spendNextRollRelics('preghiera', hero);
             const success = naturalRollSuccess(roll, total, PRAYER_CD);
+            const sfiga = malasorteDopoTiro(hero, success);  // Malasorte (Aiace): anche la preghiera conta
+            if (sfiga) notes.push(sfiga);
             return { roll, total, relics, items, notes, success, major: success && (roll === 6 || total >= PRAYER_MAJOR_TOTAL),
                 naturalNote: naturalRollNote(roll, total, PRAYER_CD) };
         }

@@ -271,7 +271,10 @@ window.LIBRERIA.eroi = {
         "def_bonus": 0,
         "help_bonus_val": 0,
         "items": [],
-        "abilities": ["cassio_fiala_flammaurea", "cassio_tintura_corteccia", "cassio_elisir_toro"]
+        "abilities": ["cassio_fiala_flammaurea", "cassio_tintura_corteccia", "cassio_elisir_toro"],
+        "portrait": "immagini/ritratti/cassio.webp",
+        "portraitZoom": 1.2,
+        "portraitWounded": "immagini/ritratti/cassio_ferito.webp"
     },
     "ofelia_dignitas": {
         "name": "Ofelia Dignitas",
@@ -333,5 +336,46 @@ window.LIBRERIA.eroi = {
         "abilities": ["enea_scudo_del_nord"],
         "portrait": "immagini/ritratti/enea.webp",
         "portraitWounded": "immagini/ritratti/enea_ferito.webp"
+    },
+    "aiace_dignitas": {
+        "name": "Aiace Dignitas",
+        "str": 2,
+        "int": 3,
+        "fth": 2,
+        "maxHp": 4,
+        "hp": 4,
+        "dmg": 1,
+        "base_armor": 0,
+        "current_armor": 0,
+        "att_penalty": 0,
+        "def_bonus": 0,
+        "help_bonus_val": 0,
+        "items": [],
+        "abilities": ["aiace_malasorte", "aiace_inciampare_nella_storia"],
+        "portrait": "immagini/ritratti/aiace.webp",
+        "portraitWounded": "immagini/ritratti/aiace_ferito.webp",
+        "portraitZoom": 1.25
+    },
+    "aurelio_dignitas": {
+        "name": "Aurelio Dignitas",
+        "str": 2,
+        "int": 1,
+        "fth": 4,
+        "maxHp": 4,
+        "hp": 4,
+        "dmg": 1,
+        "base_armor": 0,
+        "current_armor": 0,
+        "att_penalty": 0,
+        "def_bonus": 0,
+        "help_bonus_val": 1,
+        "items": [],
+        "abilities": ["aurelio_ira_traboccante", "aurelio_mano_di_draken"],
+        "portrait": "immagini/ritratti/aurelio.webp",
+        "portraitWounded": "immagini/ritratti/aurelio_ferito.webp",
+        "portraitPos": "59.4% 53.8%",
+        "portraitZoom": 1.5,
+        "portraitWoundedPos": "60.9% 37.8%",
+        "portraitWoundedZoom": 1.5
     }
 };

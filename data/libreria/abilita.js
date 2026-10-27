@@ -406,6 +406,59 @@ window.LIBRERIA.abilita = {
         ],
         "icon": "immagini/icone/BTNHeroMountainKing.png"
     },
+    "aiace_malasorte": {
+        "id": "aiace_malasorte",
+        "name": "Malasorte",
+        "desc": "Passiva: la sfortuna gli ha insegnato tutto. Ogni 3 tiri falliti (scontro, prove e preghiera) guadagna +1 Forza per sempre, fino a 3 volte per capitolo",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "malasorte", "val": 1 }
+        ],
+        "icon": "immagini/icone/BTNBoneChimes.png"
+    },
+    "aiace_inciampare_nella_storia": {
+        "id": "aiace_inciampare_nella_storia",
+        "name": "Inciampare nella storia",
+        "desc": "Attiva (1 volta per scontro): inciampa e piomba addosso al nemico. Colpisce sempre (vale come un 6) con +2 Danno, ma nella caduta perde 1 HP (mai sotto 1)",
+        "isCombatActive": true,
+        "actionName": "Inciampare nella storia (colpo sicuro, +2 Danno, si ferisce)",
+        "icon": "immagini/icone/BTNBash.png",
+        "combat": {
+            "autoHit": true,
+            "damageBonus": 2,
+            "effetti": [
+                { "quando": "uso", "fai": "ferisce_se", "val": 1 }
+            ],
+            "useText": "🎲 {eroe} inciampa e piomba addosso al nemico!",
+            "hitLabel": "COLPO ROVINOSO!",
+            "hitText": "Cade male, ma trascina il nemico con sé: {danni} danni!"
+        }
+    },
+    "aurelio_ira_traboccante": {
+        "id": "aurelio_ira_traboccante",
+        "name": "Ira Traboccante",
+        "desc": "Passiva: Arvale di Draken, non sopporta che le cose vadano storte. In scontro ogni tiro fallito della compagnia (anche il suo) gli dà 1 Collera, fino a 3: ogni carica è +1 al suo tiro per colpire. A 3 cariche va in Furia (può solo attaccare) e il suo prossimo attacco fa +2 danni, poi la Collera torna a 0",
+        "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_set", "stat": "iraTraboccante", "val": 1 }
+        ],
+        "icon": "immagini/icone/BTNBloodLust.png"
+    },
+    "aurelio_mano_di_draken": {
+        "id": "aurelio_mano_di_draken",
+        "name": "Mano di Draken",
+        "desc": "Attiva (1 volta per scontro): senza tiro, impone le mani nel nome del Mutevole e cura 2 HP a un eroe a scelta (anche a sé). Usa la sua azione del turno",
+        "isCombatActive": true,
+        "actionName": "Mano di Draken (cura 2 HP a un eroe)",
+        "icon": "immagini/icone/BTNHealingWave.png",
+        "combat": {
+            "senzaTiro": true,
+            "effetti": [
+                { "quando": "uso", "fai": "cura", "val": 2, "bersaglio": "scelto" }
+            ],
+            "useText": "🐉 {eroe} impone le mani nel nome di Draken il Mutevole!"
+        }
+    },
     "enea_scudo_del_nord": {
         "id": "enea_scudo_del_nord",
         "name": "Scudo del Nord",

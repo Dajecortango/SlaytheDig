@@ -294,6 +294,8 @@ const HERO_FLAGS = {
     firstActorStrBonus: 'Forza in più ai tiri se agisce per primo nel round',
     freeFirstMerchantItem: 'primo oggetto di ogni mercante gratis',
     helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round',
+    malasorte: 'ogni 3 tiri falliti (scontro, prove, preghiera) +1 Forza, max 3 volte per capitolo',
+    iraTraboccante: 'tiri falliti della compagnia in scontro: Collera (+1 al tiro per colpire), al massimo va in Furia',
     prayerExtraChoices: 'benedizioni in più fra cui scegliere quando prega e riesce',
     noArmor: 'non porta armature né scudi e non riceve armatura (niente Difendi)'
 };

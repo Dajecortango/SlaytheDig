@@ -92,6 +92,7 @@
         // I danni in più (Zanna del leone bianco, oggetti...) arrivano col colpo a segno (fireSpecials 'colpo').
         function relicCombatBonus(hero = null) {
             const sources = rollSpecialSources('attacco', hero);
+            if (hero && hero.iraTraboccante && hero.collera > 0) sources.push({ name: 'Collera', val: hero.collera });  // Ira Traboccante (Aurelio)
             return { att: sources.reduce((sum, r) => sum + r.val, 0), dmg: 0, notes: sources.map(r => `${r.name} (+${r.val} al tiro)`) };
         }
 

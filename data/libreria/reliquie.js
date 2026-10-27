@@ -294,5 +294,29 @@ window.LIBRERIA.reliquie = {
         "speciali": [
             { "quando": "inizio_round", "fai": "armatura", "se": "elite", "prob": 50, "val": 2, "bersaglio": "meno_hp" }
         ]
+    },
+    "spirito_di_piotr": {
+        "type": "relic",
+        "name": "Spirito di Piotr",
+        "desc": "Lo spirito indomito dell'eroe lungobarbo vi accompagna: +1 HP massimi a tutti",
+        "effects": [
+            { "effect": "party_max_hp", "val": 1 }
+        ]
+    },
+    "polvere_boreale": {
+        "type": "relic",
+        "name": "Polvere Boreale",
+        "desc": "La scia luminescente del Gheist illumina il vero sentiero: +1 ai tiri delle prove",
+        "speciali": [
+            { "quando": "prova", "fai": "bonus_tiro", "val": 1 }
+        ]
+    },
+    "scudo_dei_dignitas": {
+        "type": "relic",
+        "name": "Scudo dei Dignitas",
+        "desc": "Lo scudo di famiglia recuperato sotto la colonna: a inizio di ogni scontro +1 armatura a tutta la compagnia",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "armatura", "val": 1, "bersaglio": "compagnia" }
+        ]
     }
 };
