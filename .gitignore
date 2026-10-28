@@ -39,3 +39,6 @@ server/cache-leggera/
 # Strumenti di Claude Code (skill, agenti, impostazioni locali): restano sul PC, fuori dal progetto
 .claude/
 tools/prova_browser.png
+
+# Grafo del codice di graphify (si rigenera con /graphify)
+graphify-out/

@@ -285,7 +285,7 @@ const LEGACY_ITEM_SPECIALS = {
 // Benedizioni dell'editor. Stesso oggetto della libreria (la campagna di prova dall'editor lo riempie di nuovo).
 const PRAYER_BLESSINGS = (window.LIBRERIA && window.LIBRERIA.benedizioni) || {};
 
-// Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi CLAUDE.md).
+// Segnali che le passive scrivono sull'eroe con hero_set e che il motore legge (vedi docs/eroi.md).
 // Un segnale nuovo va aggiunto qui, altrimenti l'editor lo segnala come sconosciuto.
 // Le passive nuove si scrivono di solito con "speciali" (sopra), senza segnali.
 const HERO_FLAGS = {

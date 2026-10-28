@@ -984,7 +984,9 @@ function renderForm(container, obj, fields, onChange) {
             thumb.alt = '';
             thumb.onerror = () => { thumb.hidden = true; };
             const updateThumb = () => { thumb.hidden = !input.value; if (input.value) thumb.src = assetUrl(input.value); };
-            btn.addEventListener('click', () => pickFile(f.folder || 'immagini', 'image/*', path => { input.value = path; commit(); updateThumb(); }));
+            const folder = f.folder || 'immagini';
+            const placeImage = path => { input.value = path; commit(); updateThumb(); };
+            btn.addEventListener('click', () => pickFile(folder, 'image/*', placeImage, imageNameHint(obj, f.k)));
             input.addEventListener('input', updateThumb);
             row.append(input, btn, thumb);
             updateThumb();
@@ -996,12 +998,7 @@ function renderForm(container, obj, fields, onChange) {
                 e.preventDefault();
                 row.classList.remove('ed-drop');
                 const file = [...(e.dataTransfer.files || [])].find(x => /^image\//.test(x.type));
-                if (!file) return;
-                const path = `${f.folder || 'immagini'}/${safeFileName(file.name)}`;
-                addPendingAsset(path, file);
-                input.value = path;
-                commit();
-                updateThumb();
+                if (file) addImageFile(file, folder, imageNameHint(obj, f.k), placeImage);
             });
         }
         if (f.k === 'enemy' && value && lib.bestiario[value]) {

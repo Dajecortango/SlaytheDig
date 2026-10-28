@@ -412,7 +412,7 @@
                         note = `${v === 1 ? 'una carta' : `${v} carte`} in più`;
                         break;
                     case 'purifica': {
-                        const ts = specialTargets(e, hero, ctx).filter(t => heroStatuses(t).length);
+                        const ts = specialTargets(e, hero, ctx).filter(t => heroStatuses(t).some(s => !s.buff));
                         if (!ts.length) continue;
                         ts.forEach(clearHeroStatuses);
                         note = `${ts.map(t => t.name).join(', ')} ${ts.length > 1 ? 'sono liberi' : 'è libero'} da ogni stato`;
@@ -549,7 +549,8 @@
             silenziato: { name: 'Silenziato', icon: 'immagini/icone/BTNSilence.png', desc: 'Non può usare l\'abilità attiva' },
             furia: { name: 'Furia', icon: 'immagini/icone/BTNBerserk.png', desc: 'Può solo attaccare: niente Difendi, Aiuta né abilità' },
             collera: { name: 'Collera', icon: 'immagini/icone/BTNBloodLust.png', buff: true,
-                desc: 'Ira Traboccante: +1 al tiro per colpire per carica. Al massimo va in Furia e il prossimo attacco fa danni in più' }
+                desc: 'Ira Traboccante: +1 al tiro per colpire per carica. Al massimo va in Furia e il prossimo attacco fa danni in più' },
+            malasorte: { name: 'Malasorte', icon: 'immagini/icone/BTNBoneChimes.png', buff: true }
         };
 
         function statusUntil(rounds) {
@@ -569,6 +570,13 @@
             if (isSilenced(h)) out.push({ key: 'silenziato', rounds: left(h.silencedUntil) });
             if (isRaging(h)) out.push({ key: 'furia', rounds: left(h.rageUntil) });
             if (h.iraTraboccante && h.collera > 0) out.push({ key: 'collera', count: h.collera });
+            // Malasorte: tiri falliti verso il prossimo +1 Forza (sparisce quando ha già preso tutti i bonus del capitolo)
+            const presi = h.malasorteGuadagni || 0;
+            if (h.malasorte && presi < MALASORTE_MAX) {
+                const falliti = (h.malasorteFalliti || 0) % MALASORTE_FALLIMENTI;
+                out.push({ key: 'malasorte', count: falliti,
+                    desc: `Tiri falliti: ${falliti}/${MALASORTE_FALLIMENTI} verso il prossimo +1 Forza (presi ${presi}/${MALASORTE_MAX} in questo capitolo)` });
+            }
             return out.map(s => ({ ...HERO_STATUSES[s.key], ...s }));
         }
 

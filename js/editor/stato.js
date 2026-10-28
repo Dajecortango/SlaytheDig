@@ -105,13 +105,73 @@ function addPendingAsset(path, blob) {
     imageStatus.set(path, 'ok');
 }
 
-function pickFile(folder, accept, onPicked) {
+/* Immagine caricata o trascinata: diventa WebP (lato massimo IMAGE_MAX_SIDE, qualità 0.75, come
+   tools/ottimizza_immagini.mjs) con un nome pulito. Un nome generico (screenshot, file_0000…, IMG_…)
+   prende quello dell'elemento (eroe, nemico, nodo: imageNameHint). Icone, interfaccia, cursori, SVG
+   e GIF restano come sono; se il browser non sa scrivere WebP resta il file originale. */
+const IMAGE_MAX_SIDE = 1024;
+const IMAGE_KEEP_FOLDER = /^immagini\/(icone|ui|cursori)(\/|$)/;
+const GENERIC_IMAGE_NAME = /^(screenshot|schermata|screen_shot|image|immagine|img|file|photo|foto|pxl|dsc|download|gemini_generated|generated|chatgpt_image|dall_e|untitled|senza_titolo)|^[0-9a-f_-]{12,}$|^[\d_ -]+$/;
+
+function imageNameHint(obj, key) {
+    const base = safeFileName(String((obj && (obj.name || obj.title)) || '').replace(/^livello\s*\d+\s*-\s*/i, ''))
+        .replace(/\./g, '').replace(/^_+|_+$/g, '').slice(0, 60);
+    if (!base) return '';
+    if (key === 'portraitWounded') return `${base}_ferito`;
+    if (key === 'coverImage') return `copertina_${base}`;
+    return base;
+}
+
+function imageBaseName(fileName, hint) {
+    const base = safeFileName(fileName.replace(/\.[^.]+$/, '')).replace(/^_+|_+$/g, '');
+    return hint && (!base || GENERIC_IMAGE_NAME.test(base)) ? hint : (base || 'immagine');
+}
+
+// Un percorso libero fra le immagini in attesa (un secondo caricamento con lo stesso nome non copre il primo)
+function freeAssetPath(folder, name, ext) {
+    let path = `${folder}/${name}${ext}`;
+    for (let i = 2; pendingAssets.has(path); i++) path = `${folder}/${name}_${i}${ext}`;
+    return path;
+}
+
+async function prepareImage(file, folder, hint) {
+    const name = imageBaseName(file.name, hint);
+    const ext = ((file.name.match(/\.[^.]+$/) || [''])[0] || '').toLowerCase();
+    const keep = IMAGE_KEEP_FOLDER.test(folder) || /svg|gif/.test(file.type) || typeof createImageBitmap !== 'function';
+    if (!keep) {
+        try {
+            const bmp = await createImageBitmap(file);
+            const scale = Math.min(1, IMAGE_MAX_SIDE / Math.max(bmp.width, bmp.height));
+            if (!(file.type === 'image/webp' && scale === 1)) {
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(bmp.width * scale);
+                canvas.height = Math.round(bmp.height * scale);
+                canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+                if (bmp.close) bmp.close();
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.75));
+                if (blob && blob.type === 'image/webp') return { path: freeAssetPath(folder, name, '.webp'), blob };
+            }
+        } catch (e) { /* immagine che il browser non sa leggere: resta l'originale */ }
+    }
+    return { path: freeAssetPath(folder, name, ext), blob: file };
+}
+
+// Immagine scelta o trascinata su un campo: preparata, messa fra quelle in attesa, poi onReady(percorso)
+function addImageFile(file, folder, hint, onReady) {
+    prepareImage(file, folder, hint).then(({ path, blob }) => {
+        addPendingAsset(path, blob);
+        onReady(path);
+    });
+}
+
+function pickFile(folder, accept, onPicked, hint) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = accept;
     input.onchange = () => {
         const file = input.files[0];
         if (!file) return;
+        if (/^image\//.test(accept)) return addImageFile(file, folder, hint, onPicked);
         const path = `${folder}/${safeFileName(file.name)}`;
         addPendingAsset(path, file);
         onPicked(path);

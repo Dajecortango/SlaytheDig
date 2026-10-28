@@ -195,6 +195,47 @@ async function provaEditor() {
     for (const [id, errs] of Object.entries(r.campagne)) console.log(`  ${errs.length ? '•' : '✓'} ${id}: ${errs.length ? `${errs.length} errori nei dati, es. ${errs.slice(0, 3).join(' | ')}` : 'nessun errore nei dati'}`);
     r.rotte.forEach(x => errori.push('scheda: ' + x));
     if (!r.schede.length) errori.push('nessuna scheda trovata nell\'editor');
+    // Immagine caricata (prepareImage in js/editor/stato.js): uno screenshot PNG 2000x1500 diventa WebP 1024x768
+    // col nome dell'elemento; nella cartella delle icone resta PNG
+    const img = await valuta(`(async () => {
+        const c = document.createElement('canvas'); c.width = 2000; c.height = 1500;
+        const g = c.getContext('2d'); g.fillStyle = '#a33'; g.fillRect(0, 0, 2000, 1500); g.fillStyle = '#fd0'; g.fillRect(400, 300, 900, 600);
+        const png = await new Promise(r => c.toBlob(r, 'image/png'));
+        const file = new File([png], 'Screenshot 2026-10-27 153151.png', { type: 'image/png' });
+        const a = await prepareImage(file, 'immagini/ritratti', 'zeno');
+        const bmp = await createImageBitmap(a.blob);
+        const b = await prepareImage(file, 'immagini/icone', 'zeno');
+        return { path: a.path, type: a.blob.type, w: bmp.width, h: bmp.height, piu_leggera: a.blob.size < png.size, icona: b.path + ' ' + b.blob.type };
+    })()`);
+    ok(img.path === 'immagini/ritratti/zeno.webp' && img.type === 'image/webp' && img.w === 1024 && img.h === 768 && img.piu_leggera,
+        `immagine caricata: ${img.path} ${img.type} ${img.w}x${img.h}`);
+    ok(img.icona === 'immagini/icone/zeno.png image/png', `icona caricata resta PNG (${img.icona})`);
+    // Controlla immagini (Home): finestra con una sezione per campagna; un clic su un nodo apre la mappa su quel nodo
+    const ctrl = {};
+    await valuta(`(async () => {
+        campaignChosen = false; currentTab = 'home'; render();
+        document.querySelector('[data-action="homeCheckImages"]').click();
+        for (let i = 0; i < 100 && !document.getElementById('edConfirm'); i++) await new Promise(r => setTimeout(r, 100));
+        return true;
+    })()`);
+    if (FOTO) {
+        fs.mkdirSync(FOTO, { recursive: true });
+        const foto = await cdp('Page.captureScreenshot', { format: 'png' });
+        fs.writeFileSync(path.join(FOTO, 'editor_controlla_immagini.png'), Buffer.from(foto.data, 'base64'));
+    }
+    Object.assign(ctrl, await valuta(`(() => {
+        const box = document.getElementById('edConfirm');
+        if (!box) return { aperta: false };
+        const sezioni = box.querySelectorAll('.ed-img-report-camp').length;
+        const titolo = box.querySelector('h3').textContent;
+        const riga = box.querySelector('.ed-img-report li a[data-args*=","]');
+        const args = riga && JSON.parse(riga.dataset.args);
+        const nodo = args && args[1];
+        if (riga) riga.click();
+        return { aperta: true, sezioni, titolo, nodo, tab: currentTab, sel: selection.map, chiusa: !document.getElementById('edConfirm') };
+    })()`));
+    ok(ctrl.aperta && ctrl.sezioni > 3, `controlla immagini: ${ctrl.sezioni} campagne, «${ctrl.titolo}»`);
+    if (ctrl.nodo != null) ok(ctrl.chiusa && ctrl.tab === 'map' && ctrl.sel === ctrl.nodo, `clic su un nodo senza immagine: mappa sul nodo ${ctrl.nodo}`);
     if (errori.length) { fallita = true; console.log(`  ✗ ${errori.length} errori:`); [...new Set(errori)].slice(0, 20).forEach(e => console.log('    ' + e)); }
     else console.log('  ✓ nessun errore JavaScript nell\'editor');
 }

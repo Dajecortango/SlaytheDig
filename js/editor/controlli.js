@@ -274,3 +274,77 @@ function renderIssues() {
         }
     }));
 }
+
+/* ---------- Controlla immagini (Home) ----------
+   Per ogni campagna i nodi che nel gioco non hanno una scena loro: senza immagine (scontri con un nemico
+   senza immagine, trame che mostrano la copertina, gli altri il segnaposto) o con un file che non c'è.
+   Gli scontri senza immagine del nodo ma con quella del nemico non contano: nel gioco si vede il nemico.
+   La campagna aperta conta con le modifiche non salvate. */
+function imageReportCampaigns() {
+    const list = Object.values(rawCampaigns()).map(c => (campaignChosen && camp && c.id === camp.id ? camp : c));
+    if (campaignChosen && camp && !rawCampaigns()[camp.id]) list.push(camp);
+    return list.filter(c => (c.mapNodes || []).length);
+}
+
+function campaignImageReport(c) {
+    const out = { id: c.id, title: c.title || c.id, total: 0, own: 0, enemy: 0, problems: [] };
+    const missing = p => checkImage(p) === 'missing';
+    if (!c.coverImage) out.problems.push({ node: null, title: 'Copertina', why: 'manca' });
+    else if (missing(c.coverImage)) out.problems.push({ node: null, title: 'Copertina', why: `file che non c'è (${c.coverImage})` });
+    (c.mapNodes || []).forEach(n => {
+        out.total++;
+        const row = { node: n.id, title: n.title || `Nodo ${n.id}` };
+        if (n.image && !missing(n.image)) { out.own++; return; }
+        if (n.image) { out.problems.push({ ...row, why: `file che non c'è (${n.image})` }); return; }
+        const enemy = ['combat', 'elite'].includes(n.type) && n.enemy && lib.bestiario[n.enemy];
+        if (enemy && enemy.image && !missing(enemy.image)) { out.enemy++; return; }
+        out.problems.push({ ...row, why: n.type === 'story' && c.coverImage ? 'manca (si vede la copertina)' : 'manca (si vede il segnaposto)' });
+    });
+    return out;
+}
+
+// Aspetta che il browser abbia provato a caricare tutte le immagini (checkImage le prova una volta sola)
+function waitImageChecks(paths) {
+    return Promise.all(paths.map(p => new Promise(resolve => {
+        const tick = () => (checkImage(p) === 'pending' ? setTimeout(tick, 80) : resolve());
+        tick();
+    })));
+}
+
+async function homeCheckImages() {
+    const campaigns = imageReportCampaigns();
+    const paths = new Set();
+    campaigns.forEach(c => {
+        if (c.coverImage) paths.add(c.coverImage);
+        c.mapNodes.forEach(n => {
+            if (n.image) paths.add(n.image);
+            const e = n.enemy && lib.bestiario[n.enemy];
+            if (e && e.image) paths.add(e.image);
+        });
+    });
+    edToast('Controllo le immagini…');
+    await waitImageChecks([...paths]);
+    const reports = campaigns.map(campaignImageReport);
+    const block = r => `<section class="ed-img-report-camp">
+        <h4>${esc(r.title)} <small>${r.own}/${r.total} nodi con un'immagine loro${r.enemy ? `, ${r.enemy} con quella del nemico` : ''}</small></h4>
+        ${r.problems.length ? `<ul>${r.problems.map(p => `<li><a href="#" class="ed-link" ${azione('homeOpenImageProblem', r.id, p.node)}>${esc(p.title)}</a> <span>${esc(p.why)}</span></li>`).join('')}</ul>`
+            : '<p class="ed-ok">Tutte a posto.</p>'}
+    </section>`;
+    const todo = reports.reduce((s, r) => s + r.problems.length, 0);
+    edConfirm({
+        title: todo ? `Immagini da aggiungere: ${todo}` : 'Tutte le immagini ci sono',
+        html: `<div class="ed-img-report">${reports.map(block).join('')}</div>`,
+        ok: null
+    });
+    document.querySelector('#edConfirm .ed-confirm').classList.add('ed-confirm-wide');
+}
+
+// Clic su una riga del controllo: apre la campagna sul nodo (o la scheda Generale per la copertina)
+function homeOpenImageProblem(id, nodeId) {
+    edConfirmClose();
+    if (!(campaignChosen && camp && camp.id === id) && !openCampaign(id)) return;
+    campaignChosen = true;
+    if (nodeId == null) return switchTab('general');
+    selection.map = nodeId;
+    switchTab('map');
+}

@@ -70,6 +70,10 @@ function renderHomeTab() {
                 <button type="button" class="btn-small" ${azione('downloadZip')}>Scarica .zip…</button>
                 <span>La libreria, un capitolo o tutto il progetto, da mandare a chi tiene il gioco.</span>
             </p>
+            <p class="ed-home-zip">
+                <button type="button" class="btn-small" ${azione('homeCheckImages')}>Controlla immagini</button>
+                <span>I nodi di ogni campagna che non hanno ancora un'immagine, o ne hanno una che non si trova.</span>
+            </p>
         </div>`;
 }
 

@@ -78,6 +78,28 @@ module.exports = (t, carica) => {
         t.uguale(MAX, h.malasorteGuadagni);
     });
 
+    t.test('Malasorte sulla carta: icona con i tiri falliti verso il prossimo bonus, sparisce al tetto; purifica non la toglie', () => {
+        const h = aiace();
+        h.malasorte = 1;
+        const n = prepara([h], { ca: 99 });
+        const stato = () => g.heroStatuses(h).find(s => s.key === 'malasorte');
+        t.ok(stato() && !stato().count, 'icona subito, senza numero');
+        g.resolveAttack(h, n, [2]);
+        t.uguale(1, stato().count, '1 fallito');
+        t.ok(stato().desc.includes(`1/${OGNI}`), 'tooltip con il conto');
+        t.ok(stato().buff, 'non è uno stato negativo');
+        for (let i = 1; i < OGNI; i++) g.resolveAttack(h, n, [2]);
+        t.ok(!stato().count, 'dopo il bonus il conto riparte');
+        t.ok(stato().desc.includes(`presi 1/${MAX}`), 'bonus presi nel tooltip');
+        h.stunnedRounds = 1;
+        h.items.push({ name: 'Acqua santa', speciali: [{ quando: 'inizio_round', fai: 'purifica' }] });
+        g.fireSpecialsAll('inizio_round');
+        h.items.pop();
+        t.ok(!h.stunnedRounds && stato(), 'purifica toglie lo stordimento, non Malasorte');
+        for (let i = 0; i < OGNI * MAX; i++) g.resolveAttack(h, n, [2]);
+        t.ok(!stato(), 'tetto raggiunto: niente icona');
+    });
+
     t.test('senza il segnale i fallimenti non contano', () => {
         const h = aiace();
         const n = prepara([h], { ca: 99 });
