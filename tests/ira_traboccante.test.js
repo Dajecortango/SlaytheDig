@@ -85,6 +85,33 @@ module.exports = (t, carica) => {
         t.ok(g.heroStatuses(a).some(s => s.key === 'collera' && s.count === 2), 'icona sulla carta con le cariche');
     });
 
+    t.test('la Collera è anche +1 a Difendi per carica, solo per Aurelio', () => {
+        const a = aurelio(), b = eroe('B');
+        const n = prepara([a, b], { att: 6 });
+        g.resolveAttack(b, n, [2]);
+        g.resolveAttack(b, n, [2]);
+        t.uguale(2, g.relicDiceBonus('difesa', a), '+2 con 2 cariche');
+        t.uguale(0, g.relicDiceBonus('difesa', b));
+        // 2 + Forza 2 + Collera 2 = 6: la difesa contro Attacco 6 riesce
+        t.ok(g.resolveDefend(a, n, [2]).success, 'difesa riuscita grazie alla Collera');
+    });
+
+    t.test('dopo l\'attacco del nemico la Collera si azzera, anche in Furia', () => {
+        const a = aurelio(), b = eroe('B');
+        const n = prepara([a, b], { att: 1 });
+        g.resolveAttack(b, n, [2]);
+        t.uguale(1, a.collera);
+        const r = g.resolveEnemyTurn(n, b);
+        t.ok(r.attacked);
+        t.ok(!a.collera, 'Collera a 0');
+        t.ok(r.events.some(ev => ev.text.includes('si placa')), 'nota nel diario');
+        for (let i = 0; i < MAX; i++) g.resolveAttack(b, n, [2]);
+        t.ok(a.iraSfogo && !g.combatActionAllowed(a, 'defend').ok, 'in Furia');
+        g.resolveEnemyTurn(n, b);
+        t.ok(!a.collera && !a.iraSfogo, 'Furia finita');
+        t.ok(g.combatActionAllowed(a, 'defend').ok, 'può di nuovo difendere');
+    });
+
     t.test('i successi non danno Collera', () => {
         const a = aurelio(), b = eroe('B');
         const n = prepara([a, b], { ca: 2 });

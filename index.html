@@ -183,7 +183,7 @@
                 <div class="wc-hang wc-hang-center">
                     <div class="wc-chains"><span></span><span></span></div>
                     <div class="wc-panel wc-panel-wide">
-                        <h2>Campagne Disponibili</h2>
+                        <h2>Scegli l'Avventura</h2>
                         <div class="campaign-carousel">
                             <button class="carousel-arrow prev" id="campaignPrev" data-action="scrollCampaigns" data-args='[-1]' aria-label="Campagna precedente">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
@@ -201,6 +201,36 @@
                     <div class="wc-chains short"><span></span><span></span></div>
                     <nav class="wc-panel">
                         <div class="wc-slot"><button class="wc-menu-btn" data-action="showScreen" data-args='["screenStart"]'>Indietro</button></div>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Pagina di un'avventura: si sceglie il capitolo (openAdventure in js/game.js) -->
+            <div id="screenAdventure" class="hidden wc-menu-screen">
+                <div class="wc-hang wc-hang-center">
+                    <div class="wc-chains"><span></span><span></span></div>
+                    <div class="wc-panel wc-panel-wide adventure-panel">
+                        <span class="campaign-badge" id="adventureBadge"></span>
+                        <h2 id="adventureTitle"></h2>
+                        <div class="adventure-layout">
+                            <div class="adventure-detail">
+                                <div class="campaign-cover adventure-cover"><img id="adventureCover" src="immagini/segnaposto/cover.svg" alt=""></div>
+                                <h3 id="adventureChapterTitle"></h3>
+                                <p id="adventureChapterDesc"></p>
+                            </div>
+                            <div class="adventure-chapters-box">
+                                <p class="adventure-chapters-label">Capitoli</p>
+                                <div class="adventure-chapters" id="adventureChapters" role="listbox" aria-label="Capitoli"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wc-hang wc-hang-bottom">
+                    <div class="wc-chains short"><span></span><span></span></div>
+                    <nav class="wc-panel">
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="playAdventureChapter">Gioca</button></div>
+                        <div class="wc-slot"><button class="wc-menu-btn" data-action="adventureBack">Indietro</button></div>
                     </nav>
                 </div>
             </div>
@@ -752,6 +782,7 @@
     <script src="data/libreria/reliquie.js"></script>
     <script src="data/libreria/maledizioni.js"></script>
     <script src="data/libreria/benedizioni.js"></script>
+    <script src="data/libreria/avventure.js"></script>
     <script src="data/libreria/abilita.js"></script>
     <script src="data/libreria/eroi.js"></script>
     <script src="data/azioni_elite/azioni_elite.js"></script>

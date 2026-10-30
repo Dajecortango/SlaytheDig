@@ -30,9 +30,9 @@ module.exports = (t, carica) => {
         t.ok(A.enea_scudo_del_nord && A.enea_scudo_del_nord.isCombatActive, 'attiva');
     });
 
-    t.test('Hammergradiano Puro: alla creazione +1 Forza, +1 Fede, +1 Danno', () => {
+    t.test('Hammergradiano Puro: alla creazione +1 Forza, +1 Fede, niente Danno', () => {
         const h = enea();
-        t.uguale('5,1,3,2,5', [h.str, h.int, h.fth, h.dmg, h.maxHp].join(','));
+        t.uguale('5,1,3,1,5', [h.str, h.int, h.fth, h.dmg, h.maxHp].join(','));
     });
 
     t.test('gli effetti speciali di un\'abilità fissa agiscono anche se l\'eroe ne ha scelta un\'altra', () => {
@@ -79,7 +79,7 @@ module.exports = (t, carica) => {
         dati.heroes = [...dati.heroes, { ...JSON.parse(JSON.stringify(g.LIBRERIA.eroi.enea_dignitas)) }];
         dati.abilities['Enea Dignitas'] = [A.enea_scudo_del_nord];
         const h = g.simBuildHero(dati, 'Enea Dignitas', 0, null);
-        t.uguale('5,3,2', [h.str, h.fth, h.dmg].join(','));
+        t.uguale('5,3,1', [h.str, h.fth, h.dmg].join(','));
         t.uguale('enea_scudo_del_nord', h.chosenAbility.id);
     });
 };

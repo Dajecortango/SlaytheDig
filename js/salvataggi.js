@@ -14,7 +14,7 @@
         let currentSaveSlot = null;  // slot della partita in corso (per sovrascriverlo e cancellarlo alla sconfitta)
 
         /* ---------- Formato e migrazioni ----------
-           Versione 5 (come la 4, con stato.onlineOwners: eroe → giocatore della partita online; la 4 rinomina la valuta in Scudi): { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
+           Versione 5 (come la 4, con stato.onlineOwners della partita online: eroe → eroe, perché il giocatore è l'eroe che ha scelto; la 4 rinomina la valuta in Scudi): { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
            currentNodeId, party, partyFlags, partyCoins, unlockedRelics: [{ id, name, desc }],
            activeCurses: [{ id, text }], expeditionStats } }.
            I nodi tengono solo lo stato: il contenuto viene dalla campagna attuale.

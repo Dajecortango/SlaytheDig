@@ -497,8 +497,9 @@
 
         // Ira Traboccante (segnale hero_set "iraTraboccante", passiva di Aurelio): ogni tiro fallito della compagnia in
         // scontro (anche il suo) dà +1 Collera (hero.collera, al massimo IRA_MAX). Ogni carica è +1 al suo tiro per colpire
-        // (relicCombatBonus in js/motore/tiri.js). Al massimo va in Furia (rageUntil fino al round dopo) e il suo
+        // e a Difendi (colleraSources in js/motore/tiri.js). Al massimo va in Furia (rageUntil fino al round dopo) e il suo
         // prossimo attacco è lo sfogo (hero.iraSfogo: +IRA_DANNI_SFOGO danni, poi Collera a 0, iraSfogoConsumato).
+        // Dopo l'attacco del nemico Collera e Furia si azzerano (iraFineTurnoNemico).
         // Chiamata dai resolver di scontro dopo l'esito. Ritorna le note per il diario
         function iraDopoTiro(roller, success) {
             if (success) return [];
@@ -521,6 +522,15 @@
         function iraAzzera(h) {
             delete h.collera;
             delete h.iraSfogo;
+        }
+
+        // Dopo l'attacco del nemico: la Collera torna a 0 e la Furia non sfogata finisce. Ritorna le note per il diario
+        function iraFineTurnoNemico() {
+            return stato.party.filter(h => h.iraTraboccante && (h.collera > 0 || h.iraSfogo)).map(h => {
+                if (h.iraSfogo) delete h.rageUntil;
+                iraAzzera(h);
+                return `💢 La Collera di ${h.name} si placa`;
+            });
         }
 
         // Danni in più che un colpo a segno farebbe adesso (anteprime e simulatore): solo gli effetti sicuri,
@@ -549,7 +559,7 @@
             silenziato: { name: 'Silenziato', icon: 'immagini/icone/BTNSilence.png', desc: 'Non può usare l\'abilità attiva' },
             furia: { name: 'Furia', icon: 'immagini/icone/BTNBerserk.png', desc: 'Può solo attaccare: niente Difendi, Aiuta né abilità' },
             collera: { name: 'Collera', icon: 'immagini/icone/BTNBloodLust.png', buff: true,
-                desc: 'Ira Traboccante: +1 al tiro per colpire per carica. Al massimo va in Furia e il prossimo attacco fa danni in più' },
+                desc: 'Ira Traboccante: +1 al tiro per colpire e a Difendi per carica. Al massimo va in Furia e il prossimo attacco fa danni in più. Si azzera dopo l\'attacco del nemico' },
             malasorte: { name: 'Malasorte', icon: 'immagini/icone/BTNBoneChimes.png', buff: true }
         };
 
@@ -736,7 +746,7 @@
     const api = {
         itemSpecials, heroSpecialSources, resetCombatSpecialUses, rollSpecialSources, rollSpecialBonus, spendRollSpecials,
         specialSum, specialPriceFactor, fireSpecials, runSpecialEntries, fireSpecialsAll, specialReroll, malasorteDopoTiro,
-        iraDopoTiro, iraSfogoConsumato, iraAzzera, clearHeroStatuses,
+        iraDopoTiro, iraSfogoConsumato, iraAzzera, iraFineTurnoNemico, clearHeroStatuses,
         specialHitDamagePreview, hasSpecial, isSilenced, isRaging, heroStatuses, enemyStatuses, combatActionAllowed,
         enemySpecialList, fireEnemySpecials, enemyHitReaction, startRoundSpecials, specialTipLines
     };

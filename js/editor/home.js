@@ -9,7 +9,7 @@
 let campaignChosen = false;   // l'utente ha aperto o creato una campagna (all'avvio la prima è caricata solo per la libreria)
 let homeDraft = null;         // bozza trovata nel browser all'avvio (readDraft), offerta nella Home
 
-const HOME_LIB_TABS = ['bestiario', 'armeria', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'benedizioni'];
+const HOME_LIB_TABS = ['bestiario', 'armeria', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'benedizioni', 'avventure'];
 
 function renderHomeTab() {
     const content = document.getElementById('edContent');

@@ -12,7 +12,7 @@ const libDirty = new Set();                              // file della libreria 
 let currentTab = 'home';
 const selection = { challenges: null, map: null, itemList: 'initialArmory',
                     bestiario: null, armeria: null, reliquie: null, maledizioni: null, eroi: null, abilita: null,
-                    elite: null, azioni_elite: null, benedizioni: null };
+                    elite: null, azioni_elite: null, benedizioni: null, avventure: null };
 let dirty = false;
 
 const deepCopy = obj => JSON.parse(JSON.stringify(obj));

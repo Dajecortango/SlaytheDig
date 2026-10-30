@@ -11,6 +11,7 @@
      data-change="nome"  data-change-args='[...]'   change (select, checkbox, input)
      data-input="nome"   data-input-args='[...]'    input
      data-enter="nome"   data-enter-args='[...]'    tasto Invio (keydown)
+     data-dblclick="nome" data-dblclick-args='[...]' doppio clic
      data-error="nome"   data-error-args='[...]'    errore di caricamento (img)
      data-stop                                      ferma la propagazione (come event.stopPropagation())
 
@@ -31,9 +32,10 @@
         change: { attr: 'change', args: 'changeArgs' },
         input: { attr: 'input', args: 'inputArgs' },
         keydown: { attr: 'enter', args: 'enterArgs' },
+        dblclick: { attr: 'dblclick', args: 'dblclickArgs' },
         error: { attr: 'error', args: 'errorArgs' }
     };
-    const SELETTORE = { click: '[data-action]', change: '[data-change]', input: '[data-input]', keydown: '[data-enter]', error: '[data-error]' };
+    const SELETTORE = { click: '[data-action]', change: '[data-change]', input: '[data-input]', keydown: '[data-enter]', dblclick: '[data-dblclick]', error: '[data-error]' };
 
     function leggiArgomenti(el, chiave, evento) {
         const testo = el.dataset[chiave];
@@ -88,7 +90,7 @@
     }
 
     // Clic, modifiche e tasti risalgono fino al documento; gli errori delle immagini no, si prendono in cattura
-    ['click', 'change', 'input', 'keydown'].forEach(tipo => document.addEventListener(tipo, e => esegui(tipo, e)));
+    ['click', 'change', 'input', 'keydown', 'dblclick'].forEach(tipo => document.addEventListener(tipo, e => esegui(tipo, e)));
     document.addEventListener('error', e => esegui('error', e), true);
 
     // Attributi per l'HTML generato: azione('selectTreasureItem', 3) -> data-action="selectTreasureItem" data-args="[3]"

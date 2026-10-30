@@ -676,7 +676,10 @@
             if (mode === 'tutti') targets = stato.party.filter(h => h.hp > 0);
             else if (mode === 'scelto') targets = chosenTarget && chosenTarget.hp > 0 ? [chosenTarget] : (chosenTarget ? eliteTargets('piu_debole') : []);
             else targets = announced ? [announced] : eliteTargets(mode);
-            if (!targets.length) return { events, attacked: !!r.turnoAura, target: null };
+            if (!targets.length) {
+                if (r.turnoAura) iraFineTurnoNemico().forEach(text => events.push({ type: 'ira', text }));
+                return { events, attacked: !!r.turnoAura, target: null };
+            }
 
             let hpTaken = 0;
             const colpi = Math.max(1, r.turnoColpi || 1);
@@ -706,6 +709,8 @@
                 enemy.hp = Math.min(enemy.maxHp, enemy.hp + hpTaken);
                 events.push({ type: 'lifesteal', text: `🩸 ${enemy.name} si nutre del sangue versato: +${enemy.hp - before} HP.` });
             }
+            // Ira Traboccante (Aurelio): dopo l'attacco del nemico la Collera si azzera
+            iraFineTurnoNemico().forEach(text => events.push({ type: 'ira', text }));
             return { events, attacked: true, target: targets[0] };
         }
 

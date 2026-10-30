@@ -118,6 +118,13 @@ const COLLECTIONS = {
             setTimeout(render);
         }
     },
+    avventure: {
+        library: true, fields: ADVENTURE_FIELDS, label: a => a.title, keyHint: 'nuova_avventura',
+        create: () => ({ title: 'Nuova avventura', badge: 'Avventura', description: '', coverImage: '' }),
+        sub: a => a.description || '',
+        // Le campagne che la usano (questa e le altre del progetto) cambiano id con lei
+        renameRefs: (oldKey, key) => { if (camp && camp.avventura === oldKey) camp.avventura = key; }
+    },
     maledizioni: {
         library: true, fields: CURSE_FIELDS, label: c => c.name, keyHint: 'nuova_maledizione',
         create: () => ({ type: 'curse', name: 'Nuova maledizione', desc: '', effects: [{ effect: 'add_curse', text: 'Nuova maledizione' }] }),

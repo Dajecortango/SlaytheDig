@@ -1,7 +1,7 @@
 // Scheda dei dati (js/schema.js): i dati la rispettano e i moduli dell'editor non hanno campi che lei non conosce
 const { caricaPagina } = require('./ambiente');
 
-const LIBRERIE = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'abilita', 'eroi', 'azioni_elite', 'benedizioni'];
+const LIBRERIE = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'abilita', 'eroi', 'azioni_elite', 'benedizioni', 'avventure'];
 
 module.exports = (t, carica) => {
     const g = carica();
@@ -31,7 +31,7 @@ module.exports = (t, carica) => {
         const ed = caricaPagina('editor.html');
         const moduli = {
             GENERAL_FIELDS: 'campagna', HERO_LIB_FIELDS: 'eroi', ABILITY_FIELDS: 'abilita', ITEM_FIELDS: 'armeria', ENEMY_FIELDS: 'bestiario',
-            ELITE_ACTION_FIELDS: 'azioni_elite', RELIC_FIELDS: 'reliquie', BLESSING_FIELDS: 'benedizioni', CURSE_FIELDS: 'maledizioni',
+            ELITE_ACTION_FIELDS: 'azioni_elite', RELIC_FIELDS: 'reliquie', BLESSING_FIELDS: 'benedizioni', ADVENTURE_FIELDS: 'avventure', CURSE_FIELDS: 'maledizioni',
             CHALLENGE_FIELDS: 'sfida', NODE_FIELDS: 'nodo', STORY_FIELDS: 'trama'
         };
         Object.entries(moduli).forEach(([nome, kind]) => {

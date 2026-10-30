@@ -5,7 +5,7 @@ const { caricaPagina, ROOT } = require('./ambiente');
 
 const MODULI = {
     GENERAL_FIELDS: 'campagna', HERO_LIB_FIELDS: 'eroi', ABILITY_FIELDS: 'abilita', ITEM_FIELDS: 'armeria', ENEMY_FIELDS: 'bestiario',
-    ELITE_ACTION_FIELDS: 'azioni_elite', RELIC_FIELDS: 'reliquie', BLESSING_FIELDS: 'benedizioni', CURSE_FIELDS: 'maledizioni',
+    ELITE_ACTION_FIELDS: 'azioni_elite', RELIC_FIELDS: 'reliquie', BLESSING_FIELDS: 'benedizioni', ADVENTURE_FIELDS: 'avventure', CURSE_FIELDS: 'maledizioni',
     CHALLENGE_FIELDS: 'sfida', NODE_FIELDS: 'nodo', STORY_FIELDS: 'trama'
 };
 

@@ -7,6 +7,8 @@ window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["loch_ein_parte_1"] = {
     "id": "loch_ein_parte_1",
     "title": "Loch Ein, Parte Uno: Verso la Caduta dai Cieli",
+    "avventura": "loch_ein",
+    "capitolo": 1,
     "badge": "Parte Uno",
     "description": "Da Seistad alla conca di Loch Ein: le campagne abbandonate della Lega di Finngalk, il fiume Nederjin, il Sentiero di Brumafosca e le sponde maledette del lago, fino al varco sommerso.",
     "coverImage": "",

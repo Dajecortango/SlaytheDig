@@ -87,9 +87,12 @@ const DATI_SCHEMA = {
         effetto: OBBL(campo('scelta', { valori: { prossimo_scontro: 1, cura_party: 1, togli_maledizione: 1, fede: 1, bottino_extra: 1, dono: 1 } })),
         icon: PERCORSO, desc: TESTO, buffs: campo('elenco'), val: NUMERO, speciali: SCHEMA_SPECIALI
     },
+    // Avventure (data/libreria/avventure.js): raggruppano le campagne in capitoli nel menu del gioco
+    avventure: { title: OBBL(TESTO), badge: TESTO, description: TESTO, coverImage: PERCORSO },
     // Parti di una campagna (data/campagne/<id>.js)
     campagna: {
-        id: OBBL(TESTO), title: OBBL(TESTO), badge: TESTO, description: TESTO, coverImage: PERCORSO, introText: TESTO,
+        id: OBBL(TESTO), title: OBBL(TESTO), badge: TESTO,
+        avventura: campo('scelta', { valori: () => schemaLibreria().avventure || {} }), capitolo: NUMERO, description: TESTO, coverImage: PERCORSO, introText: TESTO,
         heroes: campo('elenco'), initialArmory: campo('elenco'), lootItems: campo('elenco'), abilities: campo('oggetto'),
         challenges: campo('oggetto'), merchants: campo('oggetto'), rests: campo('oggetto'), treasures: campo('oggetto'),
         stories: campo('oggetto'), mapNodes: campo('elenco'), enemies: campo('oggetto'),

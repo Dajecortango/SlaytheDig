@@ -243,9 +243,9 @@ window.LIBRERIA.armeria = {
         "name": "Ascia del Primo Sangue",
         "rarity": "non_comune",
         "speciali": [
-            { "quando": "colpo", "fai": "danni", "val": 2, "limite": "scontro" }
+            { "quando": "colpo", "fai": "danni", "val": 2, "round": 1, "limite": "scontro" }
         ],
-        "desc": "+2 danni al primo colpo a segno di ogni scontro.",
+        "desc": "+2 danni se colpisce nel primo round di ogni scontro.",
         "icon": "immagini/icone/BTNCriticalStrike.png"
     },
     "mazza_boia_seistad": {
@@ -354,9 +354,9 @@ window.LIBRERIA.armeria = {
         "rarity": "raro",
         "str": 1,
         "speciali": [
-            { "quando": "colpo", "fai": "danni", "val": 3, "limite": "scontro" }
+            { "quando": "colpo", "fai": "danni", "val": 2, "limite": "scontro" }
         ],
-        "desc": "+1 Forza; +3 danni al primo colpo a segno di ogni scontro.",
+        "desc": "+1 Forza; +2 danni al primo colpo a segno di ogni scontro.",
         "icon": "immagini/icone/BTNNagaWeaponUp3.png"
     },
     "ascia_carnefice_glostok": {

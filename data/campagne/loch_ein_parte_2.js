@@ -7,6 +7,8 @@ window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["loch_ein_parte_2"] = {
     "id": "loch_ein_parte_2",
     "title": "Loch Ein, Parte Due: La Città Caduta",
+    "avventura": "loch_ein",
+    "capitolo": 2,
     "badge": "Parte Due",
     "description": "Oltre l'arco sommerso, nelle viscere della Caduta dai Cieli: la città inclinata di Loch Ein, i quartieri dei Firmamentisti, l'Anfiteatro in rovina e la Grande Piazza Circolare, fino alle porte del Palazzo dove vi attende Eldric.",
     "coverImage": "",

@@ -45,7 +45,7 @@
             unlockedRelics: [],
             activeCurses: [],
             expeditionStats: newExpeditionStats(),
-            onlineOwners: {},       // partita online: eroe -> nome del giocatore che lo comanda (js/online.js)
+            onlineOwners: {},       // partita online: eroe -> eroe (il giocatore è l'eroe che ha scelto, js/online.js)
             challengeState: null,
             activeEnemy: null,
             helpBonus: 0,
@@ -171,32 +171,142 @@ function breakRelic(relicId) {
             return Object.values(campaignsDatabase).filter(c => (c.heroes || []).length > 0);
         }
 
-        function goToCampaigns() {
+        /* ---------- Avventure e capitoli ----------
+           Il menu "Nuova Partita" mostra le avventure (LIBRERIA.avventure, data/libreria/avventure.js) e le campagne
+           a sé. Una campagna con "avventura" è un capitolo: si sceglie nella pagina dell'avventura (screenAdventure),
+           in ordine di "capitolo". Ordine delle voci: quello dei <script> della loro prima campagna. */
+        function campaignMenuEntries() {
+            const avventure = LIBRERIA.avventure || {};
+            const entries = [];
+            const byAdventure = {};
+            playableCampaigns().forEach(c => {
+                const adv = c.avventura && avventure[c.avventura];
+                if (!adv) { entries.push({ kind: 'campagna', id: c.id, title: c.title, badge: c.badge || '', description: c.description || '', cover: c.coverImage }); return; }
+                if (!byAdventure[c.avventura]) {
+                    byAdventure[c.avventura] = { kind: 'avventura', id: c.avventura, title: adv.title, badge: adv.badge || 'Avventura', description: adv.description || '', chapters: [] };
+                    entries.push(byAdventure[c.avventura]);
+                }
+                byAdventure[c.avventura].chapters.push(c);
+            });
+            Object.values(byAdventure).forEach(e => {
+                e.chapters.sort((a, b) => (a.capitolo || 0) - (b.capitolo || 0));
+                // Senza copertina sua, quella del primo capitolo che ne ha una
+                e.cover = avventure[e.id].coverImage || (e.chapters.find(c => c.coverImage) || {}).coverImage;
+            });
+            return entries;
+        }
+
+        // Nome del capitolo nell'elenco: il titolo della campagna senza il nome dell'avventura davanti
+        // ("Caccia alla Bestia, Capitolo Uno" -> "Capitolo Uno")
+        function chapterLabel(c, adventureTitle) {
+            const title = String(c.title || '').trim();
+            const prefix = String(adventureTitle || '').trim().toLowerCase();
+            if (!prefix || !title.toLowerCase().startsWith(prefix)) return title;
+            return title.slice(prefix.length).replace(/^[\s,:;.\-–—]+/, '') || title;
+        }
+
+        // focusId: avventura o campagna da mettere al centro (tornando indietro dalla pagina di un'avventura)
+        function goToCampaigns(focusId) {
             showScreen('screenCampaigns');
             const grid = document.getElementById('campaignsGridList');
-            const campaigns = playableCampaigns();
-            grid.innerHTML = campaigns.map((c, idx) => `
-                <div class="campaign-card" tabindex="0" role="button" data-index="${idx}" ${azione('onCampaignCardClick', idx, c.id)} ${azioneSu('enter', 'selectCampaign', c.id)}>
+            const entries = campaignMenuEntries();
+            grid.innerHTML = entries.map((e, idx) => `
+                <div class="campaign-card" tabindex="0" role="button" data-index="${idx}" ${azione('onCampaignCardClick', idx, e.kind, e.id)} ${azioneSu('enter', 'openMenuEntry', e.kind, e.id)}>
                     <div>
-                        <div class="campaign-cover"><img src="${c.coverImage || 'immagini/segnaposto/cover.svg'}" alt="${c.title}" ${IMG_LAZY}></div>
-                        <span class="campaign-badge">${c.badge}</span>
-                        <h3>${c.title}</h3>
-                        <p>${c.description}</p>
+                        <div class="campaign-cover"><img src="${esc(e.cover || 'immagini/segnaposto/cover.svg')}" alt="${esc(e.title)}" ${IMG_LAZY}></div>
+                        <span class="campaign-badge">${esc(e.badge)}${e.kind === 'avventura' ? ` · ${e.chapters.length} ${e.chapters.length === 1 ? 'capitolo' : 'capitoli'}` : ''}</span>
+                        <h3>${esc(e.title)}</h3>
+                        <p>${esc(e.description)}</p>
                     </div>
-                    <button class="btn-small" tabindex="-1">Scegli Spedizione</button>
+                    <button class="btn-small" tabindex="-1">${e.kind === 'avventura' ? 'Scegli Capitolo' : 'Scegli Spedizione'}</button>
                 </div>
             `).join('');
 
-            document.getElementById('campaignDots').innerHTML = campaigns.map((c, idx) => `
-                <button class="carousel-dot" ${azione('goToCampaignSlide', idx)} aria-label="${c.title}"></button>
+            document.getElementById('campaignDots').innerHTML = entries.map((e, idx) => `
+                <button class="carousel-dot" ${azione('goToCampaignSlide', idx)} aria-label="${esc(e.title)}"></button>
             `).join('') + `<span class="carousel-counter" id="campaignCounter"></span>`;
 
             bindCampaignCarousel();
-            activeCampaignSlide = 0;
+            const start = Math.max(0, entries.findIndex(e => e.id === focusId));
+            activeCampaignSlide = start;
             requestAnimationFrame(() => {
                 grid.style.scrollBehavior = 'auto';
-                goToCampaignSlide(0);
+                goToCampaignSlide(start);
                 grid.style.scrollBehavior = '';
+            });
+        }
+
+        // Voce del menu scelta: un'avventura apre la sua pagina, una campagna a sé parte subito
+        function openMenuEntry(kind, id) {
+            if (kind === 'avventura') openAdventure(id);
+            else selectCampaign(id);
+        }
+
+        // Pagina di un'avventura: capitoli a destra, copertina e descrizione del capitolo scelto a sinistra
+        let currentAdventure = null;  // { id, chapters, selected }
+        function openAdventure(id, chapterId) {
+            const entry = campaignMenuEntries().find(e => e.kind === 'avventura' && e.id === id);
+            if (!entry) return;
+            const selected = Math.max(0, entry.chapters.findIndex(c => c.id === chapterId));
+            currentAdventure = { id, entry, selected };
+            showScreen('screenAdventure');
+            document.getElementById('adventureBadge').textContent = entry.badge;
+            document.getElementById('adventureTitle').textContent = entry.title;
+            document.getElementById('adventureChapters').innerHTML = entry.chapters.map((c, i) => `
+                <button class="adventure-chapter" role="option" data-index="${i}" ${azione('selectAdventureChapter', i)} ${azioneSu('dblclick', 'playAdventureChapter', i)}>
+                    <span class="adventure-chapter-num">${romanNumeral(i + 1)}</span>
+                    <span class="adventure-chapter-name">${esc(chapterLabel(c, entry.title))}</span>
+                </button>
+            `).join('');
+            bindAdventureKeys();
+            selectAdventureChapter(selected);
+        }
+
+        function selectAdventureChapter(i) {
+            if (!currentAdventure) return;
+            const chapters = currentAdventure.entry.chapters;
+            i = Math.max(0, Math.min(chapters.length - 1, i));
+            currentAdventure.selected = i;
+            const c = chapters[i];
+            document.querySelectorAll('#adventureChapters .adventure-chapter').forEach((el, k) => {
+                el.classList.toggle('is-active', k === i);
+                el.setAttribute('aria-selected', k === i ? 'true' : 'false');
+            });
+            document.getElementById('adventureCover').src = c.coverImage || currentAdventure.entry.cover || 'immagini/segnaposto/cover.svg';
+            document.getElementById('adventureCover').alt = c.title;
+            document.getElementById('adventureChapterTitle').textContent = c.title;
+            document.getElementById('adventureChapterDesc').textContent = c.description || currentAdventure.entry.description;
+        }
+
+        // "Gioca" (o doppio clic sul capitolo): si parte come scegliendo la campagna
+        function playAdventureChapter(i) {
+            if (!currentAdventure) return;
+            const c = currentAdventure.entry.chapters[i == null ? currentAdventure.selected : i];
+            if (c) selectCampaign(c.id);
+        }
+
+        function adventureBack() {
+            goToCampaigns(currentAdventure && currentAdventure.id);
+        }
+
+        function romanNumeral(n) {
+            return ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][n - 1] || String(n);
+        }
+
+        // Frecce su e giù per scegliere il capitolo, Invio per giocarlo, Esc per tornare alle avventure
+        function bindAdventureKeys() {
+            if (bindAdventureKeys.done) return;
+            bindAdventureKeys.done = true;
+            document.addEventListener('keydown', e => {
+                if (!currentAdventure || document.getElementById('screenAdventure').classList.contains('hidden')) return;
+                if (!document.getElementById('wc3Modal').classList.contains('hidden')) return;
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectAdventureChapter(currentAdventure.selected + (e.key === 'ArrowDown' ? 1 : -1));
+                    const active = document.querySelector('#adventureChapters .adventure-chapter.is-active');
+                    if (active) active.focus();
+                } else if (e.key === 'Enter') { e.preventDefault(); playAdventureChapter(); }
+                else if (e.key === 'Escape') { e.preventDefault(); adventureBack(); }
             });
         }
 
@@ -263,10 +373,9 @@ function breakRelic(relicId) {
                     camp.title = `[Prova] ${camp.title}`;
                     camp.badge = "Prova dall'editor";
                     campaignsDatabase[camp.id] = camp;
-                    // Apre subito la scelta campagna con la campagna di prova al centro
-                    goToCampaigns();
-                    const idx = playableCampaigns().findIndex(c => c.id === camp.id);
-                    setTimeout(() => goToCampaignSlide(idx), 50);
+                    // Apre subito la scelta: la pagina dell'avventura con il capitolo di prova, o la campagna al centro
+                    if (camp.avventura && (LIBRERIA.avventure || {})[camp.avventura]) openAdventure(camp.avventura, camp.id);
+                    else goToCampaigns(camp.id);
                 };
             };
         })();
@@ -276,12 +385,12 @@ function breakRelic(relicId) {
         }
 
         // Clic su una scheda laterale: la porta al centro; clic sulla scheda centrale: la sceglie
-        function onCampaignCardClick(idx, campaignId) {
+        function onCampaignCardClick(idx, kind, id) {
             if (idx !== activeCampaignSlide) {
                 goToCampaignSlide(idx);
                 return;
             }
-            selectCampaign(campaignId);
+            openMenuEntry(kind, id);
         }
 
         function updateCampaignCarouselState() {
@@ -394,7 +503,7 @@ function breakRelic(relicId) {
         const GAME_VERSION = '1.8';
         document.getElementById('menuVersion').textContent = `Slay the Dig · versione ${GAME_VERSION}`;
 
-        const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns'];
+        const MENU_SCENE_SCREENS = ['screenStart', 'screenCampaigns', 'screenAdventure'];
 
         // Video di sfondo dei menu (iniziale e scelta campagna): muto, in riproduzione solo quando sono visibili
         // (e con gli effetti animati attivi). Se non si carica resta la scena disegnata.

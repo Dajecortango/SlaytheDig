@@ -76,11 +76,18 @@
         // compagnia validi per ogni tiro. Le anteprime li leggono senza consumarli; quelli con un limite (Benedizione
         // del Caos, Sigillo runico) si consumano con spendNextRollRelics dopo il tiro.
         function relicDiceSources(kind = 'tiro', hero = null) {
-            return rollSpecialSources(kind, hero).map(r => ({ name: r.name, val: r.val, nextRoll: r.nextRoll }));
+            const sources = rollSpecialSources(kind, hero).map(r => ({ name: r.name, val: r.val, nextRoll: r.nextRoll }));
+            if (kind === 'difesa') sources.push(...colleraSources(hero));  // Ira Traboccante (Aurelio): anche a Difendi
+            return sources;
         }
 
         function relicDiceBonus(kind = 'tiro', hero = null) {
-            return rollSpecialBonus(kind, hero);
+            return relicDiceSources(kind, hero).reduce((sum, r) => sum + r.val, 0);
+        }
+
+        // Ira Traboccante (Aurelio): ogni carica di Collera è +1 al tiro per colpire e a Difendi
+        function colleraSources(hero) {
+            return hero && hero.iraTraboccante && hero.collera > 0 ? [{ name: 'Collera', val: hero.collera, nextRoll: false }] : [];
         }
 
         // Dopo un tiro di dado di un eroe: consuma i bonus "al prossimo tiro". Ritorna le note per il diario.
@@ -91,8 +98,7 @@
         // Bonus al tiro per colpire (attacco e abilità) in questo round; "notes" finisce nel log.
         // I danni in più (Zanna del leone bianco, oggetti...) arrivano col colpo a segno (fireSpecials 'colpo').
         function relicCombatBonus(hero = null) {
-            const sources = rollSpecialSources('attacco', hero);
-            if (hero && hero.iraTraboccante && hero.collera > 0) sources.push({ name: 'Collera', val: hero.collera });  // Ira Traboccante (Aurelio)
+            const sources = [...rollSpecialSources('attacco', hero), ...colleraSources(hero)];
             return { att: sources.reduce((sum, r) => sum + r.val, 0), dmg: 0, notes: sources.map(r => `${r.name} (+${r.val} al tiro)`) };
         }
 
@@ -125,7 +131,7 @@
         }
 
     // API del modulo: window.Motore.tiri. Gli stessi nomi restano anche globali (Object.assign su window),
-    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: diceBagActive, newDiceBlock.
+    // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: diceBagActive, newDiceBlock, colleraSources.
     const api = {
         peekHeroDice, rollD6, naturalRollSuccess, naturalRollNote, relicDiceSources, relicDiceBonus,
         spendNextRollRelics, relicCombatBonus, exactSumChance, attackMod, rollChance, chanceText

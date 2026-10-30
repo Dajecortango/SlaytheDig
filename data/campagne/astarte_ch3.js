@@ -7,6 +7,8 @@ window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["astarte_ch3"] = {
     "id": "astarte_ch3",
     "title": " Caccia alla Bestia - Capitolo Tre",
+    "avventura": "caccia_alla_bestia",
+    "capitolo": 3,
     "badge": "Nuova Campagna",
     "description": "",
     "coverImage": "",

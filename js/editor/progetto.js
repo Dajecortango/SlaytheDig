@@ -25,6 +25,7 @@ function libraryUsage(kind, key) {
         if (kind === 'reliquie') return Object.values(raw.challenges || {}).filter(c => c.reward === key).length;
         if (kind === 'maledizioni') return Object.values(raw.challenges || {}).filter(c => c.punishment === key).length;
         if (kind === 'eroi') return (raw.heroes || []).filter(h => h === key).length;
+        if (kind === 'avventure') return raw.avventura === key ? 1 : 0;
         if (kind === 'armeria') {
             const loot = raw.lootItems === null || raw.lootItems === undefined ? [] : raw.lootItems;
             return [...(raw.initialArmory || []), ...loot].filter(r => r === key).length;
@@ -74,10 +75,11 @@ window.CAMPAIGNS[${JSON.stringify(c.id)}] = ${formatJson(c)};
 `;
 }
 
-const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite', 'benedizioni'];
+const LIB_KINDS = ['armeria', 'bestiario', 'reliquie', 'maledizioni', 'eroi', 'abilita', 'azioni_elite', 'benedizioni', 'avventure'];
 // Nomi mostrati nell'editor (i file e le chiavi restano armeria, bestiario...)
-const LIB_LABELS = { armeria: 'Oggetti', bestiario: 'Nemici', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Schede degli eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite', benedizioni: 'Benedizioni' };
+const LIB_LABELS = { armeria: 'Oggetti', bestiario: 'Nemici', reliquie: 'Reliquie', maledizioni: 'Maledizioni', eroi: 'Schede degli eroi', abilita: 'Abilità', azioni_elite: 'Azioni elite', benedizioni: 'Benedizioni', avventure: 'Avventure' };
 const LIB_HEADERS = {
+    avventure: 'Avventure: raggruppano le campagne in capitoli (menu "Nuova Partita" del gioco, pagina dell\'avventura).\n// Una campagna entra in un\'avventura con "avventura" (id di qui) e "capitolo" (ordine nell\'elenco).\n// coverImage vuota = copertina del primo capitolo; le campagne senza avventura restano schede a sé.',
     benedizioni: 'Benedizioni degli Asi del Nord: si scelgono dopo una preghiera riuscita al riposo (js/prove.js).\n// livello: "minore" o "maggiore"; bersaglio: "eroe" (scelto dal giocatore) o "party" (tutti).\n// effetto: "prossimo_scontro" (buffs: [{ buff_stat, buff_val }] per tutto il prossimo scontro), "cura_party" (val HP ai vivi),\n// "togli_maledizione" (la più recente), "fede" (+val Fede per sempre), "bottino_extra" (val oggetti in più al prossimo\n// bottino), "dono" (resta sull\'eroe: agiscono i suoi "speciali", effetti "quando → fai" di js/motore/speciali.js).',
     armeria: 'Armeria: tutti gli oggetti (armi, armature, consumabili...), condivisi dalle campagne.\n// Le campagne li richiamano per id in "initialArmory" e "lootItems".\n// "speciali": effetti "quando → fai" (vocabolario in js/comune.js, motore in js/motore/speciali.js).',
     bestiario: 'Bestiario: tutti i nemici, condivisi dalle campagne.\n// I nodi della mappa li richiamano per id nel campo "enemy".',

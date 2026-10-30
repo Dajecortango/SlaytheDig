@@ -8,6 +8,8 @@ window.CAMPAIGNS["astarte_ch1"] = {
     "difficolta": { "vittoriaMin": 20, "vittoriaMax": 25 },
     "id": "astarte_ch1",
     "title": "Caccia alla Bestia, Capitolo Uno",
+    "avventura": "caccia_alla_bestia",
+    "capitolo": 1,
     "badge": "Nuova Campagna",
     "description": "Inizia il pellegrinaggio di Astarte attraverso terre sconosciute e rovine dimenticate.",
     "coverImage": "immagini/astarte_capitolo_uno.webp",

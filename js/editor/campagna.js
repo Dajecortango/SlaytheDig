@@ -199,5 +199,6 @@ function renderOtherTab() {
 function renderGeneralTab() {
     const content = document.getElementById('edContent');
     content.innerHTML = `<div class="ed-detail" id="edDetail"></div>`;
-    renderForm(document.getElementById('edDetail'), camp, GENERAL_FIELDS, markDirty);
+    // Scegliendo l'avventura compare (o sparisce) il numero del capitolo
+    renderForm(document.getElementById('edDetail'), camp, GENERAL_FIELDS, k => { markDirty(); if (k === 'avventura') renderGeneralTab(); });
 }

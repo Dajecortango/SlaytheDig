@@ -43,6 +43,11 @@ const GENERAL_FIELDS = [
     { k: 'id', label: 'Id (nome del file)', avanzato: true, automatico: true, help: 'Solo lettere minuscole, numeri e _' },
     { k: 'title', label: 'Titolo' },
     { k: 'badge', label: 'Etichetta' },
+    { k: 'avventura', label: 'Avventura', type: 'select', omitEmpty: true,
+      options: () => [['', 'Nessuna: scheda a sé nel menu'], ...keysOf(lib.avventure || {}).map(k => [k, lib.avventure[k].title || k])],
+      help: 'Nel menu del gioco la campagna diventa un capitolo di questa avventura. Le avventure si creano nella scheda Avventure' },
+    { k: 'capitolo', label: 'Numero del capitolo', type: 'number', omitEmpty: true, showIf: c => !!c.avventura,
+      help: 'Ordine nell\'elenco dei capitoli dell\'avventura (1, 2, 3...)' },
     { k: 'coverImage', label: 'Immagine di copertina', type: 'image', folder: 'immagini', wide: true },
     { k: 'description', label: 'Descrizione breve', type: 'textarea', wide: true },
     { k: 'introText', label: 'Testo introduttivo', type: 'textarea', wide: true },
@@ -323,6 +328,15 @@ const ENEMY_TEMPLATES = {
     boss: { label: 'Boss', momenti: { inizio: { hp: 18, att: 7, ca: 8, dmg: 2 }, meta: { hp: 22, att: 8, ca: 9, dmg: 3 }, fine: { hp: 26, att: 8, ca: 9, dmg: 3 } } }
 };
 const ENEMY_MOMENTS = { inizio: 'Inizio del capitolo', meta: 'Metà', fine: 'Fine' };
+
+// Avventure (data/libreria/avventure.js): raggruppano le campagne in capitoli nel menu del gioco
+const ADVENTURE_FIELDS = [
+    { k: 'title', label: 'Nome dell\'avventura', wide: true },
+    { k: 'badge', label: 'Etichetta', help: 'Sopra il nome nel menu, es. "Avventura"' },
+    { k: 'coverImage', label: 'Immagine di copertina', type: 'image', folder: 'immagini', wide: true,
+      help: 'Vuota: si usa la copertina del primo capitolo' },
+    { k: 'description', label: 'Descrizione', type: 'textarea', wide: true }
+];
 
 // Benedizioni degli Asi (data/libreria/benedizioni.js): cosa fanno lo dice "effetto" (applyBlessing in js/prove.js)
 const BLESSING_EFFECTS = [['prossimo_scontro', 'Potenziamenti per tutto il prossimo scontro'], ['cura_party', 'Cura i vivi (HP)'],

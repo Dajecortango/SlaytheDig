@@ -849,6 +849,72 @@
             box-shadow: 0 0 34px rgba(255, 180, 40, 0.22);
         }
 
+        /* ---------- Pagina di un'avventura: capitoli a destra, capitolo scelto a sinistra ---------- */
+        .adventure-panel h2 { margin: 2px 0 12px; }
+        .adventure-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+            gap: 22px;
+            align-items: start;
+            text-align: left;
+        }
+        .adventure-cover { height: clamp(200px, 36vh, 420px); margin: 0 0 10px; }
+        .adventure-detail h3 { font-size: 1.5rem; margin: 6px 0 6px; }
+        .adventure-detail p { font-size: 1.05rem; color: #d8cba8; line-height: 1.55; margin: 0; min-height: 3.1em; }
+        .adventure-chapters-box {
+            padding: 10px 10px 12px;
+            background: linear-gradient(#0a0807, #16110d);
+            box-shadow: 0 0 0 1px #000, 0 0 0 2px #3a2806, inset 0 3px 10px rgba(0, 0, 0, 0.95);
+        }
+        .adventure-chapters-label {
+            margin: 0 0 8px;
+            font-family: var(--font-title);
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            text-align: center;
+        }
+        .adventure-chapters { display: flex; flex-direction: column; gap: 6px; max-height: clamp(220px, 48vh, 520px); overflow-y: auto; }
+        .adventure-chapters .adventure-chapter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            margin: 0;
+            padding: 9px 12px;
+            text-align: left;
+            text-transform: none;
+            letter-spacing: 0.02em;
+            border: 1px solid #000;
+            border-radius: 0;
+            background: linear-gradient(#241b14, #120d0a);
+            box-shadow: inset 0 0 0 1px #4a3610;
+            color: #d8cba8;
+            filter: none;
+        }
+        .adventure-chapters .adventure-chapter::before,
+        .adventure-chapters .adventure-chapter::after { display: none; }
+        .adventure-chapters .adventure-chapter:hover { background: linear-gradient(#33261a, #1a120d); color: #f3e6c2; }
+        .adventure-chapters .adventure-chapter.is-active {
+            background: linear-gradient(#5a3c12, #2a1a08);
+            box-shadow: inset 0 0 0 1px #c9982f, inset 0 0 0 2px #000;
+            color: #fff2cc;
+        }
+        .adventure-chapter-num {
+            flex: 0 0 2.6em;
+            font-family: var(--font-title);
+            font-size: 1.05rem;
+            color: var(--gold);
+            text-align: center;
+        }
+        .adventure-chapter-name { font-family: var(--font-body); font-size: 1.02rem; line-height: 1.3; }
+
+        @media (max-width: 900px) {
+            .adventure-layout { grid-template-columns: 1fr; }
+            .adventure-cover { height: 180px; }
+        }
+
         /* =========================================================
            LAYOUT EVENTI (immagine + pannello)
            ========================================================= */

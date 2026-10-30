@@ -46,16 +46,23 @@ module.exports = (t, carica) => {
         t.uguale(0, a.att_bonus); t.uguale(0, b.att_bonus);
     });
 
-    t.test('Ascia del Primo Sangue: +2 danni solo al primo colpo a segno dello scontro', () => {
+    t.test('Ascia del Primo Sangue: +2 danni solo se colpisce nel primo round', () => {
         const stato = prepara();
         const a = eroe('A', { items: [oggetto('ascia_primo_sangue')] });
         stato.party = [a];
         g.startCombatSpecials();
         const n = nemico({ ca: 6 });
-        t.uguale(0, g.resolveAttack(a, n, [2]).dmg, 'mancato: non consuma');
-        t.uguale(3, g.resolveAttack(a, n, [5]).dmg, 'primo colpo: 1 + 2');
-        t.uguale(1, g.resolveAttack(a, n, [5]).dmg, 'secondo colpo: 1');
+        t.uguale(3, g.resolveAttack(a, n, [5]).dmg, 'round 1: 1 + 2');
+        t.uguale(1, g.resolveAttack(a, n, [5]).dmg, 'secondo colpo nel round 1: 1');
+        stato.combatRound = 2;
+        t.uguale(1, g.resolveAttack(a, n, [5]).dmg, 'round 2: 1');
         g.startCombatSpecials();
+        stato.combatRound = 1;
+        t.uguale(0, g.resolveAttack(a, n, [2]).dmg, 'mancato nel round 1');
+        stato.combatRound = 2;
+        t.uguale(1, g.resolveAttack(a, n, [5]).dmg, 'colpo nel round 2 dopo un errore: niente bonus');
+        g.startCombatSpecials();
+        stato.combatRound = 1;
         t.uguale(3, g.resolveAttack(a, nemico(), [5]).dmg, 'nuovo scontro');
     });
 
@@ -175,12 +182,13 @@ module.exports = (t, carica) => {
         const stato = prepara();
         const spadone = lib.armeria.spadone_primo_sangue, ascia = lib.armeria.ascia_carnefice_glostok;
         const ha = (it, s) => it.speciali.some(x => Object.entries(s).every(([k, v]) => x[k] === v));
-        t.ok(spadone && spadone.rarity === 'raro' && spadone.str === 1 && ha(spadone, { quando: 'colpo', fai: 'danni', val: 3, limite: 'scontro' }), 'spadone');
+        t.ok(spadone && spadone.rarity === 'raro' && spadone.str === 1 && ha(spadone, { quando: 'colpo', fai: 'danni', val: 2, limite: 'scontro' }), 'spadone');
         t.ok(ascia && ascia.rarity === 'raro' && ascia.dmg === 1 && ha(ascia, { quando: 'colpo', se: 'nemico_meta', fai: 'danni', val: 2 }), 'ascia');
         const a = eroe('A', { items: [oggetto('spadone_primo_sangue')] });
         stato.party = [a];
         g.startCombatSpecials();
-        t.uguale(4, g.resolveAttack(a, nemico(), [5]).dmg, '1 + 3 al primo colpo');
+        t.uguale(3, g.resolveAttack(a, nemico(), [5]).dmg, '1 + 2 al primo colpo');
+        t.uguale(1, g.resolveAttack(a, nemico(), [5]).dmg, 'secondo colpo: 1');
     });
 
     t.test('Pugnale Succhiasangue: colpo a segno, una volta su due cura 1 HP', () => {

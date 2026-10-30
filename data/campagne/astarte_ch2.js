@@ -7,6 +7,8 @@ window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["astarte_ch2"] = {
     "id": "astarte_ch2",
     "title": "Caccia alla Bestia, Capitolo Due",
+    "avventura": "caccia_alla_bestia",
+    "capitolo": 2,
     "badge": "Capitolo Due",
     "description": "Dalla Linea degli Alberi Morti alla Terrazza dell'Eclissi: la compagnia risale i Picchi del Tramonto attraverso i Crepacci Ululanti, i Dirupi del Cielo Infranto e il Mare Bianco.",
     "coverImage": "immagini/screenshot_2026-10-14_112326.webp",

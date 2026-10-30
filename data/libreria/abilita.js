@@ -397,12 +397,11 @@ window.LIBRERIA.abilita = {
     "enea_hammergradiano_puro": {
         "id": "enea_hammergradiano_puro",
         "name": "Hammergradiano Puro",
-        "desc": "Passiva: sangue delle antiche tribù di Hammergrad. +1 Forza, +1 Fede e +1 Danno per sempre",
+        "desc": "Passiva: sangue delle antiche tribù di Hammergrad. +1 Forza e +1 Fede per sempre",
         "isCombatActive": false,
         "effects": [
             { "effect": "hero_stat", "stat": "str", "val": 1 },
-            { "effect": "hero_stat", "stat": "fth", "val": 1 },
-            { "effect": "hero_stat", "stat": "dmg", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ],
         "icon": "immagini/icone/BTNHeroMountainKing.png"
     },
@@ -437,7 +436,7 @@ window.LIBRERIA.abilita = {
     "aurelio_ira_traboccante": {
         "id": "aurelio_ira_traboccante",
         "name": "Ira Traboccante",
-        "desc": "Passiva: Arvale di Draken, non sopporta che le cose vadano storte. In scontro ogni tiro fallito della compagnia (anche il suo) gli dà 1 Collera, fino a 3: ogni carica è +1 al suo tiro per colpire. A 3 cariche va in Furia (può solo attaccare) e il suo prossimo attacco fa +2 danni, poi la Collera torna a 0",
+        "desc": "Passiva: Arvale di Draken, non sopporta che le cose vadano storte. In scontro ogni tiro fallito della compagnia (anche il suo) gli dà 1 Collera, fino a 3: ogni carica è +1 al suo tiro per colpire e +1 a Difendi. A 3 cariche va in Furia (può solo attaccare) e il suo prossimo attacco fa +2 danni, poi la Collera torna a 0. Dopo l'attacco del nemico la Collera (e la Furia) si azzera",
         "isCombatActive": false,
         "effects": [
             { "effect": "hero_set", "stat": "iraTraboccante", "val": 1 }

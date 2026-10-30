@@ -8,10 +8,36 @@
     <link rel="stylesheet" href="css/wc3-base.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        #onlineJoin { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; background: rgba(0,0,0,.85); }
+        #onlineJoin { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1200; background: rgba(0,0,0,.85); }
         #onlineJoin .wc-panel { padding: 24px; max-width: 360px; width: calc(100% - 32px); }
-        #onlineJoin input { width: 100%; margin: 12px 0; padding: 8px; font-size: 1.1em; }
-        #onlineEntraModeratoreBtn { width: 100%; margin-top: 8px; }
+        #onlineJoinIndietro { width: 100%; margin-top: 8px; }
+        /* Link del master (?master=<chiave>): si entra solo come master; senza, il pulsante del master non c'è */
+        #onlineEntraMasterBtn, #onlineJoin.online-join-master #onlineEntraModeratoreBtn,
+        #onlineJoin.online-join-master #onlineJoinIndietro { display: none; }
+        #onlineJoin.online-join-master #onlineEntraMasterBtn { display: inline-block; }
+        /* Pulsanti del master dentro la schermata specchiata (es. "Riprendi <eroe>" nella lobby): solo il master a distanza */
+        html:not([data-ruolo="master"]) .online-solo-master { display: none !important; }
+        /* Attesa (rosa.fase 'attesa'): copre i menu del master finché non apre la creazione del capitolo */
+        #onlineAttesa { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); }
+        #onlineAttesa .wc-panel { position: relative; padding: 28px 24px 22px; max-width: 380px; width: calc(100% - 32px); text-align: center; }
+        #onlineAttesa p { margin: 10px 0 0; font-size: 1em; color: var(--text-main, #e8dcc0); }
+        /* Scelta dell'eroe: pannello sopra la schermata del master, che resta visibile intorno */
+        #onlineScelta { position: fixed; left: 50%; top: calc(var(--top-h, 56px) + 52px); transform: translateX(-50%); z-index: 1050;
+            width: 560px; max-width: calc(100% - 32px); max-height: calc(100vh - var(--top-h, 56px) - 120px); overflow-y: auto; padding: 16px 16px 14px; }
+        #onlineScelta .wc-heading { margin: 0 90px 10px 0; font-size: 1.15em; }
+        .online-angolo { position: absolute; top: 8px; right: 8px; margin: 0; padding: 2px 8px; font-size: 0.75em; }
+        .online-eroi { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        .online-eroe { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center;
+            margin: 0; padding: 8px 10px; min-width: 0; text-align: left; }
+        .online-eroe .hero-portrait { grid-row: 1 / 3; width: 48px; height: 48px; flex-basis: 48px; }
+        .online-eroe .hero-portrait > span { font-size: 1.5rem; }
+        .online-eroe-nome { font-family: var(--font-title); font-size: 0.95em; color: var(--wc-yellow, gold); }
+        .online-eroe-nota { font-size: 0.78em; color: var(--text-dim); text-transform: none; letter-spacing: normal; }
+        .online-eroe.online-eroe-occupato { filter: grayscale(1) brightness(0.6); cursor: not-allowed; }
+        /* Tutti gli eroi in gioco: il pannello si riduce a una riga */
+        #onlineScelta.online-scelta-guarda { width: auto; padding: 10px 104px 10px 14px; }
+        .online-scelta-testo { margin: 0; font-size: 0.9em; color: var(--text-main, #e8dcc0); }
+        #onlineMasterAttesa { color: var(--wc-yellow, gold); }
         .online-join-hint { margin: 10px 0 0; font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
         /* Barra del giocatore: compatta, nella barra in alto accanto alle icone, sopra barra e console del gioco
            (z-index 1000): sempre raggiungibile e lontana dai pannelli centrali. Sui telefoni scende sotto la barra. */
@@ -30,7 +56,7 @@
         .hero-mini-card.online-mio::before { content: "TU"; position: absolute; top: -9px; right: 8px; z-index: 2; padding: 1px 7px;
             font-family: var(--font-title); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.08em; color: #1a1206;
             background: linear-gradient(#ffe27a, #c9982f); border: 1px solid #000; box-shadow: 0 0 6px rgba(255, 204, 0, 0.6); }
-        .hero-mini-card.online-altro:not(.is-turn) { opacity: 0.8; }
+        .hero-mini-card.online-altro:not(.is-turn) { filter: brightness(0.8); }
         @keyframes online-mio {
             0%, 100% { box-shadow: 0 0 0 2px #c9982f, 0 0 10px rgba(255, 204, 0, 0.45), inset 0 0 18px rgba(0, 0, 0, 0.8); }
             50% { box-shadow: 0 0 0 2px #ffe27a, 0 0 18px rgba(255, 204, 0, 0.8), inset 0 0 18px rgba(0, 0, 0, 0.8); }
@@ -59,16 +85,30 @@
     </style>
 </head>
 <body class="online-guest">
+    <!-- Modulo d'ingresso: solo per il link del master e per il moderatore. Il giocatore entra da solo
+         e sceglie l'eroe dal pannello #onlineScelta (server/public/online.js, disegnaScelta). -->
     <div id="onlineJoin" class="online-hidden">
         <div class="wc-panel">
-            <h2 class="wc-heading">Unisciti alla spedizione</h2>
-            <p>Scrivi il tuo nome: il master ti assegnerà un eroe.</p>
-            <input id="onlineNome" maxlength="24" autocomplete="nickname">
-            <button class="btn-proceed" id="onlineEntraBtn">Entra</button>
-            <button class="btn-small" id="onlineEntraModeratoreBtn">Entra come Moderatore</button>
-            <p class="online-join-hint">Il moderatore aiuta chi guida la partita: non gioca un eroe, ma può aprire il Pannello di Controllo (vita della squadra e del nemico, stati) da qui.</p>
+            <h2 class="wc-heading" id="onlineJoinTitolo">Entra come Moderatore</h2>
+            <p id="onlineJoinTesto">Il moderatore aiuta chi guida la partita: non gioca un eroe, ma può aprire il Pannello di Controllo (vita della squadra e del nemico, stati) da qui.</p>
+            <button class="btn-proceed" id="onlineEntraMasterBtn">Entra come Master</button>
+            <button class="btn-proceed" id="onlineEntraModeratoreBtn">Entra come Moderatore</button>
+            <button class="btn-small" id="onlineJoinIndietro">Indietro</button>
             <p id="onlineJoinErrore" class="kw-curse"></p>
         </div>
+    </div>
+    <!-- Attesa: il master non è ancora nella creazione del capitolo (rosa.fase 'attesa') -->
+    <div id="onlineAttesa" class="online-hidden">
+        <div class="wc-panel">
+            <button type="button" class="btn-small online-angolo" data-online-moderatore data-tip="Entra come Moderatore||Non giochi un eroe: aiuti chi guida la partita dal Pannello di Controllo">Moderatore</button>
+            <h2 class="wc-heading">In attesa</h2>
+            <p>Il master sta preparando il capitolo…</p>
+        </div>
+    </div>
+    <!-- Scelta dell'eroe (giocatore senza eroe, in creazione o a partita avviata): sotto resta la schermata del master -->
+    <div id="onlineScelta" class="wc-panel online-hidden">
+        <button type="button" class="btn-small online-angolo" data-online-moderatore data-tip="Entra come Moderatore||Non giochi un eroe: aiuti chi guida la partita dal Pannello di Controllo">Moderatore</button>
+        <div id="onlineSceltaCorpo"></div>
     </div>
     <div class="menu-scene" aria-hidden="true"></div>
     <div id="partyTopBar" class="party-topbar"></div>

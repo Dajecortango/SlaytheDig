@@ -1,8 +1,9 @@
 /* ==========================================================================
    SERVER DELLA PARTITA ONLINE (richiesto da server/server.js)
    Una stanza alla volta, aperta dal master (Host locale). I giocatori entrano
-   con il codice e un nome, ricevono un token e uno stream SSE compresso con le
-   regioni della schermata del master; i loro clic vanno al master, che decide.
+   con il codice (senza nome), ricevono un token e uno stream SSE con le regioni
+   della schermata del master; poi scelgono un eroe dalla lobby (/api/online/scegli) e da quel momento
+   il loro nome è quello dell'eroe. I loro clic vanno al master, che decide.
    ========================================================================== */
 const crypto = require('crypto');
 const fs = require('fs');
@@ -12,10 +13,11 @@ const zlib = require('zlib');
 const PUBLIC = path.join(__dirname, 'public');
 const DISCONNECT_MS = process.env.ONLINE_DISCONNECT_MS ? parseInt(process.env.ONLINE_DISCONNECT_MS, 10) : 20000;
 const PING_MS = process.env.SSE_PING_MS ? parseInt(process.env.SSE_PING_MS, 10) : 15000;
-const NOME_MAX = 24;
-const { nomeGiocatoreValido } = require('../js/online-regole.js');
+const { esitoSceltaEroe, nomeModeratore } = require('../js/online-regole.js');
 
-let stanza = null;        // { code, giocatori: Map(token -> { name, connected, flussi: Set, timer }), regioni: {}, stato: null }
+// { code, segreto, chiaveMaster, giocatori: Map(token -> { id, name (null finché non sceglie un eroe), connected, flussi: Set, timer, ruolo }), regioni: {},
+//   regioniMaster: {}, stato: null }. regioniMaster = la schermata come la vede il master a distanza (mappa intera)
+let stanza = null;
 const masters = new Set(); // stream SSE del master
 
 // Master: chiamata dal PC stesso (loopback; anche ngrok arriva da qui, ma con l'Host pubblico) e con Host locale.
@@ -57,28 +59,30 @@ function apriFlusso(req, res) {
     return flusso;
 }
 
-const elencoGiocatori = () => stanza ? [...stanza.giocatori.values()].map(gi => ({ name: gi.name, connected: gi.connected, ruolo: gi.ruolo || 'giocatore' })) : [];
+const elencoGiocatori = () => stanza ? [...stanza.giocatori.values()].map(gi => ({ id: gi.id, name: gi.name, connected: gi.connected, ruolo: gi.ruolo || 'giocatore' })) : [];
 const alMaster = (evento, dati) => masters.forEach(f => f.scrivi(evento, dati));
 const aiGiocatori = (evento, dati) => stanza && stanza.giocatori.forEach(gi => gi.flussi.forEach(f => f.scrivi(evento, dati)));
-// Solo ai moderatori (il pannello privato di server/public/online.js): mai agli altri giocatori, mai al master
-const aiModeratori = (evento, dati) => stanza && stanza.giocatori.forEach(gi => { if (gi.ruolo === 'moderatore') gi.flussi.forEach(f => f.scrivi(evento, dati)); });
+// Solo ai moderatori e al master a distanza (il pannello privato di server/public/online.js): mai agli altri giocatori
+const aiModeratori = (evento, dati) => stanza && stanza.giocatori.forEach(gi => { if (['moderatore', 'master'].includes(gi.ruolo)) gi.flussi.forEach(f => f.scrivi(evento, dati)); });
 // Regioni della schermata: compresse (deflate + base64) per i browser che sanno decomprimerle, in chiaro per gli altri
 const comprimi = parti => ({ z: zlib.deflateRawSync(Buffer.from(JSON.stringify(parti), 'utf8')).toString('base64') });
 function scriviParti(f, parti, compresse) { f.scrivi('parti', f.z ? (compresse || comprimi(parti)) : parti); }
-function partiAiGiocatori(parti) {
+// Il master a distanza riceve la sua versione (partiMaster) se il master ne manda una, altrimenti la stessa dei giocatori
+function partiAiGiocatori(parti, partiMaster) {
     if (!stanza) return;
-    const compresse = comprimi(parti);
-    stanza.giocatori.forEach(gi => gi.flussi.forEach(f => scriviParti(f, parti, compresse)));
+    const compresse = parti && comprimi(parti);
+    const compresseMaster = partiMaster && comprimi(partiMaster);
+    stanza.giocatori.forEach(gi => {
+        const mie = gi.ruolo === 'master' && partiMaster ? [partiMaster, compresseMaster] : [parti, compresse];
+        if (mie[0]) gi.flussi.forEach(f => scriviParti(f, mie[0], mie[1]));
+    });
 }
+const applicaRegioni = (dove, parti) => Object.entries(parti || {}).forEach(([k, v]) => { if (v === null) delete dove[k]; else dove[k] = v; });
 const avvisaStanza = () => alMaster('stanza', { giocatori: elencoGiocatori() });
 
 function giocatoreDaToken(code, token) {
     if (!stanza || stanza.code !== code || !token) return null;
     return stanza.giocatori.get(token) || null;
-}
-
-function pulisciNome(n) {
-    return String(n || '').replace(/[<>"'&\u0000-\u001f]/g, '').trim().slice(0, NOME_MAX);
 }
 
 /* ---------- Media leggeri per i giocatori (/leggero/<percorso>) ---------- */
@@ -138,12 +142,13 @@ function leggero(req, res, pathname) {
 function gestisci(req, res, pathname) {
     if (pathname.startsWith('/leggero/')) { leggero(req, res, pathname); return true; }
     // ----- Master (Host locale) -----
-    if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso', 'gmstato'].includes(pathname.slice(12))) {
+    if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso', 'libera', 'gmstato'].includes(pathname.slice(12))) {
         const cosa = pathname.slice(12);
         if (!eLocale(req) || (cosa !== 'apri' && !haSegreto(req))) { json(res, 403, { error: 'Solo il master' }); return true; }
         if (cosa === 'apri' && req.method === 'POST') {
-            if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), segreto: crypto.randomBytes(16).toString('hex'), giocatori: new Map(), regioni: {}, stato: null, gmStato: null };
-            json(res, 200, { code: stanza.code, segreto: stanza.segreto });
+            if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), segreto: crypto.randomBytes(16).toString('hex'),
+                chiaveMaster: crypto.randomBytes(12).toString('hex'), giocatori: new Map(), regioni: {}, regioniMaster: {}, stato: null, gmStato: null };
+            json(res, 200, { code: stanza.code, segreto: stanza.segreto, chiaveMaster: stanza.chiaveMaster });
             return true;
         }
         if (cosa === 'chiudi' && req.method === 'POST') {
@@ -164,13 +169,27 @@ function gestisci(req, res, pathname) {
         leggiJson(req, data => {
             if (!data || !stanza) { json(res, 400, { error: 'Nessuna stanza' }); return; }
             if (cosa === 'parti') {
-                Object.entries(data.parti || {}).forEach(([k, v]) => { if (v === null) delete stanza.regioni[k]; else stanza.regioni[k] = v; });
-                partiAiGiocatori(data.parti || {});
+                // Senza partiMaster il master a distanza vede quello che vedono i giocatori; con "completa" la sua
+                // versione sostituisce tutta quella di prima (è appena entrato)
+                applicaRegioni(stanza.regioni, data.parti);
+                if (data.partiMaster) {
+                    if (data.completa) stanza.regioniMaster = {};
+                    applicaRegioni(stanza.regioniMaster, data.partiMaster);
+                } else applicaRegioni(stanza.regioniMaster, data.parti);
+                partiAiGiocatori(data.parti || null, data.partiMaster || null);
             } else if (cosa === 'stato') {
                 stanza.stato = data;
                 aiGiocatori('stato', data);
+            } else if (cosa === 'libera') {
+                // L'eroe torna libero: chi lo aveva resta in lobby senza nome e deve sceglierne un altro
+                const gi = [...stanza.giocatori.values()].find(g => g.id === data.id && (g.ruolo || 'giocatore') === 'giocatore');
+                if (gi) {
+                    gi.name = null;
+                    gi.flussi.forEach(f => f.scrivi('avviso', { testo: String(data.motivo || '') }));
+                    avvisaStanza();
+                }
             } else if (cosa === 'avviso') {
-                stanza.giocatori.forEach(gi => { if (gi.name === data.giocatore) gi.flussi.forEach(f => f.scrivi('avviso', { testo: String(data.testo || '') })); });
+                stanza.giocatori.forEach(gi => { if (data.giocatore && gi.name === data.giocatore) gi.flussi.forEach(f => f.scrivi('avviso', { testo: String(data.testo || '') })); });
             } else if (cosa === 'gmstato') {
                 // Dati del pannello privato del moderatore (HP di squadra e nemico): mai alla mirroring
                 // dei giocatori normali, solo ai flussi con ruolo 'moderatore' (aiModeratori)
@@ -205,19 +224,42 @@ function gestisci(req, res, pathname) {
         leggiJson(req, data => {
             if (!data || !stanza || data.code !== stanza.code) { json(res, 200, { error: 'Stanza non trovata' }); return; }
             const vecchio = data.token && stanza.giocatori.get(data.token);
-            if (vecchio) { json(res, 200, { token: data.token, nome: vecchio.name, ruolo: vecchio.ruolo || 'giocatore' }); return; }
-            const nome = pulisciNome(data.nome);
-            if (!nome) { json(res, 200, { error: 'Scrivi un nome' }); return; }
-            if (!nomeGiocatoreValido(nome)) { json(res, 200, { error: 'Questo nome è riservato' }); return; }
-            if ([...stanza.giocatori.values()].some(gi => gi.name.toLowerCase() === nome.toLowerCase())) { json(res, 200, { error: 'Nome già usato da un altro giocatore' }); return; }
-            const token = crypto.randomBytes(16).toString('hex');
+            if (vecchio) { json(res, 200, { token: data.token, id: vecchio.id, nome: vecchio.name, ruolo: vecchio.ruolo || 'giocatore' }); return; }
+            if (data.token) { json(res, 200, { error: 'Sessione scaduta: rientra dal link' }); return; }
+            // Master a distanza: solo con la chiave del link del master (onlineLinkMaster in js/online.js)
+            if (data.ruolo === 'master' && data.chiave !== stanza.chiaveMaster) { json(res, 200, { error: 'Link del master non valido: chiedine uno nuovo a chi ospita' }); return; }
             // Moderatore (server/public/online.html, "Entra come Moderatore"): niente eroe, non conta per la
             // dimensione della squadra né per i voti/pronti/capo (js/online.js, onlineGiocatoriCollegati);
             // può solo usare il Pannello di Controllo (whitelist ONLINE_AZIONI_MODERATORE in js/online-regole.js)
-            const ruolo = data.ruolo === 'moderatore' ? 'moderatore' : 'giocatore';
-            stanza.giocatori.set(token, { name: nome, connected: false, flussi: new Set(), timer: null, ruolo });
+            const ruolo = data.ruolo === 'moderatore' ? 'moderatore' : data.ruolo === 'master' ? 'master' : 'giocatore';
+            // I giocatori entrano senza nome: lo prendono scegliendo un eroe (/api/online/scegli)
+            const nome = ruolo === 'moderatore' ? nomeModeratore(elencoGiocatori()) : ruolo === 'master' ? 'Master' : null;
+            const token = crypto.randomBytes(16).toString('hex');
+            const id = crypto.randomBytes(4).toString('hex');
+            stanza.giocatori.set(token, { id, name: nome, connected: false, flussi: new Set(), timer: null, ruolo });
             avvisaStanza();
-            json(res, 200, { token, nome, ruolo });
+            json(res, 200, { token, id, nome, ruolo });
+        });
+        return true;
+    }
+    if (pathname === '/api/online/scegli' && req.method === 'POST') {
+        leggiJson(req, data => {
+            const gi = data && giocatoreDaToken(data.code, data.token);
+            if (!gi) { json(res, 403, { error: 'Token non valido' }); return; }
+            const eroe = String(data.eroe || '');
+            const chi = { id: gi.id, name: gi.name, ruolo: gi.ruolo || 'giocatore' };
+            const esito = esitoSceltaEroe(eroe, chi, elencoGiocatori(), stanza.stato && stanza.stato.rosa);
+            if (!esito.ok) { json(res, 200, { error: esito.motivo }); return; }
+            if (esito.libera) {
+                // Chi aveva quell'eroe è scollegato: perde il posto (il suo token non vale più)
+                for (const [tk, vecchio] of [...stanza.giocatori]) {
+                    if (vecchio.id === esito.libera) { clearTimeout(vecchio.timer); vecchio.flussi.forEach(f => f.chiudi()); stanza.giocatori.delete(tk); }
+                }
+            }
+            gi.name = eroe;
+            avvisaStanza();
+            alMaster('scelta', { id: gi.id, eroe });
+            json(res, 200, { ok: true, nome: eroe });
         });
         return true;
     }
@@ -230,9 +272,9 @@ function gestisci(req, res, pathname) {
         gi.flussi.add(f);
         clearTimeout(gi.timer);
         if (!gi.connected) { gi.connected = true; avvisaStanza(); }
-        scriviParti(f, stanza.regioni);
+        scriviParti(f, gi.ruolo === 'master' ? stanza.regioniMaster : stanza.regioni);
         if (stanza.stato) f.scrivi('stato', stanza.stato);
-        if (gi.ruolo === 'moderatore' && stanza.gmStato) f.scrivi('gmstato', stanza.gmStato);
+        if (['moderatore', 'master'].includes(gi.ruolo) && stanza.gmStato) f.scrivi('gmstato', stanza.gmStato);
         f.scrivi('master', { online: masters.size > 0 });
         req.on('close', () => {
             gi.flussi.delete(f);
@@ -246,6 +288,7 @@ function gestisci(req, res, pathname) {
         leggiJson(req, data => {
             const gi = data && giocatoreDaToken(data.code, data.token);
             if (!gi) { json(res, 403, { error: 'Token non valido' }); return; }
+            if ((gi.ruolo || 'giocatore') === 'giocatore' && gi.name === null) { json(res, 403, { error: 'Scegli prima un eroe' }); return; }
             if (!masters.size) { json(res, 200, { error: 'Il master non è collegato' }); return; }
             alMaster('clic', { giocatore: gi.name, azione: String(data.azione || ''), tipo: data.tipo || 'click',
                 regione: data.regione || null, percorso: Array.isArray(data.percorso) ? data.percorso : [],
@@ -260,7 +303,7 @@ function gestisci(req, res, pathname) {
     if (pathname === '/api/online/moderatore-azione' && req.method === 'POST') {
         leggiJson(req, data => {
             const gi = data && giocatoreDaToken(data.code, data.token);
-            if (!gi || gi.ruolo !== 'moderatore') { json(res, 403, { error: 'Token non valido' }); return; }
+            if (!gi || !['moderatore', 'master'].includes(gi.ruolo)) { json(res, 403, { error: 'Token non valido' }); return; }
             if (!masters.size) { json(res, 200, { error: 'Il master non è collegato' }); return; }
             alMaster('clic-moderatore', { giocatore: gi.name, azione: String((data && data.azione) || ''),
                 args: Array.isArray(data && data.args) ? data.args : [] });

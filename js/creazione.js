@@ -34,9 +34,10 @@
             loadHeroGridOptions();
         }
 
-        function loadHeroGridOptions() {
+        // escludi: altri nomi da non mostrare (la partita online toglie gli eroi con una creazione in sospeso)
+        function loadHeroGridOptions(escludi = []) {
             const gridContainer = document.getElementById('heroGridButtons');
-            const availableHeroes = campaignHeroes.filter(h => !stato.party.some(p => p.name === h.name));
+            const availableHeroes = campaignHeroes.filter(h => !stato.party.some(p => p.name === h.name) && !escludi.includes(h.name));
 
             gridContainer.innerHTML = availableHeroes.map(h => `
                 <button class="armory-btn" ${azione('selectHeroCard', h.name)}>
@@ -124,6 +125,7 @@
             const hero = activeHeroForCreation;
             if ((hero.equippedRunes || []).length !== Math.min(hero.runeSlots, hero.runeOptions.length)) return;
             hero.equippedRunes.forEach(id => applyRune(hero, id, 1));
+            hero.creationStep = 'armeria';
             document.getElementById('abilityArea').classList.add('hidden');
             document.getElementById('armoryArea').classList.remove('hidden');
             document.getElementById('btnProceedHero').classList.remove('hidden');
@@ -141,15 +143,32 @@
             return true;
         }
 
+        // Eroe in creazione. Il passo a cui è arrivato sta in activeHeroForCreation.creationStep: 'scelta' (abilità o
+        // rune) o 'armeria' (oggetto iniziale); nextHero lo toglie. Così la partita online può mettere da parte la
+        // creazione di un giocatore che si scollega (una bozza) e riprenderla dallo stesso punto (mostraPassoCreazione).
         let activeHeroForCreation = null;
         function selectHeroCard(heroName) {
             activeHeroForCreation = JSON.parse(JSON.stringify(campaignHeroes.find(h => h.name === heroName)));
             applyFixedAbilities(activeHeroForCreation);
-            document.getElementById('heroCreationArea').classList.add('hidden');
+            const conRune = heroHasRunes(activeHeroForCreation);
+            if (conRune) activeHeroForCreation.equippedRunes = [];
+            activeHeroForCreation.creationStep = (conRune || (campaignAbilities[heroName] || []).length > 0) ? 'scelta' : 'armeria';
+            mostraPassoCreazione();
+        }
 
-            const heroAbilities = campaignAbilities[heroName] || [];
+        // Disegna il passo della creazione di activeHeroForCreation senza azzerare quello che ha già scelto
+        function mostraPassoCreazione() {
+            const hero = activeHeroForCreation;
+            ['heroCreationArea', 'abilityArea', 'armoryArea', 'btnProceedHero'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            if (hero.creationStep === 'armeria') {
+                document.getElementById('armoryArea').classList.remove('hidden');
+                document.getElementById('btnProceedHero').classList.remove('hidden');
+                loadArmoryOptions();
+                return;
+            }
+            const heroAbilities = campaignAbilities[hero.name] || [];
             // Abilità fisse: si vedono sopra la scelta, già prese
-            const fixedHtml = fixedAbilities(activeHeroForCreation).map(ab => `
+            const fixedHtml = fixedAbilities(hero).map(ab => `
                 <div class="armory-btn selected fixed-ability" style="width:100%; margin:5px 0;">
                     ${abilityIconHtml(ab)}
                     <span class="tile-text">
@@ -158,12 +177,10 @@
                         <span class="tile-tag">Sempre attiva</span>
                     </span>
                 </div>`).join('');
-            if (heroHasRunes(activeHeroForCreation)) {
-                activeHeroForCreation.equippedRunes = [];
-                document.getElementById('abilityArea').classList.remove('hidden');
+            document.getElementById('abilityArea').classList.remove('hidden');
+            if (heroHasRunes(hero)) {
                 renderRuneChoice();
-            } else if(heroAbilities.length > 0) {
-                document.getElementById('abilityArea').classList.remove('hidden');
+            } else {
                 document.getElementById('abilityButtons').innerHTML = fixedHtml + heroAbilities.map((ab, idx) => `
                     <button class="armory-btn" ${azione('selectAbility', idx)} style="width:100%; margin:5px 0;">
                         ${abilityIconHtml(ab)}
@@ -173,10 +190,6 @@
                         </span>
                     </button>
                 `).join('');
-            } else {
-                document.getElementById('armoryArea').classList.remove('hidden');
-                document.getElementById('btnProceedHero').classList.remove('hidden');
-                loadArmoryOptions();
             }
         }
 
@@ -193,6 +206,7 @@
             else if(chosen.effects) {
                 applyEffects(chosen.effects, activeHeroForCreation);
             }
+            activeHeroForCreation.creationStep = 'armeria';
 
             document.getElementById('abilityArea').classList.add('hidden');
             document.getElementById('armoryArea').classList.remove('hidden');
@@ -251,6 +265,7 @@
 
         function nextHero() {
             activeHeroForCreation.items.forEach(it => { delete it.startingPick; });
+            delete activeHeroForCreation.creationStep;
             stato.party.push(activeHeroForCreation);
             updatePartyStatusBars();
             document.getElementById('armoryArea').classList.add('hidden');

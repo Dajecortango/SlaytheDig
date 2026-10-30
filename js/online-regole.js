@@ -63,10 +63,17 @@ const ONLINE_PERMESSI = {
 // stati), mai le azioni di un giocatore o del master. Niente gmOpenPanel: il moderatore ha un pannello
 // tutto suo (server/public/online.js, non una finestra mirata a video sullo schermo del master o mandata
 // agli altri giocatori) che chiama queste azioni "silenziose" (opts.silent) senza aprire alcuna finestra
-// condivisa. Il moderatore non ha un eroe: js/online.js lo esclude da onlineGiocatoriCollegati/onlineOrdine,
+// condivisa. Il moderatore non ha un eroe: js/online.js lo esclude da onlineGiocatoriCollegati,
 // così non conta per dimensione squadra, voti, pronti o capo.
 const ONLINE_AZIONI_MODERATORE = ['gmClearPartyStatuses', 'gmRefillParty',
     'gmAdjustHeroHp', 'gmSetHeroHp', 'gmAdjustEnemyHp', 'gmSetEnemyHp'];
+
+// Ruoli nella stanza (server/online.js, "ruolo" di ogni giocatore): 'giocatore' comanda un eroe; 'moderatore' ha solo
+// il Pannello di Controllo; 'master' (Master a distanza, entra con il link del master e la sua chiave) guida la partita
+// dal suo browser come il master sul PC che ospita: può tutto, vede la mappa intera e il Pannello. Moderatore e master
+// a distanza non hanno un eroe: non contano per squadra, creazione a turno, voti, pronti e capo.
+const ONLINE_RUOLI_SENZA_EROE = ['moderatore', 'master'];
+const ruoloSenzaEroe = ruolo => ONLINE_RUOLI_SENZA_EROE.includes(ruolo);
 
 function onlineRegola(azione, ctx) {
     const r = ONLINE_PERMESSI[azione];
@@ -185,8 +192,50 @@ function rendiLeggero(html) {
         (m, prima, percorso) => prima + leggeroUrl(percorso));
 }
 
+// Rosa degli eroi della lobby. schermata = currentScreenId; eroiCapitolo, party = nomi; bozze = nome → bozza; creando = nome o null.
+// Fase: 'creazione' (screenParty), 'partita' (compagnia formata), altrimenti 'attesa'. Stato di un eroe in creazione:
+// 'creato' (nella compagnia), 'sospeso' (ha una bozza), 'in_creazione' (è quello di turno), altrimenti 'da_creare'
+function rosaOnline(schermata, eroiCapitolo, party, bozze, creando) {
+    const compagnia = party || [], bz = bozze || {};
+    if (schermata === 'screenParty') {
+        const stato = nome => compagnia.includes(nome) ? 'creato' : nome in bz ? 'sospeso' : nome === creando ? 'in_creazione' : 'da_creare';
+        return { fase: 'creazione', eroi: (eroiCapitolo || []).map(nome => ({ nome, stato: stato(nome) })), creando: creando || null };
+    }
+    if (compagnia.length > 0) return { fase: 'partita', eroi: compagnia.map(nome => ({ nome, stato: 'creato' })), creando: creando || null };
+    return { fase: 'attesa', eroi: [], creando: creando || null };
+}
+
+// Può chi sceglie prendere l'eroe? chi = { id, name, ruolo }; giocatori = [{ id, name, connected, ruolo }].
+// { ok: true, libera: id del giocatore scollegato che aveva quel nome | null } oppure { ok: false, motivo }
+function esitoSceltaEroe(eroe, chi, giocatori, rosa) {
+    const no = motivo => ({ ok: false, motivo });
+    if (ruoloSenzaEroe(chi.ruolo)) return no('Il tuo ruolo non ha un eroe');
+    if (chi.name !== null && chi.name !== undefined) return no('Hai già un eroe');
+    const voce = ((rosa && rosa.eroi) || []).find(e => e.nome === eroe);
+    if (!rosa || rosa.fase === 'attesa' || !voce) return no('Eroe non disponibile');
+    const con = (giocatori || []).filter(gi => gi.id !== chi.id && gi.name === eroe);
+    if (con.some(gi => gi.connected)) return no(eroe + ' è già in gioco');
+    // Una sola creazione alla volta: anche una bozza in sospeso aspetta (così il token di chi l'aveva non si brucia per niente)
+    if ((voce.stato === 'da_creare' || voce.stato === 'sospeso') && rosa.creando && rosa.creando !== eroe) return no('Sta creando: ' + rosa.creando);
+    return { ok: true, libera: con.length ? con[0].id : null };
+}
+
+// Nome del moderatore: 'Moderatore', se è già usato 'Moderatore 2', 'Moderatore 3'...
+function nomeModeratore(giocatori) {
+    const usati = new Set((giocatori || []).map(gi => gi.name));
+    if (!usati.has('Moderatore')) return 'Moderatore';
+    let n = 2;
+    while (usati.has('Moderatore ' + n)) n++;
+    return 'Moderatore ' + n;
+}
+
+// Proprietari degli eroi: ogni eroe è del giocatore che porta il suo nome
+function ownersIdentita(party) {
+    return Object.fromEntries((party || []).map(h => [h.name, h.name]));
+}
+
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, ONLINE_AZIONI_MODERATORE, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
+    module.exports = { rosaOnline, esitoSceltaEroe, nomeModeratore, ownersIdentita, ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, ONLINE_AZIONI_MODERATORE, ONLINE_RUOLI_SENZA_EROE, ruoloSenzaEroe, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
         elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, classiNodoGiocatore, nodiVisibiliGiocatori, changedRegions, leggeroUrl, rendiLeggero };
 }

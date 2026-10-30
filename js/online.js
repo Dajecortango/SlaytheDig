@@ -7,17 +7,23 @@
    ========================================================================== */
 // Il master apre il gioco dal server (http://localhost:8787): stesse origine e porta per le chiamate
 const ONLINE_BASE = (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) ? location.origin : 'http://localhost:8787';
-const onlineState = { attivo: false, code: null, segreto: null, giocatori: [], voto: null, pronti: null, modalOwner: null, attore: null,
-    ultimoClicMaster: 0, ordineCreazione: null };
+// creando: nome dell'eroe in creazione (anche quando lo crea il master); creandoGiocatore: lo crea un giocatore (la sua
+// creazione si sospende se si scollega, quella del master mai); bozze: creazioni sospese, nome → copia di activeHeroForCreation
+const onlineState = { attivo: false, code: null, segreto: null, chiaveMaster: null, giocatori: [], voto: null, pronti: null, modalOwner: null, attore: null,
+    ultimoClicMaster: 0, creando: null, creandoGiocatore: false, bozze: {} };
 const onlineDopoClic = [];
 let onlineMasterStream = null;
 
 const onlineAttivo = () => onlineState.attivo;
-// Il moderatore (ruolo 'moderatore', "Entra come Moderatore" nella lobby) non ha un eroe: resta fuori dai
-// giocatori "veri" così non conta per la dimensione della squadra, la creazione a turno, i voti, i "pronti"
-// o il capo spedizione (tutti derivati da queste due funzioni). Può solo usare il Pannello di Controllo (onlineGate).
-const onlineGiocatoriCollegati = () => onlineState.giocatori.filter(gi => gi.connected && gi.ruolo !== 'moderatore').map(gi => gi.name);
+// Il moderatore (ruolo 'moderatore', "Entra come Moderatore" nella lobby) e il master a distanza (ruolo 'master', link del
+// master) non hanno un eroe: restano fuori dai giocatori "veri" così non contano per la dimensione della squadra, la
+// creazione a turno, i voti, i "pronti" o il capo spedizione (tutti derivati da queste due funzioni; ruoloSenzaEroe
+// in js/online-regole.js). Il moderatore può solo usare il Pannello di Controllo, il master a distanza tutto (onlineGate).
+// Un giocatore ha un nome solo dopo aver scelto un eroe (il nome è quello dell'eroe): prima è uno spettatore e non conta.
+const onlineGiocatoriCollegati = () => onlineState.giocatori.filter(gi => gi.connected && gi.name != null && !ruoloSenzaEroe(gi.ruolo)).map(gi => gi.name);
 const onlineRuolo = nome => { const gi = onlineState.giocatori.find(g => g.name === nome); return (gi && gi.ruolo) || 'giocatore'; };
+// Master a distanza nella stanza (collegati o no): chi guida la partita dal suo browser mentre un altro PC la ospita
+const onlineMastriRemoti = () => onlineState.giocatori.filter(gi => gi.ruolo === 'master');
 
 function onlinePost(url, body) {
     const headers = { 'Content-Type': 'application/json', ...(onlineState.segreto ? { 'X-Online-Segreto': onlineState.segreto } : {}) };
@@ -39,7 +45,8 @@ function trovaElementoRemoto(root, percorso) {
 
 /* ---------- Regioni della pagina ---------- */
 // Copia di un elemento con i valori correnti dei campi scritti negli attributi (i giocatori vedono le stesse scelte)
-function onlineSerializza(el) {
+// mappaIntera: per il master a distanza, che vede il contenuto di tutti i nodi come il master sul PC
+function onlineSerializza(el, mappaIntera) {
     if (!el) return null;
     const copia = el.cloneNode(true);
     // Scorrimento (non è un attributo): carosello dei capitoli, diario dello scontro... lo riapplica la pagina del giocatore
@@ -57,7 +64,7 @@ function onlineSerializza(el) {
     copia.querySelectorAll('script, audio').forEach(n => n.remove());
     // Mappa: i giocatori non vedono cosa c'è nei nodi lontani ancora da fare (solo il master lo sa)
     const vicini = nodiVisibiliGiocatori(stato.stsMapNodes, typeof ONLINE_NODI_VISIBILI === 'number' ? ONLINE_NODI_VISIBILI : 1);
-    copia.querySelectorAll('.sts-node').forEach(n => {
+    if (!mappaIntera) copia.querySelectorAll('.sts-node').forEach(n => {
         const classi = classiNodoGiocatore(n.className, vicini.has(Number(n.dataset.nodeId)) || vicini.has(n.dataset.nodeId));
         if (!classi || classi === n.className) return;
         n.className = classi;
@@ -106,7 +113,9 @@ function onlineRegioni() {
         overlays: overlays.map(onlineSerializza).join('') || null
     };
 }
-let onlineUltimeRegioni = {}, onlineInvioTimer = null;
+// Con un master a distanza nella stanza la schermata si manda in due versioni: ai giocatori con la mappa coperta,
+// a lui con la mappa intera (partiMaster; il server le tiene separate). Solo "screen" cambia fra le due.
+let onlineUltimeRegioni = {}, onlineUltimeRegioniMaster = null, onlineInvioTimer = null;
 function onlinePianificaInvio() {
     if (!onlineState.attivo || onlineInvioTimer) return;
     onlineInvioTimer = setTimeout(() => {
@@ -115,7 +124,18 @@ function onlinePianificaInvio() {
         Object.keys(ora).forEach(k => { if (ora[k] === null) delete ora[k]; });
         const diff = changedRegions(onlineUltimeRegioni, ora);
         onlineUltimeRegioni = ora;
-        if (Object.keys(diff).length) onlinePost('/api/online/parti', { parti: diff });
+        const corpo = Object.keys(diff).length ? { parti: diff } : {};
+        if (onlineMastriRemoti().length) {
+            const schermata = document.querySelector('#gameContainer > div:not(.hidden)');
+            const oraMaster = { ...ora, screen: onlineSerializza(schermata, true) };
+            if (oraMaster.screen === null) delete oraMaster.screen;
+            // Primo invio (master appena entrato): la sua versione intera, che sostituisce quella del server
+            const completa = !onlineUltimeRegioniMaster;
+            const diffMaster = completa ? oraMaster : changedRegions(onlineUltimeRegioniMaster, oraMaster);
+            onlineUltimeRegioniMaster = oraMaster;
+            if (completa || Object.keys(diffMaster).length) Object.assign(corpo, { partiMaster: diffMaster, completa });
+        } else onlineUltimeRegioniMaster = null;
+        if (Object.keys(corpo).length) onlinePost('/api/online/parti', corpo);
     }, ONLINE_FRAME_MS);
 }
 const onlineOsservatore = typeof MutationObserver === 'function' ? new MutationObserver(onlinePianificaInvio) : null;
@@ -129,9 +149,14 @@ function onlineInviaStato() {
         orologio: Date.now(),
         pronti: onlineState.pronti && { fatti: [...onlineState.pronti], totale: onlineGiocatoriCollegati().length },
         capo: onlineCapo(), owners: stato.onlineOwners || {}, attesi: onlineAttesi(),
+        // I giocatori vedono "Il master si sta riconnettendo" se chi guida da lontano è caduto
+        masterRemoto: onlineMastriRemoti().length ? { connesso: onlineMastriRemoti().some(gi => gi.connected) } : null,
         musica: (typeof musicActive !== 'undefined' && musicActive && musicActive.getAttribute('src')) || null,
+        // Eroi che si possono scegliere (il server la usa anche per validare /api/online/scegli)
+        rosa: onlineRosa(),
         giocatori: onlineState.giocatori
     });
+    onlineDisegnaLobby();
     onlineDisegnaBarraMaster();
 }
 
@@ -168,6 +193,11 @@ window.onlineGate = function (nome, args) {
         return true;
     }
     const giocatore = onlineState.attore;
+    // Master a distanza: come un clic del master sul PC (un'azione che decide un voto aperto lo annulla)
+    if (onlineRuolo(giocatore) === 'master') {
+        if (votoAnnullatoDa(nome, onlineState.voto)) onlineAnnullaVoto();
+        return true;
+    }
     // Moderatore: solo il Pannello di Controllo (ONLINE_AZIONI_MODERATORE, js/online-regole.js), mai le
     // azioni di un giocatore (non ha un eroe) né quelle libere del master
     if (onlineRuolo(giocatore) === 'moderatore') {
@@ -193,12 +223,20 @@ const ONLINE_RADICI = {
 function onlineEseguiClic(c) {
     if (!nomeGiocatoreValido(c.giocatore)) return;  // nomi riservati (il master): mai dai giocatori
     if (c.azione === '__vota') { onlineVota(c.giocatore, c.args[0], c.args[1]); return; }
+    const masterRemoto = onlineRuolo(c.giocatore) === 'master';
+    // Comandi della barra del master a distanza: chiude un voto con l'opzione scelta, fa partire chi non ha finito
+    if (c.azione === '__forza_voto' || c.azione === '__forza_pronti') {
+        if (!masterRemoto) return;
+        if (c.azione === '__forza_voto' && onlineState.voto && onlineState.voto.id === c.args[0]) onlineForzaVoto(c.args[1]);
+        if (c.azione === '__forza_pronti' && onlineState.pronti) onlineForzaPronti();
+        return;
+    }
     const root = c.regione === 'overlays' ? null : (ONLINE_RADICI[c.regione] || (() => null))();
     const el = root && trovaElementoRemoto(root, c.percorso);
     const attr = { click: 'action', change: 'change', input: 'input', keydown: 'enter' }[c.tipo] || 'action';
     const atteso = c.azione === '__modal' ? (el && el.dataset.modalBtn === String(c.args[0])) : (el && el.dataset[attr] === c.azione);
     if (!atteso || !elementoCliccabile(el)) { onlineAvvisa(c.giocatore, 'La schermata è cambiata, riprova'); return; }
-    if (c.azione === '__modal') {
+    if (c.azione === '__modal' && !masterRemoto) {
         const r = onlineCanRun('__modal', c.args, c.giocatore, contestoOnline());
         if (!r.ok) { onlineAvvisa(c.giocatore, r.motivo); return; }
     }
@@ -226,7 +264,7 @@ function onlineEseguiClic(c) {
    non apre/aggiorna la finestra #wc3Modal (quella la vedrebbero anche il master e, specchiata,
    tutti i giocatori). I dati del suo pannello arrivano solo a lui via onlinePianificaGmStato. */
 function onlineEseguiClicModeratore(c) {
-    if (!c || onlineRuolo(c.giocatore) !== 'moderatore') return;
+    if (!c || !['moderatore', 'master'].includes(onlineRuolo(c.giocatore))) return;
     if (!ONLINE_AZIONI_MODERATORE.includes(c.azione) || typeof window[c.azione] !== 'function') return;
     const args = Array.isArray(c.args) ? c.args : [];
     window[c.azione](...args, { silent: true });
@@ -275,15 +313,16 @@ function onlineApri() {
     if (location.protocol === 'file:') { uiError('La partita online funziona solo dal server: avvia avvia-server.bat'); return; }
     onlinePost('/api/online/apri').then(r => {
         if (r.error || !r.code) { uiError(r.error || 'Server non raggiungibile'); return; }
-        onlineState.attivo = true; onlineState.code = r.code; onlineState.segreto = r.segreto;
+        onlineState.attivo = true; onlineState.code = r.code; onlineState.segreto = r.segreto; onlineState.chiaveMaster = r.chiaveMaster || null;
         if (onlineMasterStream) onlineMasterStream.close();
         onlineMasterStream = new EventSource(`${ONLINE_BASE}/api/online/master?segreto=${encodeURIComponent(onlineState.segreto)}`);
         onlineMasterStream.addEventListener('stanza', e => { onlineState.giocatori = JSON.parse(e.data).giocatori; onlineStanzaCambiata(); });
         onlineMasterStream.addEventListener('clic', e => onlineEseguiClic(JSON.parse(e.data)));
         onlineMasterStream.addEventListener('clic-moderatore', e => onlineEseguiClicModeratore(JSON.parse(e.data)));
+        onlineMasterStream.addEventListener('scelta', e => onlineSceltaEroe(JSON.parse(e.data)));
         if (onlineOsservatore) onlineOsservatore.observe(document.body, ONLINE_OSSERVA);
         document.addEventListener('scroll', onlinePianificaInvio, true);  // lo scorrimento non cambia il DOM
-        onlineUltimeRegioni = {};
+        onlineUltimeRegioni = {}; onlineUltimeRegioniMaster = null;
         onlinePianificaInvio();
         onlineInviaStato();
         onlineMostraLink();
@@ -291,19 +330,28 @@ function onlineApri() {
 }
 function onlineChiudi() {
     onlinePost('/api/online/chiudi');
-    onlineState.attivo = false; onlineState.code = null; onlineState.segreto = null; onlineState.ordineCreazione = null; onlineState.giocatori = []; onlineState.voto = null; onlineState.pronti = null;
+    onlineState.attivo = false; onlineState.code = null; onlineState.segreto = null; onlineState.chiaveMaster = null; onlineState.giocatori = []; onlineState.voto = null; onlineState.pronti = null;
+    onlineState.creando = null; onlineState.creandoGiocatore = false; onlineState.bozze = {};
     if (onlineMasterStream) onlineMasterStream.close();
     if (onlineOsservatore) onlineOsservatore.disconnect();
     document.removeEventListener('scroll', onlinePianificaInvio, true);
+    onlineDisegnaLobby();
     onlineDisegnaBarraMaster();
 }
 function onlineLink() {
     const base = window.__remoteTunnelUrl || ONLINE_BASE;  // tunnel ngrok attivo (js/remote.js), altrimenti l'indirizzo locale
     return `${base}/online/${onlineState.code}`;
 }
+// Link del master a distanza: quello dei giocatori con la chiave del master (solo a chi guida la partita)
+function onlineLinkMaster() {
+    return onlineState.chiaveMaster ? `${onlineLink()}?master=${onlineState.chiaveMaster}` : '';
+}
 function onlineMostraLink() {
     openModal('Partita online', `<p>Manda questo link ai giocatori (su Discord):</p>
         <p><input id="onlineLinkBox" readonly value="${esc(onlineLink())}" style="width:100%"></p>
+        ${onlineLinkMaster() ? `<p><b>Master a distanza</b>: se a guidare la partita è un altro, manda <b>solo a lui</b> questo link.
+            Potrà fare tutto quello che fai tu da qui. Tieni questa finestra aperta e in primo piano (non ridotta a icona) finché si gioca.</p>
+        <p><input id="onlineLinkMasterBox" readonly value="${esc(onlineLinkMaster())}" style="width:100%"></p>` : ''}
         <p>Per giocare fuori casa attiva prima il <b>tunnel ngrok</b> dalle Opzioni (Compagnia connessa via QR): il link userà il suo indirizzo.</p>`,
         [{ label: 'OK', className: 'btn-proceed' }], { wide: true });
 }
@@ -311,15 +359,77 @@ function onlineMostraLink() {
 /* ---------- Funzioni completate nei passi successivi (creazione, voti, pronti, capo, barra) ---------- */
 
 /* ---------- Stanza, creazione a turno, chi deve agire ---------- */
-// Giocatori in ordine d'ingresso (anche i disconnessi: il loro posto resta; niente moderatori, vedi onlineGiocatoriCollegati)
-const onlineOrdine = () => onlineState.giocatori.filter(gi => gi.ruolo !== 'moderatore').map(gi => gi.name);
+// Creazione "chi prima arriva": un giocatore sceglie un eroe da creare (evento 'scelta' del server) e lo crea sullo
+// schermo condiviso; gli altri aspettano. Il master crea gli eroi senza giocatore toccandoli nella griglia.
 
-// Creazione degli eroi: a turno, il primo giocatore senza eroe nell'ordine d'ingresso
+// Creazione degli eroi: tocca al giocatore dell'eroe in creazione, se è collegato; altrimenti (nessuno, o lo crea il
+// master) decide il master
 function onlineTurnoCreazione() {
     if (!onlineState.attivo || currentScreenId !== 'screenParty') return null;
-    const conEroe = Object.values(stato.onlineOwners || {});
-    // Ordine fissato quando il master conferma la compagnia: solo chi era collegato allora
-    return (onlineState.ordineCreazione || onlineGiocatoriCollegati()).find(n => !conEroe.includes(n)) || null;
+    const c = onlineState.creando;
+    return c && onlineGiocatoriCollegati().includes(c) ? c : null;
+}
+
+// Eroi che i giocatori possono scegliere, con il loro stato (rosaOnline, js/online-regole.js)
+function onlineRosa() {
+    return rosaOnline(currentScreenId, (campaignHeroes || []).map(h => h.name), (stato.party || []).map(h => h.name),
+        onlineState.bozze, onlineState.creando);
+}
+
+// Il server ha dato l'eroe "eroe" al giocatore "id" (la scelta è già valida per la rosa mandata nello stato)
+function onlineSceltaEroe({ id, eroe }) {
+    if (!onlineState.attivo) return;
+    const libera = () => onlinePost('/api/online/libera', { id, motivo: `Sta creando: ${onlineState.creando}` });
+    if ((stato.party || []).some(h => h.name === eroe)) { onlineInviaStato(); return; }  // eroe già creato: lo riprende e basta
+    if (eroe === onlineState.creando) { onlineState.creandoGiocatore = true; onlineInviaStato(); return; }  // continua lui la creazione
+    if (eroe in onlineState.bozze) {
+        // Una sola creazione alla volta: riprende la bozza solo se nessuno sta creando
+        if (onlineState.creando) { libera(); return; }
+        onlineRiprendiBozza(eroe);
+        return;
+    }
+    if (currentScreenId !== 'screenParty' || !campaignHeroes.some(h => h.name === eroe)) { onlineInviaStato(); return; }
+    if (onlineState.creando) { libera(); return; }
+    selectHeroCard(eroe);
+}
+
+// Riprende la creazione sospesa di un eroe dal punto in cui era (pulsante "Riprendi" del master, o la scelta di un giocatore)
+function onlineRiprendiBozza(eroe) {
+    const bozza = onlineState.bozze[eroe];
+    if (!bozza) return;
+    if (onlineState.creando) {
+        uiError(`Sta creando: ${onlineState.creando}`);
+        if (onlineState.attore) onlineAvvisa(onlineState.attore, `Sta creando: ${onlineState.creando}`);  // master a distanza: l'avviso arriva anche a lui
+        return;
+    }
+    activeHeroForCreation = bozza;
+    delete onlineState.bozze[eroe];
+    onlineState.creando = eroe;
+    onlineState.creandoGiocatore = onlineGiocatoriCollegati().includes(eroe);
+    mostraPassoCreazione();
+    onlineInviaStato();
+}
+
+// Il giocatore di una bozza è rientrato da solo (stesso token, nessuna nuova scelta): appena nessuno sta creando
+// riprende lui la creazione. Si controlla a ogni cambio della stanza e quando un altro finisce il suo eroe (nextHero)
+function onlineRiprendiBozzaRientrata() {
+    if (!onlineState.attivo || onlineState.creando || currentScreenId !== 'screenParty') return;
+    const rientrato = onlineGiocatoriCollegati().find(n => n in onlineState.bozze);
+    if (rientrato) onlineRiprendiBozza(rientrato);
+}
+
+// Il giocatore che stava creando si è scollegato: la sua creazione diventa una bozza e la schermata torna alla rosa
+function onlineSospendiCreazione() {
+    const eroe = onlineState.creando;
+    if (!eroe || !activeHeroForCreation) return;
+    onlineState.bozze[eroe] = JSON.parse(JSON.stringify(activeHeroForCreation));
+    activeHeroForCreation = null;
+    onlineState.creando = null;
+    onlineState.creandoGiocatore = false;
+    document.getElementById('heroCreationArea').classList.remove('hidden');
+    ['abilityArea', 'armoryArea', 'btnProceedHero'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    loadHeroGridOptions();
+    uiMessage(`Creazione di ${eroe} in sospeso: la riprende chi sceglie ${eroe}`);
 }
 
 // Chi deve agire adesso (per l'avviso "Tocca a te" dei giocatori)
@@ -336,62 +446,122 @@ function onlineAttesi() {
     }
     if (currentScreenId === 'screenChallenge' && selectedChallengeHero) return [owners[selectedChallengeHero.name]].filter(Boolean);
     if (currentScreenId === 'screenRest' && selectedPrayerHero) return [owners[selectedPrayerHero.name]].filter(Boolean);
+    // Strada sulla mappa: la sceglie il master (anche quello a distanza)
+    if (currentScreenId === 'screenMap') return onlineMastriRemoti().map(gi => gi.name);
     return [];
 }
 
-// Stanza cambiata (ingresso, uscita): la lista dei giocatori nella schermata della compagnia e lo stato
+// Stanza cambiata (ingresso, uscita, scelta di un eroe): avvisi, creazione sospesa, lobby e stato
 function onlineStanzaCambiata() {
     onlineAvvisoConnessioni();
-    onlineDisegnaLobby();
-    onlineInviaStato();
+    // Chi stava creando non è più collegato (o non c'è più): la sua creazione resta in sospeso. Quella del master mai.
+    if (onlineState.creando && onlineState.creandoGiocatore && !onlineGiocatoriCollegati().includes(onlineState.creando)) onlineSospendiCreazione();
+    onlineRiprendiBozzaRientrata();
+    onlineInviaStato();  // ridisegna anche la lobby
     onlinePianificaGmStato();  // un moderatore appena entrato riceve subito i dati del suo pannello
+    if (onlineMastriRemoti().length && !onlineUltimeRegioniMaster) onlinePianificaInvio();  // master a distanza appena entrato: la sua schermata
 }
+const ONLINE_STATI_ROSA = { creato: 'creato', sospeso: 'creazione in sospeso', in_creazione: 'in creazione', da_creare: 'da creare' };
+// Lobby nella schermata della compagnia: la rosa del capitolo, con lo stato di ogni eroe e chi è collegato
 function onlineDisegnaLobby() {
     const area = document.getElementById('partyConfigArea');
     if (!area) return;
     let box = document.getElementById('onlineLobby');
     if (!onlineState.attivo) { if (box) box.remove(); return; }
-    if (!box) { box = document.createElement('div'); box.id = 'onlineLobby'; box.className = 'wc-inset'; area.prepend(box); }
-    const righe = onlineState.giocatori.map(gi => `<li>${esc(gi.name)}${gi.ruolo === 'moderatore' ? ' (Moderatore)' : ''} ${gi.connected ? '🟢' : '⚪'}</li>`).join('') || '<li>Nessun giocatore: manda il link</li>';
-    box.innerHTML = `<p><b>Giocatori nella stanza</b> (un eroe a testa)</p><ul>${righe}</ul>`;
+    // Accanto (non dentro) a partyConfigArea, che online si nasconde subito: la lobby resta visibile per tutta la creazione
+    if (!box) { box = document.createElement('div'); box.id = 'onlineLobby'; box.className = 'wc-inset'; area.parentNode.insertBefore(box, area); }
+    const collegati = onlineGiocatoriCollegati();
+    const rosa = onlineRosa();
+    const righe = rosa.eroi.map(e => `<li><b>${esc(e.nome)}</b> · ${ONLINE_STATI_ROSA[e.stato] || ''} · ${collegati.includes(e.nome) ? '🟢 giocatore collegato' : '⚪ libero'}`
+        + (e.stato === 'sospeso' ? ` <button class="btn-small online-solo-master" ${azione('onlineRiprendiBozza', e.nome)}>Riprendi ${esc(e.nome)}</button>` : '') + '</li>').join('');
+    const spettatori = onlineState.giocatori.filter(gi => gi.connected && gi.name == null && !ruoloSenzaEroe(gi.ruolo)).length;
+    const altri = onlineState.giocatori.filter(gi => ruoloSenzaEroe(gi.ruolo)).map(gi => `${esc(gi.name)}${onlineEtichettaRuolo(gi)} ${gi.connected ? '🟢' : '⚪'}`);
+    const html = `<p><b>Eroi del capitolo</b> (ognuno sceglie il suo dal link)</p><ul>${righe || '<li>Nessun eroe</li>'}</ul>`
+        + (rosa.creando ? `<p>Sta creando: <b>${esc(rosa.creando)}</b></p>` : '')
+        + (spettatori ? `<p>${spettatori} in attesa di scegliere un eroe</p>` : '')
+        + (altri.length ? `<p>${altri.join(', ')}</p>` : '');
+    if (box.innerHTML !== html) box.innerHTML = html;  // niente mutazioni inutili (ogni mutazione rimanda la schermata)
 }
 
-// Numero di eroi = giocatori collegati (il master non gioca), entro il massimo della campagna
-if (typeof confirmPartySize === 'function') {
-    const confermaOrig = confirmPartySize;
-    confirmPartySize = function () {
+// Compagnia nuova nella stessa stanza (capitolo nuovo, capitolo riprovato, partita azzerata o ripresa): i giocatori il cui
+// nome non è un eroe da tenere tornano spettatori e scelgono di nuovo dal pannello. Il server rimanda la stanza (evento
+// 'stanza'), ma la copia locale si aggiorna subito, così rosa, voti e "pronti" non contano più i nomi vecchi
+const ONLINE_MOTIVO_CAPITOLO = 'Nuovo capitolo: scegli il tuo eroe';
+function onlineLiberaNomi(tieni, motivo) {
+    if (!onlineState.attivo) return;
+    const tenuti = new Set(tieni || []);
+    const liberati = [];
+    onlineState.giocatori.forEach(gi => {
+        if ((gi.ruolo || 'giocatore') !== 'giocatore' || gi.name == null || tenuti.has(gi.name)) return;
+        onlinePost('/api/online/libera', { id: gi.id, motivo: motivo || ONLINE_MOTIVO_CAPITOLO });
+        liberati.push(gi.name);
+        gi.name = null;
+    });
+    // Non è una disconnessione: niente "Il giocatore di X si è disconnesso" al prossimo cambio della stanza
+    onlineCollegatiPrima = onlineCollegatiPrima.filter(n => !liberati.includes(n));
+}
+
+// Online la compagnia ha tutti gli eroi del capitolo: il passo "quanti eroi" si salta (anche oltre il limite di 5 del PC)
+if (typeof startPartyCreation === 'function') {
+    const creaOrig = startPartyCreation;
+    startPartyCreation = function () {
+        const r = creaOrig.apply(this, arguments);
+        stato.onlineOwners = {};
         if (onlineState.attivo) {
-            const n = onlineGiocatoriCollegati().length;
-            const sel = document.getElementById('partySizeSelect');
-            const max = Math.max(...[...sel.options].map(o => Number(o.value)));
-            if (n < 1) { uiError('Nessun giocatore collegato'); return; }
-            if (n > max) { uiError(`Troppi giocatori: questa campagna ne permette al massimo ${max}`); return; }
+            onlineLiberaNomi([], ONLINE_MOTIVO_CAPITOLO);
+            onlineState.bozze = {}; onlineState.creando = null; onlineState.creandoGiocatore = false;
+            const sel = document.getElementById('partySizeSelect'), n = campaignHeroes.length;
             if (![...sel.options].some(o => Number(o.value) === n)) sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n} Eroi</option>`);
             sel.value = String(n);
-            stato.onlineOwners = {};
-            onlineState.ordineCreazione = onlineGiocatoriCollegati();
+            confirmPartySize();
+            onlineInviaStato();
         }
-        return confermaOrig.apply(this, arguments);
+        return r;
     };
 }
-// L'eroe appena creato diventa del giocatore di turno
+// Partita azzerata (ritorno al menu dalla vittoria, dalla sconfitta o dalla barra): nessun eroe resta, tutti scelgono di nuovo
+if (typeof azzeraPartita === 'function') {
+    const azzeraOrig = azzeraPartita;
+    azzeraPartita = function () {
+        const r = azzeraOrig.apply(this, arguments);
+        onlineLiberaNomi([], ONLINE_MOTIVO_CAPITOLO);
+        return r;
+    };
+}
+// Eroe toccato nella griglia (dal master) o scelto da un giocatore (onlineSceltaEroe): è lui in creazione
+if (typeof selectHeroCard === 'function') {
+    const sceltaOrig = selectHeroCard;
+    selectHeroCard = function (nome) {
+        const r = sceltaOrig.apply(this, arguments);
+        if (onlineState.attivo) { onlineState.creando = nome; onlineState.creandoGiocatore = onlineGiocatoriCollegati().includes(nome); onlineInviaStato(); }
+        return r;
+    };
+}
+// Eroe creato: l'eroe è l'identità del suo giocatore (owners eroe → eroe) e la creazione si libera per il prossimo
 if (typeof nextHero === 'function') {
     const prossimoOrig = nextHero;
     nextHero = function () {
-        const chi = onlineTurnoCreazione();
-        if (onlineState.attivo && chi && activeHeroForCreation) stato.onlineOwners = { ...(stato.onlineOwners || {}), [activeHeroForCreation.name]: chi };
-        return prossimoOrig.apply(this, arguments);
+        const r = prossimoOrig.apply(this, arguments);
+        if (onlineState.attivo) {
+            stato.onlineOwners = ownersIdentita(stato.party);
+            onlineState.creando = null; onlineState.creandoGiocatore = false;
+            onlineRiprendiBozzaRientrata();  // chi è rientrato mentre questo eroe si creava riprende ora la sua bozza
+            onlineInviaStato();
+        }
+        return r;
     };
 }
-if (typeof startPartyCreation === 'function') {
-    const creaOrig = startPartyCreation;
-    startPartyCreation = function () { const r = creaOrig.apply(this, arguments); stato.onlineOwners = {}; onlineDisegnaLobby(); return r; };
+// Online la griglia non mostra gli eroi con una creazione in sospeso (si riprendono dalla lobby o scegliendoli dal link)
+if (typeof loadHeroGridOptions === 'function') {
+    const grigliaOrig = loadHeroGridOptions;
+    loadHeroGridOptions = function () { return grigliaOrig.call(this, onlineState.attivo ? Object.keys(onlineState.bozze) : []); };
 }
 
 /* ---------- Capo della spedizione: uno per livello della mappa ---------- */
+// Il primo eroe della compagnia con un giocatore collegato
 function onlineCapo() {
     if (!onlineState.attivo) return null;
-    return capoSpedizione(onlineState.ordineCreazione || onlineOrdine(), onlineState.giocatori);
+    return capoSpedizione((stato.party || []).map(h => h.name), onlineState.giocatori);
 }
 
 
@@ -454,6 +624,8 @@ if (typeof showScreen === 'function') {
     };
 }
 
+const onlineEtichettaRuolo = gi => gi.ruolo === 'moderatore' ? ' (Moderatore)' : gi.ruolo === 'master' ? ' (Master a distanza)' : '';
+
 /* ---------- Barra del master (non inviata ai giocatori) ---------- */
 function onlineDisegnaBarraMaster() {
     let bar = document.getElementById('onlineMasterBar');
@@ -462,7 +634,7 @@ function onlineDisegnaBarraMaster() {
         bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:40;padding:8px 14px;max-width:calc(100% - 32px)';
         document.body.appendChild(bar); }
     const v = onlineState.voto;
-    const giocatori = onlineState.giocatori.map(gi => `${esc(gi.name)}${gi.ruolo === 'moderatore' ? ' (Moderatore)' : ''}${gi.connected ? '' : ' (disconnesso)'}${onlineCapo() === gi.name ? ' 👑' : ''}`).join(', ');
+    const giocatori = onlineState.giocatori.map(gi => `${gi.name == null ? 'Spettatore' : esc(gi.name)}${onlineEtichettaRuolo(gi)}${gi.connected ? '' : ' (disconnesso)'}${gi.name != null && onlineCapo() === gi.name ? ' 👑' : ''}`).join(', ');
     bar.innerHTML = `<b>Master</b> · ${giocatori || 'nessun giocatore'}`
         + (v ? `<br>${esc(v.domanda)} ${v.opzioni.map(o => `<button class="btn-small" ${azione('onlineForzaVoto', o.id)}>${esc(o.label)} · ${Object.values(v.voti).filter(x => x === o.id).length}</button>`).join(' ')}` : '')
         + (onlineState.pronti ? `<br>Pronti ${onlineState.pronti.size}/${onlineGiocatoriCollegati().length} <button class="btn-small" ${azione('onlineForzaPronti')}>Si parte</button>` : '');
@@ -534,14 +706,29 @@ function onlineSalvaAutomatico() {
 function onlineRiprendi() {
     if (!readSave('online')) { uiError('Nessuna partita online salvata'); return; }
     loadFromSlot('online');
+    // Una partita ripresa non ha creazioni in corso né bozze
+    onlineState.bozze = {}; onlineState.creando = null; onlineState.creandoGiocatore = false;
+    // L'eroe è l'identità del giocatore: un salvataggio vecchio (eroe → nome di una persona) torna eroe → eroe,
+    // e tutti gli eroi ripartono liberi finché un giocatore non li sceglie
+    stato.onlineOwners = ownersIdentita(stato.party);
+    // Chi ha il nome di un eroe che non è nella compagnia ripresa torna a scegliere; gli altri tengono il loro eroe
+    onlineLiberaNomi((stato.party || []).map(h => h.name), 'Partita ripresa: scegli il tuo eroe');
+    onlineInviaStato();
 }
 
 // Avviso al master quando un giocatore si disconnette o rientra
 let onlineCollegatiPrima = [];
+let onlineMastriPrima = [];
 function onlineAvvisoConnessioni() {
+    // Master a distanza: la partita resta qui, aspetta che rientri
+    const mastri = onlineMastriRemoti().filter(gi => gi.connected).map(gi => gi.name);
+    onlineMastriPrima.filter(n => !mastri.includes(n)).forEach(n => uiError(`${n} (master a distanza) si è disconnesso: la partita aspetta che rientri`));
+    mastri.filter(n => !onlineMastriPrima.includes(n)).forEach(n => uiMessage(`${n} guida la partita a distanza`));
+    onlineMastriPrima = mastri;
+    // Giocatori con un eroe (il nome è quello dell'eroe); gli spettatori non generano avvisi
     const ora = onlineGiocatoriCollegati();
-    onlineCollegatiPrima.filter(n => !ora.includes(n)).forEach(n => uiError(`${n} si è disconnesso: comandi tu il suo eroe finché non torna`));
-    ora.filter(n => !onlineCollegatiPrima.includes(n)).forEach(n => uiMessage(`${n} è nella stanza`));
+    onlineCollegatiPrima.filter(n => !ora.includes(n)).forEach(n => uiError(`Il giocatore di ${n} si è disconnesso: comandi tu ${n} finché qualcuno non lo riprende`));
+    ora.filter(n => !onlineCollegatiPrima.includes(n)).forEach(n => uiMessage(`${n} è in gioco`));
     onlineCollegatiPrima = ora;
     if (onlineState.voto && ora.length && ora.every(n => n in onlineState.voto.voti)) onlineChiudiVoto();
     if (onlineState.pronti && ora.length && ora.every(n => onlineState.pronti.has(n))) onlineForzaPronti();

@@ -276,8 +276,8 @@
             const rb = relicCombatBonus(hero);
             const first = firstActorBonus(hero);  // Libertas in furor: +Forza se è il primo ad agire
             const attackNeeded = stato.activeEnemy.ca - hero.str - first - stato.helpBonus - attackMod(hero) - rb.att;
-            const defendNeeded = stato.activeEnemy.att - hero.str - first - (hero.def_bonus || 0) - relicDiceBonus();
-            const helpNeeded = stato.activeEnemy.att - hero.str - first - (hero.help_bonus_val || 0) - relicDiceBonus();
+            const defendNeeded = stato.activeEnemy.att - hero.str - first - (hero.def_bonus || 0) - relicDiceBonus('difesa', hero);
+            const helpNeeded = stato.activeEnemy.att - hero.str - first - (hero.help_bonus_val || 0) - relicDiceBonus('aiuto', hero);
 
             const setPreview = (id, title, desc, needed, twoDice) => {
                 const btn = document.getElementById(id);
@@ -813,7 +813,7 @@
            ========================================================================== */
         // Fuori dalla spedizione (menu, creazione del party a metà, fine partita) il pannello non tocca la squadra:
         // portare a 0 HP la compagnia in creazione la mandava in sconfitta prima della mappa
-        const GM_FUORI_PARTITA = ['screenStart', 'screenCampaigns', 'screenSimSetup', 'screenSimReport', 'screenParty', 'screenDefeat', 'screenVictory'];
+        const GM_FUORI_PARTITA = ['screenStart', 'screenCampaigns', 'screenAdventure', 'screenSimSetup', 'screenSimReport', 'screenParty', 'screenDefeat', 'screenVictory'];
         function gmInPartita() {
             return stato.party.length > 0 && !GM_FUORI_PARTITA.includes(currentScreenId);
         }

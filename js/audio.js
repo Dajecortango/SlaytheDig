@@ -8,7 +8,7 @@
    ========================================================================== */
 
         /* ---------- Audio: musica dei menu ed effetti sonori ---------- */
-        const MENU_MUSIC_SCREENS = ['screenStart', 'screenCampaigns', 'screenParty'];
+        const MENU_MUSIC_SCREENS = ['screenStart', 'screenCampaigns', 'screenAdventure', 'screenParty'];
         let currentAudioScreen = 'screenStart';
         // Tema dei menu (dalla schermata iniziale fino alla scelta di eroi ed equipaggiamento)
         const MENU_THEME = 'audio/temi/menu_theme.ogg';
