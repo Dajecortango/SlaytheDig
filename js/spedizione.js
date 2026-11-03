@@ -76,14 +76,17 @@
             combatPhase = 'won';
             stato.expeditionStats.combatsWon++;
             box.classList.add('defeated');
-            // La scena del nemico brucia dai bordi verso il centro (css .combat-stage.enemy-slain)
-            const stage = box.closest('.combat-stage');
-            if (stage) stage.classList.add('enemy-slain');
-            const stamp = document.createElement('div');
-            stamp.className = 'victory-stamp';
-            stamp.textContent = 'Vittoria!';
-            box.appendChild(stamp);
             document.getElementById('combatLootBtn').classList.add('btn-attention');
+            const stage = box.closest('.combat-stage');
+            // Prima il colpo finale (fxEnemyDeath in js/effetti.js), poi la scena brucia dai bordi verso il centro
+            // (css .combat-stage.enemy-slain) e compare il timbro
+            fxEnemyDeath(stage, () => {
+                if (stage) stage.classList.add('enemy-slain');
+                const stamp = document.createElement('div');
+                stamp.className = 'victory-stamp';
+                stamp.textContent = 'Vittoria!';
+                box.appendChild(stamp);
+            });
         }
 
         /* ---------- 10. Avanzamento della spedizione ---------- */

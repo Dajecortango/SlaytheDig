@@ -408,7 +408,7 @@ window.LIBRERIA.abilita = {
     "aiace_malasorte": {
         "id": "aiace_malasorte",
         "name": "Malasorte",
-        "desc": "Passiva: la sfortuna gli ha insegnato tutto. Ogni 3 tiri falliti (scontro, prove e preghiera) guadagna +1 Forza per sempre, fino a 3 volte per capitolo",
+        "desc": "Passiva: la sfortuna gli ha insegnato tutto. Ogni 3 tiri falliti (scontro, prove e preghiera) guadagna +1 Forza per sempre, fino a 2 volte per capitolo",
         "isCombatActive": false,
         "effects": [
             { "effect": "hero_set", "stat": "malasorte", "val": 1 }

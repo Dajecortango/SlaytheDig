@@ -5,16 +5,19 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["loch_ein_parte_1"] = {
+    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 25 },
+    "maxEroi": 6,
     "id": "loch_ein_parte_1",
     "title": "Loch Ein, Parte Uno: Verso la Caduta dai Cieli",
     "avventura": "loch_ein",
     "capitolo": 1,
+    "terreno": "fango",
     "badge": "Parte Uno",
     "description": "Da Seistad alla conca di Loch Ein: le campagne abbandonate della Lega di Finngalk, il fiume Nederjin, il Sentiero di Brumafosca e le sponde maledette del lago, fino al varco sommerso.",
     "coverImage": "",
     "introText": "Lasciate la sicurezza del Pieve della Fortezza di Seistad. Davanti a voi si aprono le prime vie della Lega di Finngalk, ormai prive delle pattuglie della Gensarmia Commerciale.",
-    "heroes": ["alastorta_dignitas", "pancrazio_dignitas", "cassio_dignitas", "ofelia_dignitas", "pandora_dignitas", "aiace_dignitas"],
-    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
+    "heroes": ["alastorta_dignitas", "pancrazio_dignitas", "cassio_dignitas", "ofelia_dignitas", "pandora_dignitas", "temistocle_dignitas"],
+    "initialArmory": ["corazza_cuoio", "pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {
         "carro_impantanato": {
             "title": "Il Carro Impantanato",

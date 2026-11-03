@@ -5,15 +5,18 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["loch_ein_parte_2"] = {
+    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 25 },
+    "maxEroi": 6,
     "id": "loch_ein_parte_2",
     "title": "Loch Ein, Parte Due: La Città Caduta",
     "avventura": "loch_ein",
     "capitolo": 2,
+    "terreno": "pietra",
     "badge": "Parte Due",
     "description": "Oltre l'arco sommerso, nelle viscere della Caduta dai Cieli: la città inclinata di Loch Ein, i quartieri dei Firmamentisti, l'Anfiteatro in rovina e la Grande Piazza Circolare, fino alle porte del Palazzo dove vi attende Eldric.",
     "coverImage": "",
     "introText": "Superato l'arco sommerso grazie alla campana subacquea e ai sacchi di vino riempiti d'aria, riemergete finalmente nella grande caverna dotata di una sacca d'aria naturale.",
-    "heroes": ["alastorta_dignitas", "pancrazio_dignitas", "cassio_dignitas", "ofelia_dignitas", "pandora_dignitas", "enea_dignitas", "aiace_dignitas"],
+    "heroes": ["alastorta_dignitas", "pancrazio_dignitas", "cassio_dignitas", "ofelia_dignitas", "pandora_dignitas", "enea_dignitas", "temistocle_dignitas"],
     "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
     "challenges": {
         "correnti_passaggio_subacqueo": {

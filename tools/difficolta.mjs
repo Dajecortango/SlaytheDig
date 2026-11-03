@@ -3,7 +3,7 @@
 //   node tools/difficolta.mjs                          tutte le campagne
 //   node tools/difficolta.mjs astarte_ch1 astarte_ch2  solo queste
 // Opzioni:
-//   --eroi "Icaro,Astarte"   compagnia da provare (altrimenti i primi eroi della campagna, fino a 5)
+//   --eroi "Icaro,Astarte"   compagnia da provare (altrimenti i primi eroi della campagna, fino al massimo che permette: partyMaxSize)
 //   --partite N              partite del profilo con ricerca (40); quelle dell'Esperto sono 10 volte tante
 //   --prove K                partite simulate per ogni scelta della ricerca (8): più alto = più forte e più lento
 //   --senza-ricerca          solo l'Esperto (veloce)
@@ -65,7 +65,7 @@ function rigaScontri(scontri) {
 for (const id of ids.length ? ids : Object.keys(g.CAMPAIGNS)) {
     if (!g.CAMPAIGNS[id]) { console.log(`${id}: campagna sconosciuta`); continue; }
     const data = g.simCampaignData(id);
-    const nomi = EROI ? EROI.split(',').map(s => s.trim()) : data.heroes.slice(0, 5).map(h => h.name);
+    const nomi = EROI ? EROI.split(',').map(s => s.trim()) : data.heroes.slice(0, g.partyMaxSize(data.campaign)).map(h => h.name);
     const ignoti = nomi.filter(n => !data.heroes.some(h => h.name === n));
     if (ignoti.length) { console.log(`${id}: eroi sconosciuti ${ignoti.join(', ')}`); continue; }
     const sel = nomi.map(name => ({ name, abilityIdx: 0, itemIdx: data.armory.length ? 0 : -1 }));

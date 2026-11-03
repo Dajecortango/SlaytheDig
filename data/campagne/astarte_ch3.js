@@ -5,10 +5,12 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["astarte_ch3"] = {
+    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 25 },
     "id": "astarte_ch3",
     "title": " Caccia alla Bestia - Capitolo Tre",
     "avventura": "caccia_alla_bestia",
     "capitolo": 3,
+    "terreno": "neve",
     "badge": "Nuova Campagna",
     "description": "",
     "coverImage": "",

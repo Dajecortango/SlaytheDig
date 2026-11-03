@@ -31,6 +31,11 @@ function idFromName(name) {
         .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
 
+// Eroi al massimo nella compagnia di una campagna (campo "maxEroi", altrimenti PARTY_MAX), mai più di quelli che ha
+function partyMaxSize(camp) {
+    return Math.min((camp && camp.maxEroi) || PARTY_MAX, ((camp && camp.heroes) || []).length);
+}
+
 // Testo sicuro dentro l'HTML (nomi e descrizioni scritti nelle campagne)
 const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -294,7 +299,7 @@ const HERO_FLAGS = {
     firstActorStrBonus: 'Forza in più ai tiri se agisce per primo nel round',
     freeFirstMerchantItem: 'primo oggetto di ogni mercante gratis',
     helpDmgBonus: 'Aiuta riuscito: danno in più al prossimo eroe nel round',
-    malasorte: 'ogni 3 tiri falliti (scontro, prove, preghiera) +1 Forza, max 3 volte per capitolo',
+    malasorte: 'ogni 3 tiri falliti (scontro, prove, preghiera) +1 Forza, max 2 volte per capitolo',
     iraTraboccante: 'tiri falliti della compagnia in scontro: Collera (+1 al tiro per colpire e a Difendi, si azzera dopo il turno del nemico), al massimo va in Furia',
     prayerExtraChoices: 'benedizioni in più fra cui scegliere quando prega e riesce',
     noArmor: 'non porta armature né scudi e non riceve armatura (niente Difendi)'

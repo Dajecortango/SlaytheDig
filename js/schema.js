@@ -93,7 +93,7 @@ const DATI_SCHEMA = {
     campagna: {
         id: OBBL(TESTO), title: OBBL(TESTO), badge: TESTO,
         avventura: campo('scelta', { valori: () => schemaLibreria().avventure || {} }), capitolo: NUMERO, description: TESTO, coverImage: PERCORSO, introText: TESTO,
-        heroes: campo('elenco'), initialArmory: campo('elenco'), lootItems: campo('elenco'), abilities: campo('oggetto'),
+        heroes: campo('elenco'), maxEroi: NUMERO, terreno: campo('scelta', { valori: () => ({ neve: 1, fango: 1, pietra: 1 }) }), initialArmory: campo('elenco'), lootItems: campo('elenco'), abilities: campo('oggetto'),
         challenges: campo('oggetto'), merchants: campo('oggetto'), rests: campo('oggetto'), treasures: campo('oggetto'),
         stories: campo('oggetto'), mapNodes: campo('elenco'), enemies: campo('oggetto'),
         difficolta: campo('oggetto', { schema: { vittoriaMin: NUMERO, vittoriaMax: NUMERO } }), procedurale: campo('oggetto')

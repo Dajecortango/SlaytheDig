@@ -25,6 +25,7 @@
         return;
     }
     showScreen('screenCombat');
+    fxResetStage();
     stato.activeEnemy = JSON.parse(JSON.stringify(enemies[enemyKey]));
     discover('enemies', String(enemyKey).replace(/__l\d+$/, ''));  // Drakengrad: "cinghiali__l3" -> "cinghiali"
     stato.activeEnemy.isStunned = false;
@@ -55,6 +56,7 @@
             blessed.forEach(({ hero, b }) => logCombat(`🙏 ${hero.name}: ${b.name} (${b.desc.charAt(0).toLowerCase()}${b.desc.slice(1)})`));
             itemStart.forEach(text => logCombat(`✨ ${text}`));
             startHeroesTurnCycle();
+            fxBossIntro(stato.activeEnemy);
         }
 
         function logRelicNotes(res) {
@@ -98,7 +100,12 @@
                     <span data-tip="Danno||Danni inflitti a ogni attacco del nemico.">${svgIcon('drop')} Dmg <b>${stato.activeEnemy.dmg}</b></span>
                 </div>
             `;
-            document.getElementById('enemyIntent').innerHTML = enemyIntentHtml(stato.activeEnemy);
+            const intent = document.getElementById('enemyIntent');
+            intent.innerHTML = enemyIntentHtml(stato.activeEnemy);
+            const danger = enemyIntentDanger(stato.activeEnemy);
+            intent.classList.toggle('intent-charging', danger === 'carica');
+            intent.classList.toggle('intent-strong', danger === 'forte');
+            fxSyncEnemyAura(stato.activeEnemy);
             fxDiffEnemy();
             animateBars(document.getElementById('enemyInfo'));
         }
@@ -132,6 +139,20 @@
             return `<span class="intent-icon ${enemyIsPreparing(enemy) ? 'stunned' : ''}">${svgIcon('sword')}</span>
                 <span class="intent-text"><small>Intenzione</small><span>${cosa}</span>
                 <em>Difendi e Aiuta devono arrivare a ${enemy.att}</em></span>`;
+        }
+
+        // Quanto fa paura il prossimo turno del nemico (solo per l'icona dell'intenzione):
+        // 'carica' = si prepara, 'forte' = colpo caricato, contro tutti, ripetuto o di almeno un terzo della vita media
+        function enemyIntentDanger(enemy) {
+            if (!enemy || enemy.hp <= 0 || enemy.isStunned) return '';
+            if (enemyIsPreparing(enemy)) return 'carica';
+            const r = enemyTurnRule(enemy);
+            if (r.turnoPreparazione || r.turnoBersaglio === 'tutti' || (r.turnoColpi || 1) > 1 || r.turnoAura || r.turnoColpoOdio) return 'forte';
+            const vivi = stato.party.filter(h => h.hp > 0);
+            if (!vivi.length) return '';
+            const vitaMedia = vivi.reduce((sum, h) => sum + h.maxHp, 0) / vivi.length;
+            const dmg = (r.turnoDanno != null ? r.turnoDanno : enemy.dmg) + (r.turnoCrescitaDanno || 0);
+            return dmg >= Math.max(3, Math.ceil(vitaMedia / 3)) ? 'forte' : '';
         }
 
         function showHitPreview(action) {
@@ -416,7 +437,9 @@
             if (!events.length) return false;
             events.forEach(ev => logCombat(ev.type === 'phase' ? `🔥 <b>${ev.text}</b>` : ev.text));
             events.filter(ev => ev.type === 'phase').forEach(ev => showPhaseBanner(ev.text));
-            if (events.some(ev => ev.type !== 'phase' && ev.type !== 'phase_info')) playEnemySfx('sfxAttack');
+            if (events.some(ev => ev.type === 'phase')) fxPhaseShift();
+            else if (events.some(ev => ev.type !== 'phase_info')) playEnemySfx('sfxAttack');
+            fxArmParry(events);
             updateEnemyInfoUI();
             updatePartyStatusBars();
             if (stato.party.every(p => p.hp <= 0)) {
@@ -676,6 +699,7 @@
                     // Esiti senza variazione di HP: mancato, fallito, aiuto riuscito
                     if ((chosenAction === 'attack' || chosenAction === 'ability') && stato.activeEnemy.hp === enemyHpBefore) {
                         fxFloatOn(document.getElementById('enemyInfo'), 'Mancato', 'miss');
+                        fxEnemyDodge();
                     } else if (chosenAction === 'defend' && hero.current_armor === armorBefore) {
                         fxFloatOnHero(hero, 'Fallito', 'miss');
                     } else if (chosenAction === 'help') {
@@ -955,11 +979,24 @@
             if (nome && !target) return;
             document.getElementById('monsterTargetPick').innerHTML = '';
             monsterTargetFree = false;
-            logCombat(`--- ${stato.activeEnemy.name} attacca ${target ? target.name : 'tutta la compagnia'}! ---`);
-            playEnemySfx('sfxAttack');
+            if (monsterStrikeBusy) return;  // cinematica in corso: il colpo è già assegnato (doppio voto online)
+            monsterStrikeBusy = true;
+            const bersaglio = target ? target.name : 'tutta la compagnia';
+            logCombat(`--- ${stato.activeEnemy.name} attacca ${bersaglio}! ---`);
+            if (!playEnemySfx('sfxAttack')) synthSfx('whoosh');
 
+            // Il motore decide subito, l'interfaccia mostra l'esito dopo la cinematica (come il colpo degli eroi)
             const result = resolveEnemyTurn(stato.activeEnemy, target);
+            playEnemyStrike(stato.activeEnemy, bersaglio, () => {
+                monsterStrikeBusy = false;
+                finishMonsterAttack(result);
+            });
+        }
+
+        let monsterStrikeBusy = false;
+        function finishMonsterAttack(result) {
             result.events.forEach(ev => logCombat(ev.text));
+            fxArmParry(result.events);
             updateEnemyInfoUI();
 
             updatePartyStatusBars();

@@ -9,6 +9,7 @@ window.CAMPAIGNS["fredlos_parte_1"] = {
     "title": "Fredlös, Parte I: La Danza di Kesia",
     "avventura": "fredlos",
     "capitolo": 1,
+    "terreno": "neve",
     "badge": "Parte I",
     "description": "Dall'Arce delle Storie di Aebeltoff al fiume Hemsil: inseguite Kesia, figlia di Fredlös l'Oppresso, attraverso i Barri dei Lungobarbi, la Valle del Krogg, il Cammino di Piotr, le miniere di Gerslev e il forte di Granbarricata.",
     "coverImage": "immagini/fredlos_parte_1/copertina_fredlos.webp",

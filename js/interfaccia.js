@@ -260,7 +260,7 @@
                     ${heroBuffsHtml(h)}
                     ${heroStatusesHtml(h)}
                     ${heroBlessingsHtml(h)}
-                    <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</div>
+                    <div class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}${heroAuraHtml(h)}</div>
                     <div class="hero-bars">
                         <div class="hero-card-name" title="${esc(h.name)}">${h.name}</div>
                         <div class="hp-bar-container" data-tip="Punti Vita||${h.hp} su ${h.maxHp}">

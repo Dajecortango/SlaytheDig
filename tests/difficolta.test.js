@@ -1,6 +1,6 @@
 // Difficoltà delle campagne: il simulatore gioca ogni campagna con il profilo Esperto (un giocatore attento:
 // gli altri profili hanno stili sbagliati apposta e abbassavano la media) e con ogni gruppo di eroi della
-// dimensione massima scelta nel gioco (fino a 5; prima abilità e primo oggetto iniziale). Se la campagna ha il
+// dimensione massima scelta nel gioco (partyMaxSize; prima abilità e primo oggetto iniziale). Se la campagna ha il
 // campo "difficolta" ({ vittoriaMin, vittoriaMax } in %), avvisa quando la vittoria esce dal margine.
 // È un avviso e non un errore: il risultato è casuale e oscilla di qualche punto. Per una misura più
 // precisa (scelte iniziali migliori, ricerca a simulazioni, margine d'errore): node tools/difficolta.mjs
@@ -12,7 +12,7 @@ module.exports = (t, carica) => {
     const profili = ['esperto'];
 
     // Tutti i gruppi di "size" eroi (la compagnia più numerosa che il gioco permette, come setupPartySizeSelector)
-    const gruppi = (heroes, size = Math.min(5, heroes.length)) => {
+    const gruppi = (heroes, size) => {
         if (size === 0) return [[]];
         return heroes.flatMap((h, i) => gruppi(heroes.slice(i + 1), size - 1).map(g => [h, ...g])).filter(g => g.length === size);
     };
@@ -24,7 +24,7 @@ module.exports = (t, carica) => {
             if (!giocabile || data.heroes.length === 0) { console.log(`      ${id}: non simulata (campagna incompleta)`); return; }
             let somma = 0, conteggio = 0;
             // Con molti eroi (es. 9 eroi a gruppi di 5) si prova un campione di MAX_GRUPPI gruppi, per restare veloci
-            const tutti = gruppi(data.heroes);
+            const tutti = gruppi(data.heroes, g.partyMaxSize(data.campaign));
             const scelti = tutti.length > MAX_GRUPPI ? tutti.filter((_, i) => i % Math.ceil(tutti.length / MAX_GRUPPI) === 0) : tutti;
             for (const trio of scelti) {
                 const sel = trio.map(h => ({ name: h.name, abilityIdx: 0, itemIdx: data.armory.length ? 0 : -1 }));

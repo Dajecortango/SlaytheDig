@@ -38,23 +38,43 @@
                 </button>`;
         }
 
-        // Gira la carta: prima si chiude di taglio, poi si riapre mostrando l'oggetto (vedi card-flip-in)
+        // Gira la carta: prima trema tanto più a lungo quanto è rara (CARD_TREMBLE_MS in js/effetti.js), poi si chiude
+        // di taglio e si riapre mostrando l'oggetto (vedi card-flip-in), con i raggi del suo colore se è rara
+        const cardsTrembling = new WeakSet();
         function flipCard(el, item, onRevealed) {
-            synthSfx('flip');
-            if (['epico', 'leggendario'].includes(itemRarity(item))) setTimeout(() => synthSfx('six'), 200);
-            if (!el || !animationsEnabled()) { onRevealed(); return; }
-            el.classList.add('card-flip-out');
-            setTimeout(onRevealed, 170);
+            const rarity = itemRarity(item);
+            const flip = () => {
+                synthSfx('flip');
+                if (['epico', 'leggendario'].includes(rarity)) setTimeout(() => synthSfx('six'), 200);
+                if (!el || !animationsEnabled()) { onRevealed(); return; }
+                const rect = el.getBoundingClientRect();
+                el.classList.add('card-flip-out');
+                setTimeout(() => { onRevealed(); fxRevealRays(rect, rarity); }, 170);
+            };
+            const wait = el && animationsEnabled() ? animTime(CARD_TREMBLE_MS[rarity] || 0) : 0;
+            if (!wait) { flip(); return; }
+            if (cardsTrembling.has(el)) return;  // secondo clic mentre trema
+            cardsTrembling.add(el);
+            el.classList.add('card-tremble', `tremble-${rarity}`);
+            speedUpAnimations(el);
+            synthSfx('swell', wait / 1000);
+            setTimeout(() => {
+                cardsTrembling.delete(el);
+                el.classList.remove('card-tremble', `tremble-${rarity}`);
+                flip();
+            }, wait);
         }
 
         function revealMerchantItem(idx) {
             const entry = merchantItemsWithPrices[idx];
             if (!entry || entry.revealed) return;
             flipCard(document.querySelector(`#merchantItemsList [data-idx="${idx}"]`), entry.item, () => {
+                if (entry.revealed) return;
                 entry.revealed = true;
                 justRevealedMerchantIdx = idx;
                 renderMerchantShop();
                 justRevealedMerchantIdx = null;
+                if (['epico', 'leggendario'].includes(itemRarity(entry.item))) merchantSay('rarita');
             });
         }
 

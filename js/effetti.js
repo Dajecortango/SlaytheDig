@@ -18,7 +18,14 @@
         // Scritte ravvicinate sullo stesso bersaglio vengono impilate per non sovrapporsi
         const fxStacks = new Map();
 
-        function fxFloatOn(el, text, kind, delay = 0) {
+        // Grandezza del numero di danno (rem): cresce con la radice dei danni, così 1 resta piccolo e i colpi forti spiccano
+        function fxDamageSize(amount, critico) {
+            const size = Math.min(3.6, 0.8 + 0.7 * Math.sqrt(Math.max(1, amount)));
+            return Math.round(size * (critico ? 1.25 : 1) * 100) / 100;
+        }
+
+        // amount: danni inflitti, per dare al numero la sua grandezza (fxDamageSize)
+        function fxFloatOn(el, text, kind, delay = 0, amount = 0) {
             if (!gameOptions.floatingNumbers || !el || el.offsetParent === null) return;
             const rect = el.getBoundingClientRect();
             const key = el.id || el.dataset.hero || 'fx';
@@ -33,6 +40,7 @@
             float.style.left = `${rect.left + rect.width / 2 + (Math.random() * 16 - 8)}px`;
             float.style.top = `${rect.top + Math.min(rect.height * 0.25, 40) - slot * 30}px`;
             float.style.animationDelay = `${delay}ms`;
+            if (amount > 0) float.style.fontSize = `${fxDamageSize(amount, kind === 'crit')}rem`;
             fxLayer.appendChild(float);
             setTimeout(() => float.remove(), 1200 + delay);
         }
@@ -81,11 +89,50 @@
                 if (dHp < 0) setTimeout(() => synthSfx('hit'), dArmor < 0 ? 180 : 0);
                 if (dArmor < 0) fxFloatOn(card, `${dArmor} Armatura`, 'armor');
                 if (dArmor > 0) fxFloatOn(card, `+${dArmor} Armatura`, 'armor');
-                if (dHp < 0) fxFloatOn(card, `${dHp}`, 'dmg', dArmor !== 0 ? 180 : 0);
+                if (dHp < 0) fxFloatOn(card, `${dHp}`, 'dmg', dArmor !== 0 ? 180 : 0, -dHp);
                 if (dHp > 0) fxFloatOn(card, `+${dHp}`, 'heal');
+                if (dArmor < 0 && dHp === 0 && fxParryArmed) fxParry(card);
                 if (prev.hp > 0 && hero.hp <= 0) fxHeroFell(card);
             });
+            fxParryArmed = false;
             fxResumeFalls();
+        }
+
+        // Parata: l'armatura ha assorbito tutto il colpo (evento "armor_full" del motore). Il segnale si accende
+        // prima di aggiornare le carte, così un'armatura spezzata da una fase non sembra una parata
+        let fxParryArmed = false;
+        function fxArmParry(events) {
+            fxParryArmed = (events || []).some(ev => ev.type === 'armor_full');
+        }
+        function fxParry(card) {
+            synthSfx('parry');
+            fxFloatOn(card, 'Parato!', 'parry', 120);
+            if (!animationsEnabled() || !card) return;
+            const rect = card.getBoundingClientRect();
+            const spark = document.createElement('div');
+            spark.className = 'fx-parry';
+            spark.style.left = `${rect.left + rect.width / 2}px`;
+            spark.style.top = `${rect.top + Math.min(rect.height * 0.35, 60)}px`;
+            const rays = Array.from({ length: 10 }, (_, i) => `<i style="--a:${i * 36 + Math.random() * 16}deg; --d:${34 + Math.random() * 30}px"></i>`).join('');
+            spark.innerHTML = `<span class="fx-parry-shield">${svgIcon('shield')}</span>${rays}`;
+            fxLayer.appendChild(spark);
+            speedUpAnimations(spark);
+            setTimeout(() => spark.remove(), animTime(750));
+        }
+
+        // Un compagno è caduto: gli altri sobbalzano uno dopo l'altro
+        function fxAlliesShock(fallen) {
+            if (!animationsEnabled()) return;
+            let i = 0;
+            document.querySelectorAll('.hero-mini-card:not(.dead)').forEach(card => {
+                if (card === fallen) return;
+                const delay = 180 + i++ * 70;
+                fxFloatOn(card, '!', 'shock', delay);
+                card.animate([
+                    { translate: '0 0' }, { translate: '0 -9px', offset: 0.18 }, { translate: '-4px 2px', offset: 0.4 },
+                    { translate: '3px 0', offset: 0.6 }, { translate: '-1px 0', offset: 0.8 }, { translate: '0 0' }
+                ], { duration: animTime(560), delay: animTime(delay), easing: 'ease-out' });
+            });
         }
 
         // Eroe caduto: la carta si spegne piano nel grigio (al posto del grigio di colpo di .dead), "Caduto" e un rintocco.
@@ -96,6 +143,7 @@
             if (!card) return;
             setTimeout(() => synthSfx('fall'), 250);
             fxFloatOn(card, 'Caduto', 'fell', 300);
+            fxAlliesShock(card);
             if (!animationsEnabled()) return;
             fxFallen.set(card.dataset.hero, performance.now());
         }
@@ -135,7 +183,7 @@
                 // Alla morte "sfxDeath" (o, se manca, "sfxHit"); altrimenti "sfxHit"; senza file il suono generato
                 const dead = stato.activeEnemy.hp <= 0;
                 if (!(dead && playEnemySfx('sfxDeath')) && !playEnemySfx('sfxHit')) synthSfx('enemy');
-                fxFloatOn(box, `${dHp}`, fxNextEnemyHitCritical ? 'crit' : 'dmg');
+                fxFloatOn(box, `${dHp}`, fxNextEnemyHitCritical ? 'crit' : 'dmg', 0, -dHp);
             }
             if (stato.activeEnemy.isStunned && !prev.stunned) fxFloatOn(box, 'Stordito', 'stun', 200);
             fxNextEnemyHitCritical = false;
@@ -423,6 +471,227 @@
             document.body.appendChild(overlay);
             setTimeout(close, 5000);
         }
+
+        /* ---------- Scena dello scontro: schivata, colpo finale, boss, fasi, stati ---------- */
+        const FX_DEATH_MS = { normale: 480, elite: 950, boss: 2000 };
+        let fxKillZooms = [];
+
+        function fxStageTier(stage) {
+            if (stage.classList.contains('is-boss')) return 'boss';
+            return stage.classList.contains('is-elite') ? 'elite' : 'normale';
+        }
+
+        function fxStageMedia() {
+            return [...document.querySelectorAll('#combatImg, #combatVideo')];
+        }
+
+        // Scontro nuovo: la scena torna pulita (esplosioni, zoom del colpo finale, musica)
+        function fxResetStage() {
+            document.querySelectorAll('.stage-boom').forEach(n => n.remove());
+            fxKillZooms.forEach(a => a.cancel());
+            fxKillZooms = [];
+            resetCombatTension();
+        }
+
+        // Colpo a vuoto: il nemico si scansa di lato, con un soffio d'aria
+        function fxEnemyDodge() {
+            synthSfx('whoosh');
+            if (!animationsEnabled()) return;
+            const side = Math.random() < 0.5 ? -1 : 1;
+            fxStageMedia().forEach(el => {
+                el.style.setProperty('--dodge', `${side * 2.8}%`);
+                el.classList.remove('fx-dodge');
+                void el.offsetWidth;
+                el.classList.add('fx-dodge');
+                speedUpAnimations(el);
+                setTimeout(() => el.classList.remove('fx-dodge'), animTime(560));
+            });
+        }
+
+        // Rallenta per "ms" tutte le animazioni in corso (CSS, Web Animations e GSAP), poi le riporta alla loro velocità
+        function fxSlowMotion(ms, rate = 0.3) {
+            const running = document.getAnimations().filter(a => a.playState === 'running');
+            running.forEach(a => { a.playbackRate *= rate; });
+            if (window.gsap) window.gsap.globalTimeline.timeScale(rate);
+            setTimeout(() => {
+                running.forEach(a => { a.playbackRate /= rate; });
+                if (window.gsap) window.gsap.globalTimeline.timeScale(1);
+            }, ms);
+        }
+
+        // Esplosione sulla scena (x e y in %): anello di fuoco, scintille e tonfo
+        function fxBurst(stage, x, y, grande) {
+            const boom = document.createElement('div');
+            boom.className = `stage-boom ${grande ? 'big' : ''}`;
+            boom.style.left = `${x}%`;
+            boom.style.top = `${y}%`;
+            boom.innerHTML = Array.from({ length: 12 }, (_, i) => `<i style="--a:${i * 30 + Math.random() * 18}deg; --d:${(grande ? 120 : 70) + Math.random() * 70}px"></i>`).join('');
+            stage.appendChild(boom);
+            speedUpAnimations(boom);
+            setTimeout(() => boom.remove(), animTime(800));
+            synthSfx('boom');
+            stage.classList.remove('stage-quake');
+            void stage.offsetWidth;
+            stage.classList.add('stage-quake');
+            speedUpAnimations(stage);
+            setTimeout(() => stage.classList.remove('stage-quake'), animTime(420));
+        }
+
+        // Colpo finale: rallentatore e zoom sul nemico; poi "done" fa partire il rogo della scena.
+        // Elite con un'esplosione, boss con tre e un lampo bianco. "Depreda" resta nascosto fino alla fine.
+        function fxEnemyDeath(stage, done) {
+            if (!stage || !animationsEnabled()) { done(); return; }
+            const enemy = stato.activeEnemy;
+            const tier = fxStageTier(stage);
+            const lootBtn = document.getElementById('combatLootBtn');
+            lootBtn.classList.add('btn-wait');
+            const total = animTime(FX_DEATH_MS[tier]);
+            // Al fotogramma dopo: anche il numero del danno, che nasce subito dopo questa chiamata, rallenta
+            requestAnimationFrame(() => fxSlowMotion(Math.min(total, animTime(900))));
+            fxStageMedia().forEach(el => {
+                const from = parseFloat(getComputedStyle(el).scale) || 1;
+                const zoom = el.animate([{ scale: from }, { scale: from * 1.22 }], { duration: total, easing: 'cubic-bezier(.15, .8, .3, 1)', fill: 'forwards' });
+                fxKillZooms.push(zoom);
+            });
+            if (tier === 'elite') setTimeout(() => fxBurst(stage, 50, 42, true), animTime(320));
+            if (tier === 'boss') {
+                setTimeout(() => fxBurst(stage, 34, 34, false), animTime(320));
+                setTimeout(() => fxBurst(stage, 66, 50, false), animTime(800));
+                setTimeout(() => {
+                    fxBurst(stage, 50, 42, true);
+                    const flash = document.createElement('div');
+                    flash.className = 'fx-white-flash';
+                    document.body.appendChild(flash);
+                    speedUpAnimations(flash);
+                    setTimeout(() => flash.remove(), animTime(700));
+                }, animTime(1350));
+            }
+            setTimeout(() => {
+                lootBtn.classList.remove('btn-wait');
+                // Bottino già aperto (dal telefono) o scontro cambiato: niente rogo fuori tempo
+                if (stato.activeEnemy === enemy && currentScreenId === 'screenCombat') done();
+            }, total);
+        }
+
+        // Presentazione di boss ed elite: nome grande e barra della vita che si riempie. Non ferma il gioco.
+        function fxBossIntro(enemy) {
+            const stage = document.querySelector('#screenCombat .combat-stage');
+            if (!stage || !enemy || !animationsEnabled()) return;
+            const tier = fxStageTier(stage);
+            if (tier === 'normale') return;
+            setTimeout(() => {
+                if (stato.activeEnemy !== enemy || currentScreenId !== 'screenCombat') return;
+                const intro = document.createElement('div');
+                intro.className = `boss-intro ${tier}`;
+                intro.setAttribute('aria-hidden', 'true');
+                intro.innerHTML = `
+                    <div class="boss-intro-kind">${tier === 'boss' ? 'Scontro Finale' : 'Elite'}</div>
+                    <div class="boss-intro-name">${esc(enemy.name)}</div>
+                    <div class="boss-intro-bar"><i></i></div>
+                    <div class="boss-intro-hp">${enemy.maxHp} HP</div>`;
+                document.body.appendChild(intro);
+                speedUpAnimations(intro);
+                synthSfx('drum');
+                setTimeout(() => synthSfx('drum'), animTime(420));
+                if (tier === 'boss') setTimeout(() => synthSfx('roar'), animTime(900));
+                setTimeout(() => intro.remove(), animTime(2500));
+            }, animTime(750));
+        }
+
+        // Cambio di fase del nemico: boato e musica più tesa sempre; lampo rosso e scossa con le animazioni
+        function fxPhaseShift() {
+            if (!playEnemySfx('sfxAttack')) synthSfx('roar');
+            raiseCombatTension();
+            if (!animationsEnabled()) return;
+            const flash = document.createElement('div');
+            flash.className = 'fx-red-flash';
+            document.body.appendChild(flash);
+            speedUpAnimations(flash);
+            setTimeout(() => flash.remove(), animTime(900));
+            const stage = document.querySelector('#screenCombat .combat-stage');
+            if (!stage) return;
+            stage.classList.remove('stage-quake');
+            void stage.offsetWidth;
+            stage.classList.add('stage-quake');
+            setTimeout(() => stage.classList.remove('stage-quake'), animTime(420));
+        }
+
+        // Aure degli stati: stelline che girano (stordito), bolle (avvelenato), raggi (benedizioni e potenziamenti).
+        // Le carte si ridisegnano spesso: --aura-t tiene l'animazione al punto giusto invece di farla ripartire.
+        const AURA_PARTI = { stordito: 3, avvelenato: 5, benedetto: 1 };
+        function auraHtml(keys) {
+            return keys.filter(k => AURA_PARTI[k]).map(k => `<span class="aura aura-${k}">${'<i></i>'.repeat(AURA_PARTI[k])}</span>`).join('');
+        }
+        function heroAuraHtml(h) {
+            if (!h || h.hp <= 0) return '';
+            const keys = heroStatuses(h).map(s => s.key);
+            if ((h.blessings || []).length || (h.tempBuffs || []).some(b => b.val > 0)) keys.push('benedetto');
+            const html = auraHtml(keys);
+            return html ? `<div class="hero-aura" style="--aura-t:-${Math.round(performance.now() % 6000)}ms" aria-hidden="true">${html}</div>` : '';
+        }
+        function fxSyncEnemyAura(enemy) {
+            const box = document.getElementById('enemyAura');
+            if (!box) return;
+            const key = enemyStatuses(enemy).map(s => s.key).join(',');
+            if (box.dataset.key === key) return;
+            box.dataset.key = key;
+            box.innerHTML = auraHtml(key ? key.split(',') : []);
+        }
+
+        /* ---------- Impronte della compagnia sulla mappa ---------- */
+        function campaignTerrain() {
+            return (stato.currentCampaign && stato.currentCampaign.terreno) || 'terra';
+        }
+        // Passi lungo il tratto percorso dal segnalino, sfalsati a destra e sinistra, con il suono del terreno
+        function fxFootprints(container, from, to, duration) {
+            const dx = to.x - from.x, dy = to.y - from.y;
+            const dist = Math.hypot(dx, dy);
+            if (!dist) return;
+            const count = Math.max(3, Math.min(14, Math.round(dist / 30)));
+            const terrain = campaignTerrain();
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+            const nx = -dy / dist, ny = dx / dist;
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const p = (i + 1) / (count + 1);
+                    const side = i % 2 ? 5 : -5;
+                    const print = document.createElement('i');
+                    print.className = `map-footprint t-${terrain}`;
+                    print.style.left = `${from.x + dx * p + nx * side}px`;
+                    print.style.top = `${from.y + dy * p + ny * side}px`;
+                    print.style.rotate = `${angle}deg`;
+                    container.appendChild(print);
+                    setTimeout(() => print.remove(), 2400);
+                    synthSfx(`step-${terrain}`);
+                }, duration * i / count);
+            }
+        }
+
+        /* ---------- Rarità: la carta coperta trema prima di girarsi, poi raggi del suo colore ---------- */
+        const CARD_TREMBLE_MS = { non_comune: 160, raro: 420, epico: 750, leggendario: 1100 };
+        function fxRevealRays(rect, rarity) {
+            if (!['raro', 'epico', 'leggendario'].includes(rarity) || !animationsEnabled()) return;
+            const rays = document.createElement('div');
+            rays.className = `reveal-rays rar-card-${rarity} size-${rarity}`;
+            rays.style.left = `${rect.left + rect.width / 2}px`;
+            rays.style.top = `${rect.top + rect.height / 2}px`;
+            fxLayer.appendChild(rays);
+            speedUpAnimations(rays);
+            setTimeout(() => rays.remove(), animTime(1500));
+        }
+
+        /* ---------- Falò del riposo: scintille che salgono ---------- */
+        (function spawnRestSparks() {
+            const box = document.getElementById('restSparks');
+            for (let i = 0; i < 16; i++) {
+                const spark = document.createElement('i');
+                spark.style.left = `${30 + Math.random() * 40}%`;
+                spark.style.animationDuration = `${1.8 + Math.random() * 2.2}s`;
+                spark.style.animationDelay = `${-Math.random() * 4}s`;
+                spark.style.setProperty('--drift', `${Math.random() * 90 - 45}px`);
+                box.appendChild(spark);
+            }
+        })();
 
         /* ---------- Braci di sfondo ---------- */
         (function spawnEmbers() {

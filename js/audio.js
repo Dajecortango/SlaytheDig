@@ -163,6 +163,19 @@
         }
 
         // Sceglie il tema del prossimo scontro: elite col proprio tema, scontri normali a rotazione
+        // Cambio di fase del nemico: si passa al tema elite; se suona già, il brano accelera e sale un po' di tono
+        function raiseCombatTension() {
+            if (combatThemeSrc && combatThemeSrc !== ELITE_THEME) {
+                combatThemeSrc = ELITE_THEME;
+                setMusic(ELITE_THEME);
+                return;
+            }
+            if (musicActive) { musicActive.preservesPitch = false; musicActive.playbackRate = 1.08; }
+        }
+        function resetCombatTension() {
+            musicDecks().forEach(d => { d.playbackRate = 1; });
+        }
+
         function chooseCombatTheme(node) {
             if (node.type === 'elite') { combatThemeSrc = ELITE_THEME; return; }
             if (node.type !== 'combat') { combatThemeSrc = null; return; }
@@ -190,7 +203,9 @@
         // Suoni dei colpi generati con Web Audio (nessun file audio necessario):
         // 'armor' = clangore metallico, 'hit' = colpo sordo sugli HP di un eroe, 'enemy' = colpo sul nemico
         let sfxCtx = null;
-        function synthSfx(kind) {
+        // 'whoosh' = colpo a vuoto, 'parry' = parata, 'drum' = tamburo del boss, 'roar' = boato, 'boom' = esplosione,
+        // 'swell' = crescendo (durata in secondi nel secondo argomento), 'step-<terreno>' = passo sulla mappa
+        function synthSfx(kind, durata = 0.6) {
             if (soundMuted || !gameOptions.sfxVolume) return;
             try { sfxCtx = sfxCtx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
             const ctx = sfxCtx;
@@ -231,6 +246,64 @@
                 src.connect(band).connect(g).connect(out);
                 src.start(t + start);
             };
+
+            // Rumore che passa da un filtro che si sposta da "from" a "to" (aria, boati, passi sulla neve)
+            const sweep = (filterType, from, to, start, dur, peak, q = 1) => {
+                const len = Math.floor(ctx.sampleRate * dur);
+                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / len);
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                const filter = ctx.createBiquadFilter();
+                filter.type = filterType;
+                filter.Q.value = q;
+                filter.frequency.setValueAtTime(from, t + start);
+                filter.frequency.exponentialRampToValueAtTime(to, t + start + dur);
+                const g = ctx.createGain();
+                g.gain.value = peak;
+                src.connect(filter).connect(g).connect(out);
+                src.start(t + start);
+            };
+
+            if (kind === 'whoosh') {
+                sweep('bandpass', 500, 2400, 0, 0.26, 0.9, 1.4);
+                return;
+            }
+            if (kind === 'parry') {
+                [1250, 1890, 3120].forEach((f, i) => tone('triangle', f, f * 0.97, i * 0.012, 0.4, 0.2 / (i + 1)));
+                tick(0, 2600, 0.7);
+                return;
+            }
+            if (kind === 'drum') {
+                tone('sine', 120, 42, 0, 0.5, 0.9);
+                sweep('lowpass', 500, 120, 0, 0.14, 0.7);
+                return;
+            }
+            if (kind === 'roar') {
+                sweep('lowpass', 320, 900, 0, 0.5, 1);
+                sweep('lowpass', 900, 160, 0.45, 0.8, 1);
+                tone('sawtooth', 92, 58, 0, 1.2, 0.26);
+                return;
+            }
+            if (kind === 'boom') {
+                sweep('lowpass', 1800, 90, 0, 0.7, 1);
+                tone('sine', 110, 32, 0, 0.75, 0.9);
+                return;
+            }
+            if (kind === 'swell') {
+                sweep('bandpass', 300, 3200, 0, Math.max(0.1, durata), 0.5, 2);
+                tone('sine', 220, 660, 0, Math.max(0.1, durata), 0.08);
+                return;
+            }
+            if (kind.startsWith('step-')) {
+                const pitch = 0.9 + Math.random() * 0.2;
+                if (kind === 'step-neve') sweep('highpass', 2400 * pitch, 4200 * pitch, 0, 0.13, 0.32);
+                else if (kind === 'step-fango') { sweep('lowpass', 500 * pitch, 180, 0, 0.17, 0.75); tone('sine', 180 * pitch, 80, 0.03, 0.12, 0.14); }
+                else if (kind === 'step-pietra') { tick(0, 1700 * pitch, 0.5); tick(0.02, 950 * pitch, 0.25); }
+                else { tick(0, 620 * pitch, 0.55); sweep('lowpass', 900 * pitch, 300, 0, 0.07, 0.28); }
+                return;
+            }
 
             if (kind === 'hover') {
                 // Leggero "tic" metallico al passaggio del mouse sui pulsanti

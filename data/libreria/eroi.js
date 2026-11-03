@@ -252,7 +252,7 @@ window.LIBRERIA.eroi = {
         "def_bonus": 0,
         "help_bonus_val": 0,
         "items": [],
-        "abilities": ["pancrazio_lancio_panca", "pancrazio_lista_torti"],
+        "abilities": ["pancrazio_lista_torti", "pancrazio_lancio_panca"],
         "portrait": "immagini/ritratti/pancrazio.webp",
         "portraitWounded": "immagini/ritratti/pancrazio_ferito.webp",
         "portraitZoom": 1.35

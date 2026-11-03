@@ -137,8 +137,48 @@
             return stat === 'fth' && hasCurse('fede_inaridita') ? 'worst' : 'single';
         }
 
+        // Il mercante reagisce: una frase sopra la sua immagine e un gesto (cenno, scuote la testa, ride).
+        // Solo a schermo: la frase si pesca con Math.random, senza toccare la partita.
+        const MERCANTE_FRASI = {
+            arrivo: { gesto: 'nod', frasi: ['Avanti, avanti! Guardare non costa niente.', 'Roba buona, e chiedo poco. Quasi.', 'Vi vedo stanchi. Stanchi e con le tasche piene, spero.'] },
+            compra: { gesto: 'nod', frasi: ['Scelta da intenditori.', 'Affare fatto. Non si restituisce.', 'Ottimo. Quello ha salvato molte vite. Più o meno.'] },
+            povero: { gesto: 'shake', frasi: ['Qui si paga in Scudi, non in promesse.', 'Tornate quando avrete di che pagare.', 'Con quegli Scudi vi vendo al massimo un saluto.'] },
+            furto: { gesto: 'shake', frasi: ['Ehi! Dov\'è finito quello che stava qui?', 'Strano, avrei giurato di averne uno in più...'] },
+            rarita: { gesto: 'laugh', frasi: ['Ah, l\'avete vista! Quella non la mostro a tutti.', 'Bella, vero? Costa come un castello. Quasi.'] },
+            contrattaOk: { gesto: 'shake', frasi: ['Mi state rovinando! E va bene, va bene.', 'Parlate bene, maledetti. Avete il vostro sconto.'] },
+            contrattaNo: { gesto: 'laugh', frasi: ['Mi offendete! Ora i prezzi salgono.', 'Ah! Per questa battuta si paga un sovrapprezzo.'] },
+            rinnova: { gesto: 'nod', frasi: ['Niente vi piace, eh? Ho altro nel carro.', 'Un momento, frugo sul fondo della cassa.'] },
+            vendi: { gesto: 'nod', frasi: ['Hmm. Lo prendo, ma ci perdo.', 'È pieno di graffi. Vi do quanto vale.'] },
+            medico: { gesto: 'nod', frasi: ['Il medico è bravo. Non guardate le sue mani.', 'Fermo lì, che fa meno male. Forse.'] }
+        };
+        let merchantSayTimer = null;
+        let merchantLastLine = '';
+        function merchantLine(kind) {
+            const frasi = (MERCANTE_FRASI[kind] || {}).frasi || [];
+            const scelta = frasi.filter(f => f !== merchantLastLine);
+            return (scelta.length ? scelta : frasi)[Math.floor(Math.random() * (scelta.length || frasi.length))] || '';
+        }
+        function merchantSay(kind) {
+            const box = document.getElementById('merchantSay');
+            const text = merchantLine(kind);
+            if (!box || !text) return;
+            merchantLastLine = text;
+            box.textContent = text;
+            box.classList.remove('hidden', 'say-in');
+            void box.offsetWidth;
+            box.classList.add('say-in');
+            clearTimeout(merchantSayTimer);
+            merchantSayTimer = setTimeout(() => box.classList.add('hidden'), 4200);
+            if (!animationsEnabled()) return;
+            const img = document.getElementById('merchantImg');
+            img.classList.remove('gesture-nod', 'gesture-shake', 'gesture-laugh');
+            void img.offsetWidth;
+            img.classList.add(`gesture-${MERCANTE_FRASI[kind].gesto}`);
+        }
+
        function startMerchant(merchantId) {
     showScreen('screenMerchant');
+    merchantSay('arrivo');
     const descText = merchantsData[merchantId] || merchantsData.default || "Un mercante di passaggio offre i suoi beni.";
     const markup = Math.round((merchantProgressMultiplier() - 1) * 100);
     document.getElementById('merchantDescBox').innerHTML = `<strong>Descrizione:</strong> ${descText}`
@@ -214,6 +254,7 @@
             stato.partyCoins -= MERCHANT_REROLL_COST;
             stockMerchant();
             synthSfx('flip');
+            merchantSay('rinnova');
             updatePartyStatusBars();
             renderMerchantShop();
             document.querySelectorAll('#merchantItemsList .card-back').forEach((card, i) => revealAsCard(card, i * 70));
@@ -258,6 +299,7 @@
             synthSfx('dice');
             setTimeout(() => {
                 diceOutcomeSfx(roll);
+                merchantSay(success ? 'contrattaOk' : 'contrattaNo');
                 const statLabel = 'Intelligenza';
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (Fede Inaridita)`;
                 openModal(success ? 'Affare fatto!' : 'Il mercante si offende',
@@ -276,6 +318,7 @@
             const price = effectiveMerchantPrice(entry);
             if(stato.partyCoins < price) {
                 uiError("Non hai abbastanza Scudi");
+                merchantSay('povero');
                 return;
             }
             if (entry.kind === 'medic') return openMedic(idx);
@@ -283,6 +326,9 @@
             if (thief && price === 0) {
                 merchantStolen = true;
                 uiMessage(`${thief.name} fa sparire ${entry.item.name} sotto il mantello: è gratis!`);
+                merchantSay('furto');
+            } else {
+                merchantSay('compra');
             }
 
             stato.partyCoins -= price;
@@ -333,6 +379,7 @@
                     const wasDown = hero.hp <= 0;
                     const gained = healHero(hero, hp);
                     uiMessage(wasDown ? `Il medico rimette in piedi ${hero.name}: +${gained} HP` : `Il medico cura ${hero.name}: +${gained} HP`);
+                    merchantSay('medico');
                     updatePartyStatusBars();
                     renderMerchantShop();
                 };
@@ -407,6 +454,7 @@
                     if ((item.qty || 1) > 1) item.qty -= 1;
                     else { revertItemEffects(item, hero); hero.items.splice(idx, 1); }
                     stato.partyCoins += price;
+                    merchantSay('vendi');
                     updatePartyStatusBars();
                     renderMerchantSellList();
                 } }]);

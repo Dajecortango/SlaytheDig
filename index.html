@@ -355,6 +355,8 @@
                             <img id="combatImg" src="immagini/segnaposto/combat.svg" alt="Scontro" loading="lazy" decoding="async">
                             <!-- Video del nemico (campo "video" del bestiario): al posto dell'immagine, se c'è (setCombatVideo) -->
                             <video id="combatVideo" class="combat-video hidden" muted loop playsinline preload="auto"></video>
+                            <!-- Stelline e bolle degli stati del nemico (fxSyncEnemyAura in js/effetti.js) -->
+                            <div id="enemyAura" class="enemy-aura" aria-hidden="true"></div>
                             <!-- Cosa farà il nemico al suo turno (updateEnemyInfoUI in js/combattimento.js) -->
                             <div id="enemyIntent" class="enemy-intent" tabindex="0" aria-live="polite"></div>
                             <!-- Nome, vita e statistiche del nemico sopra l'immagine -->
@@ -613,6 +615,12 @@
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica riposo -->
                             <img id="restImg" src="immagini/riposo.webp" alt="Riposo" loading="lazy" decoding="async">
+                            <!-- Falò: luce che guizza, fiamme e scintille (css/style.css; le scintille in js/effetti.js) -->
+                            <div class="rest-fire" aria-hidden="true">
+                                <div class="rest-fire-light"></div>
+                                <div class="rest-fire-flames"><i></i><i></i><i></i></div>
+                                <div id="restSparks" class="rest-sparks"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="event-right-panel">
@@ -657,6 +665,8 @@
                         <div class="event-left-image-box">
                             <!-- ID immagine dinamica mercante -->
                             <img id="merchantImg" src="immagini/mercante.webp" alt="Mercante" loading="lazy" decoding="async">
+                            <!-- Frase del mercante (merchantSay in js/shop.js) -->
+                            <div id="merchantSay" class="merchant-say hidden" aria-live="polite"></div>
                         </div>
                     </div>
                     <div class="event-right-panel">

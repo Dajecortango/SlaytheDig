@@ -5,16 +5,18 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["caccia_alla_bestia_capitolo_finale"] = {
+    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 25 },
     "id": "caccia_alla_bestia_capitolo_finale",
     "title": "Caccia Alla Bestia - Capitolo Finale",
     "avventura": "caccia_alla_bestia",
     "capitolo": 4,
+    "terreno": "neve",
     "badge": "Nuova Campagna",
     "description": "",
     "coverImage": "",
     "introText": "",
     "heroes": ["icaro", "astarte", "ascadeo", "dioforo"],
-    "initialArmory": ["spada", "ascia", "alabarda", "scudo", "armatura_leggera", "libro_fede", "tomo_conoscenza", "unguento"],
+    "initialArmory": ["ascia", "spada", "alabarda", "scudo", "armatura_leggera", "libro_fede", "tomo_conoscenza", "unguento"],
     "challenges": {
         "la_cengia_di_ghiaccio_vivo": {
             "title": "La Cengia di Ghiaccio Vivo",
@@ -158,7 +160,7 @@ window.CAMPAIGNS["caccia_alla_bestia_capitolo_finale"] = {
         { "id": 1, "level": 6, "x": 300, "type": "combat", "enemy": "branco_di_warg_d_altura", "title": "Nuovo nodo", "icon": "🗡️", "done": false, "active": true, "next": [17], "image": "immagini/aviano_moork_tra_le_nevi.webp" },
         { "id": 2, "level": 6, "x": 621, "type": "combat", "enemy": "esiliati_braggart_superstiti", "title": "Nuovo nodo", "icon": "🗡️", "done": false, "active": true, "next": [21], "image": "immagini/barbari_del_ghiacciaio_innevato.webp" },
         { "id": 3, "level": 1, "x": 530, "type": "combat", "enemy": "brachidanio_delle_vette", "title": "Nuovo nodo", "icon": "🗡️", "done": false, "active": false, "next": [4, 11], "image": "immagini/bestia_corazzata_nel_passo_innevato.webp" },
-        { "id": 4, "level": 2, "x": 446, "type": "combat", "enemy": "cenofori_mare_bianco", "title": "Cenofori Delle Slavine", "icon": "🗡️", "done": false, "active": false, "next": [23], "image": "immagini/predatori_nella_tormenta_alpina.webp" },
+        { "id": 4, "level": 2, "x": 446, "type": "combat", "enemy": "cenofori_mare_bianco_finale", "title": "Cenofori Delle Slavine", "icon": "🗡️", "done": false, "active": false, "next": [23], "image": "immagini/predatori_nella_tormenta_alpina.webp" },
         { "id": 5, "level": 11, "x": 335, "type": "combat", "enemy": "spettro_dei_tumuli", "title": "Nuovo nodo", "icon": "🗡️", "done": false, "active": false, "next": [40], "image": "immagini/spettro_d_ombra_nel_tumulo_innevato.webp" },
         { "id": 6, "level": 2, "x": 313, "type": "challenge", "title": "Sfida", "icon": "❓", "done": false, "active": false, "next": [10, 23], "image": "immagini/sentiero_di_ghiaccio_tra_le_nuvole.webp", "challengeId": "la_cengia_di_ghiaccio_vivo" },
         { "id": 7, "level": 5, "x": 469, "type": "challenge", "title": "Sfida", "icon": "❓", "done": false, "active": false, "next": [16], "image": "immagini/spettro_nella_tormenta_ghiacciata.webp", "challengeId": "lo_specchio_del_gheist" },
@@ -184,7 +186,7 @@ window.CAMPAIGNS["caccia_alla_bestia_capitolo_finale"] = {
         { "id": 27, "level": 6, "x": 395, "type": "merchant", "title": "Nuovo nodo", "icon": "🪙", "done": false, "active": false, "next": [17], "image": "immagini/mercante_tra_cristalli_e_montagne_ghiacciate.webp", "merchantId": "default" },
         { "id": 29, "level": 12, "x": 623, "type": "combat", "enemy": "coppia_di_ghoul_dell_ossario", "title": "Nuovo nodo", "icon": "🗡️", "done": false, "active": false, "next": [31], "image": "immagini/ghoul_delle_montagne_innevate.webp" },
         { "id": 30, "level": 14, "x": 386, "type": "rest", "title": "Nuovo nodo", "icon": "⛺", "done": false, "active": false, "next": [34], "image": "immagini/viandanti_tra_fuoco_e_montagne.webp", "restId": "default" },
-        { "id": 31, "level": 13, "x": 537, "type": "rest", "title": "Nuovo nodo", "icon": "⛺", "done": false, "active": false, "next": [44], "image": "immagini/rifugio_tra_le_montagne_innevate.webp", "restId": "default" },
+        { "id": 31, "level": 13, "x": 537, "type": "challenge", "title": "Nuovo punto", "icon": "❓", "done": false, "active": false, "next": [44], "image": "immagini/cacciatrice_nella_tormenta_alpina.webp", "challengeId": "cacciatrice_di_velia" },
         { "id": 32, "level": 13, "x": 338, "type": "elite", "enemy": "aracnomantropo_delle_rovine", "title": "Scontro", "icon": "👹", "done": false, "active": false, "next": [30], "image": "immagini/mostro_aracnide_tra_le_rovine_innevate.webp" },
         { "id": 34, "level": 15, "x": 443, "type": "elite", "title": "Nuovo nodo", "icon": "👹", "done": false, "active": false, "next": [47], "image": "immagini/gigante_macilento_tra_neve_e_ossa.webp", "enemy": "hungrabarn_dei_picchi" },
         { "id": 35, "level": 9, "x": 447, "type": "merchant", "title": "Nuovo punto", "icon": "🪙", "done": false, "active": false, "next": [37], "image": "immagini/mercante_d_erbe_tra_le_montagne_innevate.webp", "merchantId": "default" },
@@ -193,7 +195,7 @@ window.CAMPAIGNS["caccia_alla_bestia_capitolo_finale"] = {
         { "id": 38, "level": 11, "x": 424, "type": "merchant", "title": "Nuovo punto", "icon": "🪙", "done": false, "active": false, "next": [19], "image": "immagini/alchimisti_tra_neve_e_ghiaccio.webp", "merchantId": "default" },
         { "id": 39, "level": 11, "x": 544, "type": "challenge", "title": "Nuovo punto", "icon": "❓", "done": false, "active": false, "next": [29, 45], "image": "immagini/sentinella_delle_sei_lanterne.webp", "challengeId": "presagio_del_morrkath" },
         { "id": 40, "level": 12, "x": 334, "type": "merchant", "title": "Nuovo punto", "icon": "🪙", "done": false, "active": false, "next": [32], "image": "immagini/mercante_tra_le_ossa_ghiacciate.webp", "merchantId": "default" },
-        { "id": 42, "level": 13, "x": 457, "type": "challenge", "title": "Nuovo punto", "icon": "❓", "done": false, "active": false, "next": [44, 46], "image": "immagini/cacciatrice_nella_tormenta_alpina.webp", "challengeId": "cacciatrice_di_velia" },
+        { "id": 42, "level": 13, "x": 457, "type": "rest", "title": "Nuovo nodo", "icon": "⛺", "done": false, "active": false, "next": [44, 46], "image": "immagini/rifugio_tra_le_montagne_innevate.webp", "restId": "default" },
         { "id": 44, "level": 14, "x": 519, "type": "challenge", "title": "Nuovo punto", "icon": "❓", "done": false, "active": false, "next": [34], "image": "immagini/rifugio_gelido_tra_le_montagne.webp", "challengeId": "dispensa_del_gigante" },
         { "id": 45, "level": 12, "x": 530, "type": "elite", "enemy": "kornugan", "title": "Nuovo punto", "icon": "👹", "done": false, "active": false, "next": [31], "image": "" },
         { "id": 46, "level": 14, "x": 450, "type": "elite", "enemy": "warg_mutati", "title": "Nuovo punto", "icon": "👹", "done": false, "active": false, "next": [34], "image": "" },

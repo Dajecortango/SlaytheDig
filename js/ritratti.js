@@ -113,6 +113,39 @@
             overlay.addEventListener('click', finish);
         }
 
+        // Cinematica del colpo del nemico: la sua immagine attraversa una banda rossa da destra verso il bersaglio.
+        // I danni si mostrano dopo, in onDone. Un click la salta; con le animazioni spente si passa subito al risultato.
+        function playEnemyStrike(enemy, targetLabel, onDone) {
+            if (!animationsEnabled()) { onDone(); return; }
+            const src = enemy.image || document.getElementById('combatImg').getAttribute('src');
+            const overlay = document.createElement('div');
+            overlay.className = 'strike-cine enemy-strike';
+            overlay.setAttribute('aria-hidden', 'true');
+            overlay.innerHTML = `
+                <div class="strike-band">
+                    <div class="strike-lines"></div>
+                    <div class="strike-hero"><img src="${esc(src)}" alt=""></div>
+                    <div class="strike-name">${esc(enemy.name)}</div>
+                    <div class="strike-target">contro ${esc(targetLabel)}</div>
+                </div>
+                <div class="strike-slash"></div>
+                <div class="strike-impact"></div>
+                <div class="strike-flash"></div>`;
+            document.body.appendChild(overlay);
+            speedUpAnimations(overlay);
+
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timer);
+                overlay.remove();
+                onDone();
+            };
+            const timer = setTimeout(finish, animTime(1000));
+            overlay.addEventListener('click', finish);
+        }
+
         function heroPortraitClass(name) {
             return HERO_PORTRAITS[name] ? 'has-portrait' : '';
         }

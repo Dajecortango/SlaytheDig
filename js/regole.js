@@ -9,6 +9,8 @@
    ========================================================================== */
 
 /* ---------- Eroi ---------- */
+// Eroi al massimo nella compagnia, se la campagna non dice altro (campo "maxEroi"; partyMaxSize in js/comune.js)
+const PARTY_MAX = 5;
 // Un eroe è ferito (ritratto da ferito) con WOUNDED_HP o meno, ma ancora in piedi
 const WOUNDED_HP = 2;
 
@@ -16,7 +18,7 @@ const WOUNDED_HP = 2;
 // (scontro, prove, preghiera) +1 Forza permanente, al massimo MALASORTE_MAX volte per capitolo
 // (malasorteDopoTiro in js/motore/speciali.js)
 const MALASORTE_FALLIMENTI = 3;
-const MALASORTE_MAX = 3;
+const MALASORTE_MAX = 2;
 
 // Passiva "Ira Traboccante" (Aurelio, segnale hero_set "iraTraboccante"): ogni tiro fallito della compagnia in scontro
 // dà +1 Collera (+1 al suo tiro per colpire e a Difendi per carica); a IRA_MAX cariche va in Furia: il suo prossimo attacco

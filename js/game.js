@@ -486,7 +486,7 @@ function breakRelic(relicId) {
             const sizeSelect = document.getElementById('partySizeSelect');
             const totalHeroes = campaignHeroes.length;
             const minSize = Math.min(3, totalHeroes);
-            const maxSize = Math.min(5, totalHeroes);
+            const maxSize = Math.max(minSize, partyMaxSize(stato.currentCampaign));
 
             sizeSelect.innerHTML = '';
             for(let s = minSize; s <= maxSize; s++) {

@@ -266,6 +266,7 @@
             const wrapper = document.getElementById('stsMapWrapper');
             if (wrapper && wrapper.scrollTo) wrapper.scrollTo({ top: target.y - wrapper.clientHeight * 0.6, behavior: 'smooth' });
 
+            const from = { x: parseFloat(token.style.left), y: parseFloat(token.style.top) };
             token.classList.add('moving');
             void token.offsetWidth;
             token.style.left = `${target.x}px`;
@@ -273,7 +274,7 @@
             setTimeout(() => token.classList.remove('moving'), PARTY_TRAVEL_MS + 50);
             // Al ritorno sulla mappa il segnalino è già sul nodo: niente seconda animazione
             lastPartyTokenPos = { x: target.x, y: target.y, nodes: stato.stsMapNodes };
-            synthSfx('flip');
+            fxFootprints(container, from, target, PARTY_TRAVEL_MS);
             return PARTY_TRAVEL_MS;
         }
 
