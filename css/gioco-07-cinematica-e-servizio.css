@@ -1,0 +1,378 @@
+/* Stile del gioco, parte 7 di 13: cinematica d'attacco, cursore, salvataggi, compendio, test del tasso di vittoria.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+        /* ---------- Cinematica d'attacco dell'eroe (solo colpi a segno) ---------- */
+        .strike-cine {
+            --cine-t: 1.15s;
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            overflow: hidden;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.35);
+            animation: strikeFade var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-band {
+            position: absolute;
+            left: -10%; right: -10%;
+            top: 50%;
+            height: min(38vh, 300px);
+            margin-top: calc(min(38vh, 300px) / -2);
+            transform: rotate(-6deg) scaleY(0);
+            overflow: hidden;
+            background: linear-gradient(90deg, #07050a 0%, #1c130b 45%, #07050a 100%);
+            border-top: 3px solid #c9982f;
+            border-bottom: 3px solid #c9982f;
+            box-shadow: 0 0 0 2px #000, 0 0 40px rgba(0, 0, 0, 0.9);
+            animation: strikeBand var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-lines {
+            position: absolute;
+            inset: 0;
+            opacity: 0.35;
+            background: repeating-linear-gradient(90deg, transparent 0 38px, rgba(240, 207, 115, 0.55) 38px 40px, transparent 40px 90px);
+            animation: strikeLines 0.35s linear infinite;
+        }
+        .strike-hero {
+            position: absolute;
+            top: 0; bottom: 0;
+            left: 50%;
+            width: min(46vw, 520px);
+            margin-left: calc(min(46vw, 520px) / -2);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+            transform: rotate(6deg) translateX(-70vw);
+            animation: strikeHero var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .strike-name {
+            position: absolute;
+            left: 14%; bottom: 10px;
+            transform: rotate(6deg);
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: clamp(1.1rem, 3vw, 2rem);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--wc-yellow, #f0cf73);
+            text-shadow: 0 2px 0 #000, 0 0 14px rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            animation: strikeName var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-slash {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 120vmax; height: 8px;
+            margin-left: -60vmax; margin-top: -4px;
+            background: linear-gradient(90deg, transparent, #fff6d0 30%, #f0cf73 50%, #fff6d0 70%, transparent);
+            box-shadow: 0 0 18px #f0cf73, 0 0 40px rgba(240, 207, 115, 0.7);
+            transform: rotate(-32deg) scaleX(0);
+            opacity: 0;
+            animation: strikeSlash var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-flash {
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            opacity: 0;
+            animation: strikeFlash var(--cine-t) var(--ease-entra) forwards;
+        }
+
+        /* Abilità: cinematica più lunga, bordo luminoso, raggi, taglio a X, scintille e scossa */
+        .strike-cine.ability {
+            --cine-t: 1.7s;
+            background: radial-gradient(circle at 50% 50%, rgba(80, 30, 120, 0.35), rgba(0, 0, 0, 0.6));
+            animation: strikeFade var(--cine-t) var(--ease-entra) forwards, strikeShake var(--cine-t) linear forwards;
+        }
+        .strike-cine.ability .strike-band {
+            height: min(46vh, 360px);
+            margin-top: calc(min(46vh, 360px) / -2);
+            background: linear-gradient(90deg, #0b0612 0%, #2a1638 45%, #0b0612 100%);
+            border-top: 4px solid #ffd76a;
+            border-bottom: 4px solid #ffd76a;
+            box-shadow: 0 0 0 2px #000, 0 0 30px rgba(255, 200, 90, 0.75), 0 0 80px rgba(170, 90, 255, 0.55);
+        }
+        .strike-cine.ability .strike-lines {
+            opacity: 0.6;
+            background: repeating-linear-gradient(90deg, transparent 0 26px, rgba(255, 225, 140, 0.8) 26px 29px, transparent 29px 60px);
+            animation-duration: 0.22s;
+        }
+        .strike-cine.ability .strike-hero img { filter: drop-shadow(0 0 14px rgba(255, 215, 106, 0.9)) saturate(1.2) contrast(1.08); }
+        .strike-cine.ability .strike-hero { width: min(52vw, 600px); margin-left: calc(min(52vw, 600px) / -2); }
+        .strike-ability {
+            position: absolute;
+            right: 12%; top: 12px;
+            transform: rotate(6deg);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: clamp(1rem, 2.6vw, 1.8rem);
+            letter-spacing: 0.06em;
+            color: #fff3c4;
+            text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 200, 90, 0.9), 0 0 26px rgba(170, 90, 255, 0.8);
+            opacity: 0;
+            animation: strikeAbility var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-ability span {
+            font-size: 0.55em;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: #d9b4ff;
+        }
+        .strike-rays {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 180vmax; height: 180vmax;
+            margin: -90vmax 0 0 -90vmax;
+            background: repeating-conic-gradient(from 0deg, rgba(255, 215, 106, 0.22) 0deg 6deg, transparent 6deg 18deg);
+            -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+            mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+            opacity: 0;
+            animation: strikeRays var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-cine.ability .strike-slash {
+            height: 12px;
+            margin-top: -6px;
+            background: linear-gradient(90deg, transparent, #ffffff 25%, #ffd76a 45%, #c68bff 55%, #ffffff 75%, transparent);
+            box-shadow: 0 0 24px #ffd76a, 0 0 60px rgba(198, 139, 255, 0.9);
+        }
+        .strike-cine.ability .strike-slash.second { animation-name: strikeSlash2; }
+        .strike-sparks {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 0; height: 0;
+        }
+        .strike-sparks span {
+            position: absolute;
+            left: -5px; top: -5px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #ffd76a 45%, rgba(198, 139, 255, 0) 75%);
+            box-shadow: 0 0 12px #ffd76a;
+            opacity: 0;
+            transform: rotate(var(--a)) translateX(0) scale(1);
+            animation: strikeSpark var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-cine.ability .strike-flash {
+            background: radial-gradient(circle, #fff 0%, #ffe9a8 40%, rgba(198, 139, 255, 0.8) 100%);
+            animation-name: strikeFlashBig;
+        }
+        /* Scintille del colpo normale: solo oro, più piccole */
+        .strike-sparks.simple span {
+            width: 8px; height: 8px;
+            background: radial-gradient(circle, #fff 0%, #ffd76a 50%, rgba(255, 170, 60, 0) 75%);
+            box-shadow: 0 0 10px #ffd76a;
+        }
+        /* Onda d'urto al momento dell'impatto, per tutti i colpi a segno */
+        .strike-impact {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 36vmin; height: 36vmin;
+            margin: -18vmin 0 0 -18vmin;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 230, 150, 0.9);
+            box-shadow: 0 0 30px rgba(255, 200, 90, 0.8), inset 0 0 24px rgba(255, 200, 90, 0.5);
+            opacity: 0;
+            transform: scale(0.1);
+            animation: strikeImpact var(--cine-t) var(--ease-entra) forwards;
+        }
+        .strike-cine.ability .strike-impact {
+            border-color: rgba(230, 190, 255, 0.9);
+            box-shadow: 0 0 36px rgba(198, 139, 255, 0.9), inset 0 0 28px rgba(198, 139, 255, 0.5);
+        }
+        @keyframes strikeImpact {
+            0%, 64% { opacity: 0; transform: scale(0.1); }
+            68% { opacity: 1; }
+            88%, 100% { opacity: 0; transform: scale(1); }
+        }
+        /* Piccola scossa dello schermo anche al colpo normale (quella delle abilità è strikeShake) */
+        .strike-cine:not(.ability) { animation: strikeFade var(--cine-t) var(--ease-entra) forwards, strikeShakeSmall var(--cine-t) linear forwards; }
+        @keyframes strikeShakeSmall {
+            0%, 64% { transform: translate(0, 0); }
+            67% { transform: translate(-5px, 3px); }
+            70% { transform: translate(4px, -3px); }
+            73% { transform: translate(-2px, 1px); }
+            76%, 100% { transform: translate(0, 0); }
+        }
+
+        @keyframes strikeFade { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes strikeBand {
+            0% { transform: rotate(-6deg) scaleY(0); }
+            14%, 82% { transform: rotate(-6deg) scaleY(1); }
+            100% { transform: rotate(-6deg) scaleY(0.2); }
+        }
+        @keyframes strikeLines { from { background-position: 0 0; } to { background-position: -90px 0; } }
+        @keyframes strikeHero {
+            0% { transform: rotate(6deg) translateX(-70vw); filter: blur(6px); }
+            26% { transform: rotate(6deg) translateX(-4vw); filter: blur(0); }
+            56% { transform: rotate(6deg) translateX(-8vw); filter: blur(0); }
+            /* Scatto, poi un attimo di gelo al momento dell'impatto (64-70%), poi prosegue */
+            64% { transform: rotate(6deg) translateX(12vw); filter: blur(3px); }
+            70% { transform: rotate(6deg) translateX(12.6vw); filter: blur(0); }
+            100% { transform: rotate(6deg) translateX(18vw); filter: blur(0); }
+        }
+        @keyframes strikeName {
+            0%, 20% { opacity: 0; transform: rotate(6deg) translateX(-30px); }
+            32%, 80% { opacity: 1; transform: rotate(6deg) translateX(0); }
+            100% { opacity: 0; }
+        }
+        @keyframes strikeSlash {
+            0%, 60% { transform: rotate(-32deg) scaleX(0); opacity: 0; }
+            64% { transform: rotate(-32deg) scaleX(0.4); opacity: 1; }
+            72% { transform: rotate(-32deg) scaleX(1); opacity: 1; }
+            90%, 100% { transform: rotate(-32deg) scaleX(1); opacity: 0; }
+        }
+        @keyframes strikeSlash2 {
+            0%, 66% { transform: rotate(32deg) scaleX(0); opacity: 0; }
+            70% { transform: rotate(32deg) scaleX(0.4); opacity: 1; }
+            77% { transform: rotate(32deg) scaleX(1); opacity: 1; }
+            92%, 100% { transform: rotate(32deg) scaleX(1); opacity: 0; }
+        }
+        @keyframes strikeFlash {
+            0%, 64% { opacity: 0; }
+            68% { opacity: 0.75; }
+            82%, 100% { opacity: 0; }
+        }
+        @keyframes strikeFlashBig {
+            0%, 64% { opacity: 0; }
+            67% { opacity: 0.9; }
+            72% { opacity: 0.25; }
+            76% { opacity: 0.55; }
+            90%, 100% { opacity: 0; }
+        }
+        @keyframes strikeAbility {
+            0%, 22% { opacity: 0; transform: rotate(6deg) translateX(40px) scale(1.4); }
+            32% { opacity: 1; transform: rotate(6deg) translateX(0) scale(1); }
+            82% { opacity: 1; transform: rotate(6deg) translateX(0) scale(1); }
+            100% { opacity: 0; }
+        }
+        @keyframes strikeRays {
+            0%, 10% { opacity: 0; transform: rotate(0deg) scale(0.6); }
+            30% { opacity: 1; }
+            70% { opacity: 1; transform: rotate(40deg) scale(1.05); }
+            100% { opacity: 0; transform: rotate(60deg) scale(1.1); }
+        }
+        @keyframes strikeSpark {
+            0%, 66% { opacity: 0; transform: rotate(var(--a)) translateX(0) scale(1.4); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(0.3); }
+        }
+        @keyframes strikeShake {
+            0%, 66% { transform: translate(0, 0); }
+            68% { transform: translate(-8px, 4px); }
+            70% { transform: translate(7px, -5px); }
+            72% { transform: translate(-6px, -3px); }
+            74% { transform: translate(5px, 4px); }
+            77% { transform: translate(-3px, 2px); }
+            80%, 100% { transform: translate(0, 0); }
+        }
+
+        /* Finestra "Come si gioca" */
+        .howto { text-align: left; font-size: 0.92rem; line-height: 1.6; color: #e6dcc4; }
+        .howto p { margin: 0 0 10px; }
+        .howto b { color: var(--wc-yellow); font-weight: normal; font-family: var(--font-title); }
+
+        /* ---------- Cursore a guanto d'arme (stile Warcraft III) ----------
+           Oro ovunque, rosso sopra il nemico, grigio sui pulsanti disattivati.
+           "!important" perché molti elementi impostano cursor: pointer. */
+        html, body, body * { cursor: url('../immagini/cursori/guanto.png') 1 1, auto !important; }
+        #enemyInfo, #enemyInfo * { cursor: url('../immagini/cursori/guanto_rosso.png') 1 1, crosshair !important; }
+        button:disabled, button:disabled * { cursor: url('../immagini/cursori/guanto_grigio.png') 1 1, not-allowed !important; }
+
+        /* ---------- Salvataggi (3 slot) ---------- */
+        .save-slots { display: grid; gap: 8px; text-align: left; }
+        .save-slot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            border: 1px solid #5a4520;
+            box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+        .save-slot.empty { opacity: 0.7; }
+        .save-slot-info { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; color: #e6dcc4; }
+        .save-slot-info b { font-family: var(--font-title); color: var(--wc-yellow); font-weight: 700; letter-spacing: 0.04em; }
+        .save-slot-info small { color: var(--text-dim); font-size: 0.75rem; }
+        .save-slot-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+        .save-slot-actions button { margin: 2px 0 6px; min-width: 110px; }
+        .save-current { font-size: 0.72rem; color: var(--accent-green); font-style: normal; }
+
+        /* ---------- Compendio ---------- */
+        .codex-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 10px; }
+        .codex-tab { margin: 0 0 6px; opacity: 0.65; background: var(--noise-fine), linear-gradient(#3b352f, #1f1b18 55%, #121010); }
+        .codex-tab.active { opacity: 1; background: var(--noise-fine), linear-gradient(#72190f, #3c0b07 55%, #220604); }
+        .codex-tab span { font-family: var(--font-body); color: var(--text-dim); margin-left: 4px; text-transform: none; }
+        .codex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; max-height: 58vh; overflow-y: auto; padding: 2px 4px 2px 2px; text-align: left; }
+        .codex-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000;
+        }
+        .codex-card.unknown { opacity: 0.45; filter: grayscale(1); }
+        .codex-card .tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .codex-card .tile-sub { font-size: 0.75rem; color: #d8cba8; }
+
+        /* ---------- Test Tasso di Vittoria: wizard e report ---------- */
+        .sim-hero-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .sim-hero-row {
+            padding: 8px 12px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000;
+        }
+        .sim-hero-row.included { border-color: #6a4a1a; }
+        .sim-hero-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; font-family: var(--font-title); color: var(--wc-yellow); }
+        .sim-hero-toggle input { width: 16px; height: 16px; }
+        .sim-hero-config { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 2px 26px; }
+        .sim-hero-config label { display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+        .sim-profile-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .sim-profile-row {
+            padding: 8px 12px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #3a2a12;
+            box-shadow: 0 0 0 1px #000;
+        }
+        .sim-profile-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--wc-yellow); font-family: var(--font-title); cursor: pointer; }
+        .sim-profile-desc { margin: 4px 0 0 24px; font-size: 0.78rem; color: #d8cba8; line-height: 1.4; }
+        #simRunsInput {
+            width: 90px;
+            padding: 6px 10px;
+            background: linear-gradient(#1d1814, #120f0c);
+            border: 1px solid #5a4520;
+            color: var(--wc-yellow);
+            font-family: var(--font-body);
+        }
+
+        .sim-report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin: 14px 0; }
+        .sim-report-card {
+            padding: 14px 16px;
+            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            border: 1px solid #5a4520;
+            box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+        .sim-report-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+        .sim-report-card h3 { margin: 0 0 8px; font-family: var(--font-title); color: var(--wc-yellow); }
+        .sim-detail-toggle {
+            flex: 0 0 auto;
+            background: none; border: 1px solid #5a4520; color: var(--wc-yellow);
+            width: 26px; height: 26px; line-height: 1; cursor: pointer;
+            transition: transform var(--dur-ui) var(--ease-out);
+        }
+        .sim-detail-toggle.open { transform: rotate(180deg); }
+        .sim-run-detail { margin-top: 12px; border-top: 1px solid #3a2a12; padding-top: 10px; overflow-x: auto; }
+        .sim-run-detail h4 { margin: 0 0 6px; }
+        .sim-run-table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 0.72rem; color: #e6dcc4; }
+        .sim-run-table th, .sim-run-table td { padding: 3px 5px; text-align: left; border-bottom: 1px solid #2a2018; white-space: nowrap; }
+        .sim-run-table th { color: var(--text-dim); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em; }
+        .sim-run-table .log-success { color: #8dff78; }
+        .sim-run-table .log-fail { color: #ff8a70; }
+        .sim-report-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+        .codex-card .tile-tag { align-self: flex-start; background: none; border: none; box-shadow: none; padding: 0; color: var(--text-dim); font-size: 0.68rem; letter-spacing: 0.04em; }
+

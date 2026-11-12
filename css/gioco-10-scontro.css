@@ -1,0 +1,206 @@
+/* Stile del gioco, parte 10 di 13: scena dello scontro: nemico grande, vita, intenzione.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+        /* ---------- Scontro: nemico grande, vita e statistiche sopra l'immagine, intenzione ---------- */
+        #screenCombat .event-grid-layout { grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr); }
+        /* Mai più bassa delle altre scene (--stage-h), più alta quando lo schermo lo permette */
+        /* --stage-chrome = cornice, margini e titolo del pannello: così nome, vita e statistiche del nemico restano in vista senza scorrere */
+        .event-left-image-box.combat-stage { height: max(var(--stage-h), min(640px, calc(100vh - var(--top-h) - var(--console-h) - var(--stage-chrome)))); }
+
+        /* Elite e boss (classi messe da enterStsNode in js/mappa.js): cornice di brace o d'ombra,
+           alone che respira ai bordi della scena e targa sopra il nome */
+        .combat-stage.is-elite { --stage-glow: 200, 40, 20; --stage-rim: #b8321c; }
+        .combat-stage.is-boss { --stage-glow: 150, 50, 210; --stage-rim: #8a3ad0; }
+        .combat-stage.is-elite, .combat-stage.is-boss {
+            box-shadow: 0 0 0 2px var(--stage-rim), 0 0 0 3px #000, 0 0 0 5px #3a2806, 0 0 0 6px #000,
+                0 0 26px rgba(var(--stage-glow), 0.45), 0 12px 26px rgba(0, 0, 0, 0.85);
+        }
+        .combat-stage.is-elite::after, .combat-stage.is-boss::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            box-shadow: inset 0 0 70px rgba(var(--stage-glow), 0.5), inset 0 0 14px rgba(0, 0, 0, 0.9);
+            animation: stage-breathe 3.2s ease-in-out infinite;
+        }
+        @keyframes stage-breathe { 50% { opacity: 0.45; } }
+        body.no-anim .combat-stage::after { animation: none; }
+        .combat-stage.is-elite .enemy-name::before, .combat-stage.is-boss .enemy-name::before {
+            content: 'Elite';
+            display: table;
+            margin-bottom: 4px;
+            padding: 2px 10px 1px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #ffe0b0;
+            text-shadow: 0 1px 0 #000;
+            background: linear-gradient(rgba(var(--stage-glow), 0.95), rgba(40, 6, 4, 0.95));
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px var(--stage-rim), 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+        .combat-stage.is-boss .enemy-name::before { content: 'Boss'; color: #f0dcff; background: linear-gradient(rgba(var(--stage-glow), 0.95), rgba(26, 6, 40, 0.95)); }
+        .enemy-box.enemy-overlay {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            z-index: 2;
+            margin: 0;
+            padding: 56px 20px 14px;
+            background: linear-gradient(transparent, rgba(10, 4, 3, 0.78) 38%, rgba(8, 3, 2, 0.95));
+            border: 0;
+            box-shadow: none;
+        }
+        .enemy-overlay .enemy-emblem { display: none; }
+        .enemy-overlay .enemy-name { font-size: 1.6rem; margin-bottom: 6px; color: var(--wc-yellow); }
+        .enemy-overlay .hp-bar-container.big { height: 20px; }
+        .enemy-overlay .enemy-stats { justify-content: flex-start; gap: 22px; margin-top: 10px; font-size: 0.9rem; }
+        .enemy-intent {
+            position: absolute;
+            top: 14px; left: 14px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            background: rgba(12, 10, 9, 0.88);
+            border: 1px solid #c0281e;
+            box-shadow: 0 0 0 1px #000, 0 0 16px rgba(192, 40, 30, 0.45);
+            cursor: help;
+        }
+        .enemy-intent:empty { display: none; }
+        .intent-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; color: var(--curse-color); }
+        .intent-icon svg { width: 26px; height: 26px; }
+        .intent-icon.stunned { color: #8cc4ff; }
+        .enemy-intent:has(.stunned) { border-color: #2f8cff; box-shadow: 0 0 0 1px #000, 0 0 16px rgba(47, 140, 255, 0.45); }
+        /* Solo l'icona: il testo dell'intenzione si apre a fianco passandoci sopra (o col fuoco da tastiera) */
+        .intent-text {
+            display: none; flex-direction: column;
+            position: absolute; top: -1px; left: calc(100% + 6px);
+            width: max-content; max-width: min(340px, 60vw);
+            padding: 8px 14px;
+            background: rgba(12, 10, 9, 0.94);
+            border: inherit;
+            box-shadow: inherit;
+            font-size: 0.95rem; line-height: 1.3; color: var(--text-main);
+        }
+        .enemy-intent:hover .intent-text, .enemy-intent:focus-within .intent-text, .enemy-intent:focus .intent-text { display: flex; }
+        .intent-text small { font-size: 0.66rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); }
+        .intent-text b { color: var(--curse-color); }
+        .intent-text em { font-style: normal; font-size: 0.78rem; color: var(--text-dim); }
+        @media (max-width: 1000px) {
+            #screenCombat .event-grid-layout { grid-template-columns: 1fr; }
+            .event-left-image-box.combat-stage { height: 360px; }
+        }
+
+/* Fasi dei nemici: tacche delle soglie sulla barra, schema attuale, annuncio a schermo */
+.hp-phase-tick { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; background: #ffd25a; box-shadow: 0 0 0 1px #000, 0 0 6px rgba(255, 190, 60, 0.9); z-index: 2; pointer-events: none; }
+.hp-phase-tick.done { background: #5a4a2a; box-shadow: 0 0 0 1px #000; }
+.phase-badge { background: linear-gradient(#8a1a10, #4a0805); border-color: #ff7a4a; }
+.hero-buff.debuff { box-shadow: 0 0 0 1px #000, 0 0 0 2px #a8231a, 0 0 6px rgba(220, 60, 40, 0.7); animation: none; }
+.phase-banner { position: fixed; inset: 0; z-index: 2600; display: grid; place-items: center; pointer-events: none; animation: phase-banner 2.6s var(--ease-entra) forwards; }
+.phase-banner-text { max-width: 70vw; padding: 18px 34px; font-family: var(--font-title); font-size: 1.6rem; font-weight: 900; text-align: center; color: #ffd9a8; text-shadow: 0 2px 0 #000, 0 0 18px rgba(255, 90, 30, 0.9); background: radial-gradient(ellipse at center, rgba(70, 8, 4, 0.92), rgba(20, 2, 1, 0.6) 70%, transparent); }
+@keyframes phase-banner { 0% { opacity: 0; transform: scale(1.15); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+body.no-anim .phase-banner { animation: none; }
+
+/* Nodo di trama (screenStory) e video del nemico nello scontro (setCombatVideo in js/mappa.js) */
+.sts-node.node-story { --node-c1: #5d6d7e; --node-c2: #1c2833; color: #e8e2c8; }
+.story-text p { margin: 0 0 0.8em; }
+.story-text p:last-child { margin-bottom: 0; }
+/* Evento con scelte: una scelta per riga sotto il racconto, poi l'esito dentro il testo */
+.story-choices { display: flex; flex-direction: column; gap: 8px; }
+.story-choices:empty { display: none; }
+.story-choices .story-choice { width: 100%; margin: 0; }
+.story-outcome { margin-top: 0.8em; padding-top: 0.8em; border-top: 1px solid rgba(226, 185, 81, 0.35); }
+.event-left-image-box .combat-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.event-left-image-box .combat-video.hidden, .event-left-image-box img.hidden { display: none; }
+
+/* Riepilogo di fine partita (screenDefeat / screenVictory, mostraRiepilogo in js/spedizione.js) */
+.run-summary { margin-top: 10px; max-height: 52vh; overflow-y: auto; font-size: calc(0.85rem * var(--text-scale)); }
+.run-summary:empty { display: none; }
+.run-summary .journal-section:last-child { margin-bottom: 0; }
+.run-summary .journal-stats { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.run-summary .journal-stat b { font-size: 1.15rem; }
+.run-summary .dice-stats { height: 80px; }
+.run-summary-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #5a4520; }
+.run-summary-campaign { font-family: var(--font-title); font-weight: 700; color: var(--wc-yellow); font-size: 1.05rem; }
+.run-summary-campaign { text-wrap: balance; }
+.run-summary-outcome { flex: none; white-space: nowrap; font-family: var(--font-title); font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+.run-summary-outcome.vittoria { color: var(--gold); }
+.run-summary-outcome.sconfitta { color: #ff7262; }
+.run-summary-heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.run-summary-hero { display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center; padding: 6px; background: rgba(0, 0, 0, 0.45); border: 1px solid #000; box-shadow: 0 0 0 1px #3a2e1c; }
+.run-summary-hero .hero-portrait { width: 40px; height: 40px; }
+.run-summary-hero.dead { filter: grayscale(1) brightness(0.6); }
+
+/* Rune (Alastorta): scelta alla creazione del party e scambio al riposo */
+.rune-hint { margin: 4px 0 8px; }
+.rest-rune-area { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.rest-rune-area:empty { display: none; }
+
+/* Preghiera ai riposi (renderRestPrayer in js/prove.js) e benedizioni sulla carta dell'eroe (heroBlessingsHtml) */
+.rest-prayer { margin-top: 8px; }
+.prayer-stage { margin-top: 10px; }
+.prayer-start-btn { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.prayer-start-btn .prayer-icon { width: 28px; height: 28px; flex-basis: 28px; }
+.prayer-icon { width: 36px; height: 36px; flex: 0 0 36px; box-shadow: 0 0 0 1px #000, 0 0 0 2px #b8902e, 0 0 8px rgba(255, 215, 110, 0.45); vertical-align: middle; }
+.prayer-heroes { display: flex; flex-wrap: wrap; gap: 6px; }
+.prayer-hero-btn small { display: block; font-size: 0.7rem; opacity: 0.8; }
+.prayer-result { margin: 4px 0 8px; color: #e8d9a8; }
+.prayer-result.fail { color: var(--text-dim); font-style: italic; }
+.prayer-result.major { color: #ffd76e; font-weight: 700; text-shadow: 0 1px 0 #000; }
+.prayer-result.done { display: flex; align-items: center; gap: 8px; }
+.prayer-choices { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 6px 0; }
+.armory-btn.prayer-choice.major { border-color: #f0cf73; box-shadow: 0 0 0 1px #000, 0 0 12px rgba(255, 215, 110, 0.35), inset 0 0 12px rgba(0, 0, 0, 0.7); }
+.armory-btn.prayer-choice:disabled { opacity: 0.35; }
+.hero-blessings { position: absolute; top: 4px; left: 4px; display: flex; gap: 3px; z-index: 4; }
+/* Stati dell'eroe (stordito, avvelenato, silenziato, furia): sotto i potenziamenti, bordo rosso come i malus */
+.hero-statuses { position: absolute; top: 48px; left: 6px; display: flex; gap: 2px; z-index: 4; }
+.hero-statuses { gap: 4px; }
+.hero-statuses .hero-buff { width: 20px; height: 20px; }
+/* Stati del nemico (stordito, avvelenato: enemyStatuses), accanto al nome */
+.enemy-statuses { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
+.enemy-statuses .hero-buff { width: 22px; height: 22px; }
+.hero-blessing {
+    position: relative; width: 18px; height: 18px; background: #0a0807;
+    box-shadow: 0 0 0 1px #000, 0 0 0 2px #d4a93a, 0 0 7px rgba(255, 215, 110, 0.7);
+    animation: blessing-glow 2.4s ease-in-out infinite;
+}
+.hero-blessing img { width: 100%; height: 100%; display: block; }
+.hero-blessing b {
+    position: absolute; right: -3px; bottom: -4px; font-family: var(--font-numbers); font-size: 0.64rem; line-height: 1; color: #fff;
+    text-shadow: 0 0 2px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000;
+}
+@keyframes blessing-glow { 50% { box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffe08a, 0 0 12px rgba(255, 225, 140, 0.95); } }
+body.no-anim .hero-blessing { animation: none; }
+
+/* Esito dei tiri (showRollBanner in js/interfaccia.js): annuncio breve sopra la scena, non blocca i clic */
+.roll-banner { position: fixed; left: 50%; top: calc(var(--top-h) + 64px); z-index: 2550; pointer-events: none; transform: translateX(-50%); animation: roll-banner 1.7s var(--ease-out) forwards; }
+/* Targa piena: il titolo del pannello sotto non deve trasparire tra le lettere */
+.roll-banner-box {
+    position: relative;
+    min-width: 280px; padding: 10px 38px 11px; text-align: center; font-family: var(--font-title);
+    background: var(--noise-fine), linear-gradient(#1c1612, #0b0907 70%), var(--tex-stone);
+    border: 2px solid; border-color: #f3d27a #8a6418 #4a3208 #b8923e;
+    box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255, 235, 180, 0.25), inset 0 0 22px rgba(0, 0, 0, 0.85), 0 10px 28px rgba(0, 0, 0, 0.8);
+}
+.roll-banner-box::before, .roll-banner-box::after {
+    content: ''; position: absolute; top: 50%; width: 12px; height: 12px; margin-top: -6px;
+    background: var(--diamond) center / contain no-repeat;
+}
+.roll-banner-box::before { left: 12px; }
+.roll-banner-box::after { right: 12px; }
+.roll-banner.ko .roll-banner-box { border-color: #ff9a7a #8a2a18 #4a0e06 #b8503e; }
+.roll-banner strong { display: block; font-size: 1.55rem; font-weight: 900; letter-spacing: 0.05em; }
+.roll-banner.ok strong { color: #ffd76e; text-shadow: 0 2px 0 #000, 0 0 16px rgba(255, 200, 80, 0.8); }
+.roll-banner.ko strong { color: #ff7a5c; text-shadow: 0 2px 0 #000, 0 0 16px rgba(255, 60, 30, 0.8); }
+.roll-banner small { display: block; margin-top: 2px; font-size: 0.85rem; color: #e6dcc4; letter-spacing: 0.04em; }
+@keyframes roll-banner {
+    0% { opacity: 0; transform: translate(-50%, -8px) scale(1.06); filter: blur(3px); }
+    14% { opacity: 1; transform: translate(-50%, 0) scale(1); filter: blur(0); }
+    80% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -4px); }
+}
+@keyframes roll-banner-calm { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .roll-banner { animation-name: roll-banner-calm; } }
+body.no-anim .roll-banner { animation: none; }
+

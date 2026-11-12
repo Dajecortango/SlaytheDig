@@ -8,19 +8,46 @@
    ========================================================================== */
 
         /* ---------- Schermata del capitolo prima della mappa ---------- */
+        const CHAPTER_LETTER_MS = 45;   // ritardo fra una lettera e l'altra del titolo (lo stesso valore è nel CSS)
+        const CHAPTER_LORE_MAX = 170;   // la riga di lore sotto il titolo: l'inizio della descrizione, fino a qui
+
+        // Riga di lore del titolo del capitolo: le prime frasi intere della descrizione che stanno in CHAPTER_LORE_MAX
+        // caratteri; se la prima frase è più lunga si taglia a una parola, con i puntini
+        function chapterLore(descrizione) {
+            const testo = String(descrizione || '').replace(/\s+/g, ' ').trim();
+            if (testo.length <= CHAPTER_LORE_MAX) return testo;
+            const frasi = testo.match(/[^.!?]+[.!?]+/g) || [];
+            let riga = '';
+            for (const f of frasi) { if ((riga + f).trim().length > CHAPTER_LORE_MAX) break; riga += f; }
+            if (riga.trim()) return riga.trim();
+            const taglio = testo.slice(0, CHAPTER_LORE_MAX);
+            return taglio.slice(0, Math.max(taglio.lastIndexOf(' '), 60)).replace(/[\s,;:]+$/, '') + '…';
+        }
+
         function startExpedition() {
             if (!animationsEnabled() || !stato.currentCampaign) { startMap(); return; }
 
+            // Copertina a tutto schermo con un lento zoom, titolo che compare lettera per lettera, una riga di lore
+            const camp = stato.currentCampaign;
+            let lettera = 0;
+            const titolo = String(camp.title || '').split(/\s+/).filter(Boolean).map(parola =>
+                `<span class="chapter-word">${[...parola].map(ch => `<span class="chapter-letter" style="--i:${lettera++}">${esc(ch)}</span>`).join('')}</span>`).join(' ');
+            const lore = chapterLore(camp.description);
             const overlay = document.createElement('div');
             overlay.className = 'chapter-overlay';
             overlay.innerHTML = `
+                ${camp.coverImage ? `<div class="chapter-bg" style="background-image:url(&quot;${esc(camp.coverImage)}&quot;)"></div>` : ''}
+                <div class="chapter-shade"></div>
                 <div class="chapter-content">
                     <div class="chapter-kicker">La spedizione ha inizio</div>
-                    <div class="chapter-title">${stato.currentCampaign.title}</div>
+                    <div class="chapter-title" aria-label="${esc(camp.title || '')}">${titolo}</div>
                     <div class="chapter-rule"></div>
-                    <div class="chapter-sub">${stato.currentCampaign.badge || ''}</div>
+                    <div class="nastro-sigillo" aria-hidden="true"></div>
+                    <div class="chapter-sub">${esc(camp.badge || '')}</div>
+                    ${lore ? `<p class="chapter-lore">${esc(lore)}</p>` : ''}
                     <div class="chapter-skip">Clicca per continuare</div>
                 </div>`;
+            speedUpAnimations(overlay);
             document.body.appendChild(overlay);
             void overlay.offsetWidth;
             overlay.classList.add('show');
@@ -35,7 +62,7 @@
                 overlay.classList.remove('show');
                 setTimeout(() => overlay.remove(), 850);
             };
-            const autoTimer = setTimeout(finish, 3200);
+            const autoTimer = setTimeout(finish, animTime(4600 + lettera * CHAPTER_LETTER_MS + (lore ? 1400 : 0)));
             setTimeout(() => overlay.addEventListener('click', finish), 400);
         }
 
@@ -156,7 +183,11 @@
             const totalLevels = stato.stsMapNodes.length ? Math.max(...stato.stsMapNodes.map(n => n.level)) + 1 : 0;
             const stat = (value, label) => `<div class="journal-stat"><b>${value}</b><span>${label}</span></div>`;
 
-            openModal(`Diario — ${stato.currentCampaign ? stato.currentCampaign.title : 'Spedizione'}`, `
+            // Pagina di pergamena scritta a mano (css/style.css, "Diario"): in testa il punto della spedizione
+            const livello = doneLevels.length ? Math.max(...doneLevels) + 1 : 0;
+            const intestazione = livello ? `Livello ${livello} di ${totalLevels}` : 'Prima della partenza';
+            openModal(`Diario — ${stato.currentCampaign ? stato.currentCampaign.title : 'Spedizione'}`, `<div class="diario">
+                <p class="diario-data">${intestazione} · ${stato.party.filter(h => h.hp > 0).length} di ${stato.party.length} in piedi</p>
                 <div class="journal-section"><h4>La Compagnia</h4><div class="journal-heroes">${heroesHtml}</div></div>
                 <div class="journal-section"><h4>Reliquie</h4><div class="journal-list">${relics}</div></div>
                 <div class="journal-section"><h4>Maledizioni</h4><div class="journal-list">${curses}</div></div>
@@ -171,7 +202,7 @@
                         ${stat(`${stato.party.filter(h => h.hp > 0).length} / ${stato.party.length}`, 'Eroi in piedi')}
                     </div>
                 </div>
-                ${diceStatsHtml()}`,
+                ${diceStatsHtml()}</div>`,
                 [{ label: 'Chiudi', className: 'btn-proceed' }],
                 { wide: true });
         }
@@ -271,6 +302,7 @@
         function mostraRiepilogo(esito) {
             const box = document.getElementById(esito === 'vittoria' ? 'victorySummary' : 'defeatSummary');
             if (box) box.innerHTML = riepilogoHtml(datiRiepilogo(stato, esito));
+            if (box) fxFinePartita(box, esito);
         }
 
         // "Torna al menu" delle schermate di fine partita: niente ricarica della pagina, si azzera la partita

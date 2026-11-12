@@ -1,0 +1,156 @@
+/* Stile del gioco, parte 14 di 14: bottoni (tre pesi, borchie, disattivati, icone dei comandi), catene a maglie,
+   cornici con spessore, nastro con sigillo, stendardo del menu, ingressi a scaletta.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+
+/* ---------- Bottoni: tre pesi ----------
+   Principale (.btn-proceed): oro pieno, uno per schermata, è dove va l'occhio.
+   Secondario (button senza classi): il rosso con la cornice dorata di sempre.
+   Discreto (.btn-discreto, e i "torna indietro" .combat-back-btn): solo testo, senza metallo. */
+.btn-proceed:not(.btn-danger) {
+    color: #2a1404;
+    text-shadow: 0 1px 0 rgba(255, 240, 190, 0.55);
+    border-color: #fff3c4 #a9781f #5c3d0a #d9ae4c;
+    background:
+        radial-gradient(circle at 9px 9px, #fff6d2 0 1.5px, #7a5210 2.5px, transparent 3.5px),
+        radial-gradient(circle at calc(100% - 9px) 9px, #fff6d2 0 1.5px, #7a5210 2.5px, transparent 3.5px),
+        radial-gradient(circle at 9px calc(100% - 9px), #e9c873 0 1.5px, #5c3d0a 2.5px, transparent 3.5px),
+        radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #e9c873 0 1.5px, #5c3d0a 2.5px, transparent 3.5px),
+        var(--noise-fine),
+        linear-gradient(#f4d98a, #d2a23c 42%, #a87618 58%, #7d560f);
+}
+/* (il bordo interno inciso e il riflesso al passaggio sono i ::before / ::after di tutti i pulsanti, css/wc3-base.css) */
+@media (hover: hover) and (pointer: fine) {
+    .btn-proceed:not(.btn-danger):hover:not(:disabled) { color: #1c0c02; text-shadow: 0 1px 0 rgba(255, 246, 210, 0.8); filter: brightness(1.12) saturate(1.1); }
+}
+/* Borchie agli angoli e bordo inciso anche sui grandi pulsanti rossi (a tutta larghezza) */
+.btn-proceed.btn-danger, .btn-block {
+    background-image:
+        radial-gradient(circle at 9px 9px, #ffe9a8 0 1.5px, #6b4a12 2.5px, transparent 3.5px),
+        radial-gradient(circle at calc(100% - 9px) 9px, #ffe9a8 0 1.5px, #6b4a12 2.5px, transparent 3.5px),
+        radial-gradient(circle at 9px calc(100% - 9px), #c9982f 0 1.5px, #3a2608 2.5px, transparent 3.5px),
+        radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #c9982f 0 1.5px, #3a2608 2.5px, transparent 3.5px),
+        var(--noise-fine), linear-gradient(#9a1e12, #520b06 55%, #300503);
+}
+.btn-block:not(.btn-danger) {
+    background-image:
+        radial-gradient(circle at 9px 9px, #ffe9a8 0 1.5px, #6b4a12 2.5px, transparent 3.5px),
+        radial-gradient(circle at calc(100% - 9px) 9px, #ffe9a8 0 1.5px, #6b4a12 2.5px, transparent 3.5px),
+        radial-gradient(circle at 9px calc(100% - 9px), #c9982f 0 1.5px, #3a2608 2.5px, transparent 3.5px),
+        radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #c9982f 0 1.5px, #3a2608 2.5px, transparent 3.5px),
+        var(--noise-fine), linear-gradient(#72190f, #3c0b07 55%, #220604);
+}
+/* Discreto: solo testo, una riga sotto che si allunga al passaggio */
+.btn-discreto, .combat-back-btn {
+    background: none; border-color: transparent; box-shadow: none; --btn-depth: 0px;
+    color: #cdbf9f; text-shadow: 0 1px 0 #000; padding: 6px 10px;
+    background: linear-gradient(currentColor, currentColor) center bottom 3px / 28% 1px no-repeat;
+    transition: color var(--dur-quick) ease, background-size var(--dur-ui) var(--ease-entra);
+}
+@media (hover: hover) and (pointer: fine) {
+    .btn-discreto:hover:not(:disabled), .combat-back-btn:hover:not(:disabled) {
+        color: var(--gold-hover); box-shadow: none; filter: none; transform: none; text-shadow: 0 1px 0 #000;
+        background-size: 82% 1px;
+    }
+}
+.btn-discreto:active:not(:disabled), .combat-back-btn:active:not(:disabled) { box-shadow: none; transform: translateY(1px); }
+
+/* ---------- Bottoni disattivati: pietra spenta con un lucchetto (il motivo resta nel tooltip) ---------- */
+button:disabled:not(.armory-btn):not(.card-back):not(.loot-card-back):not(.carousel-arrow):not(.carousel-dot):not(.hero-pick-btn):not(.codex-tab):not(.merchant-tab):not(.btn-discreto):not(.combat-back-btn) {
+    filter: none; color: #a09a8e; text-shadow: 0 1px 0 #000;
+    border-color: #77726a #4b4741 #2b2925 #5e5a53;
+    background:
+        url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 26'><path d='M6 11V8a5 5 0 0 1 10 0v3' fill='none' stroke='%23b9b2a4' stroke-width='3'/><rect x='2' y='11' width='18' height='14' rx='2' fill='%23b9b2a4' stroke='%23000' stroke-width='1.5'/><rect x='10' y='15' width='2' height='6' fill='%23000'/></svg>") right 5px top 4px / 11px 13px no-repeat,
+        var(--noise-fine), linear-gradient(rgba(62, 59, 55, 0.86), rgba(30, 28, 26, 0.94)), var(--tex-stone);
+    box-shadow: 0 0 0 1px #000, inset 0 2px 0 rgba(255, 255, 255, 0.08), inset 0 -3px 0 rgba(0, 0, 0, 0.5), 0 2px 0 #121110, 0 3px 0 #000;
+}
+.cmd-btn:disabled .cmd-img { filter: grayscale(1) brightness(0.55) contrast(0.9); }
+
+/* ---------- Comandi dello scontro: l'icona reagisce al passaggio ---------- */
+.cmd-btn .cmd-img { transition: transform var(--dur-ui) var(--ease-rimbalzo), box-shadow var(--dur-quick) ease; transform-origin: 50% 70%; }
+@media (hover: hover) and (pointer: fine) {
+    #cmdAttack:hover:not(:disabled) .cmd-img { transform: rotate(-16deg) translate(2px, -2px) scale(1.08); }      /* la lama si inclina */
+    #cmdDefend:hover:not(:disabled) .cmd-img { transform: translateY(-4px) scale(1.1); }                           /* lo scudo si alza */
+    #cmdHelp:hover:not(:disabled) .cmd-img { transform: rotate(8deg) scale(1.14); }                                /* la mano si tende */
+    #cmdItem:hover:not(:disabled) .cmd-img { transform: rotate(14deg) translateY(-2px); }                          /* la fiala si inclina */
+    #btnCombatAbility:hover:not(:disabled) .cmd-img, #btnCombatAbility:hover:not(:disabled) svg { transform: scale(1.16); }
+}
+body.no-anim .cmd-btn .cmd-img { transition: none; transform: none !important; }
+
+/* ---------- Catene a maglie (js/wc3fx.js, maglie e scuotiCatene) ----------
+   La catena non è più una striscia ripetuta: sono maglie annidate, ognuna ruota attorno al suo aggancio. */
+.wc-chains span.a-maglie { background: none; }
+.wc-chains .maglie { position: absolute; top: 0; bottom: 0; left: -8px; right: -8px; overflow: hidden; pointer-events: none; }
+.wc-chains .maglia {
+    position: absolute; left: 0; top: 30px; width: 22px; height: 30px; display: block;
+    background: var(--chain) center top / 22px 30px no-repeat;
+}
+.wc-chains .maglie > .maglia { left: 8px; top: 0; }
+/* Varianti: una maglia più stretta, una un filo spostata, una più larga (consumata). Solo misura e posizione:
+   un filter su maglie annidate impedisce al browser di disegnarle. */
+.wc-chains .maglia.v1 { background-size: 20px 30px; }
+.wc-chains .maglia.v2 { background-position: calc(50% + 0.8px) top; }
+.wc-chains .maglia.v3 { background-size: 23.5px 30px; background-position: calc(50% - 0.5px) top; }
+/* Ganci: due varianti (specchiato e un poco ruotato, più scuro) */
+.wc-chains span.gancio-b::after { transform: scaleX(-1) rotate(-5deg); filter: brightness(0.86) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8)); }
+.wc-chains span.gancio-a::after { transform: rotate(3deg); }
+/* Riflesso che corre sul metallo quando il pannello si muove: scende di maglia in maglia, ritagliato sulla forma della catena */
+.wc-chains .maglia::before {
+    content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent 10%, rgba(255, 244, 205, 0.95) 50%, transparent 90%);
+    -webkit-mask: var(--chain) center top / 22px 30px no-repeat; mask: var(--chain) center top / 22px 30px no-repeat;
+}
+.wc-hang.in-moto .wc-chains .maglia::before { animation: maglia-riflesso 0.5s var(--ease-entra) both; animation-delay: calc(var(--k, 0) * 70ms); }
+@keyframes maglia-riflesso { 0% { opacity: 0; transform: translateY(-40%); } 35% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(40%); } }
+body.no-anim .wc-chains .maglia::before { animation: none !important; }
+/* Pagina dei giocatori: le maglie restano dritte (lì il dondolio è solo CSS, sul pannello intero) */
+body.online-guest .wc-chains .maglia { transform: none !important; }
+
+/* ---------- Cornici con spessore: ombra portata verso l'interno e un filo di luce sul bordo alto ---------- */
+.modal-box, .wc-panel, .container > div {
+    --spessore: inset 0 0 0 1px rgba(0, 0, 0, 0.75), inset 0 1px 0 1px rgba(255, 236, 180, 0.13), inset 0 16px 22px -14px rgba(0, 0, 0, 0.9), inset 0 -10px 16px -12px rgba(0, 0, 0, 0.7), inset 12px 0 16px -14px rgba(0, 0, 0, 0.75), inset -12px 0 16px -14px rgba(0, 0, 0, 0.75);
+}
+.modal-box { box-shadow: var(--spessore), 0 24px 70px rgba(0, 0, 0, 0.9); }
+.wc-menu-screen .wc-panel { box-shadow: var(--spessore), 0 14px 30px rgba(0, 0, 0, 0.8); }
+.event-left-image-box { box-shadow: 0 0 0 1px #000, 0 0 0 2px #7a5a1c, inset 0 0 0 1px rgba(0, 0, 0, 0.8), 0 10px 22px -8px rgba(0, 0, 0, 0.9); }
+.event-left-image-box:not(.combat-stage)::after {
+    /* la cornice fa ombra sull'immagine: più scura in alto e a sinistra, da dove viene la luce */
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    box-shadow: inset 0 14px 18px -10px rgba(0, 0, 0, 0.85), inset 12px 0 16px -12px rgba(0, 0, 0, 0.7), inset 0 -6px 10px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 236, 180, 0.18);
+}
+
+/* ---------- Nastro con sigillo di ceralacca, sotto i titoli delle finestre importanti ---------- */
+.nastro-sigillo {
+    width: 208px; height: 77px; margin: -6px auto 6px; pointer-events: none;
+    background: url('../immagini/ui/nastro_sigillo.svg') center / contain no-repeat;
+    filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.8));
+    animation: sigillo-impresso 0.5s var(--ease-rimbalzo) 0.5s both;
+}
+#screenVictory > .nastro-sigillo { margin: -14px auto 2px; }
+.chapter-content .nastro-sigillo { margin: -4px auto 4px; animation-delay: 1.6s; }
+.outcome-card .nastro-sigillo { width: 170px; height: 63px; margin: -8px auto 2px; animation-delay: 0.7s; }
+@keyframes sigillo-impresso { from { opacity: 0; transform: scale(1.5); } to { opacity: 1; transform: none; } }
+body.no-anim .nastro-sigillo { animation: none; }
+
+/* ---------- Stendardo del menu: il tessuto ondeggia piano, attaccato all'asta in alto ---------- */
+.scena-stendardo-tessuto { transform-box: fill-box; transform-origin: 50% 0; animation: stendardo-vento 5.2s var(--ease-muove) infinite alternate; }
+@keyframes stendardo-vento {
+    0% { transform: skewX(-1.6deg) scaleY(1); }
+    35% { transform: skewX(2.2deg) scaleY(0.985); }
+    70% { transform: skewX(-0.6deg) scaleY(1.01); }
+    100% { transform: skewX(3deg) scaleY(0.99); }
+}
+body.no-anim .scena-stendardo-tessuto { animation: none; }
+
+/* ---------- Ingressi a scaletta: titolo, immagine, testo, comandi entrano uno dopo l'altro (40 ms) ----------
+   :where() tiene la regola senza peso: ogni elemento che ha già una sua animazione la conserva.
+   Lo scontro ha la sua presentazione e resta fuori. */
+@keyframes entra-scaletta { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+:where(.screen-enter:not(#screenCombat)) > :where(h2) { animation: entra-scaletta 0.34s var(--ease-entra) backwards; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-left-image-box) { animation: entra-scaletta 0.34s var(--ease-entra) 40ms backwards; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-right-panel) > :where(div) > :where(*) { animation: entra-scaletta 0.34s var(--ease-entra) backwards; animation-delay: 80ms; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-right-panel) > :where(div) > :where(:nth-child(2)) { animation-delay: 120ms; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-right-panel) > :where(div) > :where(:nth-child(3)) { animation-delay: 160ms; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-right-panel) > :where(div) > :where(:nth-child(4)) { animation-delay: 200ms; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-right-panel) > :where(div) > :where(:nth-child(n+5)) { animation-delay: 240ms; }
+:where(.screen-enter:not(#screenCombat)) :where(.event-right-panel) > :where(.btn-proceed) { animation: entra-scaletta 0.34s var(--ease-entra) 280ms backwards; }
+body.no-anim .screen-enter *, body.no-anim .screen-enter > h2 { animation-delay: 0s; }

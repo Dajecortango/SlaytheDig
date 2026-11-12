@@ -462,6 +462,7 @@
 
         // discardIdx: oggetto dello zaino da scartare subito per fare posto (vedi fillHeroSelectForItem)
         function assignItemToHero(item, hero, callback, discardIdx = null) {
+            fxItemToHero(item, hero);
             discover('items', item.id);
             // Consumabile uguale a uno già nello zaino con posto nella pila: nessuno slot in più
             const pila = stackableSlot(hero, item);

@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Campagne della Famiglia Dignitas</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus&family=Metamorphous&family=Skranji:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/wc3-base.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -43,10 +40,12 @@
             <g transform="translate(250 150) rotate(-6)">
                 <rect x="-5" y="-10" width="10" height="260" fill="#2a1d10" stroke="#000" stroke-width="2"/>
                 <rect x="-70" y="10" width="140" height="10" fill="#2a1d10" stroke="#000" stroke-width="2"/>
+                <g class="scena-stendardo-tessuto">
                 <path d="M-62 20 H62 V150 L40 132 L24 158 L4 136 L-16 160 L-34 134 L-48 156 L-62 140 Z" fill="url(#gradRed)" stroke="#000" stroke-width="2"/>
                 <path d="M-62 20 H62 V34 H-62 Z" fill="url(#gradGold)" stroke="#000"/>
                 <path d="M0 50 L26 58 V78 C26 96 14 106 0 111 C-14 106 -26 96 -26 78 V58 Z" fill="url(#gradGold)" stroke="#000" stroke-width="2"/>
                 <text x="0" y="93" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="900" font-size="30" fill="#5a0c06">D</text>
+                </g>
             </g>
             <!-- Scudo abbandonato nell'erba -->
             <ellipse cx="760" cy="430" rx="95" ry="34" fill="#3a2410" stroke="#000" stroke-width="3"/>
@@ -652,6 +651,7 @@
                             </div>
 
                             <div id="restPrayerArea" class="rest-prayer"></div>
+                            <p class="rest-schieramento">Schieramento: durante il riposo il master può riordinare gli eroi, trascinando le loro carte nella barra in alto.</p>
                         </div>
                         <button data-action="advanceNode" class="btn-proceed">Continua il Viaggio</button>
                     </div>
@@ -753,6 +753,7 @@
             <!-- Schermata di Vittoria -->
             <div id="screenVictory" class="hidden">
                 <h2>Trionfo della Spedizione</h2>
+                <div class="nastro-sigillo" aria-hidden="true"></div>
                 <div class="event-grid-layout">
                     <div>
                         <div class="event-left-image-box">
@@ -802,6 +803,7 @@
     <script src="data/campagne/astarte_ch3.js"></script>
     <script src="data/campagne/caccia_alla_bestia_capitolo_finale.js"></script>
     <script src="data/campagne/fredlos_parte_1.js"></script>
+    <script src="data/campagne/fredlos_parte_2.js"></script>
     <script src="data/campagne/loch_ein_parte_1.js"></script>
     <script src="data/campagne/loch_ein_parte_2.js"></script>
     <script src="data/campagne/drakengrad.js"></script>

@@ -1,0 +1,13 @@
+Caratteri del gioco, caricati da css/wc3-base.css (niente rete: funzionano anche aprendo index.html da file).
+
+Inclusi (licenza SIL Open Font License 1.1, da Google Fonts, sottoinsieme latino):
+  Cinzel.woff2                 titoli (pesi da 500 a 900 in un file solo)
+  CinzelDecorative-700.woff2   titolo del capitolo
+  CinzelDecorative-900.woff2
+  Marcellus.woff2              testo del corpo
+  Metamorphous.woff2           pergamene
+  Skranji-700.woff2            numeri dei danni
+
+Facoltativi, NON inclusi (non sono liberi da distribuire): gli originali di Warcraft III.
+Se li possiedi, copiali qui con questi nomi e il gioco li usa al posto di quelli sopra:
+  FrizQuadrata.ttf   Morpheus.ttf   Skurri.ttf

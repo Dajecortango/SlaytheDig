@@ -97,12 +97,23 @@ module.exports = (t, carica) => {
         for (let i = 0; i < 50; i++) { const id = g.pickUnownedRelicId(); t.ok(id !== 'anello_d_arvale'); }
     });
 
-    t.test('mercante: 4 armi o armature, 2 consumabili, il medico; nessuna reliquia', () => {
+    t.test('mercante: 4 armi o armature, 2 consumabili, la pozione sempre in vendita, il medico; nessuna reliquia', () => {
         prepara(3);
         const stock = g.generateMerchantStock();
-        const oggetti = stock.filter(e => e.kind === 'item');
+        const oggetti = stock.filter(e => e.kind === 'item' && !e.fisso);
         t.uguale(4, oggetti.filter(e => !(e.item.type || '').startsWith('consumable')).length);
         t.uguale(2, oggetti.filter(e => (e.item.type || '').startsWith('consumable')).length);
+        // Uno slot in più: la pozione che cura 2 HP, scoperta, con un prezzo, in ogni mercante
+        for (let i = 0; i < 20; i++) {
+            const s = g.generateMerchantStock();
+            const fissi = s.filter(e => e.fisso);
+            t.uguale(1, fissi.length);
+            t.uguale(g.eval('MERCHANT_FIXED_ITEM'), fissi[0].item.id);
+            t.ok(fissi[0].item.type === 'consumable_heal' && fissi[0].item.heal_val === 2, 'cura 2 HP');
+            t.ok(fissi[0].revealed && fissi[0].kind === 'item' && fissi[0].price >= 1 && !fissi[0].fixedPrice);
+            t.ok(!s.some(e => !e.fisso && e.kind === 'item' && e.item.id === fissi[0].item.id), 'non anche fra i consumabili a caso');
+            t.uguale(8, s.length);
+        }
         t.uguale(1, stock.filter(e => e.kind === 'medic').length);
         t.uguale(0, stock.filter(e => e.kind === 'relic').length);
         const medico = stock.find(e => e.kind === 'medic');

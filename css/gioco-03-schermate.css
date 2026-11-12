@@ -1,0 +1,484 @@
+/* Stile del gioco, parte 3 di 13: immagine + pannello degli eventi, griglie di oggetti ed eroi, plancia comandi, nemico, dado, registro.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+        /* =========================================================
+           LAYOUT EVENTI (immagine + pannello)
+           ========================================================= */
+        .event-grid-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+            gap: 22px;
+            align-items: stretch;
+            text-align: left;
+            margin-top: 10px;
+        }
+
+        .event-left-image-box {
+            position: relative;
+            width: 100%;
+            height: var(--stage-h);
+            background: #080607;
+            border: 1px solid #000;
+            box-shadow: 0 0 0 2px #8a6418, 0 0 0 3px #000, 0 0 0 5px #3a2806, 0 0 0 6px #000, 0 12px 26px rgba(0, 0, 0, 0.85);
+            overflow: hidden;
+        }
+        .event-left-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* Vittoria e sconfitta: stendardo con cornice, va visto intero */
+        .event-left-image-box img.end-banner { object-fit: contain; }
+        /* Respiro lento della scena (zoom leggero avanti e indietro); non sullo stendardo finale.
+           Lo scontro ha il suo respiro, sulla proprietà scale (stage-zoom, in fondo a questo file) */
+        .event-left-image-box:not(.combat-stage) > img:not(.end-banner) {
+            animation: scene-drift 36s ease-in-out infinite alternate;
+            transform-origin: 50% 40%;
+        }
+        @keyframes scene-drift { from { transform: scale(1); } to { transform: scale(1.05); } }
+        body.no-anim .event-left-image-box > img { animation: none; }
+
+        /* Segnaposto quando un'immagine manca */
+        .img-missing img { display: none; }
+        .img-missing {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                var(--noise-cloud),
+                radial-gradient(ellipse at 50% 40%, #2a2219, #0a0807 75%);
+        }
+        .img-missing::before {
+            content: attr(data-alt);
+            font-family: var(--font-title);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(226, 185, 81, 0.55);
+            text-shadow: 0 2px 0 #000;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .event-right-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-width: 0;
+        }
+
+        .narrative-desc-box {
+            position: relative;
+            max-height: 240px;
+            overflow-y: auto;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            line-height: 1.62;
+            color: #e6dcc4;
+            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            border: 1px solid #5a4520;
+            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255, 220, 130, 0.07), inset 0 0 26px rgba(0, 0, 0, 0.8);
+        }
+        /* Più alta quando lo schermo lo permette; oltre si apre con "Leggi tutto" */
+        #combatDescBox { max-height: clamp(130px, 20vh, 230px); }
+        .narrative-desc-box strong { color: var(--wc-yellow); font-family: var(--font-title); letter-spacing: 0.03em; }
+
+        .sub-panel {
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #6b4a12;
+            box-shadow: 0 0 0 1px #000, inset 0 0 14px rgba(0, 0, 0, 0.7);
+        }
+        .sub-panel p { font-size: 0.8rem; margin: 0 0 4px; color: var(--wc-yellow); }
+        .loot-panel h3 { margin: 4px 0 2px; }
+        .loot-coins { font-size: 1rem; margin: 0 0 6px; }
+        .loot-coins-bonus { font-size: 0.75rem; color: var(--text-dim); margin: -4px 0 6px; }
+        .loot-coins-bonus:empty { display: none; }
+        .loot-coins strong { color: var(--wc-yellow); font-family: var(--font-title); font-size: 1.15rem; }
+        .panel-label { font-size: 0.85rem; margin: 6px 0 4px; color: #d8cba8; }
+        .turn-label {
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--wc-yellow);
+            margin: 4px 0;
+        }
+        .turn-label.enemy { color: #ff6b5b; }
+
+        /* ---------- Griglie di oggetti / eroi ---------- */
+        .armory-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .armory-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            padding: 8px 10px;
+            text-align: left;
+            text-transform: none;
+            letter-spacing: 0;
+            font-family: var(--font-body);
+            font-weight: 400;
+            font-size: 0.82rem;
+            color: var(--text-main);
+            background: var(--usura) -60px -40px / 520px auto, linear-gradient(rgba(30, 25, 21, 0.8), rgba(14, 12, 11, 0.93)), var(--tex-leather);
+            border: 1px solid #4a3a22;
+            border-radius: 0;
+            box-shadow: 0 0 0 1px #000, inset 0 0 12px rgba(0, 0, 0, 0.7);
+            transition: box-shadow var(--dur-quick) ease, border-color var(--dur-quick) ease, transform var(--dur-quick) var(--ease-out);
+        }
+        .armory-btn:hover:not(:disabled) {
+            color: #fff;
+            filter: none;
+            text-shadow: none;
+            border-color: #f0cf73;
+            background: linear-gradient(#28211a, #14110e);
+            box-shadow: 0 0 0 1px #000, 0 0 12px rgba(255, 190, 60, 0.2), inset 0 0 12px rgba(0, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        .armory-btn.selected {
+            border-color: var(--wc-yellow);
+            background: linear-gradient(#3a2c0e, #1a1206);
+            box-shadow: 0 0 0 1px #000, 0 0 14px rgba(255, 204, 0, 0.45), inset 0 0 14px rgba(255, 204, 0, 0.15);
+        }
+        .armory-btn.taken { opacity: 0.35; cursor: default; justify-content: center; }
+        /* Troppo cara: si spegne il colore ma il testo resta leggibile (si legge per decidere cosa comprare dopo) */
+        .armory-btn.unaffordable { filter: grayscale(0.6) brightness(0.85); border-color: #552222; }        .tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+        .tile-text strong { font-family: var(--font-title); font-weight: 700; color: var(--wc-yellow); font-size: 0.84rem; }
+        .tile-sub { font-size: 0.72rem; color: var(--text-dim); }
+        .tile-tag {
+            align-self: flex-start;
+            margin-top: 2px;
+            padding: 1px 6px;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #1a1206;
+            background: linear-gradient(#fff0b0, #c9982f);
+            border: 1px solid #000;
+        }
+        .tile-tag.danger { color: #fff; background: linear-gradient(#e0402f, #7a0a06); }
+        .price {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            font-family: var(--font-title);
+            font-weight: 700;
+            color: var(--wc-yellow);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #000;
+            box-shadow: inset 0 0 0 1px #4a3a22;
+        }
+        .price.too-much { color: #ff5a4a; }
+        .price.sell { color: #8dff78; }
+
+        /* Schede Compra / Vendi del mercante */
+        .merchant-tabs { display: flex; gap: 6px; margin: 8px 0 4px; }
+        /* La scheda non attiva si spegne col colore, non con la trasparenza: il testo resta leggibile */
+        .merchant-tab { flex: 1; margin: 0; padding: 6px 10px; font-size: 0.8rem; }
+        .merchant-tab:not(.active) { color: #cdbb92; filter: saturate(0.4) brightness(0.8); }
+
+        /* Icone in cornice (stile icona di abilità WC3) */
+        .icon-frame {
+            flex: 0 0 40px;
+            width: 40px; height: 40px;
+            display: grid;
+            place-items: center;
+            color: #f0cf73;
+            background: radial-gradient(circle at 35% 30%, #3a2f22, #0e0b09);
+            border: 1px solid #000;
+            box-shadow: inset 0 0 0 1px #8a6418, inset 0 0 0 2px #000, inset 0 0 10px rgba(0, 0, 0, 0.9);
+        }
+        .icon-frame svg { width: 24px; height: 24px; filter: drop-shadow(0 1px 0 #000); }
+        .ic-weapon { color: #ffb08a; background: radial-gradient(circle at 35% 30%, #5a2418, #140806); }
+        .ic-armor { color: #b8d4ff; background: radial-gradient(circle at 35% 30%, #25364f, #080c14); }
+        .ic-consumable { color: #a8ff9a; background: radial-gradient(circle at 35% 30%, #1f4a22, #061208); }
+        .ic-arcane { color: #e0bcff; background: radial-gradient(circle at 35% 30%, #3e2456, #0f0716); }
+        .inv-slot.ic-weapon, .inv-slot.ic-armor, .inv-slot.ic-consumable, .inv-slot.ic-arcane { box-shadow: inset 0 0 0 1px #6b4a12, inset 0 0 8px rgba(0, 0, 0, 0.9); }
+
+        /* Selezione abilità: riquadri e icone più grandi per leggibilità */
+        #abilityButtons .armory-btn {
+            gap: 16px;
+            min-height: 100px;
+            padding: 14px 16px;
+            margin: 8px 0 !important;
+        }
+        #abilityButtons .icon-frame { flex: 0 0 72px; width: 72px; height: 72px; }
+        #abilityButtons .icon-frame svg { width: 40px; height: 40px; }
+        #abilityButtons .tile-text { gap: 5px; }
+        #abilityButtons .tile-text strong { font-size: 1.02rem; }
+        #abilityButtons .tile-sub { font-size: 0.88rem; line-height: 1.45; color: #d8cba8; }
+
+        /* Armeria iniziale: icone e testo leggermente più grandi */
+        #armoryButtons .armory-btn { gap: 12px; min-height: 68px; padding: 10px 12px; }
+        #armoryButtons .icon-frame { flex: 0 0 52px; width: 52px; height: 52px; }
+        #armoryButtons .icon-frame svg { width: 30px; height: 30px; }
+        #armoryButtons .tile-text strong { font-size: 0.92rem; }
+        #armoryButtons .tile-sub { font-size: 0.8rem; color: #d8cba8; }
+
+        /* Selezione eroi: ritratti e riquadri più grandi */
+        #heroGridButtons { grid-template-columns: 1fr; }
+        #heroGridButtons .armory-btn { gap: 14px; min-height: 84px; padding: 10px 14px; }
+        #heroGridButtons .hero-portrait.small { width: 64px; height: 64px; flex-basis: 64px; }
+        #heroGridButtons .hero-portrait.small > span { font-size: 2rem; }
+
+        /* Ritratto illustrato dell'eroe */
+        .hero-portrait.has-portrait { overflow: hidden; background: #000; }
+        .portrait-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .hero-portrait.has-portrait::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.75);
+            pointer-events: none;
+        }
+        .dead .hero-portrait::after { z-index: 2; }
+
+        /* Eroe ferito (HP a metà o meno): ritratto spento, vignetta rossa e graffi */
+        .portrait-img.is-wounded { filter: saturate(0.55) sepia(0.25) brightness(0.85) contrast(1.05); }
+        .wound-fx {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23b3120a' stroke-linecap='round' opacity='.85'%3E%3Cpath d='M64 8 L30 60' stroke-width='3.2'/%3E%3Cpath d='M76 14 L44 66' stroke-width='2.4'/%3E%3Cpath d='M86 24 L58 70' stroke-width='1.8'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat,
+                radial-gradient(circle at 50% 45%, transparent 42%, rgba(150, 8, 4, 0.6) 100%);
+            animation: woundPulse 2.6s ease-in-out infinite;
+        }
+        @keyframes woundPulse {
+            0%, 100% { opacity: 0.75; }
+            50% { opacity: 1; }
+        }
+        body.no-anim .wound-fx { animation: none; }
+        #heroGridButtons .tile-text { gap: 5px; }
+        #heroGridButtons .tile-text strong { font-size: 1rem; }
+        #heroGridButtons .tile-sub { font-size: 0.82rem; color: #d8cba8; }
+        .stat-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+        .stat-chip {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 3px;
+            padding: 1px 6px;
+            color: #f3e2b0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #3a2e1c;
+            white-space: nowrap;
+        }
+        .stat-chip i {
+            font-style: normal;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .ico { display: block; }
+
+        /* Icone raster WC3 (64x64): riempiono la cornice, bordo smussato sopra */
+        .icon-frame.has-img, .inv-slot.has-img { position: relative; padding: 0; overflow: hidden; background: #000; }
+        .item-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .icon-frame.has-img::after, .inv-slot.has-img::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(201, 152, 47, 0.8), inset 0 0 6px rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+        }
+
+        /* Bordo per rarità: comune grigio, raro blu, epico viola */
+        /* Colori di rarità (--rar, --rar-glow): css/wc3-base.css */
+        .icon-frame[class*="rar-"], .inv-slot[class*="rar-"] {
+            box-shadow: inset 0 0 0 1px var(--rar), inset 0 0 0 2px #000, inset 0 0 10px rgba(0, 0, 0, 0.9), 0 0 6px var(--rar-glow);
+        }
+        /* Bordo della rarità come negli zaini di WoW: filo colorato di 2px e alone per i non comuni in su */
+        .icon-frame.has-img[class*="rar-"]::after, .inv-slot.has-img[class*="rar-"]::after {
+            box-shadow: inset 0 0 0 1px #000, inset 0 0 0 3px var(--rar), inset 0 0 0 4px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(0, 0, 0, 0.6);
+        }
+        .icon-frame.rar-scarso::after, .inv-slot.rar-scarso::after,
+        .icon-frame.rar-comune::after, .inv-slot.rar-comune::after { box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px #8a6418, inset 0 0 8px rgba(0, 0, 0, 0.6) !important; }
+        .icon-frame.rar-non_comune, .icon-frame.rar-raro, .icon-frame.rar-epico, .icon-frame.rar-leggendario,
+        .inv-slot.rar-non_comune, .inv-slot.rar-raro, .inv-slot.rar-epico, .inv-slot.rar-leggendario { filter: drop-shadow(0 0 4px var(--rar-glow)); }
+        #merchantItemsList .icon-frame { flex-basis: 50px; width: 50px; height: 50px; }
+
+        /* ---------- Plancia comandi (combattimento) ---------- */
+        .command-card {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(66px, 1fr));
+            gap: 8px;
+            margin: 6px 0;
+        }
+        .cmd-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin: 0;
+            padding: 10px 4px 7px;
+            min-height: 78px;
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+            background: var(--noise-fine), radial-gradient(circle at 50% 30%, #3b3128, #14100d 75%);
+            border-color: #b8923e #6b4a12 #3a2806 #8a6418;
+        }
+        .cmd-btn svg { width: 32px; height: 32px; filter: drop-shadow(0 2px 0 #000); }
+        .cmd-btn .cmd-sub { font-family: var(--font-body); text-transform: none; font-weight: 400; font-size: 0.72rem; color: #cdbb92; letter-spacing: 0; }
+        .cmd-btn .cmd-sub[data-chance="high"] { color: #8dff78; }
+        .cmd-btn .cmd-sub[data-chance="mid"] { color: #ffe08a; }
+        .cmd-btn .cmd-sub[data-chance="low"] { color: #ff8a70; }
+        .cmd-btn:disabled .cmd-sub { color: var(--text-dim); }
+        .cmd-key {
+            position: absolute;
+            top: 3px; right: 5px;
+            font-size: 0.7rem;
+            color: var(--wc-yellow);
+            opacity: 0.85;
+        }
+        #cmdAttack { color: #ffb08a; }
+        #cmdDefend { color: #b8d4ff; }
+        #cmdHelp { color: #ffe08a; }
+        #cmdItem { color: #a8ff9a; }
+        #btnCombatAbility { color: #e0bcff; }
+        .cmd-ability-icon { display: grid; place-items: center; height: 34px; }
+        .cmd-ability-icon .ico { width: 32px; height: 32px; filter: drop-shadow(0 2px 0 #000); }
+        /* Icona del comando come nella plancia di WC3: quadrata, smussata, bordo nero e filo d'oro */
+        .cmd-img {
+            width: 44px;
+            height: 44px;
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #c9982f, 0 0 0 2px #000, 0 3px 6px rgba(0, 0, 0, 0.8);
+        }
+        .cmd-btn:hover:not(:disabled) .cmd-img { box-shadow: 0 0 0 1px #ffe27a, 0 0 0 2px #000, 0 0 10px rgba(255, 210, 90, 0.7); }
+        .cmd-ability-icon { height: 46px; }
+        .cmd-ability-icon .ico { width: 44px; height: 44px; }
+        .cmd-btn:disabled .cmd-img { filter: grayscale(1) brightness(0.6); }
+        .cmd-ability-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stun-badge {
+            margin-left: 6px;
+            padding: 1px 6px;
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            color: #fff;
+            background: linear-gradient(#5aa0ff, #1f4f9a);
+            border: 1px solid #000;
+            vertical-align: middle;
+        }
+        .hero-ability {
+            grid-column: 1 / -1;
+            font-size: 0.74rem;
+            line-height: 16px;
+            color: #e0bcff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: default;
+        }
+        .ability-mark {
+            width: 13px;
+            height: 13px;
+            vertical-align: -3px;
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #8a6418;
+        }
+
+        /* ---------- Nemico ---------- */
+        .enemy-box {
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            text-align: left;
+            background: var(--usura) 40px 10px / 560px auto, var(--noise-fine), linear-gradient(rgba(52, 14, 10, 0.86), rgba(18, 5, 4, 0.94)), var(--tex-stone);
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #7a1a10, inset 0 0 0 1px rgba(255, 120, 90, 0.1), inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .enemy-head { display: flex; gap: 12px; align-items: center; }
+        .enemy-emblem { flex-basis: 48px; width: 48px; height: 48px; color: #ff8a70; background: radial-gradient(circle at 35% 30%, #5a1510, #120302); }
+        .enemy-emblem svg { width: 30px; height: 30px; }
+        .enemy-main { flex: 1; min-width: 0; }
+        .enemy-name {
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 1.05rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #ff7a5a;
+            text-shadow: 0 2px 0 #000;
+        }
+        .enemy-stats { display: flex; justify-content: space-around; margin-top: 8px; font-size: 0.78rem; color: #e6dcc4; }
+        .enemy-stats span { display: flex; align-items: center; gap: 5px; cursor: default; }
+        .enemy-stats svg { width: 16px; height: 16px; color: #f0cf73; }
+        .enemy-stats b { font-family: var(--font-title); color: var(--wc-yellow); }
+
+        /* ---------- Dado ---------- */
+        .dice-box {
+            width: 66px; height: 66px;
+            margin: 10px auto;
+            display: grid;
+            place-items: center;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 2rem;
+            color: var(--wc-yellow);
+            background: var(--noise-fine), radial-gradient(circle at 30% 25%, #5d554c, #2a2521 58%, #141210);
+            border: 1px solid #000;
+            border-radius: 10px;
+            box-shadow:
+                0 0 0 2px #8a6418,
+                0 0 0 3px #000,
+                inset 0 2px 2px rgba(255, 255, 255, 0.2),
+                inset 0 -6px 10px rgba(0, 0, 0, 0.6),
+                0 8px 16px rgba(0, 0, 0, 0.7);
+            text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 190, 50, 0.55);
+        }
+        .dice-pair { display: flex; justify-content: center; gap: 14px; }
+        .dice-pair .dice-box { margin: 10px 0; }
+        .dice-box.discarded { opacity: 0.35; filter: grayscale(1); }
+        .challenge-chance { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+        .challenge-chance[data-chance="high"] { color: #8dff78; }
+        .challenge-chance[data-chance="mid"] { color: #ffe08a; }
+        .challenge-chance[data-chance="low"] { color: #ff8a70; }
+        .log-box.challenge-log { height: auto; max-height: 120px; text-align: left; }
+        .challenge-log .log-success { color: #8dff78; }
+        .challenge-log .log-fail { color: #ff8a70; }
+        @keyframes shake {
+            0%, 60%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-3px, 0) rotate(-10deg); }
+            40% { transform: translate(3px, 2px) rotate(10deg); }
+            80% { transform: translate(3px, 1px) rotate(5deg); }
+        }
+        .rolling { animation: shake 0.5s ease infinite; color: #ff6a4a; }
+
+        .dice-result { margin-top: 3px; font-style: italic; font-size: 0.85rem; color: #d8cba8; }
+
+        /* ---------- Registro di combattimento ---------- */
+        .log-box {
+            height: 96px;
+            overflow-y: auto;
+            margin-top: 8px;
+            padding: 8px 10px;
+            text-align: left;
+            font-family: var(--font-body);
+            font-size: 0.76rem;
+            line-height: 1.45;
+            color: #d9d0bb;
+            background: linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.82)), var(--tex-stone);
+            border: 1px solid #3a2e1c;
+            box-shadow: 0 0 0 1px #000, inset 0 0 18px rgba(0, 0, 0, 0.9);
+        }
+        /* Registro dello scontro nascosto per ora: il gioco continua a scriverci, basta togliere questa riga per riaverlo */
+        #combatLog { display: none; }

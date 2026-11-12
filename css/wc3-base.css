@@ -9,6 +9,14 @@
            Se sul computer sono installati (o copiati in fonts/ con questi nomi) si usano gli originali:
            Friz Quadrata (titoli), Morpheus (pergamene), Skurri (numeri dei danni). Altrimenti le
            alternative gratuite di Google Fonts: Cinzel, Metamorphous, Skranji. */
+        /* Caratteri inclusi nel progetto (fonts/, licenza OFL): niente rete, valgono anche per la pagina dei giocatori */
+        @font-face { font-family: 'Cinzel'; font-weight: 500 900; font-style: normal; font-display: swap; src: url('../fonts/Cinzel.woff2') format('woff2'); }
+        @font-face { font-family: 'Cinzel Decorative'; font-weight: 700; font-style: normal; font-display: swap; src: url('../fonts/CinzelDecorative-700.woff2') format('woff2'); }
+        @font-face { font-family: 'Cinzel Decorative'; font-weight: 900; font-style: normal; font-display: swap; src: url('../fonts/CinzelDecorative-900.woff2') format('woff2'); }
+        @font-face { font-family: 'Marcellus'; font-weight: 400; font-style: normal; font-display: swap; src: url('../fonts/Marcellus.woff2') format('woff2'); }
+        @font-face { font-family: 'Metamorphous'; font-weight: 400; font-style: normal; font-display: swap; src: url('../fonts/Metamorphous.woff2') format('woff2'); }
+        @font-face { font-family: 'Skranji'; font-weight: 700; font-style: normal; font-display: swap; src: url('../fonts/Skranji-700.woff2') format('woff2'); }
+        /* Originali di Warcraft III, facoltativi: installati nel sistema o copiati in fonts/ (vedi fonts/LEGGIMI.txt) */
         @font-face { font-family: 'WC Friz'; src: local('Friz Quadrata TT'), local('FrizQuadrataTT'), local('Friz Quadrata Std'), local('FrizQuadrataStd'), local('Friz Quadrata'), url('../fonts/FrizQuadrata.ttf') format('truetype'); }
         @font-face { font-family: 'WC Morpheus'; src: local('Morpheus'), url('../fonts/Morpheus.ttf') format('truetype'); }
         @font-face { font-family: 'WC Skurri'; src: local('Skurri'), local('Skurri Bold'), url('../fonts/Skurri.ttf') format('truetype'); }
@@ -39,6 +47,8 @@
             --tex-stone: url('../immagini/ui/pietra_wc3.webp');
             --tex-leather: url('../immagini/ui/cuoio_wc3.webp');
             --tex-parchment: url('../immagini/ui/pergamena_wc3.webp');
+            /* Usura: graffi e scheggiature sopra pannelli e carte (immagini/ui/usura.svg, generato con seme fisso) */
+            --usura: url('../immagini/ui/usura.svg');
             --tex-slot: url('../immagini/ui/Human-inventory-slotfiller.png');
             --font-body: 'Marcellus', 'Palatino Linotype', 'Georgia', serif;
 
@@ -57,6 +67,13 @@
                ease-out per ciò che entra o risponde a un clic, ease-in-out per ciò che si sposta. */
             --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
             --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+            /* Famiglie del movimento: una curva per ruolo, usate da tutte le animazioni dei file css/gioco-*.css.
+               entra = ciò che compare o risponde a un clic (frena subito), esce = ciò che se ne va (parte piano, più rapido),
+               muove = ciò che si sposta restando in scena, rimbalzo = solo oggetti con un peso (pannelli, dadi, monete, timbri) */
+            --ease-entra: var(--ease-out);
+            --ease-esce: cubic-bezier(0.55, 0, 1, 0.45);
+            --ease-muove: cubic-bezier(0.6, 0, 0.3, 1);
+            --ease-rimbalzo: cubic-bezier(0.3, 1.4, 0.5, 1);
             --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
             --dur-press: 90ms;
             --dur-quick: 160ms;
@@ -226,7 +243,7 @@
             padding: 12px 14px;
             color: #e6dcc4;
             line-height: 1.55;
-            background: linear-gradient(rgba(22, 17, 12, 0.94), rgba(10, 8, 6, 0.94));
+            background: linear-gradient(rgba(22, 17, 12, 0.88), rgba(10, 8, 6, 0.93)), var(--tex-stone);
             border: 1px solid #5a4520;
             box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255, 220, 130, 0.07), inset 0 0 26px rgba(0, 0, 0, 0.8);
         }
@@ -355,5 +372,5 @@
 
         /* Pannelli: pietra sotto la sfumatura scura */
         .wc-panel {
-            background: var(--noise-fine), linear-gradient(rgba(24, 20, 17, 0.8), rgba(10, 8, 7, 0.9)), var(--tex-stone);
+            background: var(--usura) 0 0 / 640px auto, var(--noise-fine), linear-gradient(rgba(24, 20, 17, 0.8), rgba(10, 8, 7, 0.9)), var(--tex-stone);
         }

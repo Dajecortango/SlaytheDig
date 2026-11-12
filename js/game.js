@@ -566,6 +566,8 @@ function breakRelic(relicId) {
             document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
             // Menu iniziale e scelta campagna: scena a tutto schermo senza barre, come i menu di Warcraft III
             document.body.classList.toggle('menu-mode', MENU_SCENE_SCREENS.includes(screenId));
+            // Riposo: la notte scurisce i bordi e il falò illumina le carte degli eroi (css/style.css, "Riposo")
+            document.body.classList.toggle('riposo-notte', screenId === 'screenRest');
             updateMenuVideo();
             const screen = document.getElementById(screenId);
             screen.classList.remove('hidden');

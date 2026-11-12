@@ -1,0 +1,414 @@
+/* Stile del gioco, parte 8 di 13: carte coperte (mercante e bottino), presentazione, pannelli appesi.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+        /* ---------- Carte coperte (mercante e bottino) ----------
+           Dorso scuro con cornice dorata e un "?" su gemma rossa; al clic la carta
+           si chiude di taglio (card-flip-out) e si riapre sull'oggetto (card-flip-in),
+           con un bagliore del colore della rarità. */
+        .card-back {
+            position: relative;
+            width: 100%;
+            justify-content: flex-start;
+            background:
+                repeating-linear-gradient(45deg, rgba(226, 185, 81, 0.06) 0 2px, transparent 2px 12px),
+                repeating-linear-gradient(-45deg, rgba(226, 185, 81, 0.06) 0 2px, transparent 2px 12px),
+                var(--noise-fine), linear-gradient(#3a1410, #1c0806 60%, #120403) !important;
+            border-color: #8a6418 !important;
+        }
+        .card-back:hover { filter: brightness(1.25); }
+        .card-back .tile-text strong { color: var(--wc-yellow); }
+        .card-back .tile-sub { color: var(--text-dim); font-style: italic; }
+        .card-back-emblem {
+            flex: 0 0 40px;
+            width: 40px; height: 40px;
+            display: grid;
+            place-items: center;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 1.3rem;
+            color: var(--wc-yellow);
+            text-shadow: 0 2px 0 #000;
+            background: radial-gradient(circle at 38% 34%, #ffb09a, #c41a14 35%, #300204);
+            border: 2px solid #e2b951;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #000, 0 0 12px rgba(255, 90, 40, 0.45);
+            animation: card-emblem-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes card-emblem-pulse {
+            0%, 100% { box-shadow: 0 0 0 1px #000, 0 0 8px rgba(255, 90, 40, 0.35); }
+            50% { box-shadow: 0 0 0 1px #000, 0 0 18px rgba(255, 150, 60, 0.7); }
+        }
+        .loot-card-back { margin: 4px 0 2px; }
+
+        .card-flip-out { animation: card-flip-out 0.17s var(--ease-esce) forwards; }
+        .card-flip-in { animation: card-flip-in 0.45s var(--ease-entra); }
+        @keyframes card-flip-out {
+            from { transform: perspective(700px) rotateY(0deg); }
+            to { transform: perspective(700px) rotateY(90deg); }
+        }
+        @keyframes card-flip-in {
+            0% { transform: perspective(700px) rotateY(-90deg); filter: brightness(2); }
+            60% { filter: brightness(1.4); }
+            100% { transform: perspective(700px) rotateY(0deg); filter: none; }
+        }
+        .reveal-raro { animation: card-flip-in 0.45s var(--ease-entra), reveal-glow-raro 1.4s var(--ease-entra); }
+        .reveal-epico { animation: card-flip-in 0.45s var(--ease-entra), reveal-glow-epico 1.8s var(--ease-entra); }
+        @keyframes reveal-glow-raro {
+            0%, 30% { box-shadow: 0 0 0 1px #000, 0 0 22px 4px rgba(80, 150, 255, 0.75); }
+            100% { box-shadow: none; }
+        }
+        @keyframes reveal-glow-epico {
+            0%, 30% { box-shadow: 0 0 0 1px #000, 0 0 30px 8px rgba(190, 110, 255, 0.85); }
+            100% { box-shadow: none; }
+        }
+        body.no-anim .card-flip-out, body.no-anim .card-flip-in, body.no-anim .reveal-raro,
+        body.no-anim .reveal-epico, body.no-anim .card-back-emblem { animation: none !important; }
+
+
+        /* Dorso delle carte: il bordo e l'anello della gemma lasciano intuire la rarità */
+        .card-back.rar-back-comune { border-color: #8d8a84 !important; }
+        .card-back.rar-back-non_comune { border-color: #2fae1a !important; box-shadow: 0 0 0 1px #000, 0 0 8px rgba(30, 255, 0, 0.3); }
+        .card-back.rar-back-raro { border-color: #4a8cff !important; box-shadow: 0 0 0 1px #000, 0 0 10px rgba(74, 140, 255, 0.35); }
+        .card-back.rar-back-epico { border-color: #b06cff !important; box-shadow: 0 0 0 1px #000, 0 0 14px rgba(176, 108, 255, 0.55); }
+        .card-back.rar-back-leggendario { border-color: #ff8000 !important; box-shadow: 0 0 0 1px #000, 0 0 18px rgba(255, 128, 0, 0.6); }
+        .rar-back-comune .card-back-emblem { border-color: #b8b4aa; }
+        .rar-back-non_comune .card-back-emblem { border-color: #6fdd5a; }
+        .rar-back-raro .card-back-emblem { border-color: #6aa6ff; }
+        .rar-back-epico .card-back-emblem { border-color: #c995ff; }
+        .rar-back-leggendario .card-back-emblem { border-color: #ffb066; }
+
+        /* Strumenti del mercante: rinnovo della merce e contrattazione */
+        .merchant-tools { display: flex; gap: 8px; margin: 8px 0 2px; }
+        .merchant-tools button { flex: 1; margin: 0 0 6px; }
+        .merchant-tools .coin { vertical-align: -2px; }
+        .merchant-haggle-note { margin: 2px 0 4px; font-size: 0.8rem; text-align: center; }
+        .merchant-haggle-note.ok { color: var(--accent-green); }
+        .merchant-haggle-note.fail { color: var(--curse-color); }
+        .price-old { color: var(--text-dim); font-size: 0.75em; margin-right: 4px; }
+        .haggle-rows { display: grid; gap: 6px; margin-top: 10px; }
+        .haggle-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; text-align: left; }
+        .haggle-row b { font-family: var(--font-title); color: var(--wc-yellow); }
+        .haggle-row button { margin: 0 0 6px; }
+        .codex-enemy-img { object-position: 50% 30%; }
+
+
+        /* Icona di reliquia o maledizione che vola verso il contatore in alto */
+        .fly-icon {
+            position: fixed;
+            z-index: 3000;
+            pointer-events: none;
+            border: 2px solid #e2b951;
+            box-shadow: 0 0 0 1px #000, 0 0 18px rgba(255, 210, 90, 0.8);
+            transform-origin: center;
+        }
+
+
+        /* Percorso animato: la strada scelta si illumina mentre il segnalino la percorre */
+        .sts-map-svg line.path-walking {
+            stroke: #ffe08a;
+            stroke-width: 4;
+            stroke-dasharray: 10 8;
+            filter: drop-shadow(0 0 6px rgba(255, 200, 60, 0.9));
+            animation: path-walk 0.6s linear infinite;
+        }
+        @keyframes path-walk { to { stroke-dashoffset: -18; } }
+        .sts-node.node-arriving { animation: node-arrive 0.9s var(--ease-muove); }
+        @keyframes node-arrive {
+            0%, 70% { box-shadow: none; }
+            85% { box-shadow: 0 0 0 3px #ffe08a, 0 0 22px rgba(255, 210, 90, 0.9); }
+            100% { box-shadow: none; }
+        }
+        body.no-anim .sts-map-svg line.path-walking, body.no-anim .sts-node.node-arriving { animation: none; }
+
+        /* All'apertura della mappa i nodi raggiungibili si accendono uno dopo l'altro */
+        .sts-node.available.node-wake {
+            animation: node-glow 1.6s ease-in-out infinite, node-wake 0.7s ease-out var(--wake-delay, 0ms);
+        }
+        @keyframes node-wake {
+            0% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+            40% {
+                transform: translate(-50%, -50%) scale(1.3);
+                filter: brightness(1.6);
+                box-shadow: var(--ring), 0 0 0 8px rgba(255, 224, 138, 0.45), 0 0 30px 10px rgba(255, 210, 90, 0.85);
+            }
+            100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+        }
+
+
+        /* =========================================================
+           PRESENTAZIONE (punti 10, 11, 20, 21, 22, 23, 26, 27, 31)
+           ========================================================= */
+        /* 10. Scia chiara della vita persa, che si accorcia con un attimo di ritardo */
+        .hp-bar-ghost {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            background: linear-gradient(#fff6d8, #ffd27a 50%, #c48a2a);
+            opacity: 0.85;
+            transition: width 0.6s ease 0.35s;
+        }
+        .hp-bar-container .hp-bar-fill { position: relative; z-index: 1; }
+        .hp-bar-container .hp-bar-text { z-index: 3; }
+
+        /* 11. Anteprima del colpo sulla barra del nemico */
+        .hp-bar-preview {
+            position: absolute;
+            top: 0; bottom: 0;
+            z-index: 2;
+            background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.85) 0 4px, rgba(255, 90, 60, 0.85) 4px 8px);
+            animation: hit-preview 0.7s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes hit-preview { from { opacity: 0.35; } to { opacity: 0.95; } }
+
+        /* 20. Cornice della carta scoperta in base alla rarità */
+        .armory-btn.rar-card-comune { border-color: #8d8a84; }
+        .armory-btn.rar-card-raro { border-color: #4a8cff; box-shadow: 0 0 0 1px #000, 0 0 10px rgba(74, 140, 255, 0.3), inset 0 0 12px rgba(0, 0, 0, 0.7); }
+        .armory-btn.rar-card-epico { border-color: #b06cff; box-shadow: 0 0 0 1px #000, 0 0 14px rgba(176, 108, 255, 0.45), inset 0 0 12px rgba(0, 0, 0, 0.7); }
+
+        /* 21. Mercante: carte in griglia 2x3 invece che in elenco */
+        #merchantItemsList { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+        /* Schermi larghi: il pannello della merce prende più spazio dell'immagine e le carte vanno su tre colonne,
+           così le 8 voci (6 carte, la pozione fissa, il medico) stanno senza scorrere */
+        @media (min-width: 1360px) {
+            #screenMerchant .event-grid-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+            #merchantItemsList { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        }
+        #merchantItemsList .armory-btn {
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            gap: 6px;
+            min-height: 0;
+            padding: 10px 8px 8px;
+        }
+        #merchantItemsList .armory-btn .tile-text { align-items: center; }
+        #merchantItemsList .armory-btn .price { margin-top: auto; }
+        #merchantItemsList .card-back { justify-content: center; }
+        #merchantItemsList .card-back .card-back-emblem { flex-basis: auto; width: 48px; height: 48px; font-size: 1.5rem; }
+        #merchantItemsList .taken { min-height: 110px; justify-content: center; }
+
+        /* Merce coperta: sagome scure sotto un telo rosso (cardBackHtml in js/loot.js), sigillo col "?" sul telo.
+           Passandoci sopra il telo si solleva un poco e le sagome prendono luce. */
+        .card-back-drape { position: relative; display: block; width: 116px; height: 78px; margin-bottom: 2px; }
+        .card-back-drape svg { width: 100%; height: 100%; overflow: visible; }
+        .card-back-drape .cb-shape {
+            fill: #0b0605;
+            stroke: rgba(240, 207, 115, 0.35);
+            stroke-width: 1;
+            filter: drop-shadow(0 0 5px rgba(255, 190, 90, 0.18));
+            transition: stroke 0.25s, filter 0.25s;
+        }
+        .card-back-drape .cb-cloth {
+            fill: #6a1a10;
+            stroke: #c9982f;
+            stroke-width: 1.2;
+            filter: drop-shadow(0 -2px 3px rgba(0, 0, 0, 0.7));
+            transition: transform 0.3s cubic-bezier(.2, .8, .3, 1);
+        }
+        .card-back-drape .cb-fold { fill: none; stroke: #3a0a05; stroke-width: 1.6; stroke-linecap: round; opacity: 0.8; transition: transform 0.3s cubic-bezier(.2, .8, .3, 1); }
+        .card-back:hover .cb-cloth, .card-back:hover .cb-fold { transform: translateY(5px); }
+        .card-back:hover .cb-shape { stroke: rgba(255, 224, 140, 0.75); filter: drop-shadow(0 0 7px rgba(255, 200, 100, 0.45)); }
+        .card-back-seal {
+            position: absolute;
+            left: 50%; bottom: -2px;
+            transform: translateX(-50%);
+            width: 24px; height: 24px;
+            display: grid;
+            place-items: center;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 0.8rem;
+            color: var(--wc-yellow);
+            text-shadow: 0 1px 0 #000;
+            background: radial-gradient(circle at 38% 34%, #ffb09a, #c41a14 35%, #300204);
+            border: 2px solid var(--rar, #e2b951);
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #000, 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Medico da campo: carta di servizio larga quanto la griglia, tela verde come una tenda da campo */
+        #merchantItemsList .armory-btn.medic-card {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            text-align: left;
+            gap: 12px;
+            padding: 10px 14px;
+            background:
+                repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 4px),
+                var(--noise-fine),
+                linear-gradient(#1f3a1c, #0f1f0d 70%, #0a1408);
+            border-color: #3f8f3a;
+            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(160, 230, 140, 0.1), inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+        #merchantItemsList .armory-btn.medic-card:hover:not(:disabled) { border-color: #8fe07a; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 4px), linear-gradient(#26461f, #12260f 70%, #0b170a); }
+        #merchantItemsList .medic-card .tile-text { align-items: flex-start; flex: 1; }
+        #merchantItemsList .medic-card .tile-text strong { color: #c8f5b0; }
+        #merchantItemsList .medic-card .tile-tag { color: #c8f5b0; border-color: #3f8f3a; background: rgba(20, 50, 18, 0.8); }
+        #merchantItemsList .medic-card .price { margin: 0 0 0 auto; align-self: center; }
+        @media (max-width: 600px) { #merchantItemsList { grid-template-columns: 1fr !important; } }
+        /* Tre colonne (schermi larghi, vedi sopra): nell'ultima riga la pozione fissa e, accanto, il medico su due colonne */
+        @media (min-width: 1360px) { #merchantItemsList .armory-btn.medic-card { grid-column: span 2; } }
+
+        /* 22. Tooltip degli oggetti */
+        .tip-rar-label { display: inline-block; margin-bottom: 2px; font-size: 0.78em; color: #fff !important; }
+        .tip-desc { color: #ffd100; }
+        .tip-desc::before { content: '"'; }
+        .tip-desc::after { content: '"'; }
+
+        /* 23. Statistiche sopra o sotto quelle iniziali */
+        .hero-stats .stat-up { color: #8dff78; }
+        .hero-stats .stat-down { color: #ff7a6a; }
+
+        /* 26. Sipario tra le schermate, con i passaggi a tema (screenTransitionFor in js/game.js) */
+        #screenCurtain {
+            position: fixed;
+            inset: 0;
+            z-index: 1500;
+            pointer-events: none;
+            opacity: 0;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, rgba(20, 14, 8, 0.75), rgba(0, 0, 0, 0.95));
+        }
+        #screenCurtain > * { display: none; position: absolute; inset: 0; }
+        #screenCurtain.play { animation: screen-curtain 0.55s var(--ease-entra); }
+        @keyframes screen-curtain {
+            0% { opacity: 0; }
+            30% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Taglio di spada: un fendente attraversa il buio, poi le due metà si aprono in diagonale */
+        #screenCurtain.t-taglio, #screenCurtain.t-taglio-elite { background: none; --slash: #fff3c8; --slash-glow: #ffc24a; --half: #0d0a07; --half-in: #2a1f10; }
+        #screenCurtain.t-taglio-elite { --slash: #ffd0c0; --slash-glow: #ff3a22; --half: #1a0605; --half-in: #3a0d08; }
+        #screenCurtain.t-taglio.play, #screenCurtain.t-taglio-elite.play { animation: sc-hold 0.9s linear; }
+        #screenCurtain.t-taglio > *, #screenCurtain.t-taglio-elite > * { display: block; }
+        #screenCurtain .sc-half { background: radial-gradient(ellipse at center, var(--half-in), var(--half) 70%); }
+        #screenCurtain .sc-a { clip-path: polygon(0 0, 100% 0, 100% 100%); animation: sc-open-a 0.9s var(--ease-muove) both; }
+        #screenCurtain .sc-b { clip-path: polygon(0 0, 100% 100%, 0 100%); animation: sc-open-b 0.9s var(--ease-muove) both; }
+        #screenCurtain .sc-slash { filter: drop-shadow(0 0 6px var(--slash-glow)) drop-shadow(0 0 18px var(--slash-glow)); animation: sc-slash-fade 0.9s var(--ease-entra) both; }
+        #screenCurtain .sc-slash > i {
+            display: block; position: absolute; inset: 0;
+            background: var(--slash);
+            animation: sc-slash-draw 0.9s var(--ease-muove) both;
+        }
+        @keyframes sc-hold { 0%, 99% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes sc-slash-draw {
+            0% { clip-path: polygon(0 0, 0.6% 0, 0.6% 0.6%, 0 0.6%); }
+            35%, 100% { clip-path: polygon(0 0, 0.6% 0, 100% 99.4%, 100% 100%); }
+        }
+        @keyframes sc-slash-fade { 0%, 40% { opacity: 1; } 70%, 100% { opacity: 0; } }
+        @keyframes sc-open-a { 0%, 42% { transform: none; opacity: 1; } 100% { transform: translate(40%, -40%); opacity: 0; } }
+        @keyframes sc-open-b { 0%, 42% { transform: none; opacity: 1; } 100% { transform: translate(-40%, 40%); opacity: 0; } }
+
+        /* Bagliore d'oro con raggi che girano: bottino e tesori */
+        #screenCurtain.t-oro {
+            background: radial-gradient(circle at center, rgba(255, 232, 160, 0.95), rgba(214, 160, 40, 0.55) 35%, rgba(18, 11, 3, 0.92) 75%);
+        }
+        #screenCurtain.t-oro.play { animation: sc-flash 0.8s var(--ease-entra); }
+        #screenCurtain.t-oro::before, #screenCurtain.t-gloria::before {
+            content: ''; position: absolute; inset: -50%;
+            background: repeating-conic-gradient(from 0deg, rgba(255, 236, 170, 0.35) 0 5deg, transparent 5deg 18deg);
+            -webkit-mask-image: radial-gradient(circle, #000 10%, transparent 45%);
+            mask-image: radial-gradient(circle, #000 10%, transparent 45%);
+            animation: sc-rays 1.2s linear both;
+        }
+        @keyframes sc-flash { 0% { opacity: 0; } 22% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes sc-rays { from { transform: rotate(0deg) scale(0.8); } to { transform: rotate(25deg) scale(1.15); } }
+
+        /* Gloria: vittoria, più luminosa e più lunga */
+        #screenCurtain.t-gloria { background: radial-gradient(circle at center, #fffbe8, rgba(255, 214, 110, 0.75) 40%, rgba(40, 26, 6, 0.9) 85%); }
+        #screenCurtain.t-gloria.play { animation: sc-flash 1.4s var(--ease-entra); }
+
+        /* Fuoco del riposo: luce calda che sale dal basso e trema come una fiamma */
+        #screenCurtain.t-fuoco {
+            background: linear-gradient(to top, rgba(255, 128, 30, 0.7), rgba(120, 36, 6, 0.85) 35%, rgba(8, 3, 0, 0.96) 75%);
+            background-size: 100% 200%;
+        }
+        #screenCurtain.t-fuoco.play { animation: sc-fire 1s var(--ease-entra); }
+        @keyframes sc-fire {
+            0% { opacity: 0; background-position: 0 0; }
+            25% { opacity: 1; }
+            40% { opacity: 0.85; }
+            55% { opacity: 0.95; }
+            100% { opacity: 0; background-position: 0 100%; }
+        }
+
+        /* Buio della sconfitta: rosso cupo che diventa nero, lento */
+        #screenCurtain.t-buio { background: radial-gradient(ellipse at center, rgba(90, 4, 0, 0.8), #000 70%); }
+        #screenCurtain.t-buio.play { animation: sc-dark 1.8s var(--ease-muove); }
+        @keyframes sc-dark { 0% { opacity: 0; } 35%, 55% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* 27. Numeri che scorrono */
+        .count-down { color: #ff8a70 !important; }
+        .count-up { color: #8dff78 !important; }
+
+        /* 31. Finestra che scende appesa alle catene, con un piccolo oscillamento */
+        .modal-box.modal-drop { animation: modal-drop 0.55s var(--ease-rimbalzo); transform-origin: 50% -200px; }
+        @keyframes modal-drop {
+            0% { transform: translateY(-80px) rotate(-1.5deg); opacity: 0; }
+            55% { transform: translateY(6px) rotate(0.8deg); opacity: 1; }
+            80% { transform: translateY(-2px) rotate(-0.3deg); }
+            100% { transform: none; }
+        }
+        body.no-anim .hp-bar-ghost, body.no-anim .hp-bar-preview, body.no-anim #screenCurtain.play, body.no-anim #screenCurtain *, body.no-anim #screenCurtain::before,
+        body.no-anim .modal-box.modal-drop { animation: none !important; transition: none !important; }
+
+        /* =========================================================
+           PANNELLI APPESI ANIMATI (js/wc3fx.js con GSAP)
+           ========================================================= */
+        /* Contenitore del dondolio: stesso impilamento verticale di .wc-hang */
+        .wc-sway { display: flex; flex-direction: column; will-change: transform; position: relative; }
+        .wc-hang { will-change: transform; }
+        /* Sbuffo di polvere quando il pannello atterra (classe wc-landed messa da js/wc3fx.js al rimbalzo;
+           arriva anche ai giocatori online, che vedono lo sbuffo via CSS) */
+        .wc-hang.wc-landed .wc-sway::after {
+            content: '';
+            position: absolute;
+            left: 10%; right: 10%; bottom: -6px;
+            height: 26px;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse 30% 100% at 20% 100%, rgba(200, 180, 140, 0.5), transparent 70%),
+                radial-gradient(ellipse 36% 100% at 52% 100%, rgba(190, 170, 130, 0.45), transparent 70%),
+                radial-gradient(ellipse 28% 100% at 82% 100%, rgba(200, 180, 140, 0.5), transparent 70%);
+            filter: blur(2px);
+            animation: hang-dust 0.7s var(--ease-entra) forwards;
+        }
+        @keyframes hang-dust {
+            0% { opacity: 0; transform: translateY(0) scale(0.6, 0.4); }
+            25% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-8px) scale(1.5, 1); }
+        }
+        /* Pagina del giocatore online (body.online-guest, senza GSAP): i pannelli scendono
+           da soli via CSS quando cambia la schermata e restano in un dondolio leggero */
+        body.online-guest .wc-hang { animation: hang-drop-guest 0.8s var(--ease-rimbalzo) both; }
+        body.online-guest .wc-sway { transform-origin: 50% 0; animation: hang-sway-guest 6.8s ease-in-out 0.8s infinite; }
+        @keyframes hang-drop-guest {
+            0% { opacity: 0; transform: translateY(-46px); }
+            55% { opacity: 1; transform: translateY(5px); }
+            78% { transform: translateY(-2px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes hang-sway-guest {
+            0%, 100% { transform: rotate(-0.35deg); }
+            50% { transform: rotate(0.35deg); }
+        }
+        body.no-anim .wc-hang, body.no-anim .wc-sway, body.no-anim .wc-hang.wc-landed .wc-sway::after { animation: none !important; }
+        /* Catene più leggibili: ombra più marcata e un riflesso caldo */
+        .wc-chains span {
+            filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 4px rgba(255, 190, 80, 0.12));
+            will-change: transform;
+        }
+        /* Piastre con l'anello che agganciano le catene al pannello (immagini/ui/gancio_catena_piccolo.png, generata) */
+        .wc-chains span::after {
+            content: '';
+            position: absolute;
+            bottom: -14px;
+            width: 30px;
+            height: 30px;
+            left: -4px;
+            background: url('../immagini/ui/gancio_catena_piccolo.png') center / contain no-repeat;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
+        }
+        .wc-chains span { position: relative; }
+

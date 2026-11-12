@@ -10,7 +10,12 @@ window.LIBRERIA.avventure = {
         "description": "Il pellegrinaggio di Astarte attraverso terre sconosciute e rovine dimenticate, fino alle vette dove si nasconde la Bestia.",
         "coverImage": ""
     },
-    "fredlos": { "title": "Fredlös", "badge": "Avventura", "description": "Dall'Arce delle Storie di Aebeltoff al fiume Hemsil: sulle tracce di Kesia, figlia di Fredlös l'Oppresso.", "coverImage": "" },
+    "fredlos": {
+        "title": "Fredlös",
+        "badge": "Avventura",
+        "description": "Dall'Arce delle Storie di Aebeltoff al fiume Hemsil, e poi fino alle porte di Svalbard: sulle tracce di Kesia, figlia di Fredlös l'Oppresso.",
+        "coverImage": ""
+    },
     "loch_ein": {
         "title": "Loch Ein",
         "badge": "Avventura",

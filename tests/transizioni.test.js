@@ -32,7 +32,13 @@ module.exports = (t, carica) => {
     });
 
     t.test('il foglio di stile ha un sipario per ogni passaggio', () => {
-        const css = fs.readFileSync(path.join(ROOT, 'css', 'style.css'), 'utf8');
+        // css/style.css è l'indice: le regole stanno nei file css/gioco-NN-*.css che importa
+        const dir = path.join(ROOT, 'css');
+        const indice = fs.readFileSync(path.join(dir, 'style.css'), 'utf8');
+        const parti = fs.readdirSync(dir).filter(f => /^gioco-\d+-.*\.css$/.test(f)).sort();
+        t.ok(parti.length > 0, 'nessun file css/gioco-NN-*.css');
+        parti.forEach(f => t.ok(indice.includes(`@import url('${f}')`), `css/style.css non importa ${f}`));
+        const css = parti.map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
         ['taglio', 'taglio-elite', 'oro', 'fuoco', 'buio', 'gloria'].forEach(x =>
             t.ok(css.includes(`#screenCurtain.t-${x}`), `manca #screenCurtain.t-${x}`));
     });

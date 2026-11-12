@@ -17,6 +17,8 @@
         #onlineJoin.online-join-master #onlineEntraMasterBtn { display: inline-block; }
         /* Pulsanti del master dentro la schermata specchiata (es. "Riprendi <eroe>" nella lobby): solo il master a distanza */
         html:not([data-ruolo="master"]) .online-solo-master { display: none !important; }
+        /* Schieramento al riposo: il master a distanza riordina gli eroi con le frecce (sul PC si trascina) */
+        html[data-ruolo="master"] .riordino-frecce { display: flex; }
         /* Attesa (rosa.fase 'attesa'): copre i menu del master finché non apre la creazione del capitolo */
         #onlineAttesa { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); }
         #onlineAttesa .wc-panel { position: relative; padding: 28px 24px 22px; max-width: 380px; width: calc(100% - 32px); text-align: center; }

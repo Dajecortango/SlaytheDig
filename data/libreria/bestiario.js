@@ -1398,8 +1398,8 @@ window.LIBRERIA.bestiario = {
     "briganti_mulattiere": {
         "name": "Briganti delle Mulattiere",
         "image": "",
-        "hp": 7,
-        "maxHp": 7,
+        "hp": 8,
+        "maxHp": 8,
         "att": 6,
         "dmg": 1,
         "ca": 6,
@@ -1411,8 +1411,8 @@ window.LIBRERIA.bestiario = {
     "ghofuuri_strada_concia": {
         "name": "Ghofuuri della Strada della Concia",
         "image": "",
-        "hp": 7,
-        "maxHp": 7,
+        "hp": 8,
+        "maxHp": 8,
         "att": 6,
         "dmg": 1,
         "ca": 6,
@@ -1424,8 +1424,8 @@ window.LIBRERIA.bestiario = {
     "warg_colline_ondulate": {
         "name": "Warg delle Colline Ondulate",
         "image": "",
-        "hp": 8,
-        "maxHp": 8,
+        "hp": 9,
+        "maxHp": 9,
         "att": 6,
         "dmg": 1,
         "ca": 7,
@@ -1437,8 +1437,8 @@ window.LIBRERIA.bestiario = {
     "disertori_avamposto_pianura": {
         "name": "Disertori dell'Avamposto",
         "image": "",
-        "hp": 10,
-        "maxHp": 10,
+        "hp": 12,
+        "maxHp": 12,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1450,8 +1450,8 @@ window.LIBRERIA.bestiario = {
     "burofonte_tremabosco": {
         "name": "Il Burofonte Tremabosco",
         "image": "",
-        "hp": 20,
-        "maxHp": 20,
+        "hp": 24,
+        "maxHp": 24,
         "att": 7,
         "dmg": 2,
         "ca": 7,
@@ -1464,8 +1464,8 @@ window.LIBRERIA.bestiario = {
     "sirenidi_ponti_neferu": {
         "name": "Sirenidi dei Ponti di Neferu",
         "image": "",
-        "hp": 11,
-        "maxHp": 11,
+        "hp": 13,
+        "maxHp": 13,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1478,8 +1478,8 @@ window.LIBRERIA.bestiario = {
     "ragno_nero_brumafosca": {
         "name": "Ragno Nero Imperiale di Brumafosca",
         "image": "",
-        "hp": 12,
-        "maxHp": 12,
+        "hp": 14,
+        "maxHp": 14,
         "att": 7,
         "dmg": 1,
         "ca": 8,
@@ -1491,8 +1491,8 @@ window.LIBRERIA.bestiario = {
     "tremolischi_foschia": {
         "name": "Tremolischi nella Foschia",
         "image": "",
-        "hp": 11,
-        "maxHp": 11,
+        "hp": 13,
+        "maxHp": 13,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1504,8 +1504,8 @@ window.LIBRERIA.bestiario = {
     "bestie_albero_impiccato": {
         "name": "Bestie dell'Albero dell'Impiccato",
         "image": "",
-        "hp": 13,
-        "maxHp": 13,
+        "hp": 16,
+        "maxHp": 16,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1517,8 +1517,8 @@ window.LIBRERIA.bestiario = {
     "brachidani_rocce_assopite": {
         "name": "Brachidani delle Rocce Assopite",
         "image": "",
-        "hp": 13,
-        "maxHp": 13,
+        "hp": 16,
+        "maxHp": 16,
         "att": 7,
         "dmg": 1,
         "ca": 9,
@@ -1530,8 +1530,8 @@ window.LIBRERIA.bestiario = {
     "aviano_moork_gola": {
         "name": "L'Aviano Moork della Gola",
         "image": "",
-        "hp": 21,
-        "maxHp": 18,
+        "hp": 26,
+        "maxHp": 26,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1547,8 +1547,8 @@ window.LIBRERIA.bestiario = {
     "ghoul_tumulo_profanato": {
         "name": "Ghoul del Tumulo Profanato",
         "image": "",
-        "hp": 13,
-        "maxHp": 13,
+        "hp": 16,
+        "maxHp": 16,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1560,8 +1560,8 @@ window.LIBRERIA.bestiario = {
     "zerbene_sanguisuga": {
         "name": "Sciame di Zerbene Sanguisuga",
         "image": "",
-        "hp": 13,
-        "maxHp": 13,
+        "hp": 16,
+        "maxHp": 16,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1574,8 +1574,8 @@ window.LIBRERIA.bestiario = {
     "pattuglia_di_foscoclivo": {
         "name": "La Pattuglia di Foscoclivo",
         "image": "",
-        "hp": 24,
-        "maxHp": 24,
+        "hp": 29,
+        "maxHp": 29,
         "att": 8,
         "dmg": 2,
         "ca": 8,
@@ -1588,8 +1588,8 @@ window.LIBRERIA.bestiario = {
     "serpulidi_di_goli_ja": {
         "name": "Serpulidi di Goli'ja",
         "image": "",
-        "hp": 17,
-        "maxHp": 17,
+        "hp": 21,
+        "maxHp": 21,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1601,8 +1601,8 @@ window.LIBRERIA.bestiario = {
     "morrkath_della_riva": {
         "name": "Morrkath della Riva",
         "image": "",
-        "hp": 14,
-        "maxHp": 14,
+        "hp": 18,
+        "maxHp": 18,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1614,8 +1614,8 @@ window.LIBRERIA.bestiario = {
     "aguglia_gigante_corrotta": {
         "name": "L'Aguglia Gigante Corrotta",
         "image": "",
-        "hp": 36,
-        "maxHp": 28,
+        "hp": 43,
+        "maxHp": 43,
         "att": 8,
         "dmg": 3,
         "ca": 9,
@@ -1632,8 +1632,8 @@ window.LIBRERIA.bestiario = {
     "mantombre_stalattiti": {
         "name": "Mantombre delle Stalattiti",
         "image": "",
-        "hp": 7,
-        "maxHp": 7,
+        "hp": 9,
+        "maxHp": 9,
         "att": 6,
         "dmg": 1,
         "ca": 6,
@@ -1645,8 +1645,8 @@ window.LIBRERIA.bestiario = {
     "golem_dei_giacimenti": {
         "name": "Golem dei Giacimenti",
         "image": "",
-        "hp": 9,
-        "maxHp": 9,
+        "hp": 12,
+        "maxHp": 12,
         "att": 6,
         "dmg": 1,
         "ca": 8,
@@ -1655,8 +1655,8 @@ window.LIBRERIA.bestiario = {
     "stormo_della_spelonca": {
         "name": "Lo Stormo della Spelonca",
         "image": "",
-        "hp": 8,
-        "maxHp": 8,
+        "hp": 11,
+        "maxHp": 11,
         "att": 6,
         "dmg": 1,
         "ca": 7,
@@ -1668,8 +1668,8 @@ window.LIBRERIA.bestiario = {
     "mastini_bokgar_rovine": {
         "name": "Mastini di Bokgar delle Rovine",
         "image": "",
-        "hp": 9,
-        "maxHp": 9,
+        "hp": 12,
+        "maxHp": 12,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1681,8 +1681,8 @@ window.LIBRERIA.bestiario = {
     "sentinelle_cavalcantici": {
         "name": "Sentinelle dei Cavalcantici",
         "image": "",
-        "hp": 10,
-        "maxHp": 10,
+        "hp": 13,
+        "maxHp": 13,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1691,8 +1691,8 @@ window.LIBRERIA.bestiario = {
     "agente_ombra_anoeth": {
         "name": "L'Agente dell'Ombra",
         "image": "",
-        "hp": 14,
-        "maxHp": 14,
+        "hp": 19,
+        "maxHp": 19,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1708,8 +1708,8 @@ window.LIBRERIA.bestiario = {
     "ghoul_sangue_versato": {
         "name": "Ghoul del Sangue Versato",
         "image": "",
-        "hp": 10,
-        "maxHp": 10,
+        "hp": 13,
+        "maxHp": 13,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1721,8 +1721,8 @@ window.LIBRERIA.bestiario = {
     "gropiceri_degli_abissi": {
         "name": "Gropiceri degli Abissi",
         "image": "",
-        "hp": 11,
-        "maxHp": 11,
+        "hp": 15,
+        "maxHp": 15,
         "att": 7,
         "dmg": 1,
         "ca": 7,
@@ -1734,8 +1734,8 @@ window.LIBRERIA.bestiario = {
     "spettro_tra_le_colonne": {
         "name": "Spettro tra le Colonne",
         "image": "",
-        "hp": 11,
-        "maxHp": 11,
+        "hp": 15,
+        "maxHp": 15,
         "att": 7,
         "dmg": 1,
         "ca": 8,
@@ -1747,8 +1747,8 @@ window.LIBRERIA.bestiario = {
     "necubri_inondazione": {
         "name": "Nècubri dell'Inondazione",
         "image": "",
-        "hp": 11,
-        "maxHp": 11,
+        "hp": 15,
+        "maxHp": 15,
         "att": 7,
         "dmg": 1,
         "ca": 8,
@@ -1760,8 +1760,8 @@ window.LIBRERIA.bestiario = {
     "aracnomantropi_gradinate": {
         "name": "Aracnomantropi delle Gradinate",
         "image": "",
-        "hp": 12,
-        "maxHp": 12,
+        "hp": 16,
+        "maxHp": 16,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1773,8 +1773,8 @@ window.LIBRERIA.bestiario = {
     "predatori_acque_arena": {
         "name": "Predatori delle Acque dell'Arena",
         "image": "",
-        "hp": 12,
-        "maxHp": 12,
+        "hp": 16,
+        "maxHp": 16,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1786,8 +1786,8 @@ window.LIBRERIA.bestiario = {
     "campione_di_foscoclivo": {
         "name": "Il Campione di Foscoclivo",
         "image": "",
-        "hp": 21,
-        "maxHp": 21,
+        "hp": 28,
+        "maxHp": 28,
         "att": 8,
         "dmg": 2,
         "ca": 9,
@@ -1800,8 +1800,8 @@ window.LIBRERIA.bestiario = {
     "tessitori_del_buio": {
         "name": "I Tessitori del Buio",
         "image": "",
-        "hp": 15,
-        "maxHp": 15,
+        "hp": 20,
+        "maxHp": 20,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1813,8 +1813,8 @@ window.LIBRERIA.bestiario = {
     "fiere_corrotte_abisso": {
         "name": "Fiere Corrotte dall'Abisso",
         "image": "",
-        "hp": 16,
-        "maxHp": 16,
+        "hp": 21,
+        "maxHp": 21,
         "att": 7,
         "dmg": 2,
         "ca": 8,
@@ -1826,10 +1826,10 @@ window.LIBRERIA.bestiario = {
     "ronda_della_piazza": {
         "name": "La Ronda della Piazza",
         "image": "",
-        "hp": 14,
-        "maxHp": 14,
+        "hp": 19,
+        "maxHp": 19,
         "att": 7,
-        "dmg": 2,
+        "dmg": 3,
         "ca": 8,
         "desc": "La grande piazza non è incustodita: una squadra mista di fanteria pesante dei Kin e segugi da guerra pattuglia i bordi lastricati per impedire a chiunque di avvicinarsi al Palazzo. Sfruttando la pendenza a loro favore, si lanciano in carica verso di voi.",
         "speciali": [
@@ -1839,10 +1839,10 @@ window.LIBRERIA.bestiario = {
     "golem_cristallo_pirite": {
         "name": "Il Golem di Cristallo e Pirite",
         "image": "",
-        "hp": 27,
-        "maxHp": 27,
+        "hp": 36,
+        "maxHp": 36,
         "att": 8,
-        "dmg": 3,
+        "dmg": 4,
         "ca": 9,
         "desc": "Lungo il bordo monumentale della piazza, dove si concentrano le antiche incisioni cittadine, l'energia dell'Yrtite ha fuso insieme i minerali della caverna e i mosaici crollati dando vita a un colossale Golem Terrigeno incrostato di pirite e cristalli luminescenti, che presidia la scalinata d'accesso al Palazzo.",
         "fasi": [
@@ -1853,10 +1853,10 @@ window.LIBRERIA.bestiario = {
     "esuridi_acque_alte": {
         "name": "Esùridi delle Acque Alte",
         "image": "",
-        "hp": 15,
-        "maxHp": 15,
+        "hp": 20,
+        "maxHp": 20,
         "att": 7,
-        "dmg": 2,
+        "dmg": 3,
         "ca": 8,
         "desc": "La parte inferiore della piazza circolare è ormai completamente sommersa dall'acqua che cade a cascata dalla volta. Dalle acque torbide emergono degli Esùridi (Progenie Non Morta), antichi abitanti e guerrieri di Loch Ein risvegliati nelle rovine sepolte dall'energia infetta che permea la città.",
         "speciali": [
@@ -1866,10 +1866,10 @@ window.LIBRERIA.bestiario = {
     "imboscata_sui_gradoni": {
         "name": "L'Imboscata sui Gradoni",
         "image": "",
-        "hp": 15,
-        "maxHp": 15,
+        "hp": 20,
+        "maxHp": 20,
         "att": 8,
-        "dmg": 2,
+        "dmg": 3,
         "ca": 8,
         "desc": "Proprio come accaduto durante la prima spedizione, dalle ombre sopra la scalinata del Palazzo vengono scagliati pesanti massi di pietra per schiacciarvi, seguiti dall'assalto frontale di guerrieri scelti di Foscoclivo appostati tra le rovine.",
         "speciali": [
@@ -1879,10 +1879,10 @@ window.LIBRERIA.bestiario = {
     "ombre_della_cascata": {
         "name": "Le Ombre della Cascata",
         "image": "",
-        "hp": 15,
-        "maxHp": 15,
+        "hp": 20,
+        "maxHp": 20,
         "att": 8,
-        "dmg": 2,
+        "dmg": 3,
         "ca": 8,
         "desc": "Tra il fragore assordante della cascata che scende dalla volta incrinata e il bagliore della pirite sulle pareti, un branco di predatori d'ombra e Nefasti Esùridi emerge dal velo d'acqua per impedirvi di raggiungere il portico del Palazzo.",
         "speciali": [
@@ -1892,10 +1892,10 @@ window.LIBRERIA.bestiario = {
     "eldric_dei_cavalcantici": {
         "name": "Eldric dei Cavalcantici",
         "image": "",
-        "hp": 33,
-        "maxHp": 33,
+        "hp": 44,
+        "maxHp": 44,
         "att": 8,
-        "dmg": 3,
+        "dmg": 4,
         "ca": 9,
         "desc": "Varcate il colonnato allagato per entrare nell'atrio di marmo del Palazzo dei Firmamentisti, verso la grande porta di bronzo che conduce alla Sala del Consiglio. Ma ad attendervi sulla soglia, illuminato dal bagliore dorato della pirite e circondato da una guardia scelta di Foscoclivo, c'è una figura imponente quanto una montagna: Eldric dei Cavalcantici. Sopravvissuto alla prima spedizione grazie al crollo della colonna su Pancrazio, il gigante corazzato ha il volto sfigurato da una brutale cicatrice sul naso e sulla mascella – il segno indelebile del colpo di scudo ricevuto. Brandendo la sua colossale spada a due mani e accecato da una sete di vendetta furiosa contro l'intera Famiglia Dignitas, Eldric ruggisce sopra il fragore della cascata e si lancia alla carica per spezzarvi le ossa e seppellirvi definitivamente sotto le acque di Loch Ein.",
         "fasi": [
@@ -1905,6 +1905,209 @@ window.LIBRERIA.bestiario = {
         ],
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "piu_forte" }
+        ]
+    },
+    "sciacalli_dell_argine": {
+        "name": "Gli Sciacalli dell'Argine",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Non avete nemmeno il tempo di strizzare i mantelli zuppi d'acqua gelida che delle figure armate di coltelli e mazze compaiono dalla foschia fluviale. Sono disertori ed ex-soldati vitghen ridotti alla fame dopo la Guerra dei Quaranta Giorni, che battono le rive dell'Hemsil per sopravvivere; riconoscendo i colori della Famiglia Dignitas su guerrieri feriti, isolati e lontani da ogni avamposto, vedono l'occasione irripetibile di vendicare col sangue la sottomissione di Collifreddi e spogliare gli invasori dei loro averi.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 2 }
+        ]
+    },
+    "mastini_delle_gregge": {
+        "name": "I Mastini delle Gregge",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Passando accanto a un'antica tenuta di confine, vi accorgete che Kesia ha spezzato i lucchetti dei serragli: una muta di feroci mastini da guerra, resi schiumanti di rabbia dal tocco della figlia di Fredlös, si lancia sulla vostra scia per sbranarvi.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "bracconieri_del_lander": {
+        "name": "I Bracconieri del Lander",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Tra le pieghe ondulate della brughiera incappate nel bivacco nascosto di alcuni collaboratori esterni di una banda che si fa chiamare Banda della Lanterna, contrabbandieri e ribelli che trafficano armi per i clan ostili alla Famiglia. Riconoscendo immediatamente le vostre insegne, capiscono che se tornaste vivi a Rocca Tempesta fareste calare la spada sulle loro teste: imbracciano gli archi e vi attaccano per non lasciare testimoni.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "il_senza_clan": {
+        "name": "Il Senza Clan",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Ai piedi della Roccia di Zamak, un gruppo ben armato di irriducibili veterani vitghen – divenuti volontariamente 'Senza Clan' dopo aver rifiutato di piegarsi ai Dignitas alla fine della guerra – ha allestito un presidio ribelle. Devoti a Fredlös l'Oppresso, hanno visto sua figlia Kesia fuggire davanti a voi: guidati da un comandante coperto di cicatrici, serrano i ranghi, pronti a morire pur di fermare la vostra caccia.",
+        "fasi": [
+            { "soglia": 66, "testo": "Il comandante coperto di cicatrici leva il grido di Fredlös e i veterani serrano i ranghi.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 30, "testo": "Non hanno più niente da perdere: i Senza Clan si rialzano per un ultimo assalto.", "azioni": ["furore"] }
+        ]
+    },
+    "orso_delle_brughiere": {
+        "name": "L'Orso delle Brughiere",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Seguite una scia di bacche invernali lasciata da Kesia lungo il lato in ombra della Roccia di Zamak, ma la figlia di Fredlös vi ha guidati dritti in una trappola: costeggiando il lato in ombra della Roccia di Zamak, infatti, disturbate involontariamente un enorme orso bruno del Nord che stava divorando la carcassa di una renna tra i massi; l'animale si solleva sulle zampe posteriori con un ruggito e vi carica.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "vedette_a_cavallo_di_ravndal": {
+        "name": "Le Vedette a Cavallo di Ravndal",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Una pattuglia di cavalieri Crinocorno del clan Traich vi intercetta mentre attraversate i loro pascoli di confine. Pochi minuti prima, passando a tutta velocità, Kesia ha dato l'allarme alle vedette raccontando che una banda di disertori e tagliagole aveva appena teso un'imboscata a una delegazione Dignitas sull'Hemsil, massacrandola e rubandone le vesti per infiltrarsi nelle terre di Ravndal. Vedendovi sbucare dalla brughiera coperti di fango, feriti e privi di scorta ufficiale, i cavalieri Traich vi scambiano per gli assassini dei loro alleati: prima che possiate mostrare i vostri sigilli o spiegare l'equivoco, abbassano le lance e vi caricano al galoppo per vendicare l'onore della Famiglia.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "piu_forte" }
+        ]
+    },
+    "battuta_di_caccia_di_ravndal": {
+        "name": "La Battuta di Caccia",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Vi imbattete in un gruppo di giovani cacciatori dell'élite di Ravndal, accompagnati da coppie di lupi addestrati e falconi da preda. Vedendo dei guerrieri Dignitas allo stremo delle forze, e carichi di ardore giovanile, decidono di misurarsi con voi per dimostrare la superiorità dei Traich.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "guardiano_dei_gradoni": {
+        "name": "Il Guardiano dei Gradoni",
+        "image": "",
+        "hp": 17,
+        "maxHp": 17,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "A metà della salita verso il Colle Sovrano, un Campione dei clan vitghen e la sua guardia scelta presidiano l'antico sentiero lastricato. Per legge sacra di Vittenbergen, a nessuno è concesso salire in armi sul Colle Sovrano: vedendo dei Dignitas correre verso la cima con l'acciaio al fianco, e aizzati da Kesia che vi ha accusati di voler profanare il santuario, i guardiani sbarrano il passo pronti a far rispettare l'antico tabù con la propria vita.",
+        "fasi": [
+            { "soglia": 65, "testo": "La guardia scelta alza gli scudi: il sentiero lastricato diventa un muro.", "azioni": ["scudo_d_ossa"] },
+            { "soglia": 35, "testo": "Il Campione sceglie il più forte di voi: il tabù si lava con il suo sangue.", "azioni": ["bersaglio_marcato"] }
+        ]
+    },
+    "zeloti_del_colle": {
+        "name": "Gli Zeloti del Colle",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Scendendo lungo il versante settentrionale del Colle Sovrano, un gruppo di Vitghen tradizionalisti che ha assistito da lontano al vostro passaggio vi tende un'imboscata tra i pini, convinto che stiate inseguendo la figlia di Fredlös per scopi empi.",
+        "speciali": [
+            { "quando": "colpito", "fai": "cura", "val": 1, "prob": 35 }
+        ]
+    },
+    "lupi_del_semprebrina": {
+        "name": "Il Branco di Lupi del Semprebrina",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 8,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Nelle foreste silenziose che abbracciano la base del Massiccio Semprebrina, l'ululato di un grande branco di lupi grigi del Nord preannuncia l'attacco: spinti dalla fame, i predatori vi chiudono in una tenaglia tra gli alberi innevati.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 30 }
+        ]
+    },
+    "contrabbandieri_del_fuoco_nero": {
+        "name": "I Contrabbandieri del Fuoco Nero",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Attorno alle pozze esterne di Fuocogelo, una banda di spietati contrabbandieri e fuorilegge sta raccogliendo la pece ardente in otri di terracotta per rivenderla come arma d'assedio. Appena vedono le insegne dei Dignitas, ed accorgendosi che sono impossibilitati a fuggire, vi scagliano addosso vasi di terracotta, per evitare di lasciare testimoni.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "eroe", "prob": 40 }
+        ]
+    },
+    "branco_di_tremabosco": {
+        "name": "Il Branco di Tremabosco",
+        "image": "",
+        "hp": 20,
+        "maxHp": 20,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Vi lanciate a capofitto giù per il pendio boscoso seguendo il suono di un corno da caccia suonato da Kesia per schernirvi; nella fretta di raggiungerla, non notate i segni territoriali lasciati sugli alberi e sconfinate nella tana di un branco di Tremabosco. Il maschio dominante e la matriarca, massicci come orsi bruni e armati di zanne ricurve, vi caricano a testa bassa con furia per difendere la cucciolata.",
+        "fasi": [
+            { "soglia": 65, "testo": "Il maschio dominante raspa il terreno e abbassa le zanne.", "azioni": ["carica"] },
+            { "soglia": 30, "testo": "La matriarca si getta nella mischia per difendere la cucciolata.", "azioni": ["furore"] }
+        ]
+    },
+    "cacciatori_di_taglie_del_val": {
+        "name": "I Cacciatori di Taglie del Val",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "All'imbocco delle piste pianeggianti, una compagnia di mercenari e cacciatori di taglie informata – probabilmente raggirati da Kesia stessa – dei disordini avvenuti tra Aebeltoff e Ravndal vi attende in agguato dietro una barricata di tronchi per catturarvi e riscuotere la leggendaria ricompensa che pende sulle vostre teste.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "spezza_armatura", "bersaglio": "eroe", "prob": 30 }
+        ]
+    },
+    "predoni_delle_piste": {
+        "name": "I Predoni delle Piste",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Lungo la via carovaniera che taglia la Piana del Val, una banda di guerrieri ribelli e disertori su slitte leggere e cavalli dal pelo folto vi accerchia in campo aperto. Kesia ha sparso tra i bivacchi della piana la voce che il vostro piccolo gruppo stia trasportando una reliquia dal valore inestimabile destinata a salvare la vita del Capofamiglia Dignitas: un bersaglio troppo ghiotto per lasciarvi arrivare vivi a Svalbard.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 4 }
+        ]
+    },
+    "presidio_di_svalbard": {
+        "name": "Il Presidio di Svalbard",
+        "image": "",
+        "hp": 28,
+        "maxHp": 28,
+        "att": 8,
+        "dmg": 3,
+        "ca": 9,
+        "desc": "Raggiungete la spianata davanti alle porte di Svalbard, certi di trovare un approdo sicuro presso gli Skallgrim, l'unico clan che ha affiancato la Famiglia Dignitas durante la Guerra dei Quaranta Giorni per puro disprezzo verso il volere degli Asi. Ma invece di vedervi aprire il passo, le pesanti grate calano con uno schianto e i corni d'allarme risuonano sui bastioni. In cima a una torretta esterna scorgete Kesia: la figlia di Fredlös ha fatto leva sull'unica, disperata ossessione che tormenta ogni singolo membro degli Skallgrim, ovvero la maledizione degli Asi che preclude alle loro anime l'accesso ai Giardini di Jag Àntar. Kesia ha rivelato alla guarnigione di guardia che voi Dignitas le state dando la caccia per apprendere come spezzare un antico patto, promettendo agli Skallgrim che, se le copriranno la fuga fermandovi alle porte, lei userà quello stesso segreto per spezzare la maledizione del loro clan e spalancare loro l'aldilà, accusandovi al contempo di voler stringere un nuovo accordo con gli Asi alle loro spalle. Prima che la notizia possa giungere alle orecchie dell'Aldermanno Egill della Sera o di Gun Cacciaserpi, sicuramente più diplomatici e legati alla Famiglia, il Campione della Guardia Skallgrim cede alla tentazione di salvare l'anima della propria gente. Scortato dai suoi veterani più fedeli, da balestrieri scelti e da feroci mastini da guerra corazzati, esce dal portale laterale per sbarrarvi il passo. Mentre Kesia vi saluta con un inchino beffardo e scivola via verso il fiume Driva e il Deserto del Kalle, siete costretti ad incrociare le armi e forzare il blocco del Campione Skallgrim per non finire massacrati sotto le mura di Svalbard.",
+        "fasi": [
+            { "soglia": 75, "testo": "I balestrieri scelti si schierano sui bastioni e il Campione leva il grido di guerra degli Skallgrim.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 50, "testo": "Il Campione scioglie i mastini da guerra corazzati.", "azioni": ["vendetta_sul_debole"] },
+            { "soglia": 25, "testo": "Per l'anima della sua gente: il Campione Skallgrim non arretra più di un passo.", "azioni": ["furia"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
         ]
     }
 };

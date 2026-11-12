@@ -47,9 +47,11 @@ const ITEM_PRICE_SPREAD = { scarso: 1, comune: 1, non_comune: 1, raro: 2, epico:
 // (anche le monete trovate crescono con l'avanzamento, vedi scaledCoins)
 const MERCHANT_PROGRESS_MARKUP = 0.4;
 
-// Merce: 4 oggetti da equipaggiare, 2 consumabili e il medico (cura eroi feriti o caduti, si paga per HP)
+// Merce: 4 oggetti da equipaggiare, 2 consumabili, la pozione sempre in vendita e il medico
+// (cura eroi feriti o caduti, si paga per HP)
 const MERCHANT_EQUIPMENT_SLOTS = 4;
 const MERCHANT_CONSUMABLE_SLOTS = 2;
+const MERCHANT_FIXED_ITEM = 'balsamo_curativo';  // id dell'armeria: ogni mercante la vende, scoperta (cura 2 HP); '' = niente
 const MEDIC_PRICE_PER_HP = 5;      // fisso: niente rincari, contrattazione o sconti
 const MEDIC_MAX_HP = 4;            // HP che il medico cura in tutto a ogni mercante
 const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno questa parte degli Scudi

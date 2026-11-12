@@ -1,0 +1,535 @@
+/* Stile del gioco, parte 1 di 13: tema, braci di sfondo, barra superiore, console della compagnia, area centrale.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+        /* =========================================================
+           TEMA "REIGN OF CHAOS"
+           Cornici in oro brunito, pietra scura, gemme rosse,
+           pulsanti in metallo sbalzato e testo giallo stile WC3.
+           ========================================================= */
+        body {
+            --top-h: 50px;
+            --console-h: 188px;
+            /* Spazio verticale del pannello centrale che non va alla scena: cornice, margini, titolo */
+            --stage-chrome: 172px;
+            --stage-h: clamp(260px, calc(100vh - var(--top-h) - var(--console-h) - var(--stage-chrome)), 460px);
+            margin: 0;
+            min-height: 100vh;
+            font-family: var(--font-body);
+            color: var(--text-main);
+            background-color: #07060a;
+            background-image:
+                radial-gradient(ellipse 90% 45% at 50% 115%, rgba(255, 110, 20, 0.30), transparent 70%),
+                radial-gradient(ellipse 70% 50% at 50% -10%, rgba(70, 80, 130, 0.28), transparent 70%),
+                var(--noise-cloud),
+                radial-gradient(circle at center, #1d1712 0%, #07060a 78%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        body.no-party { --console-h: 0px; }
+
+        /* Schermi grandi: tutta l'interfaccia scala (le misure sono in rem) e la console cresce con le carte */
+        @media (min-width: 1680px) and (min-height: 880px) {
+            html { font-size: 17.5px; }
+            body { --console-h: 200px; }
+        }
+        @media (min-width: 2200px) and (min-height: 1100px) {
+            html { font-size: 19px; }
+            body { --console-h: 214px; }
+        }
+
+        /* ---------- Braci fluttuanti di sfondo ---------- */
+        .embers { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .embers span {
+            position: absolute;
+            bottom: -12px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffe3a0, #ff7a10 55%, transparent 72%);
+            box-shadow: 0 0 6px 2px rgba(255, 120, 20, 0.55);
+            opacity: 0;
+            animation: ember-rise linear infinite;
+        }
+        @keyframes ember-rise {
+            0% { transform: translate(0, 0); opacity: 0; }
+            10% { opacity: 0.9; }
+            75% { opacity: 0.5; }
+            100% { transform: translate(var(--drift, 0px), -105vh); opacity: 0; }
+        }
+
+        /* =========================================================
+           BARRA SUPERIORE (risorse)
+           ========================================================= */
+        .party-topbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: var(--top-h);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px 4px;
+            /* Pietra scura come la barra in alto di WC3, luce che scende dall'alto */
+            background:
+                var(--noise-fine),
+                linear-gradient(rgba(255, 230, 170, 0.07), transparent 40%),
+                linear-gradient(rgba(28, 24, 20, 0.62), rgba(8, 7, 6, 0.86)),
+                var(--tex-stone) center / 220px;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -14px 18px rgba(0, 0, 0, 0.55),
+                0 10px 22px rgba(0, 0, 0, 0.85);
+        }
+        /* Profilo d'oro con le borchie lungo il bordo inferiore */
+        .party-topbar::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            bottom: -5px;
+            height: 9px;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 50%, #f3dc9a 0 1.2px, #8a6424 2px, #24180a 2.7px, transparent 3.2px) 7px 50% / 34px 9px repeat-x,
+                linear-gradient(#e9cf8a, #b8904a 30%, #7a5626 62%, #33230e);
+            box-shadow: 0 -1px 0 #000, 0 1px 0 #000, 0 4px 8px rgba(0, 0, 0, 0.85);
+        }
+
+        /* Targa d'oro al centro (immagini/ui/targa_barra_web.webp, generata): tagliata in 9 parti,
+           così i riccioli agli angoli e la punta in basso restano proporzionati */
+        .topbar-plate {
+            position: absolute;
+            left: 50%; top: -2px;
+            transform: translateX(-50%);
+            z-index: 1;
+            width: 340px;
+            height: calc(var(--top-h) + 30px);
+            border-style: solid;
+            border-width: 12px 29px 36px;
+            border-image: url('../immagini/ui/targa_barra_web.webp') 45 110 136 fill / 12px 29px 36px stretch;
+            filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.85));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .topbar-plate > * { position: relative; z-index: 1; margin-bottom: -14px; }
+        .brand-crest { width: 30px; height: 34px; }
+        .brand-name {
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 0.95rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--wc-yellow);
+            text-shadow: 0 2px 0 #000, 0 0 3px #000;
+            white-space: nowrap;
+        }
+
+        .topbar-side { display: flex; gap: 10px; align-items: center; }
+        .topbar-actions { display: flex; gap: 6px; }
+        /* Pulsanti e caselle delle risorse con la stessa cornice d'oro dei bottoni del menu */
+        .topbar-actions button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+            padding: 2px 8px;
+            font-size: 0.72rem;
+            border: 5px solid transparent;
+            border-image: url('../immagini/ui/bottone_menu.webp') 25 / 5px stretch;
+            border-radius: 0;
+            background: var(--noise-fine), linear-gradient(#4a2a1a, #26140c 55%, #160b07) padding-box;
+            --btn-depth: 3px;
+        }
+        .topbar-actions svg { width: 15px; height: 15px; }
+
+        .res {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 92px;
+            padding: 1px 12px 1px 3px;
+            border: 5px solid transparent;
+            border-image: url('../immagini/ui/bottone_menu.webp') 25 / 5px stretch;
+            background: linear-gradient(rgba(12, 10, 8, 0.92), rgba(30, 24, 18, 0.92)) padding-box;
+            box-shadow: inset 0 2px 6px #000;
+            cursor: default;
+            max-width: 260px;
+        }
+        .res-ico { width: 22px; height: 22px; flex: 0 0 22px; display: grid; place-items: center; }
+        .res-ico svg { width: 20px; height: 20px; }
+        .res-ico.res-ico-img { width: 30px; height: 30px; flex-basis: 30px; }
+        .res-ico-img img {
+            display: block;
+            width: 30px;
+            height: 30px;
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #8a6418;
+        }
+        /* Come oro, legno e cibo di WC3: solo icona e valore, il nome resta nel tooltip */
+        .res-label { display: none; }
+        .res-val {
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--wc-yellow);
+            text-shadow: 0 1px 0 #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .res-val.relic { color: var(--relic-color); }
+        .res-val.curse { color: var(--curse-color); }
+
+        /* Moneta disegnata in CSS */
+        .coin {
+            display: inline-block;
+            width: 1em; height: 1em;
+            vertical-align: -0.15em;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #fff6c8, #f0c040 35%, #a8740e 75%, #5a3a06);
+            box-shadow: inset 0 0 0 0.09em #7a5208, inset 0 0 0 0.16em rgba(255, 240, 180, 0.6), 0 1px 1px #000;
+        }
+        .res-ico .coin { font-size: 18px; }
+
+        /* =========================================================
+           CONSOLE INFERIORE (compagnia)
+           ========================================================= */
+        .party-console {
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            height: var(--console-h);
+            z-index: 1000;
+            display: flex;
+            gap: 14px;
+            align-items: stretch;
+            padding: 16px 16px 10px;
+            background: var(--usura) 80px -30px / 760px auto, linear-gradient(rgba(45, 38, 32, 0.55), rgba(16, 13, 11, 0.85) 70%), var(--tex-leather);
+            box-shadow:
+                inset 0 2px 0 #3a2806,
+                inset 0 4px 0 #e2b951,
+                inset 0 5px 0 #6b4a12,
+                inset 0 6px 0 #000,
+                0 -10px 26px rgba(0, 0, 0, 0.85);
+        }
+        body.no-party .party-console { display: none; }
+
+        .party-heroes-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            flex: 1;
+            align-items: stretch;
+            padding-bottom: 4px;
+        }
+        .console-empty { align-self: center; color: var(--text-dim); font-style: italic; }
+
+        .keycap {
+            display: inline-block;
+            min-width: 18px;
+            padding: 0 4px;
+            margin-right: 2px;
+            text-align: center;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.7rem;
+            color: var(--wc-yellow);
+            background: linear-gradient(#2e2924, #151210);
+            border: 1px solid #6b4a12;
+            box-shadow: 0 1px 0 #000;
+        }
+
+        /* Scheda eroe (ritratto + barre + zaino) */
+        /* Si allarga fino a 268px, scende a 228px quando gli eroi sono tanti: cinque stanno in fila a 1440px */
+        .hero-mini-card {
+            flex: 0 1 268px;
+            min-width: 228px;
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            grid-template-rows: auto;
+            align-content: start;
+            gap: 4px 10px;
+            padding: 6px 10px;
+            /* cuoio segnato, angoli consumati */
+            background: var(--usura) 12px 8px / 420px auto, radial-gradient(ellipse at 0 0, rgba(0, 0, 0, 0.5), transparent 26%), radial-gradient(ellipse at 100% 100%, rgba(0, 0, 0, 0.55), transparent 30%), linear-gradient(rgba(34, 27, 21, 0.78), rgba(13, 11, 10, 0.92)), var(--tex-leather);
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #5a4520, inset 0 0 0 1px rgba(255, 220, 130, 0.06), inset 0 0 18px rgba(0, 0, 0, 0.8);
+            transition: box-shadow var(--dur-ui) var(--ease-out);
+        }
+        .hero-mini-card:hover { box-shadow: 0 0 0 1px #c9982f, inset 0 0 0 1px rgba(255, 220, 130, 0.1), inset 0 0 18px rgba(0, 0, 0, 0.8); }
+        .hero-mini-card.dead { filter: grayscale(1) brightness(0.55); }
+
+        .hero-portrait {
+            position: relative;
+            width: 58px; height: 58px;
+            flex: 0 0 58px;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at 40% 28%, hsl(var(--hue, 30) 55% 44%), hsl(var(--hue, 30) 60% 12%) 78%);
+            border: 1px solid #000;
+            box-shadow: 0 0 0 2px #b8923e, 0 0 0 3px #000, inset 0 0 14px rgba(0, 0, 0, 0.85);
+        }
+        .hero-portrait > span {
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 1.9rem;
+            line-height: 1;
+            color: #ffe9a8;
+            text-shadow: 0 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9);
+        }
+        .hero-portrait.small { width: 44px; height: 44px; flex-basis: 44px; }
+        .hero-portrait.small > span { font-size: 1.35rem; }
+        .dead .hero-portrait::after {
+            content: 'Caduto';
+            position: absolute;
+            left: -3px; right: -3px; bottom: 4px;
+            text-align: center;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            color: #fff;
+            background: #7a0a06;
+            border: 1px solid #000;
+        }
+
+        .hero-bars { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+        .hero-card-name {
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            color: var(--wc-yellow);
+            text-shadow: 0 1px 0 #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .hero-stats {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 6px;
+            font-family: var(--font-numbers);
+            font-size: 0.92rem;
+            line-height: 1.25;
+            color: #f3e2b0;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(226, 185, 81, 0.18);
+            border-bottom: 1px solid rgba(226, 185, 81, 0.18);
+        }
+        .hero-stats span { cursor: default; }
+        .hero-stats i {
+            font-style: normal;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.04em;
+            color: #cdbb92;
+            margin-right: 4px;
+        }
+
+        /* Pulsante QR: presente solo quando il tunnel ngrok è attivo. Apre una modale col QR grande
+           invece di occupare spazio fisso nella card (.hero-mini-card è già position:relative). */
+        .hero-qr-btn {
+            position: absolute; top: 4px; right: 4px;
+            width: 20px; height: 20px; padding: 3px;
+            display: grid; place-items: center;
+            background: linear-gradient(#3a2a12, #1c1410);
+            border: 1px solid #b8923e;
+            color: var(--wc-yellow);
+            cursor: pointer;
+        }
+        .hero-qr-btn:hover { border-color: #ffdc82; color: #ffdc82; }
+        .hero-qr-btn svg { width: 100%; height: 100%; }
+
+        .hero-inventory { grid-column: 1 / -1; display: flex; gap: 5px; align-items: center; }
+        .inv-slot {
+            width: 32px; height: 32px;
+            flex: 0 0 32px;
+            display: grid;
+            place-items: center;
+            color: #f0cf73;
+            background: radial-gradient(circle at 35% 30%, rgba(52, 43, 33, 0.82), rgba(9, 7, 6, 0.94)), var(--tex-stone);
+            border: 1px solid #000;
+            box-shadow: inset 0 0 0 1px #6b4a12, inset 0 0 8px rgba(0, 0, 0, 0.9);
+        }
+        .inv-slot svg { width: 20px; height: 20px; }
+        .inv-slot.empty { background: var(--tex-slot) center / cover, #0a0807; box-shadow: inset 0 0 0 1px #2a2014, inset 0 2px 6px #000; filter: brightness(0.8); }
+        .inv-slot.usable { cursor: pointer; animation: autocast 2.2s linear infinite; }
+        /* Statistiche dei dadi nel Diario (diceStatsHtml in js/game.js) */
+        .dice-stats { display: flex; gap: 10px; align-items: flex-end; height: 110px; padding: 6px 4px 0; }
+        .dice-bar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+        .dice-bar-fill { width: 70%; min-height: 2px; background: linear-gradient(#f0cf73, #8a6418); box-shadow: 0 0 0 1px #000; }
+        .dice-bar b { font-family: var(--font-numbers); color: var(--wc-yellow); }
+        .dice-bar small { color: var(--text-dim); font-size: 0.72rem; }
+        .dice-stats-note { margin-top: 6px; color: var(--text-dim); font-size: 0.8rem; text-align: center; }
+
+        /* Potenziamenti attivi sulla carta dell'eroe (heroBuffsHtml in js/game.js) */
+        .hero-buffs { position: absolute; top: 4px; right: 30px; display: flex; gap: 4px; z-index: 4; }  /* a destra resta il posto del pulsante QR */
+        .hero-buff {
+            position: relative;
+            width: 20px; height: 20px;
+            background: #0a0807;
+            box-shadow: 0 0 0 1px #000, 0 0 0 2px #2f8a3a, 0 0 6px rgba(80, 220, 110, 0.55);
+            animation: buff-pulse 1.8s ease-in-out infinite;
+        }
+        .hero-buff img { width: 100%; height: 100%; display: block; }
+        /* Round che restano: gettone scuro leggibile in basso a destra; giallo all'ultimo round (classe "last") */
+        .hero-buff b {
+            position: absolute; right: -5px; bottom: -5px;
+            min-width: 13px; height: 13px; padding: 0 2px; box-sizing: border-box;
+            display: grid; place-items: center; border-radius: 7px;
+            font-family: var(--font-numbers); font-size: 0.66rem; line-height: 1; color: #fff;
+            background: #120d0a; box-shadow: 0 0 0 1px #000, 0 0 0 2px #6b5530;
+        }
+        .hero-buff b.last { color: #1a1206; background: #ffd23a; box-shadow: 0 0 0 1px #000; }
+        @keyframes buff-pulse { 50% { box-shadow: 0 0 0 1px #000, 0 0 0 2px #45c455, 0 0 10px rgba(80, 220, 110, 0.85); } }
+        body.no-anim .hero-buff { animation: none; }
+
+        /* Numero di copie di una pila di consumabili, come le cariche degli oggetti di WC3 */
+        .inv-slot { position: relative; }
+        .inv-qty {
+            position: absolute;
+            right: 1px; bottom: 0;
+            font-family: var(--font-numbers);
+            font-size: 0.72rem;
+            line-height: 1;
+            color: #fff;
+            text-shadow: 0 0 2px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000;
+            pointer-events: none;
+            z-index: 3;  /* sopra la cornice disegnata con ::after */
+        }
+        .inv-slot.usable:hover { filter: brightness(1.35); }
+        @keyframes autocast {
+            0%, 100% { box-shadow: inset 0 0 0 1px #3fbf4a, inset 0 0 8px rgba(0,0,0,.9), 0 0 4px rgba(63, 191, 74, 0.3); }
+            50% { box-shadow: inset 0 0 0 1px #9dff8a, inset 0 0 8px rgba(0,0,0,.9), 0 0 10px rgba(120, 255, 110, 0.6); }
+        }
+        .inv-label { margin-left: auto; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+        /* Barre vita / armatura (stile WC3 segmentato) */
+        .hp-bar-container {
+            position: relative;
+            height: 13px;
+            width: 100%;
+            margin: 2px 0;
+            background: #0a0605;
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #4a3a22, inset 0 2px 4px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+        }
+        .hp-bar-container.big { height: 16px; }
+        /* Riflesso vetroso sopra la barra, come la texture delle barre di stato di WoW */
+        .hp-bar-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            background: linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 45%, transparent 50%, rgba(0, 0, 0, 0.25));
+            pointer-events: none;
+        }
+        /* Colore registrato: passando da verde a giallo a rosso la barra sfuma invece di scattare */
+        @property --bar { syntax: '<color>'; inherits: true; initial-value: #1f9a1a; }
+        /* Riempimento in rilievo come le barre delle unità di WC3: bordo alto chiaro, ventre pieno,
+           fondo scuro; un filo di luce sul margine destro segna dove la vita finisce */
+        .hp-bar-fill {
+            --bar: #1f9a1a;
+            height: 100%;
+            width: 100%;
+            background:
+                var(--noise-fine),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent 22%),
+                linear-gradient(color-mix(in srgb, var(--bar), #fff 38%), var(--bar) 38%, color-mix(in srgb, var(--bar), #000 30%) 70%, color-mix(in srgb, var(--bar), #000 55%));
+            box-shadow:
+                inset 0 1px 0 color-mix(in srgb, var(--bar), #fff 60%),
+                inset -1px 0 0 color-mix(in srgb, var(--bar), #fff 45%),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+                1px 0 0 rgba(0, 0, 0, 0.85);
+            transition: width 0.35s cubic-bezier(.2, .8, .3, 1), --bar 0.35s;
+        }
+        .hp-bar-fill.hp-mid { --bar: #c99a00; }
+        .hp-bar-fill.hp-low { --bar: #b8180c; }
+        /* Poca vita: il rosso pulsa piano, come l'allarme delle unità ferite */
+        .hp-bar-fill.hp-low { animation: hp-low-pulse 1.6s ease-in-out infinite; }
+        @keyframes hp-low-pulse { 50% { filter: brightness(1.35) saturate(1.2); } }
+        .hp-bar-container.armor { height: 11px; }
+        /* Senza armatura la barra non si mostra, ma tiene il suo spazio perché la console non salti */
+        .hp-bar-container.armor.is-empty { visibility: hidden; }
+        .hp-bar-container.armor .hp-bar-fill { --bar: #2a55d6; }
+        .hp-bar-text {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 0.7rem;
+            line-height: 11px;
+            letter-spacing: 0.04em;
+            color: #fff;
+            text-align: center;
+            text-shadow: 0 1px 1px #000, 0 0 3px #000;
+        }
+        .hp-bar-container.big .hp-bar-text { line-height: 14px; font-size: 0.76rem; letter-spacing: 0.06em; }
+        .hp-bar-container.armor .hp-bar-text { line-height: 9px; font-size: 0.7rem; }
+
+        /* =========================================================
+           AREA CENTRALE / FINESTRA DI DIALOGO
+           ========================================================= */
+        .game-layout {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 100vh;
+            padding: calc(var(--top-h) + 16px) 16px calc(var(--console-h) + 10px);
+        }
+
+        /* Largo 1120px, di più sugli schermi ampi (82% della finestra, fino a 1600px) */
+        .container {
+            position: relative;
+            width: min(100%, max(1120px, min(82vw, 1600px)));
+            max-height: calc(100vh - var(--top-h) - var(--console-h) - 30px);
+            overflow-y: auto;
+            padding: 8px 28px 18px;
+            text-align: center;
+            border: 22px solid transparent;
+            border-image: var(--frame) var(--frame-slice) / 22px stretch;
+            background:
+                var(--noise-fine),
+                radial-gradient(ellipse at 50% 0%, rgba(110, 80, 40, 0.28), transparent 60%),
+                linear-gradient(rgba(23, 20, 18, 0.86), rgba(12, 10, 9, 0.93)),
+                var(--tex-stone);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 50px rgba(255, 120, 30, 0.07);
+        }
+
+        .screen-enter { animation: screen-in 0.3s var(--ease-entra); }
+        @keyframes screen-in {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .container h2 {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 0.1em 0 0.4em;
+            font-size: 1.45rem;
+            font-weight: 900;
+        }
+        .container h2::before,
+        .container h2::after {
+            content: '';
+            flex: 1;
+            height: 12px;
+            min-width: 30px;
+            background:
+                var(--diamond) right center / 12px 12px no-repeat,
+                linear-gradient(90deg, transparent, #8a6418 40%, #f0cf73) left center / calc(100% - 14px) 2px no-repeat;
+        }
+        .container h2::after { transform: scaleX(-1); }
+
+        h3 { font-size: 0.95rem; font-weight: 700; }

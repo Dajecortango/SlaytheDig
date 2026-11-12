@@ -194,7 +194,8 @@
             const suffix = max ? `/${max}` : '';
             el.classList.add(to < from ? 'count-down' : 'count-up');
             const step = now => {
-                const t = Math.min(1, (now - start) / duration);
+                // Mai sotto zero: il primo fotogramma può avere un orario precedente alla partenza (browser lento, scheda in secondo piano)
+                const t = Math.max(0, Math.min(1, (now - start) / duration));
                 el.textContent = `${Math.round(from + (to - from) * t)}${suffix}`;
                 if (t < 1) requestAnimationFrame(step);
                 else setTimeout(() => el.classList.remove('count-down', 'count-up'), 300);
@@ -256,7 +257,8 @@
             }
 
             return `
-                <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)} ${expandedHeroCard === h.name ? 'expanded' : ''}" data-hero="${esc(h.name)}" ${azione('toggleHeroCard', '$el', '$event')}>
+                <div class="hero-mini-card ${h.hp <= 0 ? 'dead' : ''} ${heroTurnClass(h)} ${expandedHeroCard === h.name ? 'expanded' : ''} ${riordinoAttivo() ? 'riordinabile' : ''} ${isHeroWounded(h.hp) ? 'ferito' : ''}" data-hero="${esc(h.name)}" ${azione('toggleHeroCard', '$el', '$event')}>
+                    ${riordinoFrecceHtml(h)}
                     ${heroBuffsHtml(h)}
                     ${heroStatusesHtml(h)}
                     ${heroBlessingsHtml(h)}
@@ -283,6 +285,104 @@
                     <div class="hero-inventory">${slots}<span class="inv-label ${h.items.length >= BACKPACK_SIZE ? 'full' : ''}">Zaino ${h.items.length}/${BACKPACK_SIZE}</span></div>
                 </div>`;
         }
+
+        /* ---------- Schieramento: al riposo il master riordina le carte degli eroi ----------
+           L'ordine di stato.party conta: gli "eroi accanto" dei colpi ad area (heroesNextTo in js/motore/scontro.js)
+           e, online, il capo della spedizione (il primo eroe). Sul PC le carte si trascinano; il master a distanza
+           usa le frecce sulla carta (la sua pagina inoltra solo clic), nascoste a tutti gli altri dal CSS.
+           spostaEroe / spostaEroeDi non sono in ONLINE_PERMESSI: online le può chiamare solo il master. */
+        const riordinoAttivo = () => currentScreenId === 'screenRest' && stato.party.length > 1;
+
+        // Porta l'eroe alla posizione data (0 = primo). Vale solo al riposo; true se l'ordine è cambiato.
+        function spostaEroe(nome, posizione) {
+            if (!riordinoAttivo()) return false;
+            const da = stato.party.findIndex(h => h.name === nome);
+            const a = Math.max(0, Math.min(stato.party.length - 1, Math.round(Number(posizione))));
+            if (da < 0 || !Number.isFinite(a) || da === a) return false;
+            const [eroe] = stato.party.splice(da, 1);
+            stato.party.splice(a, 0, eroe);
+            updatePartyStatusBars();
+            if (typeof onlineInviaStato === 'function') onlineInviaStato();  // il capo è il primo eroe: può essere cambiato
+            return true;
+        }
+        // Frecce del master a distanza: un posto a sinistra (-1) o a destra (+1)
+        function spostaEroeDi(nome, passo) {
+            return spostaEroe(nome, stato.party.findIndex(h => h.name === nome) + Number(passo));
+        }
+
+        function riordinoFrecceHtml(h) {
+            if (!riordinoAttivo()) return '';
+            const i = stato.party.indexOf(h);
+            const freccia = (passo, segno, verso) => `<button type="button" class="riordino-freccia" ${azione('spostaEroeDi', h.name, passo)} data-tip="Schieramento||Sposta ${esc(h.name)} di un posto a ${verso}">${segno}</button>`;
+            return `<div class="riordino-frecce">${i > 0 ? freccia(-1, '◀', 'sinistra') : ''}${i < stato.party.length - 1 ? freccia(1, '▶', 'destra') : ''}</div>`;
+        }
+
+        // Dove cade una carta trascinata: centri = centro orizzontale di ogni carta all'inizio (nell'ordine della
+        // compagnia), da = indice della carta presa, x = centro della carta trascinata adesso. Ritorna il nuovo indice.
+        function posizioneRiordino(centri, da, x) {
+            let a = da;
+            while (a < centri.length - 1 && x > centri[a + 1]) a++;
+            while (a > 0 && x < centri[a - 1]) a--;
+            return a;
+        }
+
+        // Trascinamento con i pointer events (mouse e tocco): parte dopo RIORDINO_SOGLIA px, così il clic sulla carta
+        // resta un clic. Le altre carte si scostano per mostrare il posto; al rilascio decide spostaEroe.
+        const RIORDINO_SOGLIA = 8;
+        let riordino = null;
+        function riordinoFine(applica) {
+            const r = riordino;
+            if (!r) return;
+            riordino = null;
+            document.removeEventListener('pointermove', riordinoMuovi);
+            document.removeEventListener('pointerup', riordinoRilascia);
+            document.removeEventListener('pointercancel', riordinoAnnulla);
+            document.body.classList.remove('riordino-in-corso');
+            r.carte.forEach(c => { c.style.transform = ''; c.classList.remove('trascinata'); });
+            if (!r.attivo) return;
+            // Il clic che segue il rilascio non deve aprire la carta né usare un oggetto
+            const fermaClic = e => { e.stopPropagation(); e.preventDefault(); };
+            window.addEventListener('click', fermaClic, true);
+            setTimeout(() => window.removeEventListener('click', fermaClic, true), 60);
+            if (applica && r.a !== r.da) { spostaEroe(r.nome, r.a); if (typeof synthSfx === 'function') synthSfx('flip'); }
+        }
+        const riordinoRilascia = () => riordinoFine(true);
+        const riordinoAnnulla = () => riordinoFine(false);
+        function riordinoMuovi(e) {
+            const r = riordino;
+            if (!r || e.pointerId !== r.pointerId) return;
+            // La barra è stata ridisegnata durante il trascinamento (un aggiornamento del gioco): si lascia perdere
+            if (!r.carta.isConnected || !riordinoAttivo()) { riordinoFine(false); return; }
+            const dx = e.clientX - r.x0;
+            if (!r.attivo) {
+                if (Math.abs(dx) < RIORDINO_SOGLIA) return;
+                r.attivo = true;
+                r.carta.classList.add('trascinata');
+                document.body.classList.add('riordino-in-corso');
+            }
+            e.preventDefault();
+            r.a = posizioneRiordino(r.centri, r.da, r.centri[r.da] + dx);
+            r.carte.forEach((c, i) => {
+                if (i === r.da) { c.style.transform = `translateX(${dx}px)`; return; }
+                const scosta = r.da < r.a ? (i > r.da && i <= r.a ? -r.passo : 0) : (i < r.da && i >= r.a ? r.passo : 0);
+                c.style.transform = scosta ? `translateX(${scosta}px)` : '';
+            });
+        }
+        document.addEventListener('pointerdown', e => {
+            if (riordino || e.button > 0 || !e.isPrimary || !riordinoAttivo()) return;
+            if (document.body.classList.contains('online-guest')) return;  // pagina dei giocatori: lì ci sono le frecce
+            const carta = e.target.closest && e.target.closest('#partyStatusBarContent .hero-mini-card');
+            if (!carta || e.target.closest('.inv-slot, button')) return;
+            const carte = [...carta.parentElement.querySelectorAll('.hero-mini-card')];
+            const rett = carte.map(c => c.getBoundingClientRect());
+            const da = carte.indexOf(carta);
+            riordino = { carta, carte, da, a: da, nome: carta.dataset.hero, x0: e.clientX, pointerId: e.pointerId, attivo: false,
+                centri: rett.map(q => q.left + q.width / 2),
+                passo: rett.length > 1 ? Math.abs(rett[1].left - rett[0].left) : rett[0].width };
+            document.addEventListener('pointermove', riordinoMuovi, { passive: false });
+            document.addEventListener('pointerup', riordinoRilascia);
+            document.addEventListener('pointercancel', riordinoAnnulla);
+        });
 
         /* ---------- Finestra modale ---------- */
         // Porta in vista un elemento appena comparso (dado, esito, scelte, pulsante per proseguire)

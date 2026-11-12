@@ -1,0 +1,215 @@
+/* Stile del gioco, parte 11 di 13: sconfitta e vittoria, nemico che brucia, dadi d'osso, lampi sulle carte, telefono, scelta di un eroe.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+/* =========================================================
+   MOMENTI DELLA PARTITA: sconfitta e vittoria, nemico che brucia,
+   dadi d'osso, lampi sulle carte, fila di ritratti sul telefono
+   ========================================================= */
+
+/* ---------- Sconfitta: tutto si spegne, bordo di brace scura, cenere che cade ---------- */
+body:has(#screenDefeat:not(.hidden)) {
+    background-image:
+        radial-gradient(ellipse 90% 45% at 50% 115%, rgba(150, 20, 10, 0.32), transparent 70%),
+        radial-gradient(ellipse 70% 50% at 50% -10%, rgba(40, 40, 50, 0.3), transparent 70%),
+        var(--noise-cloud),
+        radial-gradient(circle at center, #1a0f0d 0%, #060405 78%);
+}
+.container:has(> #screenDefeat:not(.hidden)) {
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 60px rgba(150, 20, 10, 0.35), inset 0 0 90px rgba(90, 8, 4, 0.45);
+}
+#screenDefeat .event-left-image-box { box-shadow: 0 0 0 2px #7a1a10, 0 0 0 3px #000, 0 0 0 5px #2a0806, 0 0 0 6px #000, 0 12px 26px rgba(0, 0, 0, 0.85); }
+#screenDefeat .event-left-image-box img { filter: grayscale(0.55) brightness(0.8) contrast(1.05); }
+#screenDefeat .event-left-image-box::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(60, 4, 2, 0.75));
+}
+/* Le braci dello sfondo diventano cenere grigia che scende */
+body:has(#screenDefeat:not(.hidden)) .embers span {
+    background: radial-gradient(circle, #b8b2aa, #6a645e 55%, transparent 72%);
+    box-shadow: none;
+    animation-direction: reverse;
+}
+
+/* ---------- Vittoria: raggi d'oro dietro lo stendardo, cornice che splende, braci dorate ---------- */
+.container:has(> #screenVictory:not(.hidden)) {
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 70px rgba(255, 196, 60, 0.28), inset 0 0 90px rgba(120, 80, 10, 0.3);
+}
+#screenVictory .event-left-image-box {
+    background: radial-gradient(ellipse at 50% 50%, #3a2a0e, #0c0805 70%);
+    box-shadow: 0 0 0 2px #f0cf73, 0 0 0 3px #000, 0 0 0 5px #8a6418, 0 0 0 6px #000, 0 0 30px rgba(255, 200, 80, 0.4), 0 12px 26px rgba(0, 0, 0, 0.85);
+}
+#screenVictory .event-left-image-box img { position: relative; z-index: 1; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8)); }
+#screenVictory .event-left-image-box::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 180%;
+    aspect-ratio: 1;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    background: repeating-conic-gradient(from 0deg, rgba(255, 214, 110, 0.32) 0deg 6deg, transparent 6deg 18deg);
+    -webkit-mask-image: radial-gradient(circle, #000 8%, transparent 62%);
+    mask-image: radial-gradient(circle, #000 8%, transparent 62%);
+    animation: victory-rays 60s linear infinite;
+}
+@keyframes victory-rays { to { transform: translate(-50%, -50%) rotate(360deg); } }
+body.no-anim #screenVictory .event-left-image-box::before { animation: none; }
+body:has(#screenVictory:not(.hidden)) .embers span {
+    background: radial-gradient(circle, #fffbe0, #ffd24a 50%, transparent 72%);
+    box-shadow: 0 0 8px 3px rgba(255, 210, 80, 0.6);
+}
+
+/* ---------- Nemico sconfitto: la scena brucia dai bordi verso il centro (onEnemyDefeated) ----------
+   --burn è il raggio della parte ancora intatta: scende da 150% a 58%, con un orlo di brace che lo segue;
+   resta al centro un ritaglio carbonizzato della scena. */
+@property --burn { syntax: '<percentage>'; inherits: true; initial-value: 150%; }
+.combat-stage.enemy-slain {
+    background: radial-gradient(ellipse at 50% 60%, #2a1208, #070404 70%);
+    animation: stage-burn 1.8s var(--ease-muove) 0.25s forwards;
+}
+@keyframes stage-burn { from { --burn: 150%; } to { --burn: 58%; } }
+.combat-stage.enemy-slain > img, .combat-stage.enemy-slain > video {
+    -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 42%, #000 calc(var(--burn) - 14%), transparent var(--burn));
+    mask-image: radial-gradient(ellipse 60% 70% at 50% 42%, #000 calc(var(--burn) - 14%), transparent var(--burn));
+    filter: grayscale(0.6) sepia(0.35) brightness(0.55);
+    transition: filter 1.6s;
+}
+/* Orlo di brace che segue il bordo che brucia, spezzato dal rumore */
+.combat-stage.enemy-slain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse 60% 70% at 50% 42%, transparent calc(var(--burn) - 16%), rgba(255, 150, 40, 0.95) calc(var(--burn) - 7%), rgba(140, 30, 6, 0.85) calc(var(--burn) - 2%), transparent var(--burn));
+    -webkit-mask: var(--noise-cloud) 0 0 / 300px 300px;
+    mask: var(--noise-cloud) 0 0 / 300px 300px;
+    mix-blend-mode: screen;
+}
+body.no-anim .combat-stage.enemy-slain { animation: none; }
+body.no-anim .combat-stage.enemy-slain::before { display: none; }
+
+/* ---------- Dadi d'osso con i punti incisi (data-face messo da syncDiceFace in js/effetti.js) ----------
+   Il numero resta nel testo (il gioco lo rilegge) ma non si vede: si vedono i punti. */
+.dice-box {
+    --pip: #3a160a 0 5.5px, #6b3418 6.4px, transparent 7.4px;
+    --pips: none;
+    color: transparent;
+    text-shadow: none;
+    border-radius: 12px;
+    background:
+        var(--pips),
+        var(--noise-fine),
+        radial-gradient(circle at 30% 22%, #fbf3dc, #e3d3ad 45%, #b39a6c 85%, #8c7650);
+    box-shadow:
+        0 0 0 1px #3a2a14,
+        0 0 0 3px #8a6418,
+        0 0 0 4px #000,
+        inset 0 2px 2px rgba(255, 255, 255, 0.7),
+        inset 0 -5px 9px rgba(90, 60, 25, 0.55),
+        0 8px 16px rgba(0, 0, 0, 0.7);
+    transition: box-shadow 0.25s;
+}
+.dice-box[data-face="1"] { --pips: radial-gradient(circle at 50% 50%, var(--pip)); }
+.dice-box[data-face="2"] { --pips: radial-gradient(circle at 28% 28%, var(--pip)), radial-gradient(circle at 72% 72%, var(--pip)); }
+.dice-box[data-face="3"] { --pips: radial-gradient(circle at 27% 27%, var(--pip)), radial-gradient(circle at 50% 50%, var(--pip)), radial-gradient(circle at 73% 73%, var(--pip)); }
+.dice-box[data-face="4"] { --pips: radial-gradient(circle at 28% 28%, var(--pip)), radial-gradient(circle at 72% 28%, var(--pip)), radial-gradient(circle at 28% 72%, var(--pip)), radial-gradient(circle at 72% 72%, var(--pip)); }
+.dice-box[data-face="5"] { --pips: radial-gradient(circle at 27% 27%, var(--pip)), radial-gradient(circle at 73% 27%, var(--pip)), radial-gradient(circle at 50% 50%, var(--pip)), radial-gradient(circle at 27% 73%, var(--pip)), radial-gradient(circle at 73% 73%, var(--pip)); }
+.dice-box[data-face="6"] { --pips: radial-gradient(circle at 29% 24%, var(--pip)), radial-gradient(circle at 71% 24%, var(--pip)), radial-gradient(circle at 29% 50%, var(--pip)), radial-gradient(circle at 71% 50%, var(--pip)), radial-gradient(circle at 29% 76%, var(--pip)), radial-gradient(circle at 71% 76%, var(--pip)); }
+.dice-box.rolling { color: transparent; filter: blur(0.6px); animation: dice-tumble 0.42s linear infinite; }
+@keyframes dice-tumble {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(-5px, -7px) rotate(90deg) scale(0.92); }
+    50% { transform: translate(4px, -2px) rotate(180deg); }
+    75% { transform: translate(-2px, -6px) rotate(270deg) scale(0.92); }
+    100% { transform: translate(0, 0) rotate(360deg); }
+}
+.dice-box.landed { animation: dice-land 0.38s var(--ease-rimbalzo); }
+@keyframes dice-land { from { transform: scale(1.25) rotate(-8deg); } to { transform: none; } }
+/* Dado naturale: il 6 riesce sempre (oro), l'1 fallisce sempre (rosso) */
+.dice-box.landed[data-face="6"]:not(.discarded) {
+    box-shadow: 0 0 0 1px #3a2a14, 0 0 0 3px #ffd24a, 0 0 0 4px #000, inset 0 2px 2px rgba(255, 255, 255, 0.7), inset 0 -5px 9px rgba(90, 60, 25, 0.55), 0 0 22px 4px rgba(255, 200, 60, 0.75);
+}
+.dice-box.landed[data-face="1"]:not(.discarded) {
+    box-shadow: 0 0 0 1px #3a2a14, 0 0 0 3px #c0281e, 0 0 0 4px #000, inset 0 2px 2px rgba(255, 255, 255, 0.7), inset 0 -5px 9px rgba(90, 60, 25, 0.55), 0 0 22px 4px rgba(220, 40, 30, 0.7);
+}
+body.no-anim .dice-box.rolling, body.no-anim .dice-box.landed { animation: none; }
+
+/* ---------- Lampo sulle carte degli eroi (fxCardFlash in js/effetti.js) ---------- */
+/* Eroe caduto (fxHeroFell in js/effetti.js): la carta si spegne piano fino al grigio di .dead e si abbassa un poco */
+.hero-mini-card.dead.fx-fall { animation: hero-fall 1.4s var(--ease-esce) both; }
+.hero-mini-card.dead.fx-fall.fx-hit { animation: fx-shake 0.42s ease, hero-fall 1.4s ease-in both; }
+@keyframes hero-fall {
+    0% { filter: none; transform: translateY(0); }
+    25% { filter: brightness(1.4) saturate(0.6); }
+    100% { filter: grayscale(1) brightness(0.55); transform: translateY(3px); }
+}
+.fx-float.fell { color: #d8d0c0; font-family: var(--font-title); font-size: 1.35rem; letter-spacing: 0.12em; text-transform: uppercase; }
+body.no-anim .hero-mini-card.fx-fall { animation: none !important; }
+.fx-card-flash { position: absolute; inset: 0; z-index: 5; pointer-events: none; animation: card-flash 0.85s var(--ease-entra) forwards; }
+.fx-card-flash.hurt {
+    background: radial-gradient(ellipse at 30% 40%, rgba(255, 60, 40, 0.55), rgba(160, 10, 5, 0.25) 60%, transparent 85%);
+    box-shadow: inset 0 0 0 2px rgba(255, 70, 50, 0.9), inset 0 0 22px rgba(255, 30, 10, 0.6);
+}
+.fx-card-flash.healed {
+    background: radial-gradient(ellipse at 30% 40%, rgba(120, 255, 110, 0.4), rgba(40, 160, 40, 0.18) 60%, transparent 85%);
+    box-shadow: inset 0 0 0 2px rgba(130, 255, 120, 0.85), inset 0 0 22px rgba(80, 230, 80, 0.5);
+}
+@keyframes card-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- Telefono: fila di ritratti con la vita, la carta intera si apre al tocco (toggleHeroCard) ---------- */
+@media (max-width: 700px) {
+    body { --console-h: 104px; }
+    body.hero-card-open { --console-h: 214px; }
+    body.no-party { --console-h: 0px; }
+    .party-console { padding: 12px 8px 6px; }
+    .party-heroes-container { gap: 6px; justify-content: flex-start; }
+    .hero-mini-card:not(.expanded) {
+        flex: 0 0 62px;
+        min-width: 0;
+        grid-template-columns: 1fr;
+        gap: 3px;
+        padding: 4px;
+        cursor: pointer;
+    }
+    .hero-mini-card:not(.expanded) .hero-portrait { width: 52px; height: 52px; margin: 0 auto; }
+    .hero-mini-card:not(.expanded) .hero-card-name,
+    .hero-mini-card:not(.expanded) .hero-stats,
+    .hero-mini-card:not(.expanded) .hero-ability,
+    .hero-mini-card:not(.expanded) .hero-inventory,
+    .hero-mini-card:not(.expanded) .hero-qr-btn { display: none; }
+    .hero-mini-card:not(.expanded) .hp-bar-container { height: 9px; margin: 1px 0; }
+    /* Carta chiusa sul telefono: a 8px i numeri non si leggono, parla il colore della barra (tocco = carta aperta) */
+    .hero-mini-card:not(.expanded) .hp-bar-text { display: none; }
+    .hero-mini-card:not(.expanded) .hp-bar-container.armor { height: 5px; }
+    .hero-mini-card:not(.expanded) .hp-bar-container.armor .hp-bar-text { display: none; }
+    .hero-mini-card:not(.expanded) .hero-buffs { top: 2px; right: 2px; transform: scale(0.75); transform-origin: top right; }
+    .hero-mini-card.expanded {
+        flex: 0 0 min(270px, calc(100vw - 100px));
+        min-width: 0;
+        cursor: pointer;
+        box-shadow: 0 0 0 1px #c9982f, inset 0 0 18px rgba(0, 0, 0, 0.8);
+    }
+}
+
+        /* ---------- Scelta di un eroe con i ritratti (heroPickHtml): chi agisce, chi riceve il colpo, prova, preghiera ---------- */
+        .hero-pick-hint { margin: 2px 0 6px; font-size: 0.85rem; color: #d8cba8; }
+        .hero-pick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 4px 0 6px; }
+        .hero-pick-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            width: 112px; padding: 6px 4px; margin: 0; letter-spacing: 0;
+        }
+        .hero-pick-btn .hero-portrait { width: 64px; height: 64px; flex-basis: 64px; }
+        .hero-pick-btn .hero-portrait > span { font-size: 2rem; }
+        .hero-pick-btn:hover .hero-portrait,
+        .hero-pick-btn:focus-visible .hero-portrait { box-shadow: 0 0 0 2px var(--wc-yellow), 0 0 10px rgba(0, 0, 0, 0.8); }
+        .hero-pick-btn.target:hover .hero-portrait,
+        .hero-pick-btn.target:focus-visible .hero-portrait,
+        .hero-pick-btn.forced .hero-portrait { box-shadow: 0 0 0 2px #ff6b5b, 0 0 10px rgba(0, 0, 0, 0.8); }
+        .hero-pick-name { font-size: 0.78rem; font-weight: 700; color: #f2e6c4; line-height: 1.15; text-align: center; }
+        .hero-pick-sub { font-size: 0.72rem; color: #cdbb92; }
+        .hero-pick-sub[data-chance="high"] { color: #8dff78; }
+        .hero-pick-sub[data-chance="mid"] { color: #ffe08a; }
+        .hero-pick-sub[data-chance="low"] { color: #ff8a70; }

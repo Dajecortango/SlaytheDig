@@ -53,8 +53,12 @@
                     shopPool.push(pickByRarity(notYetOffered.length ? notYetOffered : pool, cascade));
                 }
             };
+            // Pozione sempre in vendita (MERCHANT_FIXED_ITEM): uno slot in più, scoperto; i consumabili a caso sono altri
+            const fisso = MERCHANT_FIXED_ITEM
+                ? gameItems.find(i => i.id === MERCHANT_FIXED_ITEM) || LIBRERIA.armeria[MERCHANT_FIXED_ITEM] || null : null;
+            const altri = fisso ? consumables.filter(i => i.id !== fisso.id) : consumables;
             pickDistinct(equipment, MERCHANT_EQUIPMENT_SLOTS);
-            pickDistinct(consumables, MERCHANT_CONSUMABLE_SLOTS);
+            pickDistinct(altri.length ? altri : consumables, MERCHANT_CONSUMABLE_SLOTS);
 
             // Effetti speciali "mercante" (sconti di reliquie e passive: Moneta di Fredlös, Lasciapassare mercantile,
             // Inganno del drago verde), maledizioni e rincaro valgono per gli oggetti, non per il medico
@@ -69,12 +73,14 @@
                 return basePrice;
             };
 
-            const stock = shopPool.filter(Boolean).map(item => {
+            const voce = (item, revealed) => {
                 const rarity = itemRarity(item);
                 const spread = ITEM_PRICE_SPREAD[rarity];
                 const basePrice = Math.max(1, itemBasePrice(item) + Math.floor(rng() * (spread * 2 + 1)) - spread);
-                return { kind: 'item', item, price: adjust(basePrice), revealed: false };
-            });
+                return { kind: 'item', item, price: adjust(basePrice), revealed };
+            };
+            const stock = shopPool.filter(Boolean).map(item => voce(item, false));
+            if (fisso) stock.push({ ...voce(fisso, true), fisso: true });
 
             // Il prezzo è quello di 1 HP: il medico resta disponibile finché ci sono monete
             stock.push({ kind: 'medic', item: MEDIC_CARD, price: MEDIC_PRICE_PER_HP, fixedPrice: true, revealed: true });
@@ -196,6 +202,8 @@
     stockMerchant();
 
     renderMerchantShop();
+    // Il mercante serve le carte una alla volta
+    document.querySelectorAll('#merchantItemsList > *').forEach((card, i) => revealAsCard(card, 250 + i * 110));
 }
 
         function renderMerchantShop() {
@@ -218,7 +226,7 @@
                     <button data-idx="${idx}" class="armory-btn rar-card-${itemRarity(entry.item)} ${entry.kind === 'medic' ? 'medic-card' : ''} ${canAfford ? '' : 'unaffordable'} ${flip}" ${azione('tryBuyMerchantItem', idx)} data-tip="${esc(entry.kind === 'item' ? itemTip(entry.item) : `${entry.item.name}||${entry.item.desc}`)}">
                         ${itemIconHtml(entry.item)}
                         <span class="tile-text">
-                            <strong>${entry.item.name}</strong>${entry.kind === 'medic' ? '<span class="tile-tag">Servizio</span>' : ''}${stealTag}
+                            <strong>${entry.item.name}</strong>${entry.kind === 'medic' ? '<span class="tile-tag">Servizio</span>' : ''}${entry.fisso ? '<span class="tile-tag">Sempre in vendita</span>' : ''}${stealTag}
                             <span class="tile-sub">${kw(entry.item.desc)}</span>
                         </span>
                         <span class="price ${canAfford ? '' : 'too-much'}">${oldPrice}<span class="coin"></span>${price}${entry.kind === 'medic' ? '/HP' : ''}</span>
@@ -235,7 +243,7 @@
                 : merchantBoughtSomething() ? 'Non si può più rinnovare: hai già comprato qualcosa.'
                 : stato.partyCoins < MERCHANT_REROLL_COST ? 'Non hai abbastanza Scudi.' : '';
             reroll.disabled = !!rerollBlock;
-            reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} Scudi e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via). ` +
+            reroll.dataset.tip = `Rinnova la merce||Paghi ${MERCHANT_REROLL_COST} Scudi e il mercante mostra 6 nuove carte coperte (quelle attuali vengono rimesse via; la pozione sempre in vendita e il medico restano). ` +
                 `Una sola volta per mercante, e solo prima di comprare.${rerollBlock ? ' ' + rerollBlock : ''}`;
             const haggle = document.getElementById('btnMerchantHaggle');
             haggle.disabled = merchantHaggle !== null || !stato.party.some(h => h.hp > 0);

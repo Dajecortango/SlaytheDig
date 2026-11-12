@@ -29,6 +29,12 @@
         sway.querySelectorAll('.wc-chains span').forEach((chain, i) => {
             gsap.set(chain, { transformOrigin: '50% 0%' });
             gsap.to(chain, { rotation: i % 2 ? -0.9 : 0.9, duration: 2.6 + i * 0.4, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * 0.7 });
+            // Maglie una dentro l'altra: ognuna segue quella sopra con un piccolo ritardo, così il movimento
+            // scende lungo la catena come un'onda
+            maglie(chain, i).forEach((m, k) => {
+                gsap.set(m, { transformOrigin: '50% 0%' });
+                gsap.to(m, { rotation: (i % 2 ? -1 : 1) * 0.7, duration: 1.5 + i * 0.2, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * 0.5 + k * 0.14 });
+            });
         });
 
         // Spinta quando il mouse entra nel pannello: piccola rotazione che si smorza
@@ -39,9 +45,50 @@
                 const rect = panel.getBoundingClientRect();
                 const side = e.clientX < rect.left + rect.width / 2 ? 1 : -1;
                 gsap.fromTo(hang, { rotation: side * 0.9 }, { rotation: 0, duration: 1.6, ease: 'elastic.out(1, 0.22)', overwrite: 'auto' });
+                scuotiCatene(hang, 0.5);
             });
         }
         return sway;
+    }
+
+    // Divide una catena in maglie annidate (.maglia dentro .maglia): la piastrella dell'immagine è alta MAGLIA_PX.
+    // Se ne mettono quante ne servono per la catena più lunga; quelle che avanzano le taglia il contenitore.
+    // Ogni maglia ha una variante (classe v0..v3: più scura, storta, consumata) scelta dal posto, sempre la stessa.
+    const MAGLIA_PX = 30, MAGLIE_MAX = 6;
+    function maglie(chain, i) {
+        const gia = chain.querySelectorAll('.maglia');
+        if (gia.length) return [...gia];
+        chain.classList.add('a-maglie', i % 2 ? 'gancio-b' : 'gancio-a');
+        const box = document.createElement('i');
+        box.className = 'maglie';
+        let dentro = box;
+        const tutte = [];
+        for (let k = 0; k < MAGLIE_MAX; k++) {
+            const m = document.createElement('i');
+            m.className = `maglia v${(k * 3 + i * 2 + 1) % 4}`;
+            m.style.setProperty('--k', k);
+            dentro.appendChild(m);
+            dentro = m;
+            tutte.push(m);
+        }
+        chain.appendChild(box);
+        return tutte;
+    }
+
+    // Il pannello si muove (discesa, spinta del mouse): le catene si tendono di colpo, una frustata scende lungo
+    // le maglie e un riflesso corre sul metallo (classe in-moto, css/gioco-14-bottoni-e-movimento.css)
+    function scuotiCatene(hang, forza) {
+        hang.classList.remove('in-moto');
+        void hang.offsetWidth;
+        hang.classList.add('in-moto');
+        clearTimeout(hang._inMoto);
+        hang._inMoto = setTimeout(() => hang.classList.remove('in-moto'), 1300);
+        hang.querySelectorAll('.wc-chains span').forEach((chain, i) => {
+            gsap.fromTo(chain, { scaleY: 1 + 0.07 * forza }, { scaleY: 1, duration: 0.7, ease: 'elastic.out(1.2, 0.3)', overwrite: 'auto' });
+            chain.querySelectorAll('.maglia').forEach((m, k) => {
+                gsap.fromTo(m, { x: (i % 2 ? -1 : 1) * 2.2 * forza }, { x: 0, duration: 1.3, ease: 'elastic.out(1, 0.24)', delay: k * 0.045, overwrite: 'auto' });
+            });
+        });
     }
 
     function startIdleSway(sway, i) {
@@ -67,6 +114,7 @@
                 .call(() => {
                     if (typeof synthSfx === 'function') synthSfx('chain');
                     hang.classList.add('wc-landed');
+                    scuotiCatene(hang, 1);
                     setTimeout(() => hang.classList.remove('wc-landed'), 900);
                 }, null, 0.45)
                 .fromTo(hang, { rotation: (i % 2 ? -1 : 1) * 2.4 }, { rotation: 0, duration: 2.4, ease: 'elastic.out(1, 0.18)' }, 0.5);

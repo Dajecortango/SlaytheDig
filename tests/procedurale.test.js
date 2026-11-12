@@ -36,8 +36,9 @@ module.exports = (t, carica) => {
         }
         // Tutti i boss escono, non solo i più forti
         const usciti = new Set();
-        for (let seme = 1; seme <= 60; seme++) usciti.add(g.campaignForPlay('drakengrad', seme).mapNodes.find(n => !n.next.length).enemy.replace(/__l\d+$/, ''));
-        ids('boss').forEach(id => t.ok(usciti.has(id), `boss ${id} mai uscito in 60 mappe`));
+        // (150 mappe: con una ventina di boss nel bestiario 60 non bastano a vederli tutti)
+        for (let seme = 1; seme <= 150; seme++) usciti.add(g.campaignForPlay('drakengrad', seme).mapNodes.find(n => !n.next.length).enemy.replace(/__l\d+$/, ''));
+        ids('boss').forEach(id => t.ok(usciti.has(id), `boss ${id} mai uscito in 150 mappe`));
     });
 
     t.test('eventi degli altri capitoli: prendono il posto di alcune sfide, la forma della mappa non cambia', () => {

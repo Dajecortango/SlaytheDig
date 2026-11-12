@@ -5,7 +5,7 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["loch_ein_parte_2"] = {
-    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 25 },
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "maxEroi": 6,
     "id": "loch_ein_parte_2",
     "title": "Loch Ein, Parte Due: La Città Caduta",

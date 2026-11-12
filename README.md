@@ -17,7 +17,7 @@ Apri `index.html` in un browser moderno. Non serve installare nulla né avviare 
 ```
 index.html           struttura delle schermate (markup)
 css/wc3-base.css     base grafica comune (gioco, editor, telefono)
-css/style.css        stile e animazioni dell'interfaccia
+css/style.css        indice dello stile (importa css/gioco-NN-*.css, divisi per parte)
 js/wc3fx.js          animazioni dei menu con GSAP (js/vendor/gsap.min.js)
 editor.html          editor delle campagne (js/editor/, css/editor.css)
 js/comune.js         costanti e funzioni condivise da gioco ed editor

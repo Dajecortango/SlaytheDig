@@ -1,0 +1,209 @@
+/* Stile del gioco, parte 13 di 13: carte che reagiscono, riposo, titolo del capitolo, fine partita, polvere, diario.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+/* ==========================================================================
+   Abbellimenti: carte che reagiscono, riposo, titolo del capitolo, fine partita
+   ========================================================================== */
+
+/* ---------- Carte degli eroi che reagiscono ---------- */
+/* Cura: scintille verdi che salgono (fxHealMotes in js/effetti.js) */
+.fx-heal-motes { position: absolute; inset: 0; z-index: 6; pointer-events: none; overflow: visible; }
+.fx-heal-motes i {
+    position: absolute; bottom: 10px; width: 8px; height: 8px; border-radius: 50%;
+    background: #d4ffc8; box-shadow: 0 0 10px 4px rgba(110, 255, 100, 0.9);
+    animation: heal-mote 1.05s var(--ease-entra) var(--d, 0s) both;
+}
+@keyframes heal-mote {
+    0% { opacity: 0; transform: translateY(0) scale(0.4); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(calc(-1 * var(--h, 40px))) scale(1.1); }
+}
+/* Colpo subito: il ritratto sobbalza e si tinge di rosso */
+.hero-mini-card.fx-hit .hero-portrait { animation: portrait-flinch 0.42s var(--ease-entra); }
+@keyframes portrait-flinch {
+    0%, 100% { transform: none; filter: none; }
+    25% { transform: scale(0.9) rotate(-5deg); filter: sepia(1) saturate(6) hue-rotate(-35deg) brightness(1.15); }
+    60% { transform: scale(1.05) rotate(2deg); filter: sepia(0.5) saturate(3) hue-rotate(-35deg); }
+}
+/* Ferito (2 HP o meno): la barra della vita batte come un cuore e la carta ha un alone rosso */
+.hero-mini-card.ferito:not(.dead) { box-shadow: 0 0 0 1px #8a2a1c, inset 0 0 0 1px rgba(255, 90, 60, 0.12), inset 0 0 22px rgba(120, 10, 0, 0.55); }
+.hero-mini-card.ferito:not(.dead) .hp-bar-container:not(.armor) { animation: hp-battito 1.15s ease-in-out infinite; }
+@keyframes hp-battito {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 60, 40, 0); }
+    12% { box-shadow: 0 0 9px 2px rgba(255, 60, 40, 0.85); }
+    24% { box-shadow: 0 0 2px 0 rgba(255, 60, 40, 0.25); }
+    36% { box-shadow: 0 0 7px 1px rgba(255, 60, 40, 0.65); }
+    60% { box-shadow: 0 0 0 0 rgba(255, 60, 40, 0); }
+}
+
+/* ---------- Riposo: la notte ai bordi, il falò sulle carte (body.riposo-notte, showScreen) ---------- */
+body.riposo-notte::after {
+    content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+    background: radial-gradient(ellipse 80% 95% at 46% 66%, transparent 42%, rgba(6, 8, 24, 0.45) 72%, rgba(2, 3, 12, 0.8) 100%);
+    animation: notte-scende 1.8s var(--ease-entra) both;
+}
+@keyframes notte-scende { from { opacity: 0; } to { opacity: 1; } }
+body.riposo-notte .hero-mini-card:not(.dead):not(.trascinata) {
+    animation: luce-falo 3.4s ease-in-out infinite;
+    animation-delay: calc(var(--falo, 0) * -0.7s);
+}
+body.riposo-notte .hero-mini-card:nth-child(2) { --falo: 1; }
+body.riposo-notte .hero-mini-card:nth-child(3) { --falo: 2.6; }
+body.riposo-notte .hero-mini-card:nth-child(4) { --falo: 3.3; }
+body.riposo-notte .hero-mini-card:nth-child(5) { --falo: 4.5; }
+body.riposo-notte .hero-mini-card:nth-child(6) { --falo: 1.9; }
+@keyframes luce-falo {
+    0%, 100% { box-shadow: 0 0 0 1px #b0702a, 0 0 16px 1px rgba(255, 140, 40, 0.32), inset 0 0 18px rgba(0, 0, 0, 0.7), inset 0 70px 60px -34px rgba(255, 130, 35, 0.34); }
+    22% { box-shadow: 0 0 0 1px #e09a3c, 0 0 16px 1px rgba(255, 140, 40, 0.6), inset 0 0 18px rgba(0, 0, 0, 0.7), inset 0 70px 60px -34px rgba(255, 130, 35, 0.56); }
+    41% { box-shadow: 0 0 0 1px #96601f, 0 0 16px 1px rgba(255, 140, 40, 0.22), inset 0 0 18px rgba(0, 0, 0, 0.7), inset 0 70px 60px -34px rgba(255, 130, 35, 0.24); }
+    63% { box-shadow: 0 0 0 1px #d28c34, 0 0 16px 1px rgba(255, 140, 40, 0.5), inset 0 0 18px rgba(0, 0, 0, 0.7), inset 0 70px 60px -34px rgba(255, 130, 35, 0.48); }
+    82% { box-shadow: 0 0 0 1px #a2681f, 0 0 16px 1px rgba(255, 140, 40, 0.28), inset 0 0 18px rgba(0, 0, 0, 0.7), inset 0 70px 60px -34px rgba(255, 130, 35, 0.3); }
+}
+body.riposo-notte .hero-mini-card:not(.dead) .hero-portrait { animation: ritratto-falo 3.4s ease-in-out infinite; animation-delay: calc(var(--falo, 0) * -0.7s); }
+@keyframes ritratto-falo {
+    0%, 100% { filter: sepia(0.25) saturate(1.2) brightness(1.02); }
+    22%, 63% { filter: sepia(0.35) saturate(1.35) brightness(1.14); }
+    41%, 82% { filter: sepia(0.2) saturate(1.1) brightness(0.94); }
+}
+
+/* ---------- Titolo del capitolo: copertina con zoom lento, lettere una alla volta, riga di lore ---------- */
+.chapter-overlay { overflow: hidden; }
+.chapter-bg {
+    position: absolute; inset: -4%; background-size: cover; background-position: center;
+    filter: saturate(0.8) brightness(0.62);
+    animation: chapter-zoom 9s var(--ease-entra) both;
+}
+@keyframes chapter-zoom { from { transform: scale(1); } to { transform: scale(1.14) translateY(-1.5%); } }
+.chapter-shade {
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(ellipse at 50% 52%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.72) 55%, rgba(0, 0, 0, 0.94) 100%),
+        linear-gradient(rgba(0, 0, 0, 0.75), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.85));
+}
+.chapter-content { position: relative; z-index: 1; }
+.chapter-word { white-space: nowrap; }
+.chapter-letter { opacity: 0; animation: chapter-letter 0.5s var(--ease-entra) both; animation-delay: calc(0.9s + var(--i, 0) * 45ms); }
+@keyframes chapter-letter { from { opacity: 0; } to { opacity: 1; } }
+.chapter-lore {
+    max-width: min(640px, 86vw); margin: 18px auto 0; font-size: 1rem; line-height: 1.5; color: #e6dcc0;
+    text-shadow: 0 1px 3px #000, 0 0 12px #000;
+    opacity: 0; animation: chapter-lore 1.2s var(--ease-entra) 2.4s both;
+}
+@keyframes chapter-lore { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+body.no-anim .chapter-bg, body.no-anim .chapter-letter, body.no-anim .chapter-lore { animation: none; opacity: 1; }
+
+/* ---------- Fine partita ---------- */
+/* Sconfitta: lo stendardo cade e si spegne. Vittoria: l'immagine si accende e si posa */
+#screenDefeat.screen-enter .end-banner { transform-origin: 50% 0; animation: stendardo-cade 2.6s var(--ease-muove) 0.4s both; }
+@keyframes stendardo-cade {
+    0% { transform: none; filter: none; }
+    35% { transform: rotate(3deg) translateY(4px); filter: none; }
+    100% { transform: rotate(-5deg) translateY(22px) scale(0.96); filter: grayscale(0.85) brightness(0.55); }
+}
+#screenVictory.screen-enter .end-banner { animation: vittoria-luce 2.4s var(--ease-entra) both; }
+@keyframes vittoria-luce {
+    0% { transform: scale(1.12); filter: brightness(2.2) saturate(0.4); }
+    45% { filter: brightness(1.35) saturate(1.15); }
+    100% { transform: none; filter: none; }
+}
+#screenVictory.screen-enter .event-left-image-box { animation: vittoria-alone 3.2s var(--ease-entra) both; }
+@keyframes vittoria-alone {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 110, 0); }
+    30% { box-shadow: 0 0 46px 8px rgba(255, 205, 90, 0.65); }
+    100% { box-shadow: 0 0 18px 2px rgba(255, 205, 90, 0.22); }
+}
+/* Ritratti del riepilogo: entrano uno a uno; chi è in piedi ha un lampo d'oro, i caduti si spengono dopo */
+.run-summary-hero.fine-entra { animation: fine-entra 0.55s var(--ease-entra) both; animation-delay: calc(0.5s + var(--i, 0) * 0.22s); }
+@keyframes fine-entra { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.run-summary-hero.fine-gloria .hero-portrait { animation: fine-gloria 1.3s var(--ease-entra) both; animation-delay: calc(1s + var(--i, 0) * 0.22s); }
+@keyframes fine-gloria {
+    0% { box-shadow: 0 0 0 2px #b8923e, 0 0 0 3px #000; }
+    40% { box-shadow: 0 0 0 2px #ffe58a, 0 0 0 3px #000, 0 0 20px 6px rgba(255, 215, 100, 0.9); }
+    100% { box-shadow: 0 0 0 2px #e3bb55, 0 0 0 3px #000, 0 0 8px 1px rgba(255, 215, 100, 0.35); }
+}
+.run-summary-hero.fine-entra.fine-spegne {
+    animation: fine-entra-vivo 0.55s var(--ease-entra) both, fine-spegne 1.1s var(--ease-esce) both;
+    animation-delay: calc(0.5s + var(--i, 0) * 0.22s), calc(1.5s + var(--i, 0) * 0.5s);
+}
+@keyframes fine-entra-vivo { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes fine-spegne { from { filter: none; } to { filter: grayscale(1) brightness(0.6); } }
+body.no-anim .end-banner, body.no-anim .run-summary-hero, body.no-anim #screenVictory .event-left-image-box,
+body.no-anim.riposo-notte .hero-mini-card, body.no-anim.riposo-notte .hero-portrait, body.no-anim.riposo-notte::after,
+body.no-anim .hero-mini-card.ferito .hp-bar-container { animation: none !important; }
+
+/* ==========================================================================
+   Materia: polvere nell'aria e diario su pergamena
+   (texture e usura sono nei fondi di carte e pannelli, variabile --usura in css/wc3-base.css)
+   ========================================================================== */
+:root {
+    /* Scrittura a mano del diario: caratteri di sistema (niente file in più), poi il corsivo generico */
+    --font-hand: 'Segoe Script', 'Lucida Handwriting', 'Bradley Hand', 'Snell Roundhand', 'Brush Script MT', cursive;
+}
+.journal-stat, .run-summary-hero { background: linear-gradient(rgba(22, 17, 12, 0.88), rgba(10, 8, 6, 0.93)), var(--tex-stone); }
+
+/* ---------- Polvere nell'aria (granelli <i> in #embers, js/effetti.js): chiara, lenta, appena visibile ---------- */
+.embers span { box-shadow: 0 0 5px 1px rgba(255, 120, 20, 0.4); }
+@keyframes ember-rise {
+    0% { transform: translate(0, 0); opacity: 0; }
+    12% { opacity: 0.55; }
+    75% { opacity: 0.3; }
+    100% { transform: translate(var(--drift, 0px), -105vh); opacity: 0; }
+}
+.embers i {
+    position: absolute; border-radius: 50%; background: rgba(236, 222, 190, 0.5); opacity: 0;
+    animation: polvere-vaga ease-in-out infinite;
+}
+@keyframes polvere-vaga {
+    0%, 100% { transform: translate(0, 0); opacity: 0; }
+    25% { opacity: 0.32; }
+    50% { transform: translate(var(--dx, 40px), var(--dy, -30px)); opacity: 0.14; }
+    75% { opacity: 0.28; }
+}
+body.no-anim .embers i { display: none; }
+
+/* ---------- Diario: una pagina di pergamena scritta a mano, con le macchie ---------- */
+.diario {
+    position: relative; text-align: left; padding: 22px 26px 26px; color: #2b1a0a; text-shadow: none;
+    font-family: var(--font-body);
+    background:
+        /* macchia d'inchiostro, alone di una coppa, gocce, angoli bruciati */
+        radial-gradient(ellipse 46px 34px at 91% 7%, rgba(30, 18, 40, 0.5), rgba(30, 18, 40, 0.22) 55%, transparent 72%),
+        radial-gradient(circle at 12% 88%, transparent 34px, rgba(96, 44, 20, 0.2) 36px, rgba(96, 44, 20, 0.11) 41px, transparent 44px),
+        radial-gradient(circle 7px at 84% 13%, rgba(30, 18, 40, 0.42), transparent 100%),
+        radial-gradient(circle 4px at 80% 9%, rgba(30, 18, 40, 0.36), transparent 100%),
+        radial-gradient(ellipse 130px 70px at 62% 54%, rgba(120, 82, 30, 0.14), transparent 100%),
+        radial-gradient(ellipse at 0 0, rgba(60, 30, 8, 0.62), transparent 22%),
+        radial-gradient(ellipse at 100% 100%, rgba(60, 30, 8, 0.58), transparent 24%),
+        radial-gradient(ellipse at center, transparent 58%, rgba(110, 70, 25, 0.4) 100%),
+        var(--tex-parchment);
+    border: 1px solid #6b4a12;
+    box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255, 245, 210, 0.3), inset 0 0 34px rgba(90, 55, 15, 0.5), 0 6px 16px rgba(0, 0, 0, 0.7);
+}
+.diario-data { margin: 0 0 14px; font-family: var(--font-hand); font-size: 0.95rem; color: #5a3212; text-align: right; }
+.diario .journal-section h4 {
+    font-family: var(--font-hand); font-size: 1.15rem; letter-spacing: 0; text-transform: none; color: #6b1a0c;
+    border-bottom: 0; padding-bottom: 6px;
+    /* riga tirata a penna, più carica a sinistra */
+    background: linear-gradient(90deg, rgba(60, 28, 10, 0.75), rgba(60, 28, 10, 0.35) 62%, transparent) left bottom / 100% 1.5px no-repeat;
+}
+.diario .journal-hero, .diario .journal-stat {
+    background: rgba(120, 82, 30, 0.1); border: 0;
+    box-shadow: inset 0 0 0 1px rgba(70, 40, 12, 0.45);
+}
+.diario .journal-hero:nth-child(odd) { transform: rotate(-0.35deg); }
+.diario .journal-hero:nth-child(even) { transform: rotate(0.3deg); }
+.diario .journal-hero.dead { filter: grayscale(1) contrast(0.85); }
+.diario .journal-hero-name { font-family: var(--font-hand); font-size: 1.02rem; color: #4a1c08; }
+.diario .journal-hero-hp { color: #4d3418; }
+.diario .journal-line, .diario .journal-item { color: #33200d; }
+.diario .journal-line b { color: #5a2a90; }
+.diario .journal-item b { color: #4a1c08; }
+.diario .journal-list { font-family: var(--font-hand); font-size: 0.92rem; line-height: 1.5; }
+.diario .journal-list .relic { color: #4c2480; }
+.diario .journal-list .curse { color: #8e1010; }
+.diario .journal-empty, .diario .dice-stats-note { font-family: var(--font-hand); font-size: 0.9rem; color: #6a4a26; font-style: normal; }
+.diario .journal-stat b { font-family: var(--font-hand); color: #4a1c08; }
+.diario .journal-stat span { color: #5a4022; }
+.diario .stat-chip { background: rgba(60, 34, 10, 0.16); color: #2b1a0a; box-shadow: inset 0 0 0 1px rgba(70, 40, 12, 0.4); text-shadow: none; }
+.diario .stat-chip i { color: #6b3a10; }
+.diario .dice-bar b, .diario .dice-bar small { color: #33200d; }
+.diario .dice-bar-fill { background: linear-gradient(#7a2a12, #4a1808); box-shadow: none; }

@@ -65,6 +65,18 @@
             setTimeout(() => flash.remove(), 900);
         }
 
+        // Cura: scintille verdi che salgono dalla carta (di più con una cura grande)
+        function fxHealMotes(card, amount) {
+            if (!card || !animationsEnabled()) return;
+            const box = document.createElement('span');
+            box.className = 'fx-heal-motes';
+            const n = Math.min(4 + amount * 2, 12);
+            box.innerHTML = Array.from({ length: n }, () =>
+                `<i style="left:${Math.round(8 + Math.random() * 84)}%; --d:${(Math.random() * 0.35).toFixed(2)}s; --h:${Math.round(45 + Math.random() * 55)}px"></i>`).join('');
+            card.appendChild(box);
+            setTimeout(() => box.remove(), 1400);
+        }
+
         function heroCardEl(hero) {
             return document.querySelector(`.hero-mini-card[data-hero="${CSS.escape(hero.name)}"]`);
         }
@@ -84,7 +96,7 @@
                 const dArmor = hero.current_armor - prev.armor;
                 if (dHp < 0 || dArmor < 0) fxHit(card);
                 if (dHp < 0) fxCardFlash(card, 'hurt');
-                else if (dHp > 0) fxCardFlash(card, 'healed');
+                else if (dHp > 0) { fxCardFlash(card, 'healed'); fxHealMotes(card, dHp); }
                 if (dArmor < 0) synthSfx('armor');
                 if (dHp < 0) setTimeout(() => synthSfx('hit'), dArmor < 0 ? 180 : 0);
                 if (dArmor < 0) fxFloatOn(card, `${dArmor} Armatura`, 'armor');
@@ -346,7 +358,7 @@
             coinTickTimeout = setTimeout(() => {
                 const start = Date.now();
                 coinTickInterval = setInterval(() => {
-                    const p = Math.min(1, (Date.now() - start) / duration);
+                    const p = Math.max(0, Math.min(1, (Date.now() - start) / duration));
                     setCoinText(Math.round(from + (to - from) * p));
                     if (p >= 1) {
                         clearInterval(coinTickInterval);
@@ -356,7 +368,8 @@
             }, delay);
         }
 
-        function spawnFlyingCoins(srcEl, dstEl, count, delay) {
+        // alCentro: le monete arrivano al centro della destinazione (il mercante) invece che sul contatore
+        function spawnFlyingCoins(srcEl, dstEl, count, delay, alCentro) {
             const s = srcEl.getBoundingClientRect();
             const d = dstEl.getBoundingClientRect();
             for (let i = 0; i < count; i++) {
@@ -369,8 +382,8 @@
                 document.body.appendChild(coin);
                 setTimeout(() => {
                     coin.style.opacity = '1';
-                    coin.style.left = `${d.left + 20}px`;
-                    coin.style.top = `${d.top + d.height / 2}px`;
+                    coin.style.left = `${alCentro ? d.left + d.width / 2 + (Math.random() * 50 - 25) : d.left + 20}px`;
+                    coin.style.top = `${d.top + d.height / 2 + (alCentro ? Math.random() * 40 - 20 : 0)}px`;
                 }, delay + i * 70);
                 setTimeout(() => { coin.style.opacity = '0'; }, delay + i * 70 + 720);
                 setTimeout(() => coin.remove(), delay + i * 70 + 950);
@@ -398,6 +411,9 @@
                 });
             } else {
                 wrap.classList.add('coin-spend');
+                // Le monete spese volano dal contatore al mercante
+                const mercante = document.getElementById('merchantImg');
+                if (mercante && mercante.offsetParent !== null) spawnFlyingCoins(wrap, mercante, Math.min(-diff, 8), 0, true);
                 tickCoinCounter(from, target, 0, 400, () => wrap.classList.remove('coin-spend'));
             }
         }
@@ -436,6 +452,18 @@
             return duration;
         }
 
+        // Un oggetto assegnato (bottino, tesoro, mercante) vola dalla sua carta allo zaino dell'eroe che lo riceve.
+        // Si cerca l'icona della carta ancora a schermo: prima quella scelta, poi una con la stessa immagine.
+        function fxItemToHero(item, hero) {
+            if (!item || !hero || !animationsEnabled() || typeof itemImageSrc !== 'function') return 0;
+            const src = itemImageSrc(item);
+            const card = heroCardEl(hero);
+            if (!src || !card) return 0;
+            const imgs = [...document.querySelectorAll('#gameContainer .armory-btn img')].filter(i => i.offsetParent !== null && i.getAttribute('src') === src);
+            const img = imgs.find(i => i.closest('.selected')) || imgs[0];
+            return img ? flyIconToCounter(img, card.querySelector('.hero-inventory') || card) : 0;
+        }
+
         function showOutcomeOverlay(kind, data) {
             const isRelic = kind === 'relic';
             const overlay = document.createElement('div');
@@ -444,6 +472,7 @@
                 <div class="outcome-card">
                     <div class="${isRelic ? 'outcome-sparkles' : 'outcome-smoke'}"></div>
                     <div class="outcome-icon"><img src="${isRelic ? 'immagini/icone/BTNEnchantedGemstone.png' : 'immagini/icone/BTNOrbOfCorruption.png'}" alt=""></div>
+                    ${isRelic ? '<div class="nastro-sigillo" aria-hidden="true"></div>' : ''}
                     <div class="outcome-kind">${isRelic ? 'Reliquia ottenuta' : 'Maledizione subita'}</div>
                     <div class="outcome-name">${data.name}</div>
                     <div class="outcome-desc">${kw(data.desc || '')}</div>
@@ -680,6 +709,26 @@
             setTimeout(() => rays.remove(), animTime(1500));
         }
 
+        /* ---------- Fine partita: i ritratti entrano uno a uno, i caduti si spengono, i numeri si contano ----------
+           Lo stendardo che cade (sconfitta) e l'immagine che si accende (vittoria) sono solo CSS, su .screen-enter. */
+        function fxFinePartita(box, esito) {
+            if (!box || !animationsEnabled()) return;
+            box.querySelectorAll('.run-summary-hero').forEach((el, i) => {
+                el.style.setProperty('--i', i);
+                el.classList.add('fine-entra', el.classList.contains('dead') ? 'fine-spegne' : 'fine-gloria');
+            });
+            box.classList.add(`fine-${esito}`);
+            speedUpAnimations(box);
+            // Numeri interi delle statistiche: si contano da zero (quelli "3 / 5" restano come sono)
+            box.querySelectorAll('.journal-stat b').forEach((b, i) => {
+                const n = /^\d+$/.test(b.textContent.trim()) ? Number(b.textContent) : 0;
+                if (n < 2) return;
+                b.textContent = '0';
+                setTimeout(() => countText(b, 0, n, null, animTime(700 + Math.min(n, 30) * 20)), animTime(500 + i * 90));
+                setTimeout(() => { b.textContent = n; }, animTime(500 + i * 90 + 700 + Math.min(n, 30) * 20) + 400);  // comunque il valore vero
+            });
+        }
+
         /* ---------- Falò del riposo: scintille che salgono ---------- */
         (function spawnRestSparks() {
             const box = document.getElementById('restSparks');
@@ -695,16 +744,30 @@
 
         /* ---------- Braci di sfondo ---------- */
         (function spawnEmbers() {
+            // Poche e lente: se si notano sono troppe. BRACI braci che salgono, POLVERE granelli chiari che vagano
             const box = document.getElementById('embers');
-            for (let i = 0; i < 22; i++) {
+            const BRACI = 9, POLVERE = 12;
+            for (let i = 0; i < BRACI; i++) {
                 const ember = document.createElement('span');
-                const size = 2 + Math.random() * 3;
+                const size = 1.5 + Math.random() * 2;
                 ember.style.left = `${Math.random() * 100}%`;
                 ember.style.width = ember.style.height = `${size}px`;
-                ember.style.animationDuration = `${9 + Math.random() * 9}s`;
-                ember.style.animationDelay = `${-Math.random() * 18}s`;
+                ember.style.animationDuration = `${18 + Math.random() * 16}s`;
+                ember.style.animationDelay = `${-Math.random() * 34}s`;
                 ember.style.setProperty('--drift', `${Math.random() * 140 - 70}px`);
                 box.appendChild(ember);
+            }
+            for (let i = 0; i < POLVERE; i++) {
+                const granello = document.createElement('i');
+                const size = 1 + Math.random() * 1.6;
+                granello.style.left = `${Math.random() * 100}%`;
+                granello.style.top = `${Math.random() * 100}%`;
+                granello.style.width = granello.style.height = `${size}px`;
+                granello.style.animationDuration = `${34 + Math.random() * 30}s`;
+                granello.style.animationDelay = `${-Math.random() * 60}s`;
+                granello.style.setProperty('--dx', `${Math.round(Math.random() * 160 - 80)}px`);
+                granello.style.setProperty('--dy', `${Math.round(Math.random() * 90 - 60)}px`);
+                box.appendChild(granello);
             }
         })();
 

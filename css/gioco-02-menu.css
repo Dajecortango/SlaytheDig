@@ -1,0 +1,385 @@
+/* Stile del gioco, parte 2 di 13: schermata iniziale, carosello delle campagne, pagina di un'avventura.
+   Caricato da css/style.css, nell'ordine: le parti dopo vincono su quelle prima. */
+        /* =========================================================
+           SCHERMATA INIZIALE / CAMPAGNE
+           ========================================================= */
+        /* ---------- Menu in stile Warcraft III ----------
+           Schermata iniziale e scelta campagna: scena a tutto schermo con pioggia e lampi,
+           logo in alto a sinistra, pannelli appesi a catene con pulsanti incassati. */
+        /* Catena: modulo ritagliato da sorgenti/ui/catena.png (generata, fuori da git), si ripete in verticale */
+        :root { --chain: url('../immagini/ui/catena_modulo.png'); }
+
+        .embers { z-index: 1; }
+
+        body.menu-mode .party-topbar,
+        body.menu-mode .party-console { display: none; }
+        body.menu-mode .game-layout { padding: 0; align-items: stretch; }
+        body.menu-mode .container {
+            width: 100%;
+            max-width: none;
+            max-height: none;
+            min-height: 100vh;
+            padding: 0;
+            overflow: visible;
+            border: none;
+            background: none;
+            box-shadow: none;
+        }
+
+        .menu-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 0.6s; }
+        body.menu-mode .menu-scene { opacity: 1; }
+        .menu-scene-img {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 55% 35% at 18% 78%, rgba(255, 110, 20, 0.28), transparent 70%),
+                radial-gradient(ellipse 90% 55% at 62% 0%, rgba(70, 80, 130, 0.38), transparent 72%),
+                linear-gradient(#131520, #0b0a0e 58%, #07060a);
+        }
+        .menu-scene-video, .menu-video-shade { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s; }
+        .menu-scene-video { width: 100%; height: 100%; object-fit: cover; }
+        /* Velo scuro a sinistra (logo) e a destra (pannelli) per leggere bene i testi sopra il video */
+        .menu-video-shade { background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.1) 60%, rgba(0, 0, 0, 0.6)); }
+        body.menu-mode.menu-video-ok .menu-scene-video,
+        body.menu-mode.menu-video-ok .menu-video-shade { opacity: 1; }
+        /* Sopra il video non servono paesaggio disegnato, nebbia, pioggia e lampi */
+        body.menu-mode.menu-video-ok .menu-scene-land,
+        body.menu-mode.menu-video-ok .menu-fog,
+        body.menu-mode.menu-video-ok .menu-rain,
+        body.menu-mode.menu-video-ok .menu-lightning { opacity: 0; transition: opacity 0.8s; }
+        .menu-scene-land { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58vh; }
+        .menu-fog {
+            position: absolute;
+            left: -20%; right: -20%; bottom: 0;
+            height: 45%;
+            background: var(--noise-cloud), linear-gradient(transparent, rgba(40, 34, 28, 0.55));
+            opacity: 0.55;
+            animation: fog-drift 70s linear infinite;
+        }
+        @keyframes fog-drift { from { background-position: 0 0, 0 0; } to { background-position: 1200px 0, 0 0; } }
+        .menu-rain { position: absolute; inset: 0; }
+        .menu-rain span {
+            position: absolute;
+            top: -120px;
+            width: 1px;
+            background: linear-gradient(transparent, rgba(200, 210, 230, 0.75));
+            transform: rotate(14deg);
+            animation: rain-fall linear infinite;
+        }
+        @keyframes rain-fall {
+            from { transform: translate(0, 0) rotate(14deg); }
+            to { transform: translate(-30vh, 125vh) rotate(14deg); }
+        }
+        .menu-lightning {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 50% at 68% 0%, rgba(210, 220, 255, 0.35), transparent 70%);
+            opacity: 0;
+            animation: lightning 11s infinite;
+        }
+        @keyframes lightning {
+            0%, 86% { opacity: 0; }
+            87% { opacity: 0.9; }
+            88% { opacity: 0.1; }
+            90% { opacity: 0.7; }
+            94%, 100% { opacity: 0; }
+        }
+        .menu-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 45% 45%, transparent 45%, rgba(0, 0, 0, 0.8)); }
+        body.no-anim .menu-rain, body.no-anim .menu-lightning { display: none; }
+        body.no-anim .menu-fog { animation: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .menu-rain, .menu-lightning { display: none; }
+            .menu-fog { animation: none; }
+        }
+
+        .wc-menu-screen { position: relative; min-height: 100vh; text-align: left; }
+
+        .menu-logo {
+            position: absolute;
+            left: clamp(16px, 5vw, 80px);
+            top: clamp(16px, 6vh, 60px);
+            width: min(560px, 48vw);
+            text-align: center;
+        }
+        .start-crest { width: 76px; height: 86px; margin: 0 auto -6px; display: block; filter: drop-shadow(0 4px 6px #000) drop-shadow(0 0 16px rgba(255, 160, 40, 0.3)); }
+        .game-title {
+            font-family: 'Cinzel Decorative', var(--font-title);
+            font-weight: 900;
+            font-size: clamp(2rem, 4.4vw, 3.8rem);
+            line-height: 1.05;
+            margin: 10px 0 6px;
+            text-transform: none;
+            letter-spacing: 0.03em;
+            background: linear-gradient(#fff6c8 0%, #f3cf62 38%, #9a6a14 52%, #e8bd52 70%, #fff0b0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 18px rgba(255, 160, 40, 0.35));
+        }
+        .game-title small {
+            display: block;
+            font-size: 0.42em;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+        }
+        .tagline { font-style: italic; color: #d8cba8; font-size: 1.02rem; margin: 6px 0 12px; text-shadow: 0 2px 4px #000; }
+
+        /* Pannelli appesi */
+        .wc-hang { position: absolute; right: clamp(16px, 4vw, 70px); width: min(360px, calc(100% - 32px)); display: flex; flex-direction: column; }
+        .wc-hang-main { top: 0; }
+        .wc-hang-bottom { bottom: clamp(36px, 8vh, 90px); }
+        .wc-hang-center { position: relative; right: auto; width: min(1280px, calc(100% - 32px)); margin: 0 auto; padding-bottom: 170px; }
+        .wc-chains { display: flex; justify-content: space-between; padding: 0 38px; height: clamp(40px, 13vh, 130px); margin-bottom: -14px; position: relative; z-index: 1; }
+        .wc-chains.short { height: 40px; }
+        .wc-hang-center .wc-chains { padding: 0 90px; height: clamp(30px, 6vh, 60px); }
+        .wc-chains span { width: 22px; height: 100%; background: var(--chain) center top / 22px 30px repeat-y; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.8)); }
+
+        .wc-panel {
+            position: relative;
+            padding: 8px 12px 10px;
+            border: 22px solid transparent;
+            border-image: var(--frame) var(--frame-slice) / 22px stretch;
+            background: var(--noise-fine), linear-gradient(rgba(29, 25, 22, 0.94), rgba(12, 10, 9, 0.96));
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 120, 30, 0.06);
+        }
+        .wc-panel-wide { padding: 6px 18px 14px; text-align: center; }
+        .wc-panel-wide h2 { margin-top: 4px; }
+
+        /* Ogni pulsante sta in un alloggiamento incassato con una punta di metallo a sinistra */
+        .wc-slot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 7px 0;
+            padding: 5px 7px 5px 4px;
+            background: linear-gradient(#0a0807, #16110d);
+            border-radius: 2px;
+            box-shadow: 0 0 0 1px #000, 0 0 0 2px #3a2806, inset 0 3px 8px rgba(0, 0, 0, 0.95);
+        }
+        .wc-slot::before {
+            content: '';
+            flex: 0 0 13px;
+            height: 20px;
+            background: linear-gradient(#fff0b0, #c9982f 45%, #6b4a12);
+            clip-path: polygon(100% 0, 0 50%, 100% 100%);
+            filter: drop-shadow(0 1px 1px #000);
+        }
+        .wc-slot:has(> .hidden) { display: none; }
+        .wc-menu-btn { flex: 1; margin: 0 0 6px; padding: 5px 12px; font-size: 0.95rem; letter-spacing: 0.12em; }
+        .wc-slot { padding-bottom: 3px; }
+
+        .menu-version {
+            position: absolute;
+            right: 14px;
+            bottom: 8px;
+            font-family: var(--font-title);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            text-shadow: 0 1px 2px #000;
+        }
+
+        @media (max-width: 900px) {
+            .wc-menu-screen { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 18px 0 40px; }
+            .menu-logo, .wc-hang { position: static; width: min(420px, calc(100% - 32px)); }
+            .wc-hang-center { width: calc(100% - 24px); padding-bottom: 0; }
+            .wc-chains { height: 28px; }
+            .menu-version { position: static; }
+        }
+
+        /* ---------- Carosello campagne ---------- */
+        .campaign-carousel { position: relative; margin: 16px 0 6px; }
+        .campaigns-track {
+            position: relative;
+            display: flex;
+            gap: 28px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            padding: 14px 11%;
+            scrollbar-width: none;
+            outline: none;
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+        }
+        .campaigns-track::-webkit-scrollbar { display: none; }
+        .campaigns-track .campaign-card {
+            flex: 0 0 100%;
+            scroll-snap-align: center;
+            transform: scale(0.9);
+            filter: brightness(0.55) saturate(0.7);
+            transition: transform 0.35s var(--ease-out), filter 0.35s ease, box-shadow 0.35s ease;
+        }
+        .campaigns-track .campaign-card.is-active {
+            transform: none;
+            filter: none;
+            box-shadow: 0 0 38px rgba(255, 180, 40, 0.22);
+        }
+        .campaigns-track .campaign-card.is-active:hover { filter: brightness(1.12); transform: translateY(-3px); }
+        .campaigns-track .campaign-card:not(.is-active):hover { filter: brightness(0.8) saturate(0.85); }
+
+        .campaign-cover {
+            position: relative;
+            height: clamp(170px, 28vh, 360px);
+            margin: -16px -10px 6px;
+            overflow: hidden;
+            background: #080607;
+            border: 1px solid #000;
+            box-shadow: 0 0 0 1px #8a6418, inset 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+        .campaign-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .campaign-cover::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(transparent 55%, rgba(17, 7, 6, 0.9));
+            pointer-events: none;
+        }
+        .campaign-cover.img-missing::before { font-size: 0.75rem; }
+
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            z-index: 2;
+            width: 52px;
+            height: 52px;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            transform: translateY(-50%);
+        }
+        .carousel-arrow svg { width: 24px; height: 24px; }
+        .carousel-arrow.prev { left: 4px; }
+        .carousel-arrow.next { right: 4px; }
+        .carousel-arrow:active:not(:disabled) { transform: translateY(calc(-50% + 1px)); }
+        .carousel-arrow:disabled { opacity: 0.35; }
+
+        .carousel-dots { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 4px 0 10px; }
+        .carousel-dot {
+            width: 12px;
+            height: 12px;
+            margin: 0;
+            padding: 0;
+            border: 1px solid #000;
+            border-radius: 0;
+            transform: rotate(45deg);
+            background: #2a2014;
+            box-shadow: 0 0 0 1px #6b4a12;
+        }
+        .carousel-dot:hover:not(:disabled) { filter: brightness(1.4); }
+        .carousel-dot.is-active { background: linear-gradient(135deg, #fff0b0, #c9982f); box-shadow: 0 0 0 1px #6b4a12, 0 0 10px rgba(255, 204, 0, 0.6); }
+        .carousel-counter { font-family: var(--font-title); font-size: 0.72rem; letter-spacing: 0.2em; color: var(--text-dim); margin-left: 8px; }
+
+        @media (max-width: 700px) {
+            .campaigns-track { padding: 10px 8%; gap: 14px; }
+            .carousel-arrow { width: 40px; height: 40px; }
+            .campaign-cover { height: 150px; }
+            .campaign-card h3 { font-size: 1.35rem; }
+            .campaign-card p { font-size: 0.95rem; }
+        }
+
+        .campaign-card {
+            position: relative;
+            padding: 34px 30px 26px;
+            cursor: pointer;
+            text-align: center;
+            border: 18px solid transparent;
+            border-image: var(--frame) var(--frame-slice) / 18px stretch;
+            background:
+                var(--noise-fine),
+                radial-gradient(ellipse at 50% 0%, rgba(200, 60, 30, 0.35), transparent 65%),
+                linear-gradient(#2a0f0c, #110706);
+            transition: transform var(--dur-ui) var(--ease-out), filter var(--dur-ui) ease, box-shadow var(--dur-ui) ease;
+        }
+        .campaign-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .campaign-badge {
+            display: block;
+            font-family: var(--font-title);
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+        .campaign-card h3 { font-size: 1.75rem; margin: 8px 0 6px; }
+        .campaign-card .btn-small { align-self: center; pointer-events: none; font-size: 1rem; padding: 10px 28px; }
+        .campaign-card p { font-size: 1.08rem; color: #d8cba8; line-height: 1.55; margin: 0 auto; max-width: 62ch; }
+        .campaign-card:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.15);
+            box-shadow: 0 0 34px rgba(255, 180, 40, 0.22);
+        }
+
+        /* ---------- Pagina di un'avventura: capitoli a destra, capitolo scelto a sinistra ---------- */
+        .adventure-panel h2 { margin: 2px 0 12px; }
+        .adventure-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+            gap: 22px;
+            align-items: start;
+            text-align: left;
+        }
+        .adventure-cover { height: clamp(200px, 36vh, 420px); margin: 0 0 10px; }
+        .adventure-detail h3 { font-size: 1.5rem; margin: 6px 0 6px; }
+        .adventure-detail p { font-size: 1.05rem; color: #d8cba8; line-height: 1.55; margin: 0; min-height: 3.1em; }
+        .adventure-chapters-box {
+            padding: 10px 10px 12px;
+            background: linear-gradient(#0a0807, #16110d);
+            box-shadow: 0 0 0 1px #000, 0 0 0 2px #3a2806, inset 0 3px 10px rgba(0, 0, 0, 0.95);
+        }
+        .adventure-chapters-label {
+            margin: 0 0 8px;
+            font-family: var(--font-title);
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            text-align: center;
+        }
+        .adventure-chapters { display: flex; flex-direction: column; gap: 6px; max-height: clamp(220px, 48vh, 520px); overflow-y: auto; }
+        .adventure-chapters .adventure-chapter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            margin: 0;
+            padding: 9px 12px;
+            text-align: left;
+            text-transform: none;
+            letter-spacing: 0.02em;
+            border: 1px solid #000;
+            border-radius: 0;
+            background: linear-gradient(#241b14, #120d0a);
+            box-shadow: inset 0 0 0 1px #4a3610;
+            color: #d8cba8;
+            filter: none;
+        }
+        .adventure-chapters .adventure-chapter::before,
+        .adventure-chapters .adventure-chapter::after { display: none; }
+        .adventure-chapters .adventure-chapter:hover { background: linear-gradient(#33261a, #1a120d); color: #f3e6c2; }
+        .adventure-chapters .adventure-chapter.is-active {
+            background: linear-gradient(#5a3c12, #2a1a08);
+            box-shadow: inset 0 0 0 1px #c9982f, inset 0 0 0 2px #000;
+            color: #fff2cc;
+        }
+        .adventure-chapter-num {
+            flex: 0 0 2.6em;
+            font-family: var(--font-title);
+            font-size: 1.05rem;
+            color: var(--gold);
+            text-align: center;
+        }
+        .adventure-chapter-name { font-family: var(--font-body); font-size: 1.02rem; line-height: 1.3; }
+
+        @media (max-width: 900px) {
+            .adventure-layout { grid-template-columns: 1fr; }
+            .adventure-cover { height: 180px; }
+        }
