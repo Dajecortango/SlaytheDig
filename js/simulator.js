@@ -985,6 +985,7 @@ function simRunOne(campaignData, heroSelection, profile) {
     stato.partyCoins = 0;
     stato.unlockedRelics = [];
     stato.activeCurses = [];
+    stato.gmProvaMod = 0;  // il simulatore misura la campagna senza il bonus/malus del master
     stato.stsMapNodes = JSON.parse(JSON.stringify(campaignData.mapNodes));
     stato.currentNodeId = null;
     enemies = campaignData.enemies;

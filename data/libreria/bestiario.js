@@ -1403,7 +1403,7 @@ window.LIBRERIA.bestiario = {
         "att": 6,
         "dmg": 1,
         "ca": 6,
-        "desc": "Decidete di evitare la via principale per non dare nell'occhio, imboccando una vecchia mulattiera. Come vi aveva avvertito l'Eparca Marzio, le campagne sono ormai terra di nessuno: un gruppo di briganti e tagliagole emerge dalla boscaglia, armi in pugno, convinto che siate dei semplici mercanti da depredare.",
+        "desc": "Decidete di evitare la via principale per non dare nell'occhio, imboccando una vecchia mulattiera. Come vi aveva avvertito l'Eparca Marzio, le campagne sono ormai terra di nessuno: un gruppo di briganti e tagliagole emerge dalla boscaglia, armi in pugno, convinto che siate dei semplici mercanti da depredare. Non potete permettervi di mostrare i vostri sigilli per intimorirli né di lasciare superstiti che corrano a denunciare la presenza di guerrieri Dignitas sul suolo della Lega: dovete eliminarli rapidamente e in silenzio.\n",
         "speciali": [
             { "quando": "colpisce", "fai": "ruba_scudi", "val": 2 }
         ]
@@ -1416,7 +1416,7 @@ window.LIBRERIA.bestiario = {
         "att": 6,
         "dmg": 1,
         "ca": 6,
-        "desc": "Costeggiate il primo tratto della Strada della Concia. L'odore acre delle pelli lavorate viene presto coperto dal fetore di carogna: un branco di Ghofuuri, enormi segugi neri dalle pupille rosse e dal muso incrostato di sangue secco, sta banchettando sui resti di un carro abbandonato e si volta ringhiando nella vostra direzione.",
+        "desc": "Usciti da Seistad verso nord-ovest, costeggiate il primo tratto della Strada della Concia prima del bivio fluviale, tenendovi ai margini della Selva Brezzaserena. L'odore acre delle pelli lavorate viene presto coperto dal fetore di carogna: un branco di Ghofuuri, enormi segugi neri dalle pupille rosse e dal muso incrostato di sangue secco, sta banchettando sui resti di un carro abbandonato e si volta ringhiando nella vostra direzione. \n",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
         ]
@@ -1442,7 +1442,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Raggiungete una vecchia stazione di posta lungo la pianura verso Valdrune. Invece delle guardie cittadine, trovate una banda organizzata di disertori e mercenari che ha occupato la struttura, esigendo con le armi un \"pedaggio\" di sangue da chiunque tenti di passare.",
+        "desc": "La struttura era un piccolo Presidio delle Tratte nella pianura agricola tra Strahnbrad e l'ansa del Nederjin, ma invece delle guardie della Lega trovate una banda di disertori e mercenari che ha occupato il posto per riscuotere pedaggi abusivi. È una fortuna nella sfortuna: contro dei fuorilegge potete sguainare le lame senza causare un incidente diplomatico con Finngalk. \n",
         "speciali": [
             { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
         ]
@@ -1450,12 +1450,12 @@ window.LIBRERIA.bestiario = {
     "burofonte_tremabosco": {
         "name": "Il Burofonte Tremabosco",
         "image": "",
-        "hp": 15,
-        "maxHp": 15,
+        "hp": 20,
+        "maxHp": 20,
         "att": 7,
         "dmg": 2,
         "ca": 7,
-        "desc": "Tagliando per una fitta boscaglia che costeggia il fiume, commettete l'errore di sconfinare in un territorio marcato da alberi sradicati. Un enorme Tremabosco, massiccio come un orso e dotato di zanne ricurve grandi quanto spade, emette un grugnito furioso e vi carica a testa bassa per difendere il proprio branco.",
+        "desc": "Tagliando per una fitta boscaglia che costeggia il fiume, commettete l'errore di sconfinare in un territorio marcato da alberi sradicati. Un enorme Tremabosco, massiccio come un orso e dotato di zanne ricurve grandi quanto spade, emette un grugnito furioso e vi carica a testa bassa per difendere il proprio branco. ",
         "fasi": [
             { "soglia": 60, "testo": "Il Tremabosco raspa il terreno e abbassa le zanne.", "azioni": ["carica"] },
             { "soglia": 30, "testo": "Ferito, il Burofonte diventa una furia.", "azioni": ["furore"] }
@@ -1469,9 +1469,10 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Arrivate davanti ai celebri Ponti di Neferu, un complesso di ponti sospesi costruiti in pregiato legno di betulla bianca sopra le rapide del Nederjin. Mentre siete a metà dell'attraversamento, dalle acque sottostanti e dalle travi superiori calano delle creature viscide: dei Sirenidi cercano di ammaliarvi e trascinarvi nel fiume, mentre una Mantombra di fiume tenta di avvilupparsi ai vostri stivali.",
+        "desc": "Avvicinandovi alla conca di Finngalk, la capitale della Lega protetta dall'imponente Cinta di Belor, decidete di fare una deviazione verso nord-est lungo il Nederjin per evitare le pattuglie della Gensarmia che sorvegliano le porte cittadine. Arrivate davanti a un ramo secondario dei Ponti di Neferu, i ponti sospesi in betulla bianca: attendete il calar della sera e imboccate una passerella laterale immersa nella foschia. Mentre siete a metà dell'attraversamento, dalle acque sottostanti e dalle travi superiori calano delle creature viscide: dei Sirenidi cercano di ammaliarvi e trascinarvi nel fiume, mentre una Mantombra di fiume tenta di avvilupparsi ai vostri stivali. \n",
         "speciali": [
-            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" },
+            { "quando": "colpito", "fai": "infuria", "limite": "scontro", "volte": 3, "durata": 1 }
         ]
     },
     "ragno_nero_brumafosca": {
@@ -1482,7 +1483,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Il sentiero si stringe tra alberi contorti coperti da una sostanza biancastra e vischiosa. Sopra le vostre teste udite un sinistro ticchettio: un mastodontico Ragno Nero Imperiale, grande quanto un cerbiatto, si cala dalle fronde per intrappolarvi nella sua tela venefica.",
+        "desc": " Lasciata alle spalle Finngalk ed evitando la Via dell'Edera a nord, imboccate il Sentiero di Brumafosca, una pista nebbiosa che si addentra nel fitto del Bosco Zannantica. Il sentiero si stringe tra alberi contorti coperti da una sostanza biancastra e vischiosa. Sopra le vostre teste udite un sinistro ticchettio: un mastodontico Ragno Nero Imperiale, grande quanto un cerbiatto, si cala dalle fronde per intrappolarvi nella sua tela. \n",
         "speciali": [
             { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
         ]
@@ -1495,7 +1496,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "La nebbia intorno a voi inizia a vorticare in modo innaturale, muovendosi persino controvento. Dal cuore del banco di foschia proviene un suono agghiacciante di denti che sbattono freneticamente: dei Tremolischi vi hanno circondati e si preparano ad assalirvi dal buio.",
+        "desc": "La nebbia intorno a voi inizia a vorticare in modo innaturale, muovendosi persino controvento. Dal cuore del banco di foschia proviene un suono agghiacciante di denti che sbattono freneticamente: dei Tremolischi vi hanno circondati e si preparano ad assalirvi dal buio. ",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 2, "bersaglio": "tutti" }
         ]
@@ -1508,7 +1509,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Il bosco si apre improvvisamente in un pianoro brumoso e desolato, al cui centro svetta un colossale sempreverde dal tronco contorto che ricorda un volto rugoso e ghignante. È un Arcanitradico: avvertendo la vostra intrusione, l'albero sprigiona la sua collera arcana, aizzando contro di voi le bestie del sottobosco impazzite.",
+        "desc": "Nel cuore del Bosco Zannantica la vegetazione si apre improvvisamente nel punto in cui, secondo le leggende lyanti, cadde il sangue contaminato dell'ultimo drago: al centro del pianoro brumoso e desolato svetta un colossale sempreverde dal tronco contorto che ricorda un volto rugoso e ghignante. È un Arcanitradico: avvertendo la vostra intrusione, l'albero sprigiona la sua collera, aizzando contro di voi le bestie del sottobosco impazzite. \n",
         "speciali": [
             { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "tutti", "prob": 20 }
         ]
@@ -1521,7 +1522,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 9,
-        "desc": "Avanzate lungo un pendio roccioso dove grandi massi tondeggianti sembrano riposare sotto la pioggia. Quando vi passate accanto, le \"rocce\" si schiudono rivelando carapaci irti di aculei e code ossee: avete svegliato una coppia di Brachidani, che iniziano a rotolare verso di voi per travolgervi.",
+        "desc": "Avanzate lungo un pendio roccioso dove grandi massi sembrano placidamente riposare al di sotto della pioggia. Quando vi passate accanto, le \"rocce\" si muovono, rivelando improvvisamente carapaci irti di aculei e code ossee: avete svegliato una coppia di Brachidani, che iniziano a rotolare verso di voi per travolgervi. ",
         "speciali": [
             { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 40 }
         ]
@@ -1530,11 +1531,11 @@ window.LIBRERIA.bestiario = {
         "name": "L'Aviano Moork della Gola",
         "image": "",
         "hp": 21,
-        "maxHp": 21,
+        "maxHp": 18,
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Il sentiero attraversa una gola fredda e cupa dove gli alberi formano una volta impenetrabile. Un senso di colpa opprimente e innaturale vi assale la mente, facendovi tremare le mani sulle armi: dalle fronde più alte plana con uno stridio acuto un Aviano Oscuro (Moork), pronto a dilaniarvi mentre la sua aura negativa tenta di spezzare la vostra volontà.",
+        "desc": " Il sentiero attraversa una gola fredda e cupa dove gli alberi formano una volta inaccessibile. Un senso di colpa opprimente e innaturale vi assale la mente, facendovi tremare le mani sulle armi: dalle fronde più alte plana con uno stridio acuto un Aviano Oscuro, pronto a dilaniarvi mentre la sua aura negativa tenta di spezzare la vostra volontà. L'aura nera della bestia scava proprio nelle vostre insicurezze più profonde, insinuando nella vostra mente la visione dei vostri corpi inceneriti nel tentativo disperato di afferrare l'Yrtite a mani nude, mentre Foscoclivo trionfa sulle vostre ceneri. ",
         "fasi": [
             { "soglia": 66, "testo": "L'aura del Moork si fa soffocante.", "azioni": ["terrore"] },
             { "soglia": 33, "testo": "L'Aviano punta chi vacilla di più.", "azioni": ["predatore"] }
@@ -1551,7 +1552,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Costeggiate i resti di un antico luogo di sepoltura risalente alle guerre tra il Regno di Eòghar e i Kin. Dalle cripte mezze crollate emergono dei Ghoul, creature magre e semi-senzienti dai denti marci, che avevano preparato delle trappole rudimentali lungo il sentiero per procurarsi carne fresca.",
+        "desc": "Passando vicino al margine meridionale del Bosco Zannantica, non lontano dalle antiche rovine megalitiche di Surwich, costeggiate i resti di un luogo di sepoltura risalente alle guerre tra il Regno di Eòghar e i Kin di Foscoclivo. Dalle cripte mezze crollate emergono dei Ghoul, creature semi-senzienti dai denti marci, che avevano preparato delle trappole rudimentali lungo il sentiero per procurarsi carne fresca. ",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
         ]
@@ -1564,9 +1565,10 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Il terreno digrada in una palude arboricola piena di alberi secchi e carcasse d'animali prosciugate. Un ronzio assordante preannuncia l'attacco di uno sciame di Zerbene Sanguisuga, insetti grandi e voraci che agiscono come un'unica mente per dissanguare ogni essere vivente nel loro territorio.",
+        "desc": "Il terreno degrada in una palude arboricola piena di alberi secchi e carcasse d'animali. Un ronzio assordante preannuncia l'attacco di uno sciame di Zerbene Sanguisuga, insetti grandi e voraci che agiscono come un'unica mente per dissanguare ogni essere vivente nel loro territorio.",
         "speciali": [
-            { "quando": "colpisce", "fai": "cura", "val": 1 }
+            { "quando": "colpisce", "fai": "cura", "val": 1 },
+            { "quando": "colpito", "fai": "veleno", "val": 1, "prob": 50, "limite": "scontro", "volte": 3, "durata": 0 }
         ]
     },
     "pattuglia_di_foscoclivo": {
@@ -1577,7 +1579,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 2,
         "ca": 8,
-        "desc": "Non siete gli unici ad essere tornati a Loch Ein. Lungo il crinale che domina la riva, vi scontrate con un'avanguardia armata di Foscoclivo: esploratori scelti inviati dal Cenn al seguito dei Cavalcantici, incaricati di presidiare il perimetro esterno del lago ed eliminare qualsiasi membro della Famiglia Dignitas a vista.",
+        "desc": "Le visioni della Torre Spiavento non mentivano: non siete gli unici ad essere tornati a Loch Ein, e i vostri nemici sono qui da molto prima di voi. Lungo il crinale nebbioso che domina la riva, vi scontrate con un'avanguardia ben trincerata di Foscoclivo lasciata a presidiare il perimetro esterno. Tra il loro equipaggiamento notate resti di intelaiature metalliche e sigilli runici usati per scortare verso il lago un carico speciale: la conferma definitiva che gli uomini del Cenn dalle Lunghe Corna sono scesi negli abissi con un piano preciso per estrarre l'Yrtite. Qui, lontano dagli insediamenti della Lega, potete finalmente gettare via i mantelli di copertura e combattere da veri Dignitas. ",
         "fasi": [
             { "soglia": 66, "testo": "Il capo pattuglia chiama a raccolta i suoi.", "azioni": ["grido_di_battaglia"] },
             { "soglia": 33, "testo": "Gli esploratori attaccano insieme, da due lati.", "azioni": ["doppio_assalto"] }
@@ -1591,7 +1593,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Costeggiate una zona di acque basse e stagnanti dove la vegetazione acquatica cresce in modo anomalo. Dal fango emergono con agilità letale dei Serpulidi di Goli'ja, creature gregarie e sadiche dotate di code poderose e lunghi artigli capaci di lacerare le carni e causare profonde emorragie.",
+        "desc": "Costeggiate una zona di acque basse e stagnanti dove la vegetazione acquatica cresce in modo anomalo. Dal fango emergono con agilità letale dei Serpulidi di Goli'ja, creature gregarie e sadiche dotate di code poderose e lunghi artigli capaci di lacerare le carni e causare profonde emorragie. \n",
         "speciali": [
             { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
         ]
@@ -1604,7 +1606,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Mentre cala l'oscurità sul lago, una coppia di Morrkath – esseri simili a grossi gatti corvini fatti di pura tenebra e dotati di tre paia di occhi luminosi come stelle – vi sbarra il passo sopra un masso muschioso, emettendo miagolii sinistri che insinuano il panico e la follia nelle vostre menti.",
+        "desc": "Mentre cala l'oscurità sul lago, una coppia di Morrkath – esseri simili a grossi gatti corvini fatti di pura tenebra e dotati di tre paia di occhi luminosi come stelle – vi sbarra il passo sopra un masso muschioso, emettendo miagolii sinistri che insinuano il panico e la follia nelle vostre menti.\n",
         "speciali": [
             { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 35 }
         ]
@@ -1613,11 +1615,11 @@ window.LIBRERIA.bestiario = {
         "name": "L'Aguglia Gigante Corrotta",
         "image": "",
         "hp": 36,
-        "maxHp": 36,
+        "maxHp": 28,
         "att": 8,
         "dmg": 3,
         "ca": 9,
-        "desc": "Prendete il largo sulle acque nere e silenziose di Loch Ein fino a raggiungere il punto esatto sopra l'arco di roccia sommerso, la porta d'accesso ai tunnel sotterranei e alla caverna con la sacca d'aria. Proprio mentre vi preparate a calare la campana subacquea rinforzata, le acque del lago iniziano a ribollire violentemente. L'energia infetta che si sta propagando dalle profondità di Loch Ein ha attirato e mutato il predatore alfa del lago: una colossale Aguglia Gigante Corrotta (lunga più di venti cubiti, con scaglie iridescenti dure come acciaio, zanne simili a coltelli e gli occhi iniettati del bagliore violaceo tipico delle creature corrotte) emerge con uno schianto dalle acque scure, avvinghiandosi attorno al varco sommerso. Per scendere nelle viscere della Caduta dai Cieli, dovrete prima tingere le acque del lago con il suo sangue.",
+        "desc": "Prendete il largo sulle acque nere e silenziose di Loch Ein fino a raggiungere il punto esatto sopra l'arco di roccia sommerso, la porta d'accesso ai tunnel sotterranei e alla caverna con la sacca d'aria. Proprio mentre vi preparate a calare la campana subacquea rinforzata, le acque del lago iniziano a ribollire violentemente. L'energia infetta che si sta propagando dalle profondità di Loch Ein ha attirato e mutato il predatore alfa del lago: una colossale Aguglia Gigante Corrotta (lunga più di venti cubiti, con scaglie iridescenti dure come acciaio, zanne simili a coltelli e gli occhi iniettati del bagliore violaceo tipico delle creature corrotte) emerge con uno schianto dalle acque scure, avvinghiandosi attorno al varco sommerso. Per scendere nelle viscere della Caduta dai Cieli, dovrete prima tingere le acque del lago con il suo sangue. ",
         "fasi": [
             { "soglia": 70, "testo": "L'Aguglia sferza la barca con la coda.", "azioni": ["contrattacco"] },
             { "soglia": 45, "testo": "Il corpo immenso si avvolge attorno a voi.", "azioni": ["colpo_area"] },
@@ -1844,7 +1846,7 @@ window.LIBRERIA.bestiario = {
         "ca": 9,
         "desc": "Lungo il bordo monumentale della piazza, dove si concentrano le antiche incisioni cittadine, l'energia dell'Yrtite ha fuso insieme i minerali della caverna e i mosaici crollati dando vita a un colossale Golem Terrigeno incrostato di pirite e cristalli luminescenti, che presidia la scalinata d'accesso al Palazzo.",
         "fasi": [
-            { "soglia": 60, "testo": "I cristalli si saldano sul corpo del Golem come una corazza.", "azioni": ["corazza_di_pietra"] },
+            { "soglia": 60, "testo": "I cristalli si saldano sul corpo del Golem come una corazza.", "azioni": ["scudo_d_ossa"] },
             { "soglia": 30, "testo": "Il Golem abbatte i pugni sulla scalinata: le schegge volano ovunque.", "azioni": ["colpo_area"] }
         ]
     },

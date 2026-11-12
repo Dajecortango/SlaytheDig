@@ -299,6 +299,7 @@
             synthSfx('dice');
             setTimeout(() => {
                 diceOutcomeSfx(roll);
+                mostraImmagineUno(roll, hero);
                 merchantSay(success ? 'contrattaOk' : 'contrattaNo');
                 const statLabel = 'Intelligenza';
                 const dice = mode === 'single' ? `Dado: <b>${d1}</b>` : `Dadi [${d1}, ${d2}]: tiene <b>${roll}</b> (Fede Inaridita)`;

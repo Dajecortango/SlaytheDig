@@ -45,6 +45,7 @@
             unlockedRelics: [],
             activeCurses: [],
             expeditionStats: newExpeditionStats(),
+            gmProvaMod: 0,          // bonus (+) o malus (−) del master a tutte le prove (Pannello di Controllo)
             onlineOwners: {},       // partita online: eroe -> eroe (il giocatore è l'eroe che ha scelto, js/online.js)
             challengeState: null,
             activeEnemy: null,
@@ -369,6 +370,8 @@ function breakRelic(relicId) {
                     (camp.heroes || []).forEach(h => {
                         if (h.portrait) h.portrait = fix(h.portrait);
                         if (h.portraitWounded) h.portraitWounded = fix(h.portraitWounded);
+                        if (Array.isArray(h.immaginiUno)) h.immaginiUno = h.immaginiUno.map(fix);
+                        if (Array.isArray(h.suoniUno)) h.suoniUno = h.suoniUno.map(fix);
                     });
                     camp.title = `[Prova] ${camp.title}`;
                     camp.badge = "Prova dall'editor";

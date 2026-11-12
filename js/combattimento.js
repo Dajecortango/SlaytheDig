@@ -688,7 +688,9 @@
                         }
                     }
 
-                    diceOutcomeSfx(twoDice ? Math.max(+diceBox.textContent, +diceBox2.textContent) : +diceBox.textContent);
+                    const facciaDado = twoDice ? Math.max(+diceBox.textContent, +diceBox2.textContent) : +diceBox.textContent;
+                    diceOutcomeSfx(facciaDado);
+                    mostraImmagineUno(facciaDado, hero);
 
                     const finishRoll = () => {
                     if (rollOutcome) showRollBanner(rollOutcome.ok, rollOutcome.title, rollOutcome.detail);
@@ -871,6 +873,7 @@
                         </span>
                     </div>`
                 : '<p class="journal-empty">Nessuno scontro in corso.</p>';
+            const provaMod = gmProvaMod();
 
             return `
                 <div class="gm-panel">
@@ -885,6 +888,18 @@
                     <div class="journal-section">
                         <h4>Nemico</h4>
                         ${enemyBlock}
+                    </div>
+                    <div class="journal-section">
+                        <h4>Prove</h4>
+                        <div class="gm-row" data-tip="Bonus o malus del master||Si somma a ogni tiro delle prove finché non lo cambi: un malus frena una compagnia che vince troppo, un bonus aiuta chi è in difficoltà.">
+                            <span class="gm-row-name">Modificatore ai tiri</span>
+                            <span class="gm-row-controls">
+                                <button ${azione('gmAdjustProvaMod', -1)}>-1</button>
+                                <span class="gm-prova-mod" data-segno="${Math.sign(provaMod)}">${provaModText(provaMod)}</span>
+                                <button ${azione('gmAdjustProvaMod', 1)}>+1</button>
+                                <button ${azione('gmSetProvaMod', 0)}>Azzera</button>
+                            </span>
+                        </div>
                     </div>
                 </div>`;
         }
@@ -971,6 +986,29 @@
         }
         function gmSetEnemyHp(value, opts) {
             gmApplyEnemyHp(Number(value) || 0, opts);
+        }
+
+        // Bonus (+) o malus (−) del master a tutti i tiri delle prove (stato.gmProvaMod, limiti in GM_PROVE_MOD_MAX)
+        function provaModText(v) {
+            return v > 0 ? `+${v}` : (v < 0 ? `−${-v}` : '0');
+        }
+        function gmApplyProvaMod(value, opts) {
+            if (!gmInPartita()) return;
+            const before = gmProvaMod();
+            stato.gmProvaMod = Math.max(-GM_PROVE_MOD_MAX, Math.min(GM_PROVE_MOD_MAX, Math.round(Number(value) || 0)));
+            const after = gmProvaMod();
+            if (after !== before) {
+                const testo = after > 0 ? `favore del master ${provaModText(after)} alle prove` : (after < 0 ? `sfavore del master ${provaModText(after)} alle prove` : 'prove senza bonus né malus del master');
+                uiMessage(`Pannello di controllo: ${testo}`);
+                if (typeof aggiornaProbabilitaProva === 'function') aggiornaProbabilitaProva();
+            }
+            if (!(opts && opts.silent)) gmOpenPanel();
+        }
+        function gmAdjustProvaMod(delta, opts) {
+            gmApplyProvaMod(gmProvaMod() + (Number(delta) || 0), opts);
+        }
+        function gmSetProvaMod(value, opts) {
+            gmApplyProvaMod(value, opts);
         }
 
         function executeMonsterAttack(nome) {

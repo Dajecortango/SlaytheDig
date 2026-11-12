@@ -816,6 +816,45 @@ function renderForm(container, obj, fields, onChange) {
             return;
         }
 
+        // Elenco di immagini o suoni (1 sul dado di un eroe): anteprima, togli, aggiungi con "Carica…"
+        if (f.type === 'imagelist' || f.type === 'audiolist') {
+            const suoni = f.type === 'audiolist';
+            // Il campo nasce solo quando si aggiunge il primo file: aprire l'eroe non cambia i suoi dati
+            const list = Array.isArray(value) ? value : [];
+            const box = document.createElement('div');
+            box.className = 'ed-picklist';
+            box.innerHTML = list.map((path, i) => `<div class="ed-pick" data-i="${i}">
+                    ${suoni ? '' : `<img class="ed-list-portrait" src="${esc(assetUrl(path))}" alt="" loading="lazy" decoding="async" ${azioneSu('error', 'nascondiImmagine', '$el')}>`}
+                    <span>${esc(path)}</span>
+                    ${suoni ? '<button type="button" class="btn-small" data-act="play">▶</button>' : ''}
+                    <button type="button" class="btn-small ed-danger" data-act="del">Togli</button>
+                </div>`).join('') || `<p class="ed-help">${suoni ? 'Nessun suono.' : 'Nessuna immagine.'}</p>`;
+            box.addEventListener('click', e => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const i = Number(btn.closest('.ed-pick').dataset.i);
+                if (btn.dataset.act === 'play') { new Audio(assetUrl(list[i])).play().catch(() => {}); return; }
+                list.splice(i, 1);
+                if (!list.length) delete obj[f.k];
+                onChange(f.k);
+                render();
+            });
+            const folder = f.folder || 'immagini';
+            const addPath = path => { if (!Array.isArray(obj[f.k])) obj[f.k] = list; list.push(path); onChange(f.k); render(); };
+            const add = document.createElement('button');
+            add.type = 'button';
+            add.id = id;
+            add.className = 'btn-small';
+            add.textContent = suoni ? 'Aggiungi suono…' : 'Aggiungi immagine…';
+            add.addEventListener('click', () => pickFile(folder, suoni ? 'audio/*' : 'image/*', addPath, `${imageNameHint(obj, f.k) || 'immagine'}_${list.length + 1}`));
+            const row = document.createElement('div');
+            row.className = 'ed-add-row';
+            row.appendChild(add);
+            wrap.append(box, row);
+            form.appendChild(wrap);
+            return;
+        }
+
         // Elenco di id di una libreria (abilità di un eroe): togli, riordina, aggiungi
         if (f.type === 'reflist') {
             // Il campo nasce solo quando si aggiunge il primo elemento: aprire l'eroe non cambia i suoi dati

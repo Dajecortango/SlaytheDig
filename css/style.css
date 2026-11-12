@@ -2225,6 +2225,10 @@
         .gm-row-controls { display: flex; align-items: center; gap: 4px; }
         .gm-row-controls button { width: auto; min-width: 0; margin: 0; padding: 3px 9px; font-size: 0.8rem; }
         .gm-row-max { font-size: 0.78rem; color: var(--text-dim); }
+        /* Bonus/malus del master alle prove: verde se aiuta, rosso se frena */
+        .gm-prova-mod { min-width: 34px; text-align: center; font-weight: bold; font-size: 0.95rem; color: var(--text-dim); }
+        .gm-prova-mod[data-segno="1"] { color: #8dff78; }
+        .gm-prova-mod[data-segno="-1"] { color: #ff8a70; }
         .gm-hp-input {
             width: 56px;
             text-align: center;
@@ -4183,3 +4187,25 @@ body:has(#screenRest:not(.hidden)) .hero-mini-card:not(.dead) .hero-portrait { a
 }
 body.no-anim .rest-fire { display: none; }
 body.no-anim:has(#screenRest:not(.hidden)) .hero-mini-card .hero-portrait { animation: none; }
+/* Immagine del 1 sul dado (mostraImmagineUno in js/ritratti.js): compare e svanisce in dissolvenza */
+.uno-apparizione {
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    animation: uno-apparizione 3500ms ease-out forwards;
+}
+.uno-apparizione img {
+    max-width: min(70vw, 560px); max-height: 70vh; object-fit: contain; border-radius: 10px;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.75));
+}
+/* Compare di colpo al centro, resta un attimo, poi si dissolve piano */
+@keyframes uno-apparizione {
+    0% { opacity: 0; transform: scale(0.9); }
+    5% { opacity: 1; transform: scale(1.03); }
+    10% { opacity: 1; transform: scale(1); }
+    45% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .uno-apparizione { animation-name: uno-apparizione-semplice; }
+    @keyframes uno-apparizione-semplice { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
+}

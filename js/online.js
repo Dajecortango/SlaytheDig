@@ -145,7 +145,7 @@ function onlineInviaStato() {
     if (!onlineState.attivo) return;
     onlinePost('/api/online/stato', {
         voto: onlineState.voto && { id: onlineState.voto.id, domanda: onlineState.voto.domanda, opzioni: onlineState.voto.opzioni,
-            voti: onlineState.voto.voti, scadenza: onlineState.voto.scadenza },
+            voti: onlineState.voto.voti, scadenza: onlineState.voto.scadenza, decideMaster: !!onlineState.voto.decideMaster },
         orologio: Date.now(),
         pronti: onlineState.pronti && { fatti: [...onlineState.pronti], totale: onlineGiocatoriCollegati().length },
         capo: onlineCapo(), owners: stato.onlineOwners || {}, attesi: onlineAttesi(),
@@ -274,7 +274,8 @@ function onlineEseguiClicModeratore(c) {
 function onlineGmStatoPayload() {
     const enemy = (typeof currentScreenId !== 'undefined' && currentScreenId === 'screenCombat' && stato.activeEnemy)
         ? { name: stato.activeEnemy.name, hp: Math.max(0, stato.activeEnemy.hp), maxHp: stato.activeEnemy.maxHp } : null;
-    return { heroes: (stato.party || []).map(h => ({ name: h.name, hp: h.hp, maxHp: h.maxHp })), enemy };
+    const provaMod = typeof gmProvaMod === 'function' ? gmProvaMod() : 0;  // bonus/malus del master alle prove
+    return { heroes: (stato.party || []).map(h => ({ name: h.name, hp: h.hp, maxHp: h.maxHp })), enemy, provaMod };
 }
 let onlineGmStatoTimer = null;
 function onlinePianificaGmStato() {
@@ -282,7 +283,8 @@ function onlinePianificaGmStato() {
     onlineGmStatoTimer = setTimeout(() => { onlineGmStatoTimer = null; onlinePost('/api/online/gmstato', onlineGmStatoPayload()); }, 150);
 }
 // La squadra e il nemico cambiano con questi due aggiornamenti dell'interfaccia: basta agganciarsi a loro
-['updatePartyStatusBars', 'updateEnemyInfoUI'].forEach(nome => {
+// (gmApplyProvaMod: il bonus/malus delle prove, che non tocca la squadra)
+['updatePartyStatusBars', 'updateEnemyInfoUI', 'gmApplyProvaMod'].forEach(nome => {
     if (typeof window[nome] !== 'function') return;
     const originale = window[nome];
     window[nome] = function (...args) { const r = originale.apply(this, args); onlinePianificaGmStato(); return r; };
@@ -567,19 +569,22 @@ function onlineCapo() {
 
 /* ---------- Voti ---------- */
 let onlineVotoTimer = null, onlineVotoSeq = 0;
-function onlineApriVoto({ tipo, domanda, opzioni, secondi = VOTE_SECONDS, esegui }) {
+// decideMaster: niente timer e niente chiusura quando hanno votato tutti; i voti dei giocatori sono solo
+// consigli e decide il master (ritratto, pulsanti della barra o master a distanza)
+function onlineApriVoto({ tipo, domanda, opzioni, secondi = VOTE_SECONDS, esegui, decideMaster = false }) {
     // Senza giocatori collegati nessun voto: il master decide con i pulsanti del gioco
     if (!onlineState.attivo || !onlineGiocatoriCollegati().length) return;
     clearTimeout(onlineVotoTimer);
-    onlineState.voto = { id: `v${++onlineVotoSeq}`, tipo, domanda, opzioni, voti: {}, scadenza: Date.now() + secondi * 1000, esegui };
-    onlineVotoTimer = setTimeout(() => onlineChiudiVoto(), secondi * 1000);
+    onlineState.voto = { id: `v${++onlineVotoSeq}`, tipo, domanda, opzioni, voti: {}, scadenza: decideMaster ? null : Date.now() + secondi * 1000, esegui, decideMaster };
+    if (!decideMaster) onlineVotoTimer = setTimeout(() => onlineChiudiVoto(), secondi * 1000);
     onlineInviaStato();
 }
+const onlineVotoCompleto = (v, collegati) => !!v && !v.decideMaster && collegati.length > 0 && collegati.every(n => n in v.voti);
 function onlineVota(giocatore, id, op) {
     const v = onlineState.voto;
     if (!v || v.id !== id || !v.opzioni.some(o => o.id === op)) return;
     v.voti[giocatore] = op;
-    if (onlineGiocatoriCollegati().every(n => n in v.voti)) onlineChiudiVoto();
+    if (onlineVotoCompleto(v, onlineGiocatoriCollegati())) onlineChiudiVoto();
     else onlineInviaStato();
 }
 function onlineChiudiVoto(forzato) {
@@ -645,7 +650,8 @@ function onlineDisegnaBarraMaster() {
 const onlineEroiInPiedi = () => stato.party.filter(h => h.hp > 0).map(h => ({ id: h.name, label: h.name }));
 
 function onlineApriVotoBersaglio() {
-    onlineApriVoto({ tipo: 'bersaglio', domanda: 'Chi riceve il colpo del nemico?', opzioni: onlineEroiInPiedi(), secondi: VOTE_SECONDS_TARGET,
+    // Senza timer: i giocatori consigliano toccando un ritratto, il colpo lo assegna il master
+    onlineApriVoto({ tipo: 'bersaglio', domanda: 'Chi riceve il colpo del nemico?', opzioni: onlineEroiInPiedi(), decideMaster: true,
         esegui: id => executeMonsterAttack(id) });
 }
 
@@ -730,7 +736,7 @@ function onlineAvvisoConnessioni() {
     onlineCollegatiPrima.filter(n => !ora.includes(n)).forEach(n => uiError(`Il giocatore di ${n} si è disconnesso: comandi tu ${n} finché qualcuno non lo riprende`));
     ora.filter(n => !onlineCollegatiPrima.includes(n)).forEach(n => uiMessage(`${n} è in gioco`));
     onlineCollegatiPrima = ora;
-    if (onlineState.voto && ora.length && ora.every(n => n in onlineState.voto.voti)) onlineChiudiVoto();
+    if (onlineVotoCompleto(onlineState.voto, ora)) onlineChiudiVoto();
     if (onlineState.pronti && ora.length && ora.every(n => onlineState.pronti.has(n))) onlineForzaPronti();
 }
 

@@ -73,6 +73,10 @@ const HERO_FIELDS = [
     { k: 'portrait', label: 'Ritratto', type: 'image', folder: 'immagini/ritratti', wide: true },
     { k: 'portraitWounded', label: 'Ritratto da ferito', type: 'image', folder: 'immagini/ritratti', wide: true,
       help: 'Facoltativo: mostrato con 2 HP o meno' },
+    { k: 'immaginiUno', label: 'Immagini quando fa 1 sul dado', type: 'imagelist', folder: 'immagini/uno', wide: true,
+      help: 'Facoltativo: a ogni 1 sul dado di questo eroe ne appare una (a rotazione), che compare e svanisce in dissolvenza. Meglio PNG o WebP con lo sfondo trasparente.' },
+    { k: 'suoniUno', label: 'Suoni quando fa 1 sul dado', type: 'audiolist', folder: 'audio/uno', wide: true,
+      help: 'Facoltativo: insieme all\'immagine suona uno di questi, a rotazione.' },
     { k: 'portraitFrame', label: 'Inquadratura del ritratto', type: 'portraitframe', wide: true,
       help: 'Trascina il ritratto per scegliere il punto da tenere al centro, regola lo zoom con il cursore. Sotto ogni icona c\'è l\'anteprima della cinematica d\'attacco.' }
 ];

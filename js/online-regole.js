@@ -66,7 +66,8 @@ const ONLINE_PERMESSI = {
 // condivisa. Il moderatore non ha un eroe: js/online.js lo esclude da onlineGiocatoriCollegati,
 // così non conta per dimensione squadra, voti, pronti o capo.
 const ONLINE_AZIONI_MODERATORE = ['gmClearPartyStatuses', 'gmRefillParty',
-    'gmAdjustHeroHp', 'gmSetHeroHp', 'gmAdjustEnemyHp', 'gmSetEnemyHp'];
+    'gmAdjustHeroHp', 'gmSetHeroHp', 'gmAdjustEnemyHp', 'gmSetEnemyHp',
+    'gmAdjustProvaMod', 'gmSetProvaMod'];   // bonus/malus del master ai tiri delle prove
 
 // Ruoli nella stanza (server/online.js, "ruolo" di ogni giocatore): 'giocatore' comanda un eroe; 'moderatore' ha solo
 // il Pannello di Controllo; 'master' (Master a distanza, entra con il link del master e la sua chiave) guida la partita

@@ -241,6 +241,22 @@ async function provaEditor() {
 }
 
 async function controlliScontro() {
+    // Bonus/malus del master alle prove: +1 dal Pannello di Controllo, si vede nel pannello e alza la probabilità
+    const gm = await valuta(`(() => {
+        const prima = { mod: stato.gmProvaMod, sfida: stato.challengeState };
+        stato.gmProvaMod = 0;
+        stato.challengeState = { stat: 'str', cd: 7 };
+        const h = stato.party.find(x => x.hp > 0);
+        const base = challengeChanceInfo(challengeModifiers(h)).pct;
+        gmOpenPanel();
+        document.querySelector('#wc3Modal [data-action="gmAdjustProvaMod"][data-args="[1]"]').click();
+        const out = { mod: stato.gmProvaMod, testo: document.querySelector('#wc3Modal .gm-prova-mod')?.textContent,
+            base, dopo: challengeChanceInfo(challengeModifiers(h)).pct };
+        closeModal();
+        stato.gmProvaMod = prima.mod; stato.challengeState = prima.sfida;
+        return out;
+    })()`);
+    ok(gm.mod === 1 && gm.testo === '+1' && gm.dopo >= gm.base, `Pannello di Controllo: favore del master ${gm.testo} alle prove, probabilità ${gm.base}% → ${gm.dopo}%`);
     // Scontro senza nemico (nodo incompleto di una campagna in lavorazione): niente controlli mirati qui
     if (!(await valuta('!!(stato.activeEnemy && stato.activeEnemy.hp > 0)'))) { controllatoScontro = false; return; }
     // Stati del nemico: icone accanto al nome con il numero di round

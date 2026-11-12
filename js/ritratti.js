@@ -14,6 +14,37 @@
         // Valori predefiniti, soglia del ferito e strikeZoomFor sono in js/comune.js (li usa anche l'editor).
         const HERO_PORTRAITS = {};
 
+        // Immagini "1 sul dado" degli eroi per nome (campo immaginiUno dei dati): a ogni 1 naturale ne appare
+        // una, a rotazione, in dissolvenza sopra la schermata. È un figlio del body: online la vedono anche i giocatori.
+        // Insieme suona uno dei suoniUno, anche questi a rotazione. Online il suono viaggia nell'elemento
+        // (data-suono, data-uno = numero della comparsa): la pagina del giocatore lo suona una volta (suonaUno).
+        const HERO_UNO_IMAGES = {};
+        const HERO_UNO_SOUNDS = {};
+        const heroUnoTurno = {};
+        let unoComparse = 0;
+        const prossimoUno = (chiave, list) => { const i = (heroUnoTurno[chiave] || 0) % list.length; heroUnoTurno[chiave] = i + 1; return list[i]; };
+        function mostraImmagineUno(valore, hero) {
+            const name = hero && (typeof hero === 'string' ? hero : hero.name);
+            if (valore !== 1 || !name) return;
+            const suoni = HERO_UNO_SOUNDS[name];
+            const suono = suoni && suoni.length ? prossimoUno(`suono:${name}`, suoni) : null;
+            if (suono) playSfx(suono, 1);
+            const list = HERO_UNO_IMAGES[name];
+            if (!list || !list.length) return;
+            const src = prossimoUno(`immagine:${name}`, list);
+            document.querySelectorAll('.uno-apparizione').forEach(el => el.remove());
+            const box = document.createElement('div');
+            box.className = 'uno-apparizione';
+            box.setAttribute('aria-hidden', 'true');
+            box.dataset.uno = String(++unoComparse);
+            if (suono) box.dataset.suono = suono;
+            box.innerHTML = `<img src="${esc(src)}" alt="">`;
+            box.style.animationDuration = `${animTime(3500)}ms`;
+            box.addEventListener('animationend', () => box.remove());
+            document.body.appendChild(box);
+            setTimeout(() => box.remove(), animTime(3500) + 500);  // se l'animazione non parte (scheda nascosta)
+        }
+
         function heroPortraitFromData(h) {
             const pos = h.portraitPos || HERO_PORTRAIT_DEFAULTS.pos;
             const zoom = Number(h.portraitZoom) || HERO_PORTRAIT_DEFAULTS.zoom;
@@ -30,6 +61,10 @@
         // Registra i ritratti di un elenco di eroi (con override = false non tocca quelli già noti)
         function registerHeroPortraits(heroes, override = true) {
             (heroes || []).forEach(h => {
+                if (h && h.name && Array.isArray(h.immaginiUno) && (override || !HERO_UNO_IMAGES[h.name]))
+                    HERO_UNO_IMAGES[h.name] = h.immaginiUno.filter(Boolean);
+                if (h && h.name && Array.isArray(h.suoniUno) && (override || !HERO_UNO_SOUNDS[h.name]))
+                    HERO_UNO_SOUNDS[h.name] = h.suoniUno.filter(Boolean);
                 if (!h || !h.name || !h.portrait) return;
                 if (!override && HERO_PORTRAITS[h.name]) return;
                 HERO_PORTRAITS[h.name] = heroPortraitFromData(h);

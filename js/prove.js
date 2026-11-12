@@ -133,6 +133,27 @@
             challengeChoose(true);
         }
 
+        // Classe di difficoltà, malus e probabilità di riuscita prima del tiro, con gli stessi modificatori di executeChallengeRoll
+        function mostraProbabilitaProva() {
+            const statLabel = STAT_LABELS[stato.challengeState.stat] || 'Statistica';
+            const malus = Number(stato.challengeState.malus) || 0;
+            const gm = gmProvaMod();
+            const extra = [malus ? `−${malus} al tiro` : '', gm > 0 ? `+${gm} favore del master` : '', gm < 0 ? `−${-gm} sfavore del master` : ''].filter(Boolean);
+            document.getElementById('challengeCdText').textContent = `Prova di ${statLabel} (Classe di Difficoltà: ${stato.challengeState.cd}${extra.length ? ', ' + extra.join(', ') : ''})`;
+            const info = challengeChanceInfo(challengeModifiers(selectedChallengeHero));
+            const chanceEl = document.getElementById('challengeChance');
+            chanceEl.textContent = info.long;
+            chanceEl.dataset.chance = info.pct >= 67 ? 'high' : (info.pct >= 34 ? 'mid' : 'low');
+        }
+
+        // Il master ha cambiato il bonus/malus delle prove (Pannello di Controllo): si rifanno le probabilità a video
+        function aggiornaProbabilitaProva() {
+            if (currentScreenId !== 'screenChallenge' || !stato.challengeState) return;
+            const rollBtn = document.getElementById('rollChallengeBtn');
+            if (selectedChallengeHero && !rollBtn.disabled) mostraProbabilitaProva();
+            else if (!selectedChallengeHero && !document.getElementById('challengeStage2').classList.contains('hidden')) challengeChoose(true);
+        }
+
         let selectedChallengeHero = null;
         let challengeRetryPending = false;   // Era solo una prova!: il primo tiro è fallito, si aspetta il secondo
         function confirmChallengeHero(nome) {
@@ -144,16 +165,7 @@
             document.getElementById('diceChallengeSection').classList.remove('hidden');
             revealInView('rollChallengeBtn');
 
-            const statLabel = STAT_LABELS[stato.challengeState.stat] || 'Statistica';
-            const malus = Number(stato.challengeState.malus) || 0;
-            document.getElementById('challengeCdText').textContent = `Prova di ${statLabel} (Classe di Difficoltà: ${stato.challengeState.cd}${malus ? `, −${malus} al tiro` : ''})`;
-
-            // Probabilità di riuscita prima del tiro, con gli stessi modificatori di executeChallengeRoll
-            const mods = challengeModifiers(selectedChallengeHero);
-            const info = challengeChanceInfo(mods);
-            const chanceEl = document.getElementById('challengeChance');
-            chanceEl.textContent = info.long;
-            chanceEl.dataset.chance = info.pct >= 67 ? 'high' : (info.pct >= 34 ? 'mid' : 'low');
+            mostraProbabilitaProva();
 
             const log = document.getElementById('challengeLog');
             log.innerHTML = '';
@@ -245,6 +257,7 @@
                     }
 
                     diceOutcomeSfx(res.kept);
+                    mostraImmagineUno(res.kept, selectedChallengeHero);
                     res.events.forEach(ev => addChallengeLog(ev.text));
                     if (res.pendingReroll) { askChallengeRetry(res); return; }
                     showRollBanner(res.success, res.success ? 'Successo!' : 'Fallimento', `${res.total} contro CD ${stato.challengeState.cd}`);
@@ -510,6 +523,7 @@
                 if (!p) return;
                 diceBox.textContent = p.roll;
                 diceOutcomeSfx(p.roll);
+                mostraImmagineUno(p.roll, p.hero);
                 const fth = p.total - p.roll - p.relics - (p.items || 0);
                 addPrayerLog(`${esc(p.hero)}: dado ${p.roll} + Fede ${fth}${p.relics ? ` + reliquie ${p.relics}` : ''}${p.items ? ` + oggetti ${p.items}` : ''} = <b>${p.total}</b> (CD ${PRAYER_CD})`);
                 if (p.notes.length) addPrayerLog(`💎 Reliquie: ${esc(p.notes.join(', '))}`);
@@ -621,6 +635,7 @@
                     const res = resolveCaptainAction(selectedCaptainHero, captainActionType);
                     diceBox.textContent = res.roll; diceBox.classList.remove('rolling');
                     diceOutcomeSfx(res.roll);
+                    mostraImmagineUno(res.roll, selectedCaptainHero);
 
                     showRollBanner(res.success !== false && res.type !== 'force', res.type === 'force' ? 'Ramanzina!' : res.success ? 'Vittoria!' : 'Fallito', `Dado ${res.roll}`);
                     if (res.type === 'force') {

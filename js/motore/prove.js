@@ -80,6 +80,13 @@
             return { mode: 'single', note: reroll || undefined };
         }
 
+        // Bonus (+) o malus (−) del master a tutte le prove (Pannello di Controllo), limitato a ±GM_PROVE_MOD_MAX
+        function gmProvaMod() {
+            const max = typeof GM_PROVE_MOD_MAX === 'number' ? GM_PROVE_MOD_MAX : 3;
+            const v = Math.round(Number(stato.gmProvaMod) || 0);
+            return Math.max(-max, Math.min(max, v));
+        }
+
         // Modificatori di una prova per l'eroe scelto, senza consumare le reliquie
         function challengeModifiers(hero) {
             const statValue = (hero && hero[stato.challengeState.stat]) || 0;
@@ -93,18 +100,19 @@
                 rollMode: challengeRollMode(hero).mode,
                 rerollMalus: (hero && hero.challengeRerollMalus) || 0,
                 malus: Number(stato.challengeState.malus) || 0,   // malus della sfida o della strada scelta
+                gmMod: gmProvaMod(),   // bonus (+) o malus (−) del master dal Pannello di Controllo
                 safetyNet: hasSpecial('prova_fallita', 'prova_riuscita', hero)
             };
         }
 
         function challengeChanceInfo(mods) {
-            const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus + (mods.malus || 0);
+            const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus + (mods.malus || 0) - (mods.gmMod || 0);
             if (mods.safetyNet) return { short: 'Sicuro', long: 'Riuscita garantita: un effetto speciale trasforma un fallimento in successo', pct: 100 };
             const info = chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
             if (!mods.rerollMalus) return info;
             // Era solo una prova!: un secondo tentativo con il malus se il primo fallisce,
             // senza le reliquie "al prossimo tiro" (consumate dal primo)
-            const needed2 = stato.challengeState.cd - mods.statValue - (mods.lastingRelicBonus || 0) + mods.rerollMalus + (mods.malus || 0);
+            const needed2 = stato.challengeState.cd - mods.statValue - (mods.lastingRelicBonus || 0) + mods.rerollMalus + (mods.malus || 0) - (mods.gmMod || 0);
             const p1 = rollChance(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
             const p2 = rollChance(needed2, mods.rollMode === 'best', mods.rollMode === 'worst');
             const pct = Math.round((p1 + (1 - p1) * p2) * 100);
@@ -148,8 +156,10 @@
                 if (!reroll) spendNextRollRelics('prova', hero).forEach(text => events.push({ type: 'relic', text }));
                 if (malus) events.push({ type: 'malus', text: `−${malus} secondo tentativo` });
                 if (mods.malus) events.push({ type: 'malus', text: `−${mods.malus} malus della prova` });
+                if (mods.gmMod > 0) events.push({ type: 'gm', text: `+${mods.gmMod} favore del master` });
+                if (mods.gmMod < 0) events.push({ type: 'malus', text: `−${-mods.gmMod} sfavore del master` });
 
-                const total = kept + mods.statValue + relicBonus - malus - mods.malus;
+                const total = kept + mods.statValue + relicBonus - malus - mods.malus + mods.gmMod;
                 events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
                 const natural = naturalRollNote(kept, total, challenge.cd);
                 if (natural) events.push({ type: 'natural', text: natural });
@@ -437,6 +447,7 @@
     // API del modulo: window.Motore.prove. Gli stessi nomi restano anche globali (Object.assign su window),
     // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: blessingUseful.
     const api = {
+        gmProvaMod,
         isFinalNode, challengeWithRoad, bestChallengeRoad, roadCoinCost, roadPriceText, roadLabel,
         challengeRollMode, challengeModifiers, challengeChanceInfo, resolveChallenge, applyPunishment, removeCurseAt,
         resolveRest, storyChoiceLabel, resolveStoryChoice, blessingData, hasBlessing, pickBlessings,

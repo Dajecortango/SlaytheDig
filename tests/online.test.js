@@ -90,7 +90,7 @@ module.exports = (t, carica) => {
         t.ok(h.applySaveData(JSON.parse(JSON.stringify(data))));
         t.uguale({ 'Curio Dignitas': 'Marco' }, stato.onlineOwners);
         const vecchio = h.migrateSave({ version: 4, campaignId: 'tutorial', stato: { party: [], activeCurses: [] } });
-        t.uguale(6, vecchio.version);
+        t.uguale(7, vecchio.version);
         t.uguale({}, vecchio.stato.onlineOwners);
     });
 
@@ -225,6 +225,23 @@ module.exports = (t, carica) => {
         t.uguale('Caino', h.eval('onlineState.voto.voti.Marco'));
         // Bersaglio deciso dal nemico: il clic di un giocatore non apre voti
         h.eval(`onlineAnnullaVoto(); monsterTargetFree = false; onlineVotoSpeciale('bersaglio', 'executeMonsterAttack', ['Caino'], 'Sara');`);
+        t.uguale(null, h.eval('onlineState.voto'));
+    });
+
+    t.test('bersaglio del nemico: niente timer, i voti consigliano e decide il master', () => {
+        const h = carica();
+        conDue(h);
+        h.eval(`stato.party = [{ name: 'Ottavio', hp: 4 }, { name: 'Caino', hp: 3 }];
+            monsterTargetFree = true; globalThis.__colpito = null; globalThis.executeMonsterAttack = id => { __colpito = id; };
+            onlineApriVotoBersaglio();`);
+        t.uguale(null, h.eval('onlineState.voto.scadenza'), 'nessuna scadenza');
+        const id = h.eval('onlineState.voto.id');
+        h.onlineVota('Marco', id, 'Caino');
+        h.onlineVota('Sara', id, 'Caino');
+        t.uguale(null, h.eval('__colpito'), 'hanno votato tutti ma il colpo non parte');
+        t.uguale(2, h.eval('Object.keys(onlineState.voto.voti).length'));
+        h.onlineForzaVoto('Ottavio');
+        t.uguale('Ottavio', h.eval('__colpito'), 'decide il master, anche contro i voti');
         t.uguale(null, h.eval('onlineState.voto'));
     });
 

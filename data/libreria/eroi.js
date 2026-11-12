@@ -354,7 +354,9 @@ window.LIBRERIA.eroi = {
         "abilities": ["aiace_malasorte", "aiace_inciampare_nella_storia"],
         "portrait": "immagini/ritratti/aiace.webp",
         "portraitWounded": "immagini/ritratti/aiace_ferito.webp",
-        "portraitZoom": 1.25
+        "portraitZoom": 1.25,
+        "immaginiUno": ["immagini/uno/aiace_1.webp", "immagini/uno/aiace_2.webp", "immagini/uno/aiace_3.webp"],
+        "suoniUno": ["audio/uno/aiace_1.ogg", "audio/uno/aiace_2.ogg"]
     },
     "aurelio_dignitas": {
         "name": "Aurelio Dignitas",

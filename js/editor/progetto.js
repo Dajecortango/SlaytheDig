@@ -109,7 +109,7 @@ const libraryFilePath = kind => kind === 'azioni_elite' ? 'data/azioni_elite/azi
 function usedPendingAssets(withCampaign = true) {
     const used = new Set([...(withCampaign ? [camp.coverImage, ...camp.mapNodes.map(n => n.image)] : []),
         ...Object.values(lib.bestiario).flatMap(e => [e.image, e.video, e.sfxAttack, e.sfxHit, e.sfxDeath]),
-        ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded]),
+        ...Object.values(lib.eroi || {}).flatMap(h => [h.portrait, h.portraitWounded, ...(h.immaginiUno || []), ...(h.suoniUno || [])]),
         ...Object.values(lib.abilita || {}).map(a => a.icon), ...Object.values(lib.azioni_elite || {}).map(a => a.icon)]);
     return [...pendingAssets].filter(([path]) => used.has(path));
 }

@@ -70,7 +70,9 @@ const DATI_SCHEMA = {
         current_armor: NUMERO, att_penalty: NUMERO, def_bonus: NUMERO, help_bonus_val: NUMERO, items: campo('elenco'),
         abilities: campo('elenco'), abilitaFisse: campo('elenco'), runeOptions: campo('elenco'), runeSlots: NUMERO,
         portrait: PERCORSO, portraitWounded: PERCORSO, portraitPos: TESTO, portraitZoom: NUMERO,
-        portraitWoundedPos: TESTO, portraitWoundedZoom: NUMERO, portraitStrikeZoom: NUMERO
+        portraitWoundedPos: TESTO, portraitWoundedZoom: NUMERO, portraitStrikeZoom: NUMERO,
+        immaginiUno: campo('elenco'),  // immagini mostrate a rotazione quando l'eroe fa 1 sul dado
+        suoniUno: campo('elenco')      // suoni a rotazione insieme all'immagine del 1 sul dado
     },
     azioni_elite: {
         name: OBBL(TESTO), desc: TESTO, icon: PERCORSO,

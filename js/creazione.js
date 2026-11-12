@@ -12,6 +12,7 @@
             displayedCoins = 0;
             stato.unlockedRelics = [];
             stato.activeCurses = [];
+            stato.gmProvaMod = 0;   // nuova compagnia: le prove ripartono senza bonus né malus del master
             stato.expeditionStats = newExpeditionStats();
             // Testi come all'inizio (confirmPartySize li cambia): conta per una seconda partita nella stessa pagina
             document.getElementById('partyHeaderTitle').textContent = 'Creazione del Party';

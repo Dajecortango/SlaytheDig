@@ -141,9 +141,13 @@ const SIM_ITEM_WEIGHTS = { dmg: 3, str: 2, armor: 1.5, def_armor: 1, def_bonus: 
 const SIM_SPECIAL_WEIGHTS = { annulla_punizione: 1.5, prova_riuscita: 2, monete: 0.05, carta_bottino: 1, togli_maledizione: 1,
     bonus_cura: 1.25, sconto: 0.3, sconto_percento: 0.03, bonus_tiro_fuori: 0.75 };
 
+/* ---------- Pannello di Controllo (js/combattimento.js) ---------- */
+// Bonus o malus che il master (o il moderatore online) dà a tutti i tiri delle prove, per frenare o aiutare la compagnia:
+// da −GM_PROVE_MOD_MAX a +GM_PROVE_MOD_MAX, resta finché non si cambia (stato.gmProvaMod, salvato)
+const GM_PROVE_MOD_MAX = 3;
+
 /* ---------- Partita online (js/online.js, server/online.js) ---------- */
 const VOTE_SECONDS = 30;               // durata di un voto
-const VOTE_SECONDS_TARGET = 15;        // voto sul bersaglio del nemico, più corto per non spezzare lo scontro
 const ONLINE_DISCONNECT_SECONDS = 20;  // senza segnale per tanto, il giocatore è disconnesso
 const ONLINE_FRAME_MS = 100;           // intervallo minimo fra due invii della schermata
 const ONLINE_NODI_VISIBILI = 2;        // i giocatori vedono il contenuto dei nodi fino a tanti passi avanti (1 = solo quelli aperti)

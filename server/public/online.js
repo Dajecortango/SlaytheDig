@@ -164,6 +164,16 @@
             if (v.paused) v.play().catch(() => {});
         });
     }
+    // 1 sul dado di un eroe (mostraImmagineUno in js/ritratti.js): l'immagine arriva con le sovrimpressioni,
+    // il suono è scritto nell'elemento; si suona una volta sola per comparsa (data-uno), anche se la regione si riaggiorna
+    let unoSuonato = null;
+    function suonaUno() {
+        const el = document.querySelector('#onlineOverlays .uno-apparizione[data-suono]');
+        if (!el || el.dataset.uno === unoSuonato) return;
+        unoSuonato = el.dataset.uno;
+        const a = new Audio(el.dataset.suono);
+        a.play().catch(() => {});
+    }
     function applicaParti(parti) {
         Object.entries(parti || {}).forEach(([k, html]) => {
             if (k === 'body') { document.body.className = 'online-guest ' + (html || ''); return; }
@@ -193,6 +203,7 @@
             applicaScorrimento(trasforma(vecchio, elementoDa(html)));
         });
         avviaVideo();
+        suonaUno();
         segnaEroi();
         disegnaScelta();  // i ritratti del pannello si prendono dalle regioni appena arrivate
     }
@@ -403,8 +414,9 @@
                 `<button class="btn-small" data-action="onlineForzaVoto" data-args='${esc(JSON.stringify([v.id, o.id]))}'>${esc(o.label)} ${conta(v, o.id)}</button>`).join(' ')}</div>`);
         } else if (v && !spettatore) {
             const mio = (v.voti || {})[nome];
-            const secondi = Math.max(0, Math.ceil((v.scadenza - Date.now() + (stato.orologio ? Date.now() - stato.orologio : 0)) / 1000));
-            parti.push(`<div class="wc-panel"><b>${esc(v.domanda)}</b> (${secondi}s) ${v.opzioni.map(o =>
+            const secondi = v.scadenza == null ? null : Math.max(0, Math.ceil((v.scadenza - Date.now() + (stato.orologio ? Date.now() - stato.orologio : 0)) / 1000));
+            const coda = v.decideMaster ? '(decide il master)' : `(${secondi}s)`;
+            parti.push(`<div class="wc-panel"><b>${esc(v.domanda)}</b> ${coda} ${v.opzioni.map(o =>
                 `<button class="btn-small ${mio === o.id ? 'mio' : ''}" data-action="onlineVota" data-args='${esc(JSON.stringify([v.id, o.id]))}'>${esc(o.label)} ${conta(v, o.id)}</button>`).join(' ')}</div>`);
         }
         if (stato.pronti && !spettatore) parti.push(`<div class="wc-panel">Pronti: ${stato.pronti.fatti.length}/${stato.pronti.totale}${stato.pronti.fatti.includes(nome) ? ' ✓' : ''}${ruolo === 'master' ? ' <button class="btn-small" data-action="onlineForzaPronti">Si parte</button>' : ''}</div>`);
@@ -420,7 +432,7 @@
         let a = []; try { a = JSON.parse(b.dataset.args || '[]'); } catch (err) {}
         if (typeof window[b.dataset.action] === 'function') window[b.dataset.action](...a);
     });
-    setInterval(() => { if (stato.voto) disegnaBarra(); }, 1000);
+    setInterval(() => { if (stato.voto && stato.voto.scadenza != null) disegnaBarra(); }, 1000);
 
     const musicaAccesa = () => { try { return localStorage.getItem('dignitas_online_musica') === '1'; } catch (e) { return false; } };
     window.onlineMusica = () => { try { localStorage.setItem('dignitas_online_musica', musicaAccesa() ? '0' : '1'); } catch (e) {} musica(); disegnaBarra(); };
@@ -450,6 +462,7 @@
         const box = $('onlineModBody');
         if (!box) return;
         const d = dati || { heroes: [], enemy: null };
+        const provaMod = Number(d.provaMod) || 0;
         const riga = (nomeEroe, hp, maxHp, prefissoArgs, caduto) => `
             <div class="onmod-row">
                 <span class="onmod-name">${esc(nomeEroe)}${caduto && hp <= 0 ? ' (caduto)' : ''}</span>
@@ -474,7 +487,17 @@
                 <button class="btn-small" data-mod="gmClearPartyStatuses" data-args="[]">Pulisci Stati</button>
             </div>
             <p class="online-join-hint">Nemico</p>
-            ${enemyHtml}`;
+            ${enemyHtml}
+            <p class="online-join-hint">Prove (bonus o malus del master a ogni tiro)</p>
+            <div class="onmod-row">
+                <span class="onmod-name">Modificatore</span>
+                <span class="onmod-controls">
+                    <button data-mod="gmAdjustProvaMod" data-args="[-1]">-1</button>
+                    <span class="onmod-prova" data-segno="${Math.sign(provaMod)}">${provaMod > 0 ? '+' + provaMod : (provaMod < 0 ? '−' + (-provaMod) : '0')}</span>
+                    <button data-mod="gmAdjustProvaMod" data-args="[1]">+1</button>
+                    <button data-mod="gmSetProvaMod" data-args="[0]">Azzera</button>
+                </span>
+            </div>`;
     }
     window.onlineModAzione = (azione, args) => post('/api/online/moderatore-azione', { code, token, azione, args })
         .then(r => { if (r && r.error) mostraAvviso(r.error); }).catch(() => mostraAvviso('Connessione persa, riprova'));

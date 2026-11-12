@@ -185,6 +185,8 @@ function validateCampaign() {
         });
         if (checkImage(h.portrait) === 'missing') add('warn', `${name}: ritratto non trovato ${esc(h.portrait)}`, 'eroi', k);
         if (checkImage(h.portraitWounded) === 'missing') add('warn', `${name}: ritratto da ferito non trovato ${esc(h.portraitWounded)}`, 'eroi', k);
+        (h.immaginiUno || []).forEach(p => { if (checkImage(p) === 'missing') add('warn', `${name}: immagine del 1 sul dado non trovata ${esc(p)}`, 'eroi', k); });
+        (h.suoniUno || []).forEach(p => { if (checkImage(p) === 'missing') add('warn', `${name}: suono del 1 sul dado non trovato ${esc(p)}`, 'eroi', k); });
     });
     heroNames.forEach((count, n) => { if (count > 1) add('error', `Più eroi della libreria si chiamano <b>${esc(n)}</b>`, 'eroi'); });
     Object.entries(lib.maledizioni).forEach(([k, c]) => {

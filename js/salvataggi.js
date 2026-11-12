@@ -14,13 +14,13 @@
         let currentSaveSlot = null;  // slot della partita in corso (per sovrascriverlo e cancellarlo alla sconfitta)
 
         /* ---------- Formato e migrazioni ----------
-           Versione 5 (come la 4, con stato.onlineOwners della partita online: eroe → eroe, perché il giocatore è l'eroe che ha scelto; la 4 rinomina la valuta in Scudi): { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
+           Versione 7 (come la 5, con stato.gmProvaMod, bonus/malus del master alle prove; la 6 porta gli effetti speciali in specialUses). Versione 5 (come la 4, con stato.onlineOwners della partita online: eroe → eroe, perché il giocatore è l'eroe che ha scelto; la 4 rinomina la valuta in Scudi): { version, campaignId, timestamp, stato: { stsMapNodes: [{ id, done, active }],
            currentNodeId, party, partyFlags, partyCoins, unlockedRelics: [{ id, name, desc }],
            activeCurses: [{ id, text }], expeditionStats } }.
            I nodi tengono solo lo stato: il contenuto viene dalla campagna attuale.
            Per cambiare il formato: alza SAVE_VERSION e aggiungi in SAVE_MIGRATIONS la funzione
            che porta un salvataggio dalla versione precedente a quella nuova. */
-        const SAVE_VERSION = 6;
+        const SAVE_VERSION = 7;
         const SAVE_MIGRATIONS = {
             // Versione 1 (senza "version"): campi della partita sparsi al primo livello, nodi completi
             1: old => ({
@@ -92,7 +92,9 @@
                 });
                 const partyFlags = { lootExtraChoices: flags.lootExtraChoices || 0, specialUses: { scontro: {}, capitolo } };
                 return { ...old, version: 6, stato: { ...s, partyFlags } };
-            }
+            },
+            // Versione 6 -> 7: bonus/malus del master alle prove (Pannello di Controllo), zero per le partite di prima
+            6: old => ({ ...old, version: 7, stato: { ...old.stato, gmProvaMod: Number(old.stato.gmProvaMod) || 0 } })
         };
 
         // Porta un salvataggio di qualunque versione al formato attuale (null se non è un salvataggio valido)
@@ -134,7 +136,8 @@
                     unlockedRelics: stato.unlockedRelics.map(r => ({ id: r.id, name: r.name, desc: r.desc })),
                     activeCurses: stato.activeCurses,
                     expeditionStats: stato.expeditionStats,
-                    onlineOwners: stato.onlineOwners || {}
+                    onlineOwners: stato.onlineOwners || {},
+                    gmProvaMod: gmProvaMod()
                 }
             };
         }
@@ -324,6 +327,7 @@
                 stato.partyCoins = s.partyCoins || 0;
                 stato.activeCurses = s.activeCurses || [];
                 stato.onlineOwners = s.onlineOwners || {};
+                stato.gmProvaMod = Number(s.gmProvaMod) || 0;
                 stato.expeditionStats = Object.assign(newExpeditionStats(), s.expeditionStats || {});
                 displayedCoins = stato.partyCoins;
                 stato.currentNodeId = s.currentNodeId;

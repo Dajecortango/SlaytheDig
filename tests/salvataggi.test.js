@@ -17,7 +17,7 @@ module.exports = (t, carica) => {
         }
     });
 
-    t.test('il formato attuale è il 6', () => t.uguale(6, g.eval('SAVE_VERSION')));
+    t.test('il formato attuale è il 7', () => t.uguale(7, g.eval('SAVE_VERSION')));
 
     t.test('3 -> 4: la maledizione delle monete diventa quella degli Scudi', () => {
         const v3 = { version: 3, campaignId: 'tutorial', stato: { party: [], activeCurses: [
@@ -58,10 +58,10 @@ module.exports = (t, carica) => {
         t.ok(h.tenacityRevive === undefined && h.tenacityUsed === undefined && h.firstHitUsed === undefined, 'segnali tolti');
     });
 
-    t.test('1 -> 6: un salvataggio senza versione arriva al formato attuale', () => {
+    t.test('1 -> 7: un salvataggio senza versione arriva al formato attuale', () => {
         const v1 = { campaignId: 'tutorial', party: [{ name: 'A', hp: 1 }], unlockedRelics: [{ name: 'Sigillo runico' }], activeCurses: ['Presagio di Morte (+1 danno subito)'] };
         const s = g.migrateSave(v1);
-        t.uguale(6, s.version);
+        t.uguale(7, s.version);
         t.uguale('sigillo_runico', s.stato.unlockedRelics[0].id);
         t.uguale('presagio_di_morte', s.stato.activeCurses[0].id);
     });
