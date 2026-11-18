@@ -16,7 +16,7 @@ window.CAMPAIGNS["fredlos_parte_2"] = {
     "coverImage": "immagini/fredlos_parte_2/4b_vedetta_roccia_di_zamak.webp",
     "introText": "Travolti dalla furia del Capoguerra e precipitati nelle acque gelide del fiume, siete stati trascinati dalla corrente fino a spiaggiarvi sulla sponda orientale, nelle Brughiere del Lander. Kesia ha ormai guadagnato un forte distacco e il vostro gruppo deve rialzarsi, ferito e infreddolito, per riprendere l'inseguimento attraverso Collifreddi.",
     "heroes": ["enea_dignitas", "aiace_dignitas", "zeno", "aurelio_dignitas"],
-    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
+    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino"],
     "challenges": {
         "sacche_impigliate_nella_secca": {
             "title": "Le Sacche Impigliate nella Secca",
@@ -210,7 +210,7 @@ window.CAMPAIGNS["fredlos_parte_2"] = {
     "stories": {
         "trama_colle_sovrano": { "title": "Il Colle Sovrano", "text": "" }
     },
-    "lootItems": null,
+    "lootItems": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "ankh_pellegrino", "bastone_eremita", "balsamo_curativo", "spada_norgrad", "alabarda_guardia", "mannaia_pesante", "scudo_ferro", "corazza_scaglie", "tomo_proibito", "reliquiario_tascabile", "martello_consacrato", "brigantina_benedetta", "stocco_duellante", "pozione_rigenerazione", "unguento_fortificante", "lama_acciaio_lunare", "martello_breccia", "gorgiera_veterano", "corazza_piastre_leone", "cappa_sussurri", "simbolo_jag_antar", "scettro_savio", "corona_martire", "elisir_sangue_vivo", "olio_bollente", "bomba_acido", "cristallo_flammaurea", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker", "corno_allman", "ascia_primo_sangue", "mazza_boia_seistad", "scudo_spina_kranen", "catena_ghiacceterno", "talismano_corvo", "mappa_contrabbandiere", "dado_osso_gunnar", "lingua_argento", "occhio_gazza", "coperta_rurikstad", "erbario_fonnish", "spadone_primo_sangue", "ascia_carnefice_glostok", "pugnale_succhiasangue", "lama_ghiaccio_hvid", "corazza_ultimo_baluardo", "spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino", "bastone_runico_del_dotto", "mazza_votiva", "scudo_del_sacerdote", "astrolabio_tattico", "guanti_runici_erudito", "bastone_dei_giusti"],
     "mapNodes": [
         {
             "id": 0,

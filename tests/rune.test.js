@@ -67,6 +67,38 @@ module.exports = (t, carica) => {
         t.uguale(0, a.hp, 'tolta e rimessa: niente seconda volta');
     });
 
+    t.test('la Runa della Rinascita salva anche un altro eroe, una volta sola per tutta la compagnia', () => {
+        const a = alastorta();
+        a.equippedRunes = ['runa_rinascita', 'runa_guarigione'];
+        a.equippedRunes.forEach(id => g.applyRune(a, id, 1));
+        const p = { name: 'Pancrazio', hp: 1, maxHp: 4, current_armor: 0, items: [] };
+        const c = { name: 'Cassio', hp: 1, maxHp: 4, current_armor: 0, items: [] };
+        stato.party = [a, p, c];
+        const r = g.resolveMonsterAttack({ name: 'N', dmg: 5 }, p);
+        t.uguale(2, p.hp, 'Pancrazio si rialza con 2 HP');
+        t.ok(r.events.some(e => (e.text || '').includes('Alastorta')), 'il diario dice di chi è la runa');
+        g.resolveMonsterAttack({ name: 'N', dmg: 5 }, c);
+        t.uguale(0, c.hp, 'il secondo eroe no');
+        a.hp = 1;
+        g.resolveMonsterAttack({ name: 'N', dmg: 5 }, a);
+        t.uguale(0, a.hp, 'nemmeno Alastorta: la runa è già usata');
+    });
+
+    t.test('Runa della Rinascita: con Alastorta a terra non salva gli altri', () => {
+        const a = alastorta();
+        a.equippedRunes = ['runa_rinascita', 'runa_guarigione'];
+        a.equippedRunes.forEach(id => g.applyRune(a, id, 1));
+        a.hp = 0;
+        const p = { name: 'Pancrazio', hp: 1, maxHp: 4, current_armor: 0, items: [] };
+        stato.party = [a, p];
+        g.resolveMonsterAttack({ name: 'N', dmg: 5 }, p);
+        t.uguale(0, p.hp);
+    });
+
+    t.test('Eldric dei Cavalcantici fa 3 danni', () => {
+        t.uguale(3, lib.bestiario.eldric_dei_cavalcantici.dmg);
+    });
+
     t.test('telefono: lo scambio (restSwapRune) vale solo durante un riposo e una volta', () => {
         const a = alastorta();
         a.equippedRunes = ['runa_rinascita', 'runa_vento'];

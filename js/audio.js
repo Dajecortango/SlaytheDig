@@ -200,6 +200,15 @@
             return true;
         }
 
+        // Suono del primo colpo del nemico sulla sua nemesi (campo "sfxNemesi"): il motore segna
+        // nemesiSuonoInAttesa, qui si suona una volta sola (chiamata a ogni aggiornamento delle barre)
+        function playNemesisSfx() {
+            const enemy = stato.activeEnemy;
+            if (!enemy || !enemy.nemesiSuonoInAttesa) return;
+            enemy.nemesiSuonoInAttesa = false;
+            if (enemy.sfxNemesi) playSfx(enemy.sfxNemesi, 0.9);
+        }
+
         // Suoni dei colpi generati con Web Audio (nessun file audio necessario):
         // 'armor' = clangore metallico, 'hit' = colpo sordo sugli HP di un eroe, 'enemy' = colpo sul nemico
         let sfxCtx = null;

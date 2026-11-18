@@ -187,5 +187,53 @@ window.LIBRERIA.maledizioni = {
         "effects": [
             { "effect": "party_damage", "val": 2 }
         ]
+    },
+    "assideramento_lieve": {
+        "type": "curse",
+        "name": "Assideramento Lieve",
+        "desc": "1 danno a tutti e -1 ai tiri per colpire",
+        "effects": [
+            { "effect": "add_curse", "text": "Assideramento Lieve (-1 tiri per colpire)" },
+            { "effect": "party_damage", "val": 1 },
+            { "effect": "party_stat", "stat": "att_penalty", "val": 1 }
+        ]
+    },
+    "torpore_residuo": {
+        "type": "curse",
+        "name": "Torpore Residuo",
+        "desc": "-1 Intelligenza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Torpore Residuo (-1 Int)" },
+            { "effect": "party_stat", "stat": "int", "val": -1 }
+        ]
+    },
+    "trauma_dello_spirito": {
+        "type": "curse",
+        "name": "Trauma dello Spirito",
+        "desc": "1 danno a tutti e -1 Fede a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Trauma dello Spirito (-1 Fede)" },
+            { "effect": "party_damage", "val": 1 },
+            { "effect": "party_stat", "stat": "fth", "val": -1 }
+        ]
+    },
+    "stiramento_muscolare": {
+        "type": "curse",
+        "name": "Stiramento Muscolare",
+        "desc": "-1 Forza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Stiramento Muscolare (-1 Forza)" },
+            { "effect": "party_stat", "stat": "str", "val": -1 }
+        ]
+    },
+    "dubbio_del_bianco": {
+        "type": "curse",
+        "name": "Dubbio del Bianco",
+        "desc": "-1 Fede e -1 Intelligenza a tutti",
+        "effects": [
+            { "effect": "add_curse", "text": "Dubbio del Bianco (-1 Fede, -1 Int)" },
+            { "effect": "party_stat", "stat": "fth", "val": -1 },
+            { "effect": "party_stat", "stat": "int", "val": -1 }
+        ]
     }
 };

@@ -400,8 +400,103 @@ window.LIBRERIA.armeria = {
         ],
         "desc": "+1 Armatura; la prima volta nello scontro che l'eroe scende a 2 HP o meno riceve subito 2 armatura.",
         "icon": "immagini/icone/BTNArcaniteArmor.png"
+    },
+    "stilo_da_battaglia": {
+        "id": "stilo_da_battaglia",
+        "icon": "immagini/icone/BTNCleavingAttack.png",
+        "name": "Stilo da Battaglia",
+        "rarity": "comune",
+        "scaling": [
+            { "stat": "str", "per": "int", "every": 3, "max": 2 }
+        ],
+        "desc": "+1 Forza ogni 3 Intelligenza (max +2)"
+    },
+    "turibolo_ferrato": {
+        "id": "turibolo_ferrato",
+        "icon": "immagini/icone/BTNScepterOfHealing.png",
+        "name": "Turibolo Ferrato",
+        "rarity": "comune",
+        "scaling": [
+            { "stat": "str", "per": "fth", "every": 3, "max": 2 }
+        ],
+        "desc": "+1 Forza ogni 3 Fede (max +2)"
+    },
+    "rosario_del_pellegrino": {
+        "id": "rosario_del_pellegrino",
+        "icon": "immagini/icone/BTNPendantOfEnergy.png",
+        "name": "Rosario del Pellegrino",
+        "rarity": "comune",
+        "fth": 1,
+        "scaling": [
+            { "stat": "help_bonus_val", "per": "fth", "every": 3 }
+        ],
+        "desc": "+1 Fede; +1 Aiuto ogni 3 Fede"
+    },
+    "bastone_runico_del_dotto": {
+        "id": "bastone_runico_del_dotto",
+        "icon": "immagini/icone/BTNStaffOfNegation.png",
+        "name": "Bastone Runico del Dotto",
+        "rarity": "non_comune",
+        "scaling": [
+            { "stat": "str", "per": "int", "every": 2, "max": 2 }
+        ],
+        "desc": "+1 Forza ogni 2 Intelligenza (max +2)"
+    },
+    "mazza_votiva": {
+        "id": "mazza_votiva",
+        "icon": "immagini/icone/BTNStaffOfSanctuary.png",
+        "name": "Mazza Votiva",
+        "rarity": "non_comune",
+        "scaling": [
+            { "stat": "str", "per": "fth", "every": 2, "max": 2 }
+        ],
+        "desc": "+1 Forza ogni 2 Fede (max +2)"
+    },
+    "scudo_del_sacerdote": {
+        "id": "scudo_del_sacerdote",
+        "icon": "immagini/icone/BTNSpellShieldAmulet.png",
+        "name": "Scudo del Sacerdote",
+        "rarity": "non_comune",
+        "def_bonus": 1,
+        "scaling": [
+            { "stat": "def_bonus", "per": "fth", "every": 2 }
+        ],
+        "desc": "+1 Difesa; +1 Difesa ogni 2 Fede"
+    },
+    "astrolabio_tattico": {
+        "id": "astrolabio_tattico",
+        "icon": "immagini/icone/BTNRune.png",
+        "name": "Astrolabio Tattico",
+        "rarity": "non_comune",
+        "help_bonus_val": 1,
+        "scaling": [
+            { "stat": "help_bonus_val", "per": "int", "every": 2 }
+        ],
+        "desc": "+1 Aiuto; +1 Aiuto ogni 2 Intelligenza"
+    },
+    "guanti_runici_erudito": {
+        "id": "guanti_runici_erudito",
+        "icon": "immagini/icone/BTNRunedGauntlets.png",
+        "name": "Guanti Runici dell'Erudito",
+        "rarity": "raro",
+        "scaling": [
+            { "stat": "str", "per": "int", "every": 2, "max": 2 },
+            { "stat": "dmg", "per": "int", "every": 3 }
+        ],
+        "desc": "+1 Forza ogni 2 Intelligenza (max +2); +1 Danno ogni 3 Intelligenza"
+    },
+    "bastone_dei_giusti": {
+        "id": "bastone_dei_giusti",
+        "icon": "immagini/icone/BTNStaffOfPreservation.png",
+        "name": "Bastone dei Giusti",
+        "rarity": "raro",
+        "scaling": [
+            { "stat": "str", "per": "fth", "every": 2, "max": 2 },
+            { "stat": "dmg", "per": "fth", "every": 3 }
+        ],
+        "desc": "+1 Forza ogni 2 Fede (max +2); +1 Danno ogni 3 Fede"
     }
 };
 
 // Bottino delle campagne con "lootItems": null
-window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "cristallo_flammaurea", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker", "corno_allman", "ascia_primo_sangue", "mazza_boia_seistad", "scudo_spina_kranen", "catena_ghiacceterno", "talismano_corvo", "mappa_contrabbandiere", "dado_osso_gunnar", "lingua_argento", "occhio_gazza", "coperta_rurikstad", "erbario_fonnish", "spadone_primo_sangue", "ascia_carnefice_glostok", "pugnale_succhiasangue", "lama_ghiaccio_hvid", "corazza_ultimo_baluardo"];
+window.LIBRERIA.lootPredefinito = ["spada_affilata", "ascia_pesante", "armatura_leggera_loot", "armatura_pesante_loot", "pozione", "amuleto", "anello", "scudo_pesante", "olio_bollente", "bomba_acido", "cristallo_flammaurea", "grappa_soldato", "infuso_corteccia", "olio_da_lama", "pozione_pelle_pietra", "elisir_berserker", "corno_allman", "ascia_primo_sangue", "mazza_boia_seistad", "scudo_spina_kranen", "catena_ghiacceterno", "talismano_corvo", "mappa_contrabbandiere", "dado_osso_gunnar", "lingua_argento", "occhio_gazza", "coperta_rurikstad", "erbario_fonnish", "spadone_primo_sangue", "ascia_carnefice_glostok", "pugnale_succhiasangue", "lama_ghiaccio_hvid", "corazza_ultimo_baluardo", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino", "bastone_runico_del_dotto", "mazza_votiva", "scudo_del_sacerdote", "astrolabio_tattico", "guanti_runici_erudito", "bastone_dei_giusti"];

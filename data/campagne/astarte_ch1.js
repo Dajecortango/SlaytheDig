@@ -15,7 +15,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
     "coverImage": "immagini/astarte_capitolo_uno.webp",
     "introText": "Astarte si stringe nel mantello mentre il vento freddo delle alture spazza la pietraia. Davanti a voi si snoda una pista dimenticata, segnata dal sangue di vecchi conflitti e dal respiro pesante di creature che reclamano queste lande. La spedizione comincia.",
     "heroes": ["icaro", "astarte", "ascadeo", "dioforo"],
-    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
+    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino"],
     "challenges": {
         "carro_rovesciato": {
             "title": "Il carro rovesciato",

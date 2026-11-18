@@ -42,7 +42,7 @@ const SCHEMA_FASE = {
 const SCHEMA_COMBAT = {
     dice: NUMERO, attackStat: TESTO, damageStat: TESTO, attackBonus: NUMERO, damageBonus: NUMERO, damageMult: NUMERO,
     stun: BOOL, critical: BOOL, autoHit: BOOL, requiresHitLastTurn: BOOL, damageTakenBonus: BOOL, armorGain: NUMERO,
-    sumTarget: NUMERO, senzaTiro: BOOL, lancia: BOOL, instabile: BOOL, effetti: campo('speciali', { vocab: 'abilita' }), useText: TESTO, hitLabel: TESTO, hitText: TESTO
+    sumTarget: NUMERO, senzaTiro: BOOL, lancia: BOOL, instabile: BOOL, effetti: campo('speciali', { vocab: 'abilita' }), useText: TESTO, suono: PERCORSO, hitLabel: TESTO, hitText: TESTO
 };
 const ITEM_TYPES = { consumable_heal: 'Cura', consumable_full: 'Cura tutto', consumable_damage: 'Danno', consumable_buff: 'Potenziamento' };
 
@@ -55,8 +55,8 @@ const DATI_SCHEMA = {
     },
     bestiario: {
         name: OBBL(TESTO), hp: OBBL(NUMERO), maxHp: OBBL(NUMERO), att: OBBL(NUMERO), dmg: OBBL(NUMERO), ca: OBBL(NUMERO), desc: TESTO,
-        image: PERCORSO, video: PERCORSO, sfxAttack: PERCORSO, sfxHit: PERCORSO, sfxDeath: PERCORSO,
-        fasi: campo('elenco', { schema: SCHEMA_FASE }), speciali: campo('speciali', { vocab: 'nemico' })
+        image: PERCORSO, video: PERCORSO, sfxAttack: PERCORSO, sfxHit: PERCORSO, sfxDeath: PERCORSO, sfxNemesi: PERCORSO,
+        nemesi: TESTO, fasi: campo('elenco', { schema: SCHEMA_FASE }), speciali: campo('speciali', { vocab: 'nemico' })
     },
     reliquie: { type: TESTO, name: OBBL(TESTO), desc: TESTO, effects: SCHEMA_EFFETTI, speciali: SCHEMA_SPECIALI },
     maledizioni: { type: TESTO, name: OBBL(TESTO), desc: TESTO, effects: SCHEMA_EFFETTI, speciali: SCHEMA_SPECIALI },
@@ -101,7 +101,7 @@ const DATI_SCHEMA = {
         difficolta: campo('oggetto', { schema: { vittoriaMin: NUMERO, vittoriaMax: NUMERO } }), procedurale: campo('oggetto')
     },
     sfida: {
-        title: OBBL(TESTO), stat: OBBL(campo('scelta', { valori: STATISTICHE_PROVA })), cd: OBBL(NUMERO), malus: NUMERO,
+        title: OBBL(TESTO), stat: OBBL(campo('scelta', { valori: STATISTICHE_PROVA })), cd: OBBL(NUMERO), malus: NUMERO, bonusEroi: campo('oggetto'),
         desc: TESTO, ignoreText: TESTO, successText: TESTO, failText: TESTO,
         reward: campo('riferimento'), punishment: campo('riferimento'), strade: campo('elenco', { schema: SCHEMA_STRADA })
     },

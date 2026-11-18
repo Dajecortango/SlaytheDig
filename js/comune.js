@@ -140,7 +140,7 @@ const SPECIALI_FAI = {
     ritira: { label: 'Ritira il dado', campi: [], quando: ['tiro_fallito'] },
     annulla_colpo: { label: 'Annulla il colpo', campi: [], quando: ['colpito'] },
     schiva: { label: 'Schiva con un d6 pari o superiore a', campi: ['val'], quando: ['colpito'] },
-    rialza: { label: 'Resta in piedi con HP', campi: ['val'], quando: ['colpo_mortale'] },
+    rialza: { label: 'Resta in piedi con HP', campi: ['val', 'bersaglio'], quando: ['colpo_mortale'] },  // bersaglio "compagnia": salva qualunque eroe
     annulla_punizione: { label: 'Niente punizione', campi: [], quando: ['prova_fallita'] },
     prova_riuscita: { label: 'La prova riesce lo stesso', campi: [], quando: ['prova_fallita'] },
     hp_massimi: { label: 'HP massimi in più (per sempre)', campi: ['val'], quando: ['fine_scontro'] },
@@ -193,7 +193,7 @@ function specialeTesto(s, tipo) {
         ritira: 'il dado si ritira da solo',
         annulla_colpo: 'il colpo è assorbito del tutto',
         schiva: `tira un d6: con ${v} o più il colpo è ignorato`,
-        rialza: `resta in piedi con ${v} HP`,
+        rialza: s.bersaglio === 'compagnia' ? `il primo eroe della compagnia che va a 0 HP resta in piedi con ${v} HP (se chi lo porta è in piedi)` : `resta in piedi con ${v} HP`,
         annulla_punizione: 'niente punizione',
         prova_riuscita: 'il fallimento diventa un successo',
         hp_massimi: `+${v} HP massimi per sempre`,

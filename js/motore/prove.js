@@ -87,6 +87,20 @@
             return Math.max(-max, Math.min(max, v));
         }
 
+        // Id della libreria Eroi di un eroe in partita (libId; le partite salvate prima lo cercano per nome)
+        function heroLibId(hero) {
+            if (!hero) return '';
+            if (hero.libId) return hero.libId;
+            const found = Object.entries((window.LIBRERIA && LIBRERIA.eroi) || {}).find(([, h]) => h.name === hero.name);
+            return found ? found[0] : '';
+        }
+
+        // Bonus (+) o malus (−) di un eroe in una prova: "bonusEroi" della sfida, { id eroe: valore }
+        function challengeHeroBonus(hero, challenge = stato.challengeState) {
+            const map = (challenge && challenge.bonusEroi) || {};
+            return Math.round(Number(map[heroLibId(hero)]) || 0);
+        }
+
         // Modificatori di una prova per l'eroe scelto, senza consumare le reliquie
         function challengeModifiers(hero) {
             const statValue = (hero && hero[stato.challengeState.stat]) || 0;
@@ -100,19 +114,20 @@
                 rollMode: challengeRollMode(hero).mode,
                 rerollMalus: (hero && hero.challengeRerollMalus) || 0,
                 malus: Number(stato.challengeState.malus) || 0,   // malus della sfida o della strada scelta
+                heroBonus: challengeHeroBonus(hero),   // bonus o malus di questo eroe nella sfida ("bonusEroi")
                 gmMod: gmProvaMod(),   // bonus (+) o malus (−) del master dal Pannello di Controllo
                 safetyNet: hasSpecial('prova_fallita', 'prova_riuscita', hero)
             };
         }
 
         function challengeChanceInfo(mods) {
-            const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus + (mods.malus || 0) - (mods.gmMod || 0);
+            const needed = stato.challengeState.cd - mods.statValue - mods.relicBonus - (mods.heroBonus || 0) + (mods.malus || 0) - (mods.gmMod || 0);
             if (mods.safetyNet) return { short: 'Sicuro', long: 'Riuscita garantita: un effetto speciale trasforma un fallimento in successo', pct: 100 };
             const info = chanceText(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
             if (!mods.rerollMalus) return info;
             // Era solo una prova!: un secondo tentativo con il malus se il primo fallisce,
             // senza le reliquie "al prossimo tiro" (consumate dal primo)
-            const needed2 = stato.challengeState.cd - mods.statValue - (mods.lastingRelicBonus || 0) + mods.rerollMalus + (mods.malus || 0) - (mods.gmMod || 0);
+            const needed2 = stato.challengeState.cd - mods.statValue - (mods.lastingRelicBonus || 0) - (mods.heroBonus || 0) + mods.rerollMalus + (mods.malus || 0) - (mods.gmMod || 0);
             const p1 = rollChance(needed, mods.rollMode === 'best', mods.rollMode === 'worst');
             const p2 = rollChance(needed2, mods.rollMode === 'best', mods.rollMode === 'worst');
             const pct = Math.round((p1 + (1 - p1) * p2) * 100);
@@ -156,10 +171,12 @@
                 if (!reroll) spendNextRollRelics('prova', hero).forEach(text => events.push({ type: 'relic', text }));
                 if (malus) events.push({ type: 'malus', text: `−${malus} secondo tentativo` });
                 if (mods.malus) events.push({ type: 'malus', text: `−${mods.malus} malus della prova` });
+                if (mods.heroBonus > 0) events.push({ type: 'stat', text: `+${mods.heroBonus} ${hero.name} in questa prova` });
+                if (mods.heroBonus < 0) events.push({ type: 'malus', text: `−${-mods.heroBonus} ${hero.name} in questa prova` });
                 if (mods.gmMod > 0) events.push({ type: 'gm', text: `+${mods.gmMod} favore del master` });
                 if (mods.gmMod < 0) events.push({ type: 'malus', text: `−${-mods.gmMod} sfavore del master` });
 
-                const total = kept + mods.statValue + relicBonus - malus - mods.malus + mods.gmMod;
+                const total = kept + mods.statValue + relicBonus - malus - mods.malus + mods.heroBonus + mods.gmMod;
                 events.push({ type: 'total', text: `= <b>${total}</b> contro CD ${challenge.cd}` });
                 const natural = naturalRollNote(kept, total, challenge.cd);
                 if (natural) events.push({ type: 'natural', text: natural });
@@ -449,7 +466,7 @@
     const api = {
         gmProvaMod,
         isFinalNode, challengeWithRoad, bestChallengeRoad, roadCoinCost, roadPriceText, roadLabel,
-        challengeRollMode, challengeModifiers, challengeChanceInfo, resolveChallenge, applyPunishment, removeCurseAt,
+        challengeRollMode, heroLibId, challengeHeroBonus, challengeModifiers, challengeChanceInfo, resolveChallenge, applyPunishment, removeCurseAt,
         resolveRest, storyChoiceLabel, resolveStoryChoice, blessingData, hasBlessing, pickBlessings,
         prayerRoll, applyBlessing, applyCombatBlessings, resolveCaptainAction
     };

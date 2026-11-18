@@ -440,6 +440,12 @@
             target.lastHitDamage = Math.max(0, armorBefore - target.current_armor) + Math.max(0, hpBefore - target.hp);
             target.lastHitRound = stato.combatRound;
 
+            // Primo colpo andato a segno sulla nemesi (armatura o HP): l'interfaccia suona "sfxNemesi" una volta per scontro
+            if (target.lastHitDamage > 0 && enemy.nemesi && !enemy.nemesiColpita && heroLibId(target) === enemy.nemesi) {
+                enemy.nemesiColpita = true;
+                enemy.nemesiSuonoInAttesa = true;
+            }
+
             // Effetti "perde_hp" (vendetta: chi viene ferito colpisce il nemico...) e "dopo_colpito" (spine dello Scudo
             // a Spina, armatura da ferito dell'Ultimo Baluardo...)
             if (hpDamage > 0) special(fireSpecials('perde_hp', target, { enemy, splash: !!opts.splash, reaction: !!opts.reaction }).notes);
@@ -632,9 +638,18 @@
             return !!enemyTurnRule(enemy).turnoPreparazione && !enemy.charging;
         }
 
+        // Nemesi del nemico (campo "nemesi" = id della libreria Eroi): finché quell'eroe è in piedi, ogni attacco
+        // del nemico al suo turno va a lui (non quelli contro tutta la compagnia); caduto lui, si torna alla regola di sempre
+        function enemyNemesis(enemy) {
+            if (!enemy || !enemy.nemesi) return null;
+            return stato.party.find(h => h.hp > 0 && heroLibId(h) === enemy.nemesi) || null;
+        }
+
         // Bersaglio che il nemico sceglie da solo al suo turno; null = lo sceglie il giocatore (o colpisce tutti)
         function enemyChosenTarget(enemy) {
             const mode = enemyTurnRule(enemy).turnoBersaglio;
+            const nemesi = mode !== 'tutti' && enemyNemesis(enemy);
+            if (nemesi) return nemesi;
             if (!mode || mode === 'scelto' || mode === 'tutti') return null;
             return eliteTargets(mode)[0] || null;
         }
@@ -674,6 +689,7 @@
             enemy.announcedPrey = null;
             let targets;
             if (mode === 'tutti') targets = stato.party.filter(h => h.hp > 0);
+            else if (enemyNemesis(enemy)) targets = [enemyNemesis(enemy)];
             else if (mode === 'scelto') targets = chosenTarget && chosenTarget.hp > 0 ? [chosenTarget] : (chosenTarget ? eliteTargets('piu_debole') : []);
             else targets = announced ? [announced] : eliteTargets(mode);
             if (!targets.length) {
@@ -735,7 +751,9 @@
             const danni = `<b>${dmg} ${dmg === 1 ? 'danno' : 'danni'}</b>`;
             const mode = r.turnoBersaglio || 'scelto';
             const preda = mode === 'piu_debole' || mode === 'piu_forte' ? eliteTargets(mode)[0] : null;
-            const chi = mode === 'tutti' ? 'tutta la compagnia'
+            const nemesi = mode !== 'tutti' && enemyNemesis(enemy);
+            const chi = nemesi ? `<b>${esc(nemesi.name)}</b>, la sua nemesi`
+                : mode === 'tutti' ? 'tutta la compagnia'
                 : mode === 'casuale' ? 'un eroe a caso'
                 : mode === 'piu_debole' ? `${preda ? `<b>${esc(preda.name)}</b>` : 'il più debole'} (meno HP + armatura)`
                 : mode === 'piu_forte' ? `${preda ? `<b>${esc(preda.name)}</b>` : 'il più forte'} (più HP + armatura)`
@@ -799,7 +817,7 @@
         defendArmorGain, resolveDefend, resolveHelp, abilityCombat, abilityStatBonus, abilityUsable, throwItemIdx, throwDamage, returnThrownItems, alchemyOutcome, abilityNeedsTarget,
         currentEnemyIsEliteOrBoss, abilityIsInstant, abilitySpecialEffects, resolveAbility, resolveMonsterAttack, legacyPhaseActions,
         phaseActions, eliteTargets, predatorTarget, applyEliteAction, eliteReaction, checkEnemyPhases,
-        checkEnemyRoundPhases, enemyTurnRule, enemyIsPreparing, enemyChosenTarget, preparationText, resolveEnemyTurn,
+        checkEnemyRoundPhases, enemyTurnRule, enemyIsPreparing, enemyChosenTarget, enemyNemesis, preparationText, resolveEnemyTurn,
         applyHeroStuns, enemyIntentText, expectedHitDamage, combatRollUsesTwoDice, hatefulTarget, nextTimedPhase
     };
     window.Motore = window.Motore || {};

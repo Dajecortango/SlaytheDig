@@ -92,6 +92,12 @@
             const own = scope === 'party' ? []
                 : SPECIALI_DI_COMPAGNIA.includes(quando) ? stato.party.filter(h => h.hp > 0).flatMap(heroSpecialSources)
                 : heroSpecialSources(hero);
+            // "Resta in piedi" con bersaglio "compagnia" (Runa della Rinascita): salva anche gli altri eroi, se chi
+            // lo porta è in piedi. Dopo quelli dell'eroe stesso, che si usano per primi
+            if (quando === 'colpo_mortale' && hero && scope !== 'party') {
+                own.push(...stato.party.filter(h => h !== hero && h.hp > 0).flatMap(heroSpecialSources)
+                    .filter(e => e.s.quando === 'colpo_mortale' && e.s.bersaglio === 'compagnia'));
+            }
             return scope === 'own' ? own : [...own, ...partySpecialSources()];
         }
 
@@ -392,7 +398,7 @@
                     }
                     case 'rialza':
                         res.revive = Math.max(1, v);
-                        note = `${who ? who.name : 'l\'eroe'} resta in piedi con ${res.revive} HP`;
+                        note = `${hero ? hero.name : who ? who.name : 'l\'eroe'} resta in piedi con ${res.revive} HP${who && hero && who !== hero ? ` (dono di ${who.name})` : ''}`;
                         break;
                     case 'annulla_punizione':
                         res.skipPunishment = true;
@@ -639,7 +645,9 @@
                 if (s.prob && rng() * 100 >= s.prob) return;
                 const v = s.val || 0;
                 const mode = s.bersaglio || 'eroe';
-                const targets = mode === 'eroe' ? (hero && hero.hp > 0 ? [hero] : []) : eliteTargets(mode, hero);
+                // I danni a un eroe solo (più forte, più debole, a caso) vanno alla nemesi del nemico, se è in piedi
+                const nemesi = s.fai === 'danni' && ['piu_forte', 'piu_debole', 'casuale'].includes(mode) && enemyNemesis(enemy);
+                const targets = nemesi ? [nemesi] : mode === 'eroe' ? (hero && hero.hp > 0 ? [hero] : []) : eliteTargets(mode, hero);
                 let note = null;
                 switch (s.fai) {
                     case 'danni': {

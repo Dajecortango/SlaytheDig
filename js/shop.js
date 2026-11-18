@@ -41,10 +41,12 @@
         // Usata anche dal simulatore: niente stato dell'interfaccia (contrattazione, carte scoperte) qui dentro
         function generateMerchantStock() {
             const cascade = merchantRarityCascade(mapProgress());
-            const equipment = gameItems.filter(i => !isConsumableItem(i));
+            // Niente epici e leggendari in vendita (MERCHANT_SENZA_RARITA)
+            const vendibile = i => !MERCHANT_SENZA_RARITA.includes(itemRarity(i));
+            const equipment = gameItems.filter(i => !isConsumableItem(i) && vendibile(i));
             // Se il bottino della campagna non ha consumabili, si prendono quelli dell'armeria condivisa
-            let consumables = gameItems.filter(isConsumableItem);
-            if (consumables.length === 0) consumables = Object.values(LIBRERIA.armeria).filter(isConsumableItem);
+            let consumables = gameItems.filter(i => isConsumableItem(i) && vendibile(i));
+            if (consumables.length === 0) consumables = Object.values(LIBRERIA.armeria).filter(i => isConsumableItem(i) && vendibile(i));
 
             const shopPool = [];
             const pickDistinct = (pool, count) => {

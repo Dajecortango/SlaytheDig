@@ -76,7 +76,7 @@
             const label = STAT_LABELS[stato.challengeState.stat] || 'Stat';
             document.getElementById('challengeHeroPick').innerHTML = heroPickHtml(stato.party.filter(p => p.hp > 0), 'confirmChallengeHero', {
                 chance: h => challengeChanceInfo(challengeModifiers(h)).pct,
-                sub: h => { const mods = challengeModifiers(h); return `${esc(label)} ${mods.statValue} · ${challengeChanceInfo(mods).pct}%`; },
+                sub: h => { const mods = challengeModifiers(h); const bonus = mods.heroBonus ? ` ${mods.heroBonus > 0 ? '+' : '−'}${Math.abs(mods.heroBonus)}` : ''; return `${esc(label)} ${mods.statValue}${bonus} · ${challengeChanceInfo(mods).pct}%`; },
                 tip: h => challengeChanceInfo(challengeModifiers(h)).long });
         }
 
@@ -350,7 +350,7 @@
         function restRuneButtonsHtml() {
             return stato.party.filter(h => heroHasRunes(h) && !restRuneSwapped.includes(h.name)
                 && h.runeOptions.some(id => !(h.equippedRunes || []).includes(id)))
-                .map(h => `<button class="btn-proceed rune-swap-btn" ${azione('openRuneSwap', h.name)}>Scambia una runa di ${esc(h.name)}</button>`).join('');
+                .map(h => `<button class="btn-block rune-swap-btn" ${azione('openRuneSwap', h.name)}><img class="prayer-icon" src="immagini/icone/BTNRune.png" alt=""> Scambia una runa di ${esc(h.name)}</button>`).join('');
         }
 
         function renderRestRuneButtons() {
@@ -580,7 +580,6 @@
                 document.getElementById('restDescBox').innerHTML += `<br>Il calore del fuoco scioglie il <strong>Gelo nelle ossa</strong>: la penalità ai tiri per colpire svanisce.`;
             }
             (res.notes || []).forEach(text => { document.getElementById('restDescBox').innerHTML += `<br>✨ ${esc(text)}`; });
-            document.getElementById('restDescBox').innerHTML += '<div id="restRuneArea" class="rest-rune-area"></div>';
             renderRestRuneButtons();
             resetPrayerUI();
             document.getElementById('rollPrayerBtn').classList.remove('hidden');

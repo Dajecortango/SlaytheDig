@@ -9,10 +9,10 @@ window.LIBRERIA.abilita = {
     "runa_rinascita": {
         "id": "runa_rinascita",
         "name": "Runa della Rinascita",
-        "desc": "Runa: la prima volta che andrebbe a 0 HP torna con 2 HP (una volta per campagna)",
+        "desc": "Runa: il primo eroe della compagnia che andrebbe a 0 HP torna con 2 HP, se chi porta la runa è in piedi (una volta per campagna)",
         "isCombatActive": false,
         "speciali": [
-            { "quando": "colpo_mortale", "fai": "rialza", "val": 2, "limite": "capitolo" }
+            { "quando": "colpo_mortale", "fai": "rialza", "val": 2, "bersaglio": "compagnia", "limite": "capitolo" }
         ],
         "icon": "immagini/icone/BTNAnkh.png"
     },
@@ -217,8 +217,11 @@ window.LIBRERIA.abilita = {
     "morte_fiammeggiante": {
         "id": "morte_fiammeggiante",
         "name": "Morte fiammeggiante",
-        "desc": "Passiva: ogni volta che esce da un mercante mette nello zaino un Cristallo di Flammaurea (3 danni al nemico). Con lo zaino pieno sceglie cosa scartare",
+        "desc": "Passiva: parte con un Cristallo di Flammaurea (3 danni al nemico) e ogni volta che esce da un mercante ne mette un altro nello zaino. Con lo zaino pieno sceglie cosa scartare",
         "isCombatActive": false,
+        "effects": [
+            { "effect": "hero_item", "item": "cristallo_flammaurea", "val": 1 }
+        ],
         "speciali": [
             { "quando": "uscita_mercante", "fai": "oggetto", "item": "cristallo_flammaurea", "val": 1 }
         ],
@@ -261,7 +264,8 @@ window.LIBRERIA.abilita = {
                 { "quando": "capolavoro", "fai": "danni", "val": 3 },
                 { "quando": "fallimento", "fai": "ferisce_se", "val": 1 }
             ],
-            "useText": "🧪 {eroe} stappa una fiala di Flammaurea e la scaglia..."
+            "useText": "🧪 {eroe} stappa una fiala di Flammaurea e la scaglia...",
+            "suono": "audio/abilita/hee_hee.ogg"
         }
     },
     "cassio_tintura_corteccia": {
@@ -279,7 +283,8 @@ window.LIBRERIA.abilita = {
                 { "quando": "capolavoro", "fai": "armatura", "val": 3, "bersaglio": "scelto" },
                 { "quando": "fallimento", "fai": "rafforza_nemico", "stat": "ca", "val": 1 }
             ],
-            "useText": "🧪 {eroe} passa a {bersaglio} una tintura di corteccia densa e amara..."
+            "useText": "🧪 {eroe} passa a {bersaglio} una tintura di corteccia densa e amara...",
+            "suono": "audio/abilita/hee_hee.ogg"
         }
     },
     "cassio_elisir_toro": {
@@ -299,7 +304,8 @@ window.LIBRERIA.abilita = {
                 { "quando": "capolavoro", "fai": "potenzia", "stat": "dmg", "val": 1, "bersaglio": "scelto" },
                 { "quando": "fallimento", "fai": "potenzia", "stat": "str", "val": -1, "durata": 2, "bersaglio": "scelto" }
             ],
-            "useText": "🧪 {eroe} fa bere a {bersaglio} un elisir che sa di sangue e ferro..."
+            "useText": "🧪 {eroe} fa bere a {bersaglio} un elisir che sa di sangue e ferro...",
+            "suono": "audio/abilita/hee_hee.ogg"
         }
     },
     "ofelia_veleno_cava": {
@@ -342,7 +348,8 @@ window.LIBRERIA.abilita = {
                 { "quando": "uso", "fai": "armatura", "val": 1, "bersaglio": "compagnia" },
                 { "quando": "uso", "fai": "purifica", "bersaglio": "compagnia" }
             ],
-            "useText": "🐉 {eroe} invoca Draken il Mutevole: la sua ala si stende sulla compagnia!"
+            "useText": "🐉 {eroe} invoca Draken il Mutevole: la sua ala si stende sulla compagnia!",
+            "suono": "audio/abilita/hee_hee.ogg"
         }
     },
     "pandora_voce_asi": {

@@ -96,17 +96,21 @@ const MERCHANT_RARITY_CASCADE = {
     scarso: null
 };
 
+// Rarità che il mercante non vende mai (generateMerchantStock in js/shop.js): la loro quota della cascata
+// scende ai rari. Epici e leggendari si trovano solo nel bottino, da metà capitolo
+const MERCHANT_SENZA_RARITA = ['epico', 'leggendario'];
+
 // Rinnovo della merce e contrattazione (una sola proposta per mercante)
 const MERCHANT_REROLL_COST = 5;
 const HAGGLE_DISCOUNT = 0.25;   // successo: -25% su tutta la merce
 const HAGGLE_PENALTY = 2;       // fallimento: +2 Scudi su ogni articolo
 
 // Bottino degli scontri e dei tesori, a cascata come il mercante. Probabilità finali, inizio → metà → fine:
-// leggendario 0 → 2 → 4, epico 0 → 4 → 8, raro 5 → 26 → 44, non comune 20 → 34 → 35, comune 55 → 29 → 9,
-// scarso 20 → 5 → 0
+// leggendario 0 → 1 → 2, epico 0 → 2 → 4, raro 5 → 27 → 47, non comune 20 → 35 → 37, comune 55 → 30 → 10,
+// scarso 20 → 5 → 0 (epici e leggendari dimezzati il 2026-11-18; prima di metà capitolo esclusi, LOOT_RARITA_ALTE_DA)
 const LOOT_RARITY_CASCADE = {
-    leggendario: [0, 2, 4],
-    epico: [0, 4.08, 8.33],
+    leggendario: [0, 1, 2],
+    epico: [0, 2.02, 4.08],
     raro: [5, 50],
     non_comune: [21.1, 79.5],
     comune: [73.3, 100],
@@ -116,6 +120,10 @@ const LOOT_RARITY_CASCADE = {
 // (niente scarsi né comuni: quello che resta va ai non comuni)
 const LOOT_ELITE_PROGRESS_BONUS = 0.4;
 const LOOT_ELITE_FLOOR = 'non_comune';
+// Bottino e tesori: epici e leggendari solo da metà capitolo in poi (livello del nodo / ultimo livello),
+// anche dagli elite; prima la loro parte scende alle rarità sotto. Non vale per il mercante
+const LOOT_RARITA_ALTE = ['epico', 'leggendario'];
+const LOOT_RARITA_ALTE_DA = 0.5;
 
 /* ---------- Dadi degli eroi: sacchetto (rollD6 in js/combattimento.js) ----------
    Ogni eroe pesca i suoi d6 da un sacchetto di "size" tiri con esattamente "ones" 1 e "sixes" 6;

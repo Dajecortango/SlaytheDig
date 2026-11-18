@@ -465,6 +465,7 @@
             const hero = currentActiveHero;
             const ability = hero.chosenAbility;
             const c = abilityCombat(ability) || {};
+            if (c.suono) playSfx(c.suono, 0.9);
             const res = resolveAbility(hero, stato.activeEnemy);
             const a = res.alchemy;
             const fill = text => String(text).replace(/\{eroe\}/g, hero.name).replace(/\{bersaglio\}/g, a ? a.target : hero.name);
@@ -616,6 +617,7 @@
                         const ability = hero.chosenAbility;
                         const c = abilityCombat(ability) || {};
                         if (c.lancia) hero.throwIdx = parseInt(document.getElementById('combatThrowSelect').value) || 0;  // oggetto scelto nel pannello
+                        if (c.suono) playSfx(c.suono, 0.9);
                         const res = resolveAbility(hero, stato.activeEnemy, externalRolls);
                         document.getElementById('combatThrowPick').classList.add('hidden');
                         logRelicNotes(res);
@@ -809,7 +811,7 @@
                 return;
             }
             renderMonsterTargets(preda ? [preda] : stato.party.filter(p => p.hp > 0), null, !!preda);
-            const perche = { piu_debole: 'il più debole', piu_forte: 'il più forte', casuale: 'scelto a caso' }[mode];
+            const perche = enemyNemesis(enemy) ? 'la sua nemesi' : { piu_debole: 'il più debole', piu_forte: 'il più forte', casuale: 'scelto a caso' }[mode];
             if (preda) document.getElementById('monsterTurnText').textContent = `${enemy.name} punta ${preda.name}, ${perche}!`;
         }
 

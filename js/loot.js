@@ -130,17 +130,26 @@
             return rarityCascade(LOOT_RARITY_CASCADE, Math.min(1, progress + LOOT_ELITE_PROGRESS_BONUS), LOOT_ELITE_FLOOR);
         }
 
+        // Oggetti che il bottino può dare adesso: prima di metà capitolo niente epici e leggendari
+        // (LOOT_RARITA_ALTE, LOOT_RARITA_ALTE_DA in js/regole.js); se resterebbe vuoto, tutti
+        function lootPoolNow(pool = gameItems, progress = mapProgress()) {
+            if (progress >= LOOT_RARITA_ALTE_DA) return pool;
+            const low = pool.filter(it => !LOOT_RARITA_ALTE.includes(itemRarity(it)));
+            return low.length ? low : pool;
+        }
+
         // Pesca un oggetto: prima la rarità con la cascata, poi un oggetto a caso di quella rarità
         function pickLootItem(isElite) {
-            return pickByRarity(gameItems, lootRarityCascade(isElite));
+            return pickByRarity(lootPoolNow(), lootRarityCascade(isElite));
         }
 
         // "count" oggetti del bottino, sempre diversi fra loro, con la tabella delle rarità per livello
         // (o per elite). Se la rarità estratta non ha altri oggetti si pesca fra quelli rimasti.
         function pickDistinctLoot(count, isElite) {
             const out = [];
+            const pool = lootPoolNow();
             for (let i = 0; i < count; i++) {
-                const rest = gameItems.filter(it => !out.includes(it));
+                const rest = pool.filter(it => !out.includes(it));
                 if (!rest.length) break;
                 out.push(pickByRarity(rest, lootRarityCascade(isElite)));
             }

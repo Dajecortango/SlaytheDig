@@ -16,7 +16,7 @@ window.CAMPAIGNS["caccia_alla_bestia_capitolo_finale"] = {
     "coverImage": "",
     "introText": "",
     "heroes": ["icaro", "astarte", "ascadeo", "dioforo"],
-    "initialArmory": ["ascia", "spada", "alabarda", "scudo", "armatura_leggera", "libro_fede", "tomo_conoscenza", "unguento"],
+    "initialArmory": ["ascia", "spada", "alabarda", "scudo", "armatura_leggera", "libro_fede", "tomo_conoscenza", "unguento", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino"],
     "challenges": {
         "la_cengia_di_ghiaccio_vivo": {
             "title": "La Cengia di Ghiaccio Vivo",

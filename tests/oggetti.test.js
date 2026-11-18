@@ -134,9 +134,9 @@ module.exports = (t, carica) => {
         t.uguale(1, a.items.length);
     });
 
-    t.test('Morte fiammeggiante: un Cristallo di Flammaurea a ogni uscita dal mercante, solo a chi ce l\'ha e in piedi', () => {
+    t.test('Morte fiammeggiante: un Cristallo all\'inizio e uno a ogni uscita dal mercante, solo a chi ce l\'ha e in piedi', () => {
         const abil = g.LIBRERIA.abilita.morte_fiammeggiante;
-        t.ok(!abil.effects, 'niente più cristalli all\'inizio');
+        t.uguale([{ effect: 'hero_item', item: 'cristallo_flammaurea', val: 1 }], abil.effects, 'parte con un Cristallo');
         const a = eroe({ chosenAbility: abil }), b = eroe({ name: 'B' }); prepara([a, b]);
         const r = g.fireSpecialsAll('uscita_mercante');
         t.uguale(1, r.items.length); t.ok(r.items[0].hero === a); t.uguale('cristallo_flammaurea', r.items[0].item.id);

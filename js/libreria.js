@@ -35,6 +35,7 @@ function resolveCampaign(raw, lib = window.LIBRERIA) {
         const entry = lib.eroi && lib.eroi[ref];
         if (!entry) { missing('eroe', ref); return null; }
         const { abilities: list, ...hero } = copy(entry);
+        hero.libId = ref;   // id della libreria Eroi (bonus per eroe delle prove, "bonusEroi")
         // Le abilità sono id della libreria Abilità; un'abilità scritta per intero nell'eroe resta com'è
         abilities[hero.name] = (list || []).map(a => {
             if (typeof a !== 'string') return a;

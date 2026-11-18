@@ -12,7 +12,7 @@ window.CAMPAIGNS["prova_di_fede"] = {
     "coverImage": "",
     "introText": "",
     "heroes": ["ascadeo", "prometeo_dignitas", "alastorta_dignitas"],
-    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
+    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino"],
     "challenges": {},
     "merchants": { "default": "" },
     "rests": { "default": "" },

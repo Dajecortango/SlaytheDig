@@ -135,7 +135,7 @@ function validateCampaign() {
     Object.entries(lib.bestiario).forEach(([k, e]) => {
         ['hp', 'maxHp', 'att', 'dmg', 'ca'].forEach(f => { if (typeof e[f] !== 'number') add('error', `Nemico <b>${k}</b>: "${f}" non è un numero`, 'bestiario', k); });
         if (checkImage(e.image) === 'missing') add('warn', `Nemico <b>${k}</b>: immagine non trovata ${esc(e.image)}`, 'bestiario', k);
-        ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(f => { if (checkAudio(e[f]) === 'missing') add('warn', `Nemico <b>${k}</b>: suono non trovato ${esc(e[f])}`, 'bestiario', k); });
+        ['sfxAttack', 'sfxHit', 'sfxDeath', 'sfxNemesi'].forEach(f => { if (checkAudio(e[f]) === 'missing') add('warn', `Nemico <b>${k}</b>: suono non trovato ${esc(e[f])}`, 'bestiario', k); });
         if (e.hp !== e.maxHp) add('warn', `Nemico <b>${k}</b>: HP (${e.hp}) diversi da HP massimi (${e.maxHp})`, 'bestiario', k);
         if (!e.name) add('warn', `Nemico <b>${k}</b>: nome mancante`, 'bestiario', k);
         if (e.fasi != null) {

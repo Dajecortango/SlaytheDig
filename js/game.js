@@ -366,7 +366,7 @@ function breakRelic(relicId) {
                     camp.coverImage = fix(camp.coverImage);
                     (camp.mapNodes || []).forEach(n => { n.image = fix(n.image); });
                     // Video e suoni dei nemici caricati nell'editor (il video degli elite e dei boss gira in ciclo nello scontro)
-                    Object.values(camp.enemies || {}).forEach(e => ['image', 'video', 'sfxAttack', 'sfxHit', 'sfxDeath'].forEach(k => { if (e[k]) e[k] = fix(e[k]); }));
+                    Object.values(camp.enemies || {}).forEach(e => ['image', 'video', 'sfxAttack', 'sfxHit', 'sfxDeath', 'sfxNemesi'].forEach(k => { if (e[k]) e[k] = fix(e[k]); }));
                     (camp.heroes || []).forEach(h => {
                         if (h.portrait) h.portrait = fix(h.portrait);
                         if (h.portraitWounded) h.portraitWounded = fix(h.portraitWounded);
@@ -590,6 +590,7 @@ function breakRelic(relicId) {
 
         function updatePartyStatusBars() {
             stato.party.forEach(refreshScaledBonuses);
+            playNemesisSfx();
             const container = document.getElementById('partyStatusBarContent');
             animateCoinCounter(stato.partyCoins);
 

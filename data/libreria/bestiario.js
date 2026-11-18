@@ -1637,7 +1637,7 @@ window.LIBRERIA.bestiario = {
         "att": 6,
         "dmg": 1,
         "ca": 6,
-        "desc": "Appena accendete le torce tra le mura sgretolate e le colonne spezzate della caverna, la luce sembra affievolirsi in modo innaturale. Guardando in alto, vi accorgete che attorno alle stalattiti del soffitto sono aggrovigliate delle Mantombre: le creature si lasciano cadere in silenzio sopra le vostre teste per avvinghiarvi e prosciugarvi dei fluidi vitali.",
+        "desc": "Superato il varco sommerso sul fondo del lago grazie alla campana subacquea e ai sacchi d'aria, riemergete nella grande caverna naturale che oltre un anno fa accolse la vostra prima spedizione. Avanzando tra le antiche mura sgretolate e le colonne spezzate, accendete le torce, ma la luce viene come risucchiata dal buio mentre un'ondata innaturale di nausea e panico vi stringe lo stomaco. Alzando lo sguardo verso la volta incrostata di stalattiti, scorgete delle Mantombre: i Silfidi Nècubri si lasciano cadere in silenzio sopra di voi, mirando ad avvinghiarvi la testa e metà del torso per soffocarvi e prosciugarvi dei fluidi vitali.",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
         ]
@@ -1650,7 +1650,7 @@ window.LIBRERIA.bestiario = {
         "att": 6,
         "dmg": 1,
         "ca": 8,
-        "desc": "Il luccichio dorato della pirite nelle pareti non ha attirato solo il vostro sguardo. Dal suolo argilloso e roccioso si sollevano dei Golem Terrigeni, attratti irrazionalmente dai corpi minerari del sottosuolo e pronti a schiacciare chiunque si avvicini ai filoni cristallini."
+        "desc": "Lasciata la riva interna, vi addentrate nel sistema di grotte che precede la città vera e propria, dove le pareti brillano debolmente di calcite, aragonite e depositi dorati di pirite. Notate subito che un tremore di fondo, lento ma costante, percorre la roccia viva. Il luccichio dei minerali non ha attirato solo il vostro sguardo: dal suolo si sollevano dei Golem Terrigeni dalla massa mista di argilla lacustre e roccia calcarea, nei cui torsi intravedete brillare Pietre dell'Aquila e cristalli grezzi. Resi irrequieti dalle vibrazioni anomale del sottosuolo, avanzano per schiacciare chiunque si avvicini ai filoni minerari che preservano irrazionalmente."
     },
     "stormo_della_spelonca": {
         "name": "Lo Stormo della Spelonca",
@@ -1660,7 +1660,7 @@ window.LIBRERIA.bestiario = {
         "att": 6,
         "dmg": 1,
         "ca": 7,
-        "desc": "Dal soffitto oscuro della grotta risuonano versi striduli e vibrazioni. Uno stormo di enormi pipistrelli vi piomba addosso, guidato da un Vespertilio Magno grande quanto un vitello, deciso a dissanguarvi prima di lasciare le vostre carcasse al resto dello stormo.",
+        "desc": "Percorrete una galleria laterale incrostata di calcite e aragonite che scende verso l'abisso di Loch Ein. Un improvviso fremito della terra fa staccare una cascata di polvere e detriti dal soffitto che soffoca la luce e il calore delle vostre torce — l'unica difesa naturale contro i Mangiaufi. Privati del bagliore protettivo, udite subito versi striduli e vibrazioni: uno stormo di pipistrelli vi piomba addosso dal buio, guidato da un Vespertilio Magno grande quanto un vitello, pronto a prosciugarvi della vostra matrice liquida prima di lasciare le carcasse al resto dello stormo.",
         "speciali": [
             { "quando": "colpisce", "fai": "cura", "val": 1 }
         ]
@@ -1673,7 +1673,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "L'odore di ferro e putrefazione vi preannuncia il pericolo. Dalle case inclinate sbucano dei Mastini di Bokgar, bestie feroci mutate nell'oscurità dei ruderi sepolti, attirate nelle profondità di Loch Ein dall'eco dei recenti combattimenti.",
+        "desc": "Vi addentrate nei primi vicoli lastricati che serpeggiano in pendenza tra case basse dai tetti a punta e dalle finestre a forma di stella. L'odore di ferro e putrefazione preannuncia un pericolo imminente: dalle abitazioni inclinate sbucano degli Huund mutati, identici per ferocia e deformità ai Mastini di Bokgar del Nord. Proprio come i Ghofuuri rimasti murati vivi nelle sale franate del Maniero di Bokgar, anche i Ghofuuri che infestavano le foreste attorno a Loch Ein e al vicino Frutteto delle Ossa sono rimasti intrappolati sottoterra durante il cataclisma del 178 d.F., mutando nell'oscurità delle rovine. Stavano divorando le carcasse fino all'osso di alcune creature abbattute pochi giorni fa dal passaggio di Foscoclivo e, vedendovi, si lanciano su di voi.",
         "speciali": [
             { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
         ]
@@ -1686,7 +1686,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Il tintinnio di armature e il fruscio di mantelli contro la pietra vi fanno immobilizzare. Una pattuglia di guerrieri di Foscoclivo sta ispezionando i vicoli alla ricerca di superstiti o tracce di Morwenna; appena vi scorgono, sguainano le lame senza esitare."
+        "desc": "Scendete con cautela lungo una strada obliqua fiancheggiata da case con finestre a forma di stella, quando il tintinnio di armature e il fruscio di mantelli contro la pietra vi fa immobilizzare. È una pattuglia di guerrieri semplici dei Cavalcantici, lasciata a sorvegliare le vie d'accesso. Prima di sguainare le lame, li sentite borbottare tra loro con timore reverenziale: dicono che \"gli Otto\" hanno ordinato di sbrigarsi prima che la sospensione di Loch Ein ceda del tutto. È il primo indizio che figure come Eldric o la defunta Morwenna non erano affatto i capi dell'ordine, ma semplici pedine di una gerarchia più alta. Appena vi scorgono, i soldati vi attaccano senza esitare."
     },
     "agente_ombra_anoeth": {
         "name": "L'Agente dell'Ombra",
@@ -1696,7 +1696,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Tra le statue di antiche divinità dagli occhi vuoti, un assassino scelto inviato dall'Ombra del Cenn di Anoeth vi tende un agguato. Veloce e letale, sfrutta le pendenze delle sale in rovina e l'oscurità per colpire i vostri punti vitali.",
+        "desc": "Dal Quartiere degli Oroscopi virate verso il settore orientale della città: Pandora rallenta il passo riconoscendo le sale in rovina e le statue di antiche figure dagli occhi vuoti dove, oltre due anni fa, lei e Aiace affrontarono con le loro alabarde Balinor e Morwenna. Passando sotto quegli sguardi di pietra, avverte una fitta di inquietudine e un senso di rigetto che non ricorda di aver mai provato in passato, chiedendosi turbata cosa le stia succedendo. Dalle ombre tra le colonne inclinate scatta in agguato un sicario di Foscoclivo. Sul suo mantello spicca una spilla d'argento a otto punte: prima di colpire, intima la vostra morte 'nel nome degli Aine e per volere degli Otto'. A quelle parole, i pezzi del mosaico si uniscono: ripensate a ciò che Morwenna disse ad Aiace prima di spirare — che persino il Cenn dalle Lunghe Corna era all'oscuro dei veri segreti di Loch Ein e non era che 'un burattino che danza nell'ombra'. Ora capite chi tira davvero i fili dietro i Cavalcantici: questo consiglio segreto di otto maestri.",
         "fasi": [
             { "soglia": 66, "testo": "L'assassino sparisce nell'ombra e sceglie la preda.", "azioni": ["predatore"] },
             { "soglia": 33, "testo": "Ferito, colpisce chi è già allo stremo.", "azioni": ["vendetta_sul_debole"] }
@@ -1713,7 +1713,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Raggiungete il luogo dove il sangue dei combattimenti della prima spedizione macchia ancora la pietra. Un gruppo di Ghoul famelici si scaglia contro di voi con le fauci spalancate.",
+        "desc": "Avanzate nelle sale umide del settore est fino al punto in cui, oltre un anno fa, Aiace uccise la Cavalcantica Morwenna prima che Emrys ne trafugasse il cadavere portandolo ad Anoeth. Di quell'antico scontro restano solo tacche sulle pietre, ma l'acqua stagnante che oggi invade la stanza a causa del cedimento della volta ha attirato un gruppo di Ghoul famelici: stavano divorando i resti di un esploratore Kin rimasto ucciso da un crollo recente e, vedendovi, si scagliano contro di voi con le fauci spalancate.",
         "speciali": [
             { "quando": "colpisce", "fai": "cura", "val": 1 }
         ]
@@ -1726,7 +1726,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Dalle crepe allagate del pavimento emergono dei Gropiceri (Rettiladre), grosse lucertole dal dorso iridescente e quattro occhi color brace, attirate dal luccichio del vostro equipaggiamento, accompagnate da predatori cavernicoli aggressivi pronti a difendere il proprio nido.",
+        "desc": "Lasciate le sale orientali percorrendo un viale lastricato in forte pendenza, dove l'acqua che filtra dal soffitto ha allagato le crepe del pavimento. All'improvviso, un tremolio nell'aria rivela due Gropiceri, grosse lucertole dal dorso iridescente e due paia di occhi color brace: spinte dalla loro avidità di Maliardi per gli oggetti scintillanti, tentano di strappare le fibbie d'argento e i gingilli dalle vostre cinture prima di svanire nuovamente nell'invisibilità. Quando reagite ferendone una, la bestia emette gli acutissimi stridii di allarme tipici della sua specie prima di volatilizzarsi lasciando cadere gemme grezze: quel richiamo assordante risveglia dalle crepe allagate un branco di feroci predatori delle caverne e Serpulidi che si gettano su di voi.",
         "speciali": [
             { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
         ]
@@ -1739,7 +1739,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Tra gli edifici crollati del quartiere matematico, le ombre si animano: vi trovate faccia a faccia con uno Spettro dei Tumuli, una manifestazione d'ombra antica e instancabile legata alle rovine sepolte dal giorno del Disastro.",
+        "desc": "Il vostro cammino vi conduce nel secondo grande distretto accademico di Loch Ein: il Quartiere dei Calcoli Matematici, dove gli antichi studiosi calcolavano le maree e le rotte navali. Qui l'acqua che cade dalla volta è ormai un ruscello costante e i contorni stessi degli edifici crollati sembrano sfocarsi per brevi istanti a causa dell'instabilità del limbo. Tra le colonne spezzate le ombre si animano: vi trovate faccia a faccia con uno Spettro dei Tumuli, una manifestazione d'ombra antica e instancabile legata alle rovine del Disastro. Ricordando l'impresa del Primarca Enea ad Hurnas Val, sapete che uno Spettro dei Tumuli non ha debolezze comuni e non può essere sconfitto se non individuando e distruggendo l'oggetto che funge da sua ancora terrena — in questo caso un antico astrolabio funebre incastrato tra le macerie alle sue spalle!",
         "speciali": [
             { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 }
         ]
@@ -1752,7 +1752,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Un'onda d'acqua fredda invade la strada inclinata su cui state marciando, portando con sé creature dell'oscurità: Mantombre e Morrkath sfruttano il buio e il caos dell'allagamento per assalirvi da ogni direzione.",
+        "desc": "Mentre marciate lungo la via principale del Quartiere dei Calcoli Matematici, un boato sordo risuona sopra le vostre teste: una sacca d'acqua trattenuta per oltre cinquant'anni dalla stasi temporale cede di colpo, riversando un'onda fredda lungo la strada inclinata. Trascinate dal flusso, delle Mantombre di lago nuotano sul fondale cercando di avviluppare i vostri piedi per trascinarvi giù, mentre a mezz'aria svolazzano dei Morrkath — gatti corvini fatti di tenebra concreta che sfuma verso le code, i cui sei occhi luminosi come stelle fissano le vostre menti per spingervi alla pazzia nel caos.",
         "speciali": [
             { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
         ]
@@ -1765,7 +1765,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Mentre scendete lungo le file di sedili in marmo crollati, delle creature simili a ragni dal volto umanoide – gli Aracnomantropi – calano silenziosamente dalle colonne inclinate sopra di voi, cercando di paralizzarvi con le loro code uncinate.",
+        "desc": "Superato lo snodo centrale, attraversate un passaggio stretto nel settore ovest e vi trovate per la prima volta di fronte al vasto Anfiteatro in rovina di Loch Ein, descritto nei rapporti di Adone dopo il suo duello di oltre due anni fa con Lance. Dal soffitto semi-crollato filtra il caratteristico bagliore bluastro che fa brillare i frammenti di vetro colorato nelle mura, mentre le file di sedili in marmo scendono come una scala spezzata verso il fondo allagato. Mentre scendete lungo le gradinate in ombra, delle creature dall'intelletto umano e dal corpo di ragno – gli Aracnomantropi – calano silenziosamente dalle colonne inclinate: rifuggendo la luce diretta delle vostre torce che ne offusca la vista abituata al buio assoluto, cercano di aggirarvi nei coni d'ombra per paralizzarvi con il veleno delle loro code uncinate.",
         "speciali": [
             { "quando": "colpisce", "fai": "stordisci", "bersaglio": "eroe", "prob": 25 }
         ]
@@ -1778,7 +1778,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Nella parte più bassa e allagata dell'anfiteatro, dove i rivoli d'acqua sgorgano dalle crepe nelle pareti, dei predatori acquatici mutati simili agli Acreozomi e ai Serpulidi hanno trovato una nuova tana e vi attaccano emergendo dalle pozze scure.",
+        "desc": "Per attraversare il grande Anfiteatro nel settore ovest di Loch Ein passate nella parte più bassa dell'arena, dove l'acqua che nella prima spedizione iniziava appena a filtrare dalle crepe ha ormai formato un bacino profondo e stagnante. Qui si annidano dei Serpulidi di Goli'ja — goffi sul marmo asciutto ma letali e rapidissimi nell'acqua ferma, capaci di infliggere ferite che sanguinano per giorni — insieme a mostruosi pesci corazzati d'aculei identici agli Acreozomi di Glostok, mutati dopo essersi nutriti dei cadaveri rimasti sommersi nel 178 d.F.",
         "speciali": [
             { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 35 }
         ]
@@ -1791,7 +1791,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 2,
         "ca": 9,
-        "desc": "All'uscita dell'anfiteatro vi sbarra la strada un veterano corazzato di Foscoclivo, rimasto a presidiare il settore occidentale dopo il ritiro di Lance. Piantato saldamente sul terreno traditore con spada pesante e armatura scura, vi sfida a singolar tenzone per impedirvi di raggiungere il centro della città.",
+        "desc": "Lasciandovi alle spalle la conca dell'Anfiteatro per risalire verso il centro della città, vi sbarra la strada un veterano corazzato dei Cavalcantici, lasciato qui a presidiare il fianco occidentale dalla nuova spedizione di Foscoclivo. Piantato saldamente sul pavimento inclinato, batte la spada pesante sullo scudo: vi grida che né i Dignitas né il collasso stesso del limbo impediranno agli emissari de \"gli Otto\" di portare l'Yrtite ad Anoeth, confermandovi ancora una volta che i guerrieri come Lance ed Eldric non sono che il braccio armato di questi otto misteriosi maestri dell'ordine. Riconoscendo i vostri colori, aggiunge con disprezzo che non commetterà la debolezza di Lance, il quale due anni fa proprio in quest'arena risparmiò la vita a vostro cugino Adone ferito, cadendo in disgrazia agli occhi de gli Otto per il suo sciocco senso dell'onore.",
         "fasi": [
             { "soglia": 66, "testo": "Il Campione punta la spada contro il più forte di voi.", "azioni": ["duellante"] },
             { "soglia": 33, "testo": "Ferito nell'orgoglio, il veterano colpisce con rabbia.", "azioni": ["furore"] }
@@ -1805,7 +1805,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Le strette vie tra le torri astronomiche sono avvolte da ragnatele spesse come corde d'acciaio. Una colonia di Ragni Neri Imperiali e Aracnomantropi ha colonizzato le altezze del quartiere e cala dall'alto per accerchiarvi.",
+        "desc": "Attraversate le strette vie del Quartiere delle Osservazioni Astronomiche, camminando all'ombra di alte torri piegate in angoli impossibili. Nel tempo trascorso dalla vostra prima spedizione, una nidiata di Ragni Neri Imperiali ha completamente avvolto le altezze del quartiere con tele vischiose e resistenti come l'acciaio: grandi quanto cerbiatti e con un'estensione delle zampe pari a una ruota di mulino, calano dall'alto facendo scattare le loro tredici propaggini chitinose — gli otto artigli, le doppie zanne articolate e l'aculeo sacrale gocciolante di veleno paralizzante.",
         "speciali": [
             { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
         ]
@@ -1818,7 +1818,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Lungo il viale che porta verso il centro, incontrate creature cavernicole che mostrano gli stessi orribili sintomi dei Kranen della Cicatrice: corpi scarni, ferite infette percolanti e un inquietante bagliore violaceo nelle iridi. Rese folli dall'energia che filtra dal profondo, vi caricano senza alcun istinto di conservazione.",
+        "desc": "Lasciato il quartiere astronomico, imboccate il grande viale in pendenza che converge verso la piazza centrale di Loch Ein. Qui percepite con orrore che qualcosa è profondamente cambiato rispetto alla vostra prima discesa: un'energia infetta si sta propagando dal cuore della città. Dal buio emergono creature cavernicole che mostrano gli stessi orribili sintomi dei Kranen generati dall'Exitium sulla Cicatrice – corpi scarni, ferite percolanti e iridi violacee – ma con una spaventosa differenza: mentre i Kranen del Nord vengono placati dal contatto con l'acqua, queste bestie avvelenate dalle radiazioni dell'Yrtite sguazzano nei rivoli delle rovine con furia inarrestabile e vi caricano senza alcun istinto di conservazione.",
         "speciali": [
             { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 25 }
         ]
@@ -1831,7 +1831,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 3,
         "ca": 8,
-        "desc": "La grande piazza non è incustodita: una squadra mista di fanteria pesante dei Kin e segugi da guerra pattuglia i bordi lastricati per impedire a chiunque di avvicinarsi al Palazzo. Sfruttando la pendenza a loro favore, si lanciano in carica verso di voi.",
+        "desc": "Entrate nella Grande Piazza Circolare inclinata, circondata da antichi palazzi decorati con mosaici del cielo stellato. La spianata che nella prima spedizione Alastorta, Pancrazio e Cassio avevano trovato deserta è ora presidiata da una ronda di Cavalcantici minori e segugi da guerra: portano sugli spallacci il simbolo a otto punte e parlano a voce alta del fatto che gli emissari dei Cavalcantici sono già scesi sotto il Palazzo, mentre a Eldric è stato lasciato il comando della retroguardia. Appena vi individuano, sfruttano la pendenza della piazza per caricarvi.",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
         ]
@@ -1844,7 +1844,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 4,
         "ca": 9,
-        "desc": "Lungo il bordo monumentale della piazza, dove si concentrano le antiche incisioni cittadine, l'energia dell'Yrtite ha fuso insieme i minerali della caverna e i mosaici crollati dando vita a un colossale Golem Terrigeno incrostato di pirite e cristalli luminescenti, che presidia la scalinata d'accesso al Palazzo.",
+        "desc": "Attraversata la piazza circolare, raggiungete il bordo monumentale superiore dove più di un anno fa Cassio si era fermato a esaminare le incisioni cittadine prima di salire al Palazzo. Qui le pulsazioni dell'Yrtite, ormai prossima a spezzare il proprio ciclo di sospensione, hanno fuso insieme i minerali della caverna e i mosaici crollati dando vita a un colossale Golem Terrigeno incrostato di pirite e cristalli luminescenti, che si erge a presidio della scalinata del Palazzo.",
         "fasi": [
             { "soglia": 60, "testo": "I cristalli si saldano sul corpo del Golem come una corazza.", "azioni": ["scudo_d_ossa"] },
             { "soglia": 30, "testo": "Il Golem abbatte i pugni sulla scalinata: le schegge volano ovunque.", "azioni": ["colpo_area"] }
@@ -1858,7 +1858,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 3,
         "ca": 8,
-        "desc": "La parte inferiore della piazza circolare è ormai completamente sommersa dall'acqua che cade a cascata dalla volta. Dalle acque torbide emergono degli Esùridi (Progenie Non Morta), antichi abitanti e guerrieri di Loch Ein risvegliati nelle rovine sepolte dall'energia infetta che permea la città.",
+        "desc": "Costeggiate il margine inferiore della Grande Piazza Circolare per aggirare le difese verso il Palazzo. Alastorta e Pancrazio notano subito la differenza rispetto alla prima spedizione: l'indebolirsi della bolla temporale ha lasciato entrare così tanta acqua dalla volta da sommergere completamente la parte bassa della piazza. Dalle acque torbide emergono degli Esùridi, antichi abitanti e guerrieri di Loch Ein risvegliati nelle rovine dall'energia infetta che permea la città.",
         "speciali": [
             { "quando": "inizio_round", "fai": "cura", "val": 1 }
         ]
@@ -1871,7 +1871,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 3,
         "ca": 8,
-        "desc": "Proprio come accaduto durante la prima spedizione, dalle ombre sopra la scalinata del Palazzo vengono scagliati pesanti massi di pietra per schiacciarvi, seguiti dall'assalto frontale di guerrieri scelti di Foscoclivo appostati tra le rovine.",
+        "desc": "Salite lungo la scalinata monumentale che conduce al Palazzo dei Firmamentisti, proprio nel punto in cui oltre un anno fa Pancrazio salvò la vita ad Alastorta e a Cassio parando con lo scudo un masso scagliato dall'alto. La storia si ripete: dalle ombre sopra i gradoni vengono fatti rotolare pesanti blocchi di pietra per schiacciarvi, seguiti dall'assalto frontale di una squadra di Cavalcantici minori che combattono gridando che nessuno disturberà l'opera dei Cavalcantici nelle sale sottostanti.",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
         ]
@@ -1884,20 +1884,22 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 3,
         "ca": 8,
-        "desc": "Tra il fragore assordante della cascata che scende dalla volta incrinata e il bagliore della pirite sulle pareti, un branco di predatori d'ombra e Nefasti Esùridi emerge dal velo d'acqua per impedirvi di raggiungere il portico del Palazzo.",
+        "desc": "Siete sul piazzale d'ingresso del Palazzo dei Firmamentisti, dove oltre un anno fa Pancrazio rimase indietro a combattere per permettere ad Alastorta e Cassio di entrare nell'edificio. Tra il fragore assordante della cascata che scende dalla volta incrinata e il bagliore dorato della pirite sulle pareti, l'assottigliarsi del ciclo temporale ha richiamato dal buio un branco di predatori d'ombra e Nefasti Esùridi, che emergono dal velo d'acqua per impedirvi di raggiungere il portico.",
         "speciali": [
             { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
         ]
     },
     "eldric_dei_cavalcantici": {
         "name": "Eldric dei Cavalcantici",
+        "nemesi": "pancrazio_dignitas",
+        "sfxNemesi": "audio/nemici/eldric_nemesi_pancrazio.ogg",
         "image": "",
         "hp": 44,
         "maxHp": 44,
         "att": 8,
-        "dmg": 4,
+        "dmg": 3,
         "ca": 9,
-        "desc": "Varcate il colonnato allagato per entrare nell'atrio di marmo del Palazzo dei Firmamentisti, verso la grande porta di bronzo che conduce alla Sala del Consiglio. Ma ad attendervi sulla soglia, illuminato dal bagliore dorato della pirite e circondato da una guardia scelta di Foscoclivo, c'è una figura imponente quanto una montagna: Eldric dei Cavalcantici. Sopravvissuto alla prima spedizione grazie al crollo della colonna su Pancrazio, il gigante corazzato ha il volto sfigurato da una brutale cicatrice sul naso e sulla mascella – il segno indelebile del colpo di scudo ricevuto. Brandendo la sua colossale spada a due mani e accecato da una sete di vendetta furiosa contro l'intera Famiglia Dignitas, Eldric ruggisce sopra il fragore della cascata e si lancia alla carica per spezzarvi le ossa e seppellirvi definitivamente sotto le acque di Loch Ein.",
+        "desc": "Varcate il colonnato allagato per entrare nell'atrio di marmo del Palazzo dei Firmamentisti, puntando verso la grande porta di bronzo che Alastorta e Cassio attraversarono oltre un anno fa. Ma ad attendervi sulla soglia, illuminato dal bagliore dorato della pirite e circondato da una guardia scelta di Cavalcantici, si erge una figura imponente quanto una montagna: Eldric dei Cavalcantici. Sopravvissuto alla prima spedizione solo perché il crollo della colonna aveva intrappolato la gamba di Pancrazio un istante dopo la sua resa, il gigante corazzato porta sul volto una spessa cicatrice biancastra e mal saldata che gli deforma il naso e la mascella – il marchio indelebile del colpo di scudo inflittogli proprio da Pancrazio. Quando gli occhi di Eldric si posano su Pancrazio, su Alastorta e su Cassio, il suo volto si contorce in un ghigno feroce: \"Sapevo che avreste avuto la faccia tosta di tornare nella tua tomba, moccioso Dignitas!\" tuona Eldric puntando la lama dritta verso Pancrazio sopra il fragore della cascata e i fremiti della città morente. \"Laggiù gli altri stanno già aprendo la via per prendersi l'Yrtite prima che il ciclo eterno di questa città vada in frantumi, ma a me hanno concesso l'unico premio che ho chiesto per oltre un anno: restituirti il favore e spezzarti le ossa uno ad uno! Forza Roma\". Brandendo la sua colossale spada a due mani, Eldric, insieme alla sua guardia personale, si lancia alla carica con la sua squadra per regolare i conti col passato e sbarrarvi l'accesso alle profondità del Palazzo.",
         "fasi": [
             { "soglia": 75, "testo": "Eldric ruggisce e la guardia di Foscoclivo serra i ranghi.", "azioni": ["grido_di_battaglia"] },
             { "soglia": 50, "testo": "Eldric riconosce il più forte di voi e lo marca come preda.", "azioni": ["bersaglio_marcato"] },
@@ -2098,16 +2100,602 @@ window.LIBRERIA.bestiario = {
         "hp": 28,
         "maxHp": 28,
         "att": 8,
-        "dmg": 3,
+        "dmg": 2,
         "ca": 9,
         "desc": "Raggiungete la spianata davanti alle porte di Svalbard, certi di trovare un approdo sicuro presso gli Skallgrim, l'unico clan che ha affiancato la Famiglia Dignitas durante la Guerra dei Quaranta Giorni per puro disprezzo verso il volere degli Asi. Ma invece di vedervi aprire il passo, le pesanti grate calano con uno schianto e i corni d'allarme risuonano sui bastioni. In cima a una torretta esterna scorgete Kesia: la figlia di Fredlös ha fatto leva sull'unica, disperata ossessione che tormenta ogni singolo membro degli Skallgrim, ovvero la maledizione degli Asi che preclude alle loro anime l'accesso ai Giardini di Jag Àntar. Kesia ha rivelato alla guarnigione di guardia che voi Dignitas le state dando la caccia per apprendere come spezzare un antico patto, promettendo agli Skallgrim che, se le copriranno la fuga fermandovi alle porte, lei userà quello stesso segreto per spezzare la maledizione del loro clan e spalancare loro l'aldilà, accusandovi al contempo di voler stringere un nuovo accordo con gli Asi alle loro spalle. Prima che la notizia possa giungere alle orecchie dell'Aldermanno Egill della Sera o di Gun Cacciaserpi, sicuramente più diplomatici e legati alla Famiglia, il Campione della Guardia Skallgrim cede alla tentazione di salvare l'anima della propria gente. Scortato dai suoi veterani più fedeli, da balestrieri scelti e da feroci mastini da guerra corazzati, esce dal portale laterale per sbarrarvi il passo. Mentre Kesia vi saluta con un inchino beffardo e scivola via verso il fiume Driva e il Deserto del Kalle, siete costretti ad incrociare le armi e forzare il blocco del Campione Skallgrim per non finire massacrati sotto le mura di Svalbard.",
         "fasi": [
-            { "soglia": 75, "testo": "I balestrieri scelti si schierano sui bastioni e il Campione leva il grido di guerra degli Skallgrim.", "azioni": ["grido_di_battaglia"] },
-            { "soglia": 50, "testo": "Il Campione scioglie i mastini da guerra corazzati.", "azioni": ["vendetta_sul_debole"] },
-            { "soglia": 25, "testo": "Per l'anima della sua gente: il Campione Skallgrim non arretra più di un passo.", "azioni": ["furia"] }
+            { "soglia": 85, "testo": "I balestrieri scelti si schierano sui bastioni e il Campione leva il grido di guerra degli Skallgrim.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 72, "testo": "Il Campione scioglie i mastini da guerra corazzati.", "azioni": ["furore"] },
+            { "soglia": 25, "testo": "Per l'anima della sua gente: il Campione Skallgrim non arretra più di un passo.", "azioni": ["duellante"] }
         ],
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "custodi_sala_circolare": {
+        "name": "I Custodi della Sala Circolare",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Superato l'atrio del Palazzo dove avete sconfitto Eldric, varcate la grande porta di bronzo ornata da rilievi intricati ed entrate nella vasta Sala del Consiglio e della Biblioteca dei Firmamentisti. Mentre Alastorta e Cassio riconoscono l'ambiente che esplorarono oltre due anni fa con Emrys, Pancrazio, Pandora, Ofelia e Temistocle ammirano per la prima volta il grande tavolo di pietra centrale e gli alti scaffali che salgono fino al soffitto inclinato. Dalle librerie emergono però delle ombre: degli Spettri dei Tumuli — legati ad antichi astrolabi che fungono da loro ancore terrene — e dei Morrkath dai sei occhi luminosi come stelle, attirati dalle pulsazioni dell'Yrtite sotto il palazzo, vi sbarrano il passo verso il muro di fondo cercando di spingervi alla pazzia.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 25 }
+        ]
+    },
+    "agguato_nelle_tenebre": {
+        "name": "L'Agguato nelle Tenebre",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Alastorta guida il gruppo verso la sezione del muro leggermente fuori posto che aveva scoperto oltre due anni fa sul fondo della Biblioteca, azionando il meccanismo che apre il passaggio segreto verso le viscere di Loch Ein. Appena vi inoltrate nel buio opprimente della scalinata, tuttavia, scoprite che il varco è presidiato: una retroguardia di Cavalcantici minori, scesi con i calchi trafugati da Emrys, vi tende un agguato nell'ombra per impedirvi di disturbare l'estrazione nella camera sigillata.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "parassiti_dell_oscurita": {
+        "name": "I Parassiti dell'Oscurità",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Imboccate il passaggio segreto dietro il muro della Biblioteca, scendendo nelle cavità più strette sotto il Palazzo dove l'aria è ferma dal giorno del Disastro del 178 d.F., oltre mezzo secolo fa. Nel tratto più angusto della discesa, dove la luce delle vostre torce fatica a penetrare, degli Aracnomantropi dal volto umanoide e delle Mantombre si calano silenziosamente dal soffitto basso.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "divoratori_di_essenze": {
+        "name": "I Divoratori di Essenze",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Avanzando nei corridoi profondi sotto la Biblioteca, l'aria si fa gelida e pesante. Dalle fessure del sottosuolo risalgono dei Mangiaufi Essèderi assieme ad alcuni spettri: a differenza dei Necrèderi che divorano la carne, queste creature puntano a prosciugare la vostra essenza intangibile, tentando di spegnere le vostre fonti di calore e di luce per sopraffarvi nel buio.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 1 }
+        ]
+    },
+    "silfidi_eterei_del_limbo": {
+        "name": "I Silfidi Eterei del Limbo",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Addentrandovi nella zona in cui il limbo dell'Yrtite altera la realtà, la bruma sotterranea inizia a muoversi controcorrente. L'anomalia ha attirato dei Silfidi Eterei: esseri incorporei, cangianti e quasi indistinguibili dai vostri sensi, che avvolgono il vostro gruppo cercando di indebolire le vostre intenzioni e rendere vacillante persino la mente più solida.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
+        ]
+    },
+    "guerrieri_senza_tempo": {
+        "name": "I Guerrieri Senza Tempo",
+        "image": "",
+        "hp": 26,
+        "maxHp": 26,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "In questa sezione profonda del tunnel, il limbo dell'Yrtite ha intrappolato frammenti vividi del 178 d.F., il giorno in cui i Kin guidati dal Cenn Mag Cuibbe e i Lyanti di Re Eòghleb V si scontrarono fino alla rovina della città. Dalle nebbie temporali emergono le figure distorte e non-morte di antichi campioni caduti durante quell'ultima battaglia di mezzo secolo fa: bloccati in un ciclo eterno di guerra, vi attaccano scambiandovi per gli invasori.",
+        "fasi": [
+            { "soglia": 66, "testo": "Gli echi della battaglia del 178 d.F. si fanno assordanti: i campioni senza tempo levano il loro grido di guerra.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 33, "testo": "Bloccati nel loro ciclo eterno, i guerrieri combattono con la furia dell'ultimo giorno di Loch Ein.", "azioni": ["furore"] }
+        ]
+    },
+    "progenie_corrotta_profondita": {
+        "name": "La Progenie Corrotta delle Profondità",
+        "image": "",
+        "hp": 17,
+        "maxHp": 17,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Avvicinandovi ai livelli che precedono il Salone delle Risposte, l'avvelenamento scaturito dall'Yrtite violata si fa soffocante: le pareti trasudano un'oscurità densa e malsana. Dalle fenditure della roccia scaturiscono abomini Nefasti Sinèspesi ed Esùridi, creature e cadaveri completamente deformati dal morbo violaceo del cristallo e guidati da una fame insaziabile.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "eroe", "prob": 35 }
+        ]
+    },
+    "ombre_affamate": {
+        "name": "Le Ombre Affamate",
+        "image": "",
+        "hp": 17,
+        "maxHp": 17,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "Lungo il corridoio saturato dall'infezione che filtra dal Salone delle Risposte, l'oscurità stessa sembra convergere e prendere forma con una volontà propria e famelica. Creature di pura tenebra e Silfidi Nècubri vi circondano risucchiando il calore delle torce e inducendo violenti attacchi di panico e malori.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "guardiani_del_velo": {
+        "name": "I Guardiani del Velo",
+        "image": "",
+        "hp": 18,
+        "maxHp": 18,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Scendete lungo la scalinata inferiore dove il velo della realtà si sta assottigliando fino a squarciarsi. Qui un gruppo di Golem primordiali incrostati di minerali luminescenti e antichi spettri, presidia l'accesso alla galleria della porta sigillata, attaccando chiunque tenti di violare il santuario più profondo di Loch Ein."
+    },
+    "rituale_di_anoeth": {
+        "name": "Il Rituale di Anoeth",
+        "image": "",
+        "hp": 28,
+        "maxHp": 28,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Poco prima della galleria vi imbattete nel nucleo operativo della spedizione di Foscoclivo: gli emissari scelti inviati da \"gli Otto\" grazie al calco dell'iscrizione trafugato da Emrys oltre due anni fa. Hanno appena aperto il varco principale ma sono stati respinti all'indietro dall'orrore scaturito dal fallimento del loro Portatore sacrificale: vedendovi arrivare, decidono di sterminarvi per usare uno di voi come nuovo vaso vivente per l'Yrtite!",
+        "fasi": [
+            { "soglia": 66, "testo": "Gli emissari degli Otto puntano il più debole di voi: vogliono un nuovo vaso vivente.", "azioni": ["predatore"] },
+            { "soglia": 33, "testo": "Il rito di Anoeth si nutre del vostro sangue.", "azioni": ["sete_di_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "piu_debole" }
+        ]
+    },
+    "sentinelle_della_porta": {
+        "name": "Le Sentinelle della Porta",
+        "image": "",
+        "hp": 19,
+        "maxHp": 19,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Raggiungete la camera davanti alla monumentale porta di pietra scolpita con le figure di Miska, Eòghar e Cenn Nimoe, dove oltre due anni fa Emrys tradì Alastorta e Cassio. Le radiazioni dell'Yrtite che filtrano dalla porta socchiusa hanno animato le antiche statue di guardia dei Firmamentisti e attirato dei feroci Nefasti Auracàri, che vi assalgono davanti ai bassorilievi per impedirvi di varcare la soglia.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 30 }
+        ]
+    },
+    "spettri_del_duello": {
+        "name": "Gli Spettri del Duello",
+        "image": "",
+        "hp": 19,
+        "maxHp": 19,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Varcate per la prima volta la soglia monumentale ed entrate nel leggendario Salone delle Risposte, il cuore segreto di Loch Ein dove nel 178 d.F. si affrontarono in duello mortale Re Eòghleb V e il Cenn Mag Cuibbe. Nel vasto salone segnato dalle cicatrici di quell'antica esplosione, gli spiriti inquieti delle guardie reali dei Lyanti e dei campioni Kin continuano a darsi battaglia nell'ombra da cinquant'anni e si scagliano su di voi con ferocia sovrumana.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 }
+        ]
+    },
+    "creature_del_cristallo": {
+        "name": "Le Creature del Cristallo",
+        "image": "",
+        "hp": 19,
+        "maxHp": 19,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Appena mettete piede nel Salone delle Risposte, teatro del cataclisma del 178 d.F., l'aria crepita di pura energia primordiale. Attorno al perimetro interno del salone, frammenti minori di roccia cristallizzata e schegge staccatesi dal cuore di Yr Drazul hanno preso vita sotto forma di Silfidi erratici e costrutti luminosi che vi bombardano di dardi accecanti.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "custode_sigillo_yr_drazul": {
+        "name": "Il Custode del Sigillo di Yr Drazul",
+        "image": "",
+        "hp": 34,
+        "maxHp": 34,
+        "att": 8,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "Avanzando verso il centro del Salone delle Risposte, dove splende il cristallo di Yrtite, vi sbarra la strada l'ultima difesa creata dai Firmamentisti e dai sovrani del 178 d.F.: un antico e colossale guardiano plasmato dall'energia stessa di Yr Drazul e dalle arti della Celestica, programmato per annientare chiunque tenti di rimuovere il cuore che tiene sospesa Loch Ein.",
+        "fasi": [
+            { "soglia": 60, "testo": "L'energia di Yr Drazul si addensa sul guardiano come una corazza di cristallo.", "azioni": ["corazza_di_pietra"] },
+            { "soglia": 30, "testo": "Il Custode scarica la Celestica tutto intorno a sé.", "azioni": ["colpo_area"] }
+        ]
+    },
+    "araldo_dell_infezione": {
+        "name": "L'Araldo dell'Infezione",
+        "image": "",
+        "hp": 32,
+        "maxHp": 32,
+        "att": 8,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "A pochi passi dal santuario centrale del Salone delle Risposte, dal buio emerge un orrore che vi gela il sangue: è il Portatore sacrificale inviato dagli Otto di Foscoclivo! Le fasce di cuoio e la sua stessa carne incisa con l'alfabeto runico di Foscoclivo sono state squarciate dall'interno: poiché l'uomo non possedeva una vera scintilla ancestrale, non appena ha sfiorato l'Yrtite il cristallo lo ha divorato con il suo avvelenamento fulminante, fondendolo con le ombre infette della camera. Trasformato in un abominevole Araldo dell'Infezione avvolto da un'aura violacea che divora la luce delle torce, il mostro si scaglia su di voi mostrandovi il destino che attende chi tocca l'Yrtite senza esserne degno!",
+        "fasi": [
+            { "soglia": 66, "testo": "L'aura violacea dell'Araldo divora la luce delle torce.", "azioni": ["terrore"] },
+            { "soglia": 33, "testo": "Il morbo del cristallo si nutre della vostra carne.", "azioni": ["sete_di_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "eroe" }
+        ]
+    },
+    "ombre_del_sigillo": {
+        "name": "Le Ombre del Sigillo",
+        "image": "",
+        "hp": 21,
+        "maxHp": 21,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Rimossa l'Yrtite dal suo piedistallo, il ciclo del limbo si spezza con un boato assordante e il lago soprastante inizia a reclamare Loch Ein. Mentre le rune di contenimento bruciano sulla pelle del portatore per rallentare il veleno del cristallo che cerca di divorarlo, la rottura del sigillo libera tutte le entità d'ombra e i Nefasti rimasti intrappolati nel Salone delle Risposte dal 178 d.F.: nel caos dei crolli, uno sciame di creature impazzite vi assale per trascinarvi nell'abisso.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 30 }
+        ]
+    },
+    "superstiti_di_foscoclivo": {
+        "name": "I Superstiti di Foscoclivo in Fuga",
+        "image": "",
+        "hp": 21,
+        "maxHp": 21,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Risalite a perdifiato le scale del passaggio segreto che riportano verso la Biblioteca, sorreggendo chi porta l'Yrtite mentre le prime striature scure dell'avvelenamento iniziano a pulsare sotto le rune tracciate sulle sue braccia. A metà della rampa vi scontrate con un gruppo di Cavalcantici superstiti: in preda al panico per il crollo della città ma decisi a strapparvi il cristallo, vi attaccano prima che il tunnel si allaghi.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
+        ]
+    },
+    "bestie_in_fuga_dall_abisso": {
+        "name": "Le Bestie in Fuga dall'Abisso",
+        "image": "",
+        "hp": 21,
+        "maxHp": 21,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Mentre correte lungo le scale del passaggio segreto verso la Biblioteca e l'Yrtite emana ondate di calore tossico a stento frenate dalle rune di contenimento, vi accorgete che non solo gli uomini stanno fuggendo: dalle cavità inferiori risalgono in branco Aracnomantropi e Huund mutati delle rovine (simili ai Mastini di Bokgar) terrorizzati dall'acqua che sale, pronti a travolgere e azzannare chiunque ostacoli la loro corsa verso l'alto.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "crollo_delle_colonne": {
+        "name": "Il Crollo delle Colonne",
+        "image": "",
+        "hp": 22,
+        "maxHp": 22,
+        "att": 7,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "Uscite dalla Biblioteca attraversando l'atrio del Palazzo che si sgretola fino a raggiungere la soglia esterna, dove la cascata dalla volta è ormai diventata un diluvio assordante: qui dei Golem Terrigeni impazziti per lo sconvolgimento tellurico della caverna emergono dalle macerie del colonnato e cercano di schiacciarvi."
+    },
+    "il_vendicatore": {
+        "name": "Il Vendicatore",
+        "image": "",
+        "hp": 38,
+        "maxHp": 38,
+        "att": 8,
+        "dmg": 4,
+        "ca": 9,
+        "desc": "Uscite dal Palazzo sulla Grande Piazza Circolare: metà della spianata è già sprofondata nell'abisso senza fondo e il resto sta scivolando lentamente nel vuoto. Sulle ultime lastre ancora emerse, un comandante d'élite dei Cavalcantici di Foscoclivo ha radunato i suoi ultimi guerrieri: vedendo il bagliore dell'Yrtite pulsare tra le mani insanguinate e coperte di rune del vostro portatore, decide di sacrificare la propria vita pur di abbatterlo e farvi sprofondare con la città.",
+        "fasi": [
+            { "soglia": 70, "testo": "Il comandante punta il vostro portatore e lo sfida da solo.", "azioni": ["duellante"] },
+            { "soglia": 35, "testo": "Con la piazza che sprofonda, il Vendicatore colpisce senza più badare a difendersi.", "azioni": ["frenesia"] }
+        ]
+    },
+    "predatori_delle_acque": {
+        "name": "I Predatori delle Acque",
+        "image": "",
+        "hp": 23,
+        "maxHp": 23,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Fuggendo dalla piazza centrale attraverso i quartieri accademici che scivolano verso il baratro, vi ritrovate nei vicoli inclinati già invasi dalle acque del lago soprastante: Serpulidi di Goli'ja e Sirenidi nuotano tra le case sommerse a metà, cercando di afferrarvi le gambe e trascinarvi sul fondo.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 35 }
+        ]
+    },
+    "orda_dei_senza_pace": {
+        "name": "L'Orda dei Senza Pace",
+        "image": "",
+        "hp": 24,
+        "maxHp": 24,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Risalendo lungo il fianco occidentale verso l'uscita della città, passate accanto al settore dell'Anfiteatro ormai sommerso. Il collasso di Loch Ein ha squarciato tutte le antiche cripte e le rovine sepolte dal 178 d.F.: un'orda di Ghoul e Spettri dei Tumuli emerge dalle macerie in un ultimo, folle assalto contro i vivi.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 1 }
+        ]
+    },
+    "stormo_nel_panico": {
+        "name": "Lo Stormo nel Panico",
+        "image": "",
+        "hp": 23,
+        "maxHp": 23,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Vedete finalmente in alto la fenditura rocciosa che riporta verso le grotte minerali e l'uscita della città, ma sulle ultime scalinate di marmo migliaia di pipistrelli e diversi Vespertili Magni assieme a Mantombre stanno fuggendo contemporaneamente verso il varco d'uscita delle caverne: nella strettoia delle scale si scagliano contro di voi in una nube cieca di ali, artigli e zanne.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "casuale", "prob": 30 }
+        ]
+    },
+    "abominio_della_voragine": {
+        "name": "L'Abominio della Voragine",
+        "image": "",
+        "hp": 42,
+        "maxHp": 42,
+        "att": 8,
+        "dmg": 4,
+        "ca": 9,
+        "desc": "Proprio mentre raggiungete la fenditura rocciosa in cima alle scalinate per lasciare la città caduta, dall'abisso in cui sta sprofondando Loch Ein si protende un gigantesco orrore tentacolare e corrotto – una fusione mostruosa di Nefasti e roccia animata dall'infezione residua – che tenta di sbarrarvi il passaggio sulla soglia d'uscita della città.",
+        "fasi": [
+            { "soglia": 66, "testo": "I tentacoli dell'Abominio spazzano la soglia d'uscita.", "azioni": ["travolge"] },
+            { "soglia": 33, "testo": "L'infezione residua rimargina la roccia viva dell'Abominio.", "azioni": ["rigenerazione"] }
+        ]
+    },
+    "furia_dei_terrigeni": {
+        "name": "La Furia dei Terrigeni",
+        "image": "",
+        "hp": 25,
+        "maxHp": 25,
+        "att": 8,
+        "dmg": 4,
+        "ca": 9,
+        "desc": "Rientrati a fatica nelle grotte naturali di calcite e pirite che precedono il bacino d'immersione, scoprite che il collasso dei giacimenti minerari ha reso furiosi gli ultimi Golem Terrigeni e Brachidani della grotta, che rotolano e colpiscono all'impazzata nel tunnel in rovina."
+    },
+    "spettri_dell_acqua": {
+        "name": "Gli Spettri dell'Acqua",
+        "image": "",
+        "hp": 24,
+        "maxHp": 24,
+        "att": 8,
+        "dmg": 4,
+        "ca": 8,
+        "desc": "L'acqua gelida del lago sta invadendo i tunnel di collegamento a velocità impressionante: insieme ai flussi d'acqua arrivano delle ombre fameliche e dei predatori subacquei che vi assalgono nell'acqua alta fino alla cintola.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
+        ]
+    },
+    "ultima_guardia_del_cenn": {
+        "name": "L'Ultima Guardia del Cenn",
+        "image": "",
+        "hp": 42,
+        "maxHp": 42,
+        "att": 8,
+        "dmg": 4,
+        "ca": 9,
+        "desc": "Raggiungete la riva interna della caverna naturale proprio davanti al bacino d'acqua che conduce al tunnel sottomarino verso la superficie. Qui gli ultimi superstiti d'élite della spedizione dei Cavalcantici di Foscoclivo vi attendono in formazione disperata: vedendo che il vostro portatore è riuscito là dove il loro ha fallito, tentano il tutto per tutto per abbatterlo e strappargli l'Yrtite all'ultimo metro prima dell'immersione.",
+        "fasi": [
+            { "soglia": 70, "testo": "Gli ultimi Cavalcantici serrano la formazione con un grido disperato.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 40, "testo": "Tutte le lame cercano il vostro portatore.", "azioni": ["bersaglio_marcato"] }
+        ]
+    },
+    "ritorno_delle_mantombre": {
+        "name": "Il Ritorno delle Mantombre",
+        "image": "",
+        "hp": 24,
+        "maxHp": 24,
+        "att": 8,
+        "dmg": 4,
+        "ca": 8,
+        "desc": "Mentre vi avvicinate al pelo dell'acqua nella caverna che sta per allagarsi completamente, un gruppo di Mantombre di lago e Serpulidi emerge dal passaggio subacqueo per avviluppare i vostri piedi e trascinarvi sul fondale.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "emrys_e_l_entita_affamata": {
+        "name": "Il Banchetto dell'Ombra e il Traditore di Anoeth",
+        "image": "",
+        "hp": 56,
+        "maxHp": 56,
+        "att": 8,
+        "dmg": 5,
+        "ca": 9,
+        "desc": "State per tuffarvi nel passaggio sottomarino finale quando le acque e le ombre della caverna esplodono davanti a voi. A sbarrarvi l'unica via di salvezza mentre Loch Ein muore alle vostre spalle c'è Emrys dei Cavalcantici, l'uomo che oltre due anni fa chiuse Alastorta e Cassio nella camera del sigillo fuggendo con il calco dell'iscrizione; ma non è solo. Accanto a lui si erge il corpo rianimato e posseduto di Morwenna, avvolta da flussi di tenebra vivente e con gli occhi vitrei spalancati — quello stesso corpo che Emrys aveva deposto oltre due anni fa nella stanza buia della fortezza di Anoeth. Dalle labbra esangui della Cavalcantica caduta risuona quella voce profonda, rauca e antica che si era risvegliata ad Anoeth e che ha manovrato nell'ombra persino Foscoclivo per attendere che un portatore dotato della scintilla ancestrale liberasse per lei l'Yrtite: \"Dignitas... portatori inconsapevoli... l'energia si propaga e il banchetto è finalmente pronto!\" Mentre Pandora sente un brivido gelido percorrerle la schiena di fronte a quell'entità primordiale che persino a lei appare come un abisso divoratore, la volta della caverna precipita in frantumi e le acque del lago irrompono con furia omicida. Con il portatore dell'Yrtite che lotta contro il veleno nelle proprie vene, dovete affrontare Emrys e l’Incarnazione dell'Entità Affamata in un ultimo, disperato scontro per conquistare la superficie e riportare il segreto di Loch Ein a Zefiro!",
+        "fasi": [
+            { "soglia": 75, "testo": "La voce antica dell'Entità risuona dalle labbra di Morwenna: il terrore vi stringe il cuore.", "azioni": ["terrore"] },
+            { "soglia": 50, "testo": "L'Entità Affamata si nutre: il banchetto è cominciato.", "azioni": ["sete_di_sangue"] },
+            { "soglia": 25, "testo": "Emrys e il corpo posseduto di Morwenna si gettano su di voi con l'ultima furia mentre la caverna crolla.", "azioni": ["ultimo_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "inseguitori_di_sangue_skallgrim": {
+        "name": "Gli Inseguitori di Sangue Skallgrim",
+        "image": "",
+        "hp": 11,
+        "maxHp": 11,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Mentre seguite le impronte fresche lasciate da Kesia nella neve a nord di Svalbard, costeggiando la Selva delle Bianche Betulle verso il fiume Vorma, il galoppo di cavalli leggeri risuona alle vostre spalle. È una pattuglia del clan Skallgrim, l'unico clan che collaborò con i Dignitas nella presa di Svalbard durante la Guerra dei Quaranta Giorni per fare uno smacco agli Asi, i quali negano alle loro anime l'ingresso nei Giardini di Jag Àntar. Prima di fuggire, Kesia ha soffiato una polvere illusoria sugli occhi di questi soldati: accecati dalla malia, vi scambiano per spiriti maligni degli Asi venuti a rubare le anime dei loro caduti e vi caricano in preda al delirio. Aiace, nella sua visione pragmatica da Arconte garante della Virtù della Lealtà verso gli alleati, ed Enea pensano che la linea di condotta più giusta sia contenerne la furia e metterli fuori combattimento senza sterminarli, mentre Aurelio, da fervente Arvale di Draken, sente ribollire il proprio disprezzo verso chi rinnega gli Asi.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "linci_scintillanti_del_vorma": {
+        "name": "Le Linci Scintillanti del Vorma",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Seguendo una scia di nastri colorati lasciati da Kesia tra le rocce innevate che costeggiano il Vorma, sconfinate nella tana selvatica di una coppia di Skimrad Gvista (Linci Scintillanti), gli enormi e magnifici felini bianchi come la neve tanto ambiti dalla nobiltà del Nord e celebrati nella fiaba di Zanna Bianca. Aizzate e rese furiose dal passaggio caotico della figlia di Fredlös vicino ai loro cuccioli, le due fiere balzano giù dagli speroni di roccia per difendere la nidiata.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "cacciatori_skalatt": {
+        "name": "La Preda dei Cacciatori Skalatt",
+        "image": "",
+        "hp": 12,
+        "maxHp": 12,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Superato il Vorma e piegando a est dove la pista si immette sul grande Cammino di Piotr, incrociate una spedizione di Cacciatori Skalatt, i discendenti delle antiche stirpi del Nord celebri per dare la caccia ai Gropiceri – le rare lucertole magiche dal dorso iridescente che ingoiano oro e gioielli e svaniscono in un tremolio se spaventate. Passando in corsa pochi istanti prima di voi, Kesia ha fatto esplodere una scintilla accanto a un Gropicero che gli Skalatt stavano tallonando da giorni, facendolo volatilizzare nel nulla, e ha poi infuso nei cacciatori la sua magia dell'ira. Accecati da una furia innaturale e convinti che siate stati voi a far scappare la loro preda inestimabile, gli Skalatt vi attaccano. Aiace ed Enea pensano che, trattandosi di sudditi del Nord sotto l'effetto di una malia, sia doveroso piegarli con la forza senza però infierire mortalmente su di loro.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 2 }
+        ]
+    },
+    "esuli_krati": {
+        "name": "La Vendetta degli Esuli Kràti",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Procedendo verso est lungo il Cammino di Piotr, nella distesa ventosa a sud del villaggio di Milkavala — noto per non aver mai subito un'incursione grazie alla fiamma perennemente accesa dedicata ad Allmän — e sotto la mole della Faucebigia, dalla nebbia emergono figure che vi lasciano interdetti: guerrieri silenziosi avvolti in armature arcaiche che recano gli antichi simboli dei Kràti. Eppure i Kràti superstiti furono assimilati generazioni fa dai Vitghen di Kallekot, dopo che il loro campione Ekil dei Kràti si recise da solo la testa e fu sepolto dagli Hammergradiani nel tumulo di Hurnas Val. Enea, che anni fa scese proprio ad Hurnas Val per distruggere il simulacro dello Spettro dei Tumuli, ed Aurelio pensano che queste figure dagli occhi vitrei che non respirano nel gelo non possano essere semplici mortali, ma spiriti rimasti bloccati nel Margine o echi di guerra strappati al passato da Kesia per mettere alla prova proprio il conquistatore di Hurnas Val.",
+        "fasi": [
+            { "soglia": 66, "testo": "I guerrieri dagli occhi vitrei battono le asce arcaiche in un grido senza fiato.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 30, "testo": "Gli echi dei Kràti combattono come se la guerra non fosse mai finita.", "azioni": ["furore"] }
+        ]
+    },
+    "mastini_di_bokgar_fenditure": {
+        "name": "I Mastini di Bokgar delle Fenditure",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 7,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Lungo una spaccatura rocciosa che costeggia il Cammino di Piotr a est di Milkavala, le scosse telluriche del Nord hanno spinto fin quassù un branco di Mastini di Bokgar, gli Huund mutati nell'oscurità e avvistati sempre più a nord dopo i terremoti di Frostgard. Attirate in superficie dalla scia di potere lasciata da Kesia e affamate di carne, le mostruose bestie alte quasi due metri vi assalgono balzando fuori dalle fenditure della roccia."
+    },
+    "aviano_moork_della_forra": {
+        "name": "L'Ombra dell'Aviano Moork",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 1,
+        "ca": 8,
+        "desc": "La traccia di Kesia vi porta in una forra gelida e cupa che digrada verso il fiume Driva, dove il vento sibila come nei versi de Il Riposo della Signora delle Ali, la tragica ballata di Collifreddi che narra della donna tradita che mescolò il proprio sangue a quello dei suoi uccelli per far sbranare l'amato prima di gettarsi dalle montagne. Dall'alto delle pareti rocciose plana su di voi un Aviano Moork, ultimo superstite di una razza antica ormai decaduta a Mangiaufo Essèdero: mentre la bestia vi attacca, la sua aura negativa schiaccia il cuore di Zeno, Aurelio ed Enea con un opprimente senso di colpa, sussurrando nelle vostre menti che fallirete e che la rovina di Lenora sarà solo colpa vostra.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "milizia_fluviale_urszebya": {
+        "name": "La Milizia Fluviale di Urszebya",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Passando lungo gli argini occidentali del Driva, incrociate un posto di guardia salito dal vicino villaggio di Urszebya, l'insediamento devoto a Hvid il Bianco celebre per le alte rocce aguzze che la leggenda afferma essere gli artigli del Bianco rimasti conficcati nella terra prima di sprofondare nel Ghiacceterno. I soldati sono sudditi fedeli all'ordine del Nord, ma a terra notate l'otre vuoto del vino speziato che Kesia aveva acquistato sul Vorma: drogati dalla magia caotica della figlia di Fredlös, gli arcieri e i lancieri vedono al vostro posto dei mostri usciti dal fiume e vi attaccano in preda al panico. Aiace, conscio dei propri doveri di Arconte verso i cittadini del Nord, e Zeno pensano che la linea di condotta più giusta sia disarmarli e stordirli col piatto delle lame senza macchiarsi del sangue di guardie innocenti.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "piu_forte" }
+        ]
+    },
+    "erchito_risvegliato": {
+        "name": "L'Erchito Risvegliato",
+        "image": "",
+        "hp": 18,
+        "maxHp": 18,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Lungo l'ultimo tratto che conduce all'imbocco del Ponte di Porunn sul fiume Driva, la terra trema sotto gli zoccoli di un Nefasto Auracàro uscito dalle fiabe più oscure di Vittenbergen: un Erchito, un uomo condannato dalla giustizia ultraterrena per grevi colpe impunite e trasformato in uno yak mastodontico privo di pelo, sulle cui enormi corna ardono due fiammelle maledette. Svegliato dal suo vagabondaggio solitario dallo schiocco di dita di Kesia, il colosso muggisce tre volte – presagio di morte imminente – e vi carica davanti all'accesso del ponte: sapete che per spezzare il suo anatema dovrete tranciare di netto le sue corna o spegnere le due fiammelle ardenti.",
+        "fasi": [
+            { "soglia": 65, "testo": "L'Erchito muggisce tre volte: le fiammelle sulle corna ardono più alte.", "azioni": ["corazza_di_pietra"] },
+            { "soglia": 30, "testo": "Il colosso carica a testa bassa, accecato dall'anatema.", "azioni": ["furore"] }
+        ]
+    },
+    "predoni_delle_lande_del_kalle": {
+        "name": "I Predoni delle Lande del Kalle",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Appena lasciate la sponda orientale del fiume Driva — che divide geograficamente e politicamente le Brughiere del Lander dal Deserto del Kalle, la distesa che non conosce mai l'estate —, una banda di predoni ed esuli sbandati del deserto di neve vi piomba addosso. Aizzati da Kesia, che ha promesso i vostri Scudi d'oro e le vostre armi forgiate a Zefiro a chiunque riesca a fermarvi oltre il Ponte di Porunn, brandiscono le lame tra le dune bianche per sbarrarvi la strada.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
+        ]
+    },
+    "cercatori_di_saghe": {
+        "name": "I Cercatori di Saghe di Fredlös l'Oppresso",
+        "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 7,
+        "dmg": 2,
+        "ca": 7,
+        "desc": "Lungo la salita glaciale vi attende un drappello di guerrieri e scaldi erranti votati al culto di Fredlös l'Oppresso, il padre di Kesia. Non vi sbarrano la strada per ribellarsi all'autorità della Famiglia Dignitas, né intendono uccidervi — poiché il credo di Fredlös abiura l'omicidio —, ma vogliono onorare il dogma del Campione Ridente secondo cui nulla vale la pena di essere ottenuto se non viene conquistato con stile e audacia in un'impresa degna delle saghe. Battono le armi sugli scudi ridendo nel vento del Kalle e vi sfidano a un duello d'onore per testare se siete davvero all'altezza del favore di Kesia.",
+        "speciali": [
+            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 30 }
+        ]
+    },
+    "orme_impossibili_dei_krati": {
+        "name": "Le Orme Impossibili dei Kràti",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Là dove il Cammino di Piotr piega verso nord-est costeggiando il Ghiacceterno prima di Kallekot, venite assaliti da una seconda pattuglia armata di arpioni d'osso e asce arcaiche dei Kràti. Più vi avvicinate alla Bocca del Bianco, più la domanda si fa inquietante nelle menti di Enea e Aiace: i veri discendenti dei Kràti che fondarono Kallekot sono stati assimilati da secoli dai Vitghen e dal clan Drummond; perché allora continuate a imbattervi in guerrieri vestiti come ai tempi dello Jarl Ekil lungo la scia di Kesia? Quando le vostre lame colpiscono le loro armature, il suono sembra ovattato e irreale, come se il velo tra il Margine e il mondo terreno si stesse assottigliando.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
+        ]
+    },
+    "campione_della_stirpe_di_ekil": {
+        "name": "Il Campione della Stirpe di Ekil",
+        "image": "",
+        "hp": 22,
+        "maxHp": 22,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Alle porte di Kallekot — la misteriosa città che sopravvive al limitare del Ghiacceterno grazie ai caldi e prorompenti geyser che eruttano dal terreno, rimasta formalmente indipendente sotto lo Jarl Jorulf il Bue del clan Drummond ma legata da protettorato alla Famiglia Dignitas — termina finalmente il Cammino di Piotr. Per non violare la sovranità dei Drummond evitate di entrare in armi nel centro cittadino, ma sul passo esterno che porta al Ghiacceterno vi sbarra la strada un imponente signore della guerra coperto di pelli bianche che brandisce un'arma identica a quelle dello Jarl Ekil, l'antico re dei Kràti sepolto ad Hurnas Val. L'uomo fissa dritto negli occhi Enea, il profanatore del tumulo di Hurnas Val, pronunciando parole in una lingua morta da generazioni: che sia un custode ancestrale rimasto nell'ombra o una proiezione generata da Kesia per mettere alla prova il Primarca del Nord, i suoi colpi sono letali e molto, molto reali.",
+        "fasi": [
+            { "soglia": 66, "testo": "Il signore della guerra punta l'arma di Ekil contro il più forte di voi.", "azioni": ["duellante"] },
+            { "soglia": 33, "testo": "I colpi del campione si fanno ancora più pesanti.", "azioni": ["furore"] }
+        ]
+    },
+    "fiere_del_gelo_e_fuochi_di_kesia": {
+        "name": "Le Fiere del Gelo e i Fuochi di Kesia",
+        "image": "",
+        "hp": 15,
+        "maxHp": 15,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Mentre superate il perimetro esterno di Kallekot per lanciarvi sulle distese del Ghiacceterno verso la Bocca del Bianco, Kesia evoca a distanza uno sciame di Fuochi Fatui che danzano ad intermittenza nel vento per confondere le vostre coordinate, attirando al contempo su di voi un branco affamato di predatori delle nevi che vi assale sfruttando il bagliore accecante.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti" }
+        ]
+    },
+    "guardia_d_onore_di_kesia": {
+        "name": "La Guardia d'Onore della Figlia di Fredlös",
+        "image": "",
+        "hp": 16,
+        "maxHp": 16,
+        "att": 8,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Sull'ultima spianata prima della Bocca del Bianco, una schiera di formidabili guerrieri provenienti da Aebeltoff, Ravndal e Svalbard vi attende schierata davanti al baratro. Non si tratta di ribelli contro il dominio del Leone, ma dei più ardenti campioni e cercatori di gloria di Collifreddi che Kesia ha richiamato a sé lungo tutto il suo viaggio, promettendo loro l'immortalità nei canti dei bardi e nei Misteri di Fredlös se fossero riusciti a incrociare le lame con il Primarca Enea e i figli di Lenora sulla soglia del Ghiacceterno. Galvanizzati dal potere diretto della figlia di Fredlös, sollevano le armi per contendervi la gloria dell'ultimo passo.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
+        ]
+    },
+    "kesia_ultima_prova": {
+        "name": "L'Ultima Prova di Kesia",
+        "image": "",
+        "hp": 30,
+        "maxHp": 30,
+        "att": 8,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "Raggiungete finalmente il ciglio vertiginoso della Bocca del Bianco, l'immensa voragine ancestrale spalancata nel cuore del Ghiacceterno da cui salgono le urla dell’Asi ferito da Yr. Qui non c'è più alcuna terra verso cui fuggire: Kesia, la figlia di Fredlös l'Oppresso, vi attende in piedi sull'orlo dell'abisso, con il mantello sgargiante che schiocca nel vento gelido e gli occhi accesi di un'euforia selvaggia. Il suo sguardo scorre su Zeno e Aurelio, i figli giunti fin qui per salvare la propria madre, su Aiace, garante della legge del Leone, e infine su Enea, il Primarca e fratello stesso di Lenora. \"Siete arrivati fino alla fine del mondo per il vostro Capofamiglia, Dignitas!\" esclama Kesia con una risata che sovrasta l'ululato della voragine. \"Ad Aebeltoff mi avete dato una storia a parole, ma qui sulla Bocca del Bianco, dove ogni giuramento pesa quanto il sangue, un patto antico non si spezza con le chiacchiere: si spezza dimostrando che il vostro cuore brucia più forte del destino e del gelo!\". Decisa a verificare di persona se siete davvero degni della rivelazione che cercate, Kesia scatena l'intera potenza del furore di Fredlös: affiancata dai suoi ultimi e più letali Campioni del Nord e avvolta da un turbine di scintille ardenti e venti glaciali, scende in campo in prima persona sull'orlo dell'abisso. Per strapparle il segreto che libererà Lenora Dignitas dal patto, dovrete piegare la figlia di Fredlös nel duello più epico che le saghe del Nord abbiano mai cantato.",
+        "fasi": [
+            { "soglia": 80, "testo": "Kesia ride nel vento e i suoi Campioni del Nord levano le armi.", "azioni": ["grido_di_battaglia"] },
+            { "soglia": 55, "testo": "Un turbine di scintille e venti glaciali: nessuno sa dove colpirà Kesia.", "azioni": ["imprevedibile"] },
+            { "soglia": 25, "testo": "Sull'orlo dell'abisso Kesia scatena tutto il furore di Fredlös.", "azioni": ["ultimo_sangue"] }
+        ],
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "casuale", "prob": 30 }
         ]
     }
 };

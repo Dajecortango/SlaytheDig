@@ -15,7 +15,7 @@ window.CAMPAIGNS["astarte_ch2"] = {
     "coverImage": "immagini/screenshot_2026-10-14_112326.webp",
     "introText": "La caccia continua. Lasciata la Valle del Krogg, la compagnia si spinge verso le vette dei Picchi del Tramonto, dove il gelo e il vento non perdonano.",
     "heroes": ["alastorta_dignitas", "pancrazio_dignitas", "pandora_dignitas", "ofelia_dignitas", "cassio_dignitas", "temistocle_dignitas"],
-    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo"],
+    "initialArmory": ["pugnale_rapido", "ascia_taglialegna", "bastone_rinforzato", "scudo_legno", "corazza_cuoio", "amuleto_legno_santo", "taccuino_cartografo", "balsamo_curativo", "stilo_da_battaglia", "turibolo_ferrato", "rosario_del_pellegrino"],
     "challenges": {
         "resti_lungobarbi": {
             "title": "Resti Lungobarbi",

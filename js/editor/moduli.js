@@ -518,6 +518,31 @@ function buffListEditor(obj, f, onChange) {
     return box;
 }
 
+// Bonus o malus per eroe di una prova ("bonusEroi": { id eroe: numero }): una casella per ogni eroe della
+// campagna (e per quelli già scritti ma tolti dalla campagna); vuoto o 0 toglie la voce
+function heroBonusEditor(obj, f, onChange) {
+    const box = document.createElement('div');
+    box.className = 'ed-specials';
+    const map = obj[f.k] && typeof obj[f.k] === 'object' ? obj[f.k] : {};
+    const ids = [...new Set([...(camp.heroes || []).filter(r => typeof r === 'string'), ...Object.keys(map)])];
+    if (!ids.length) { box.innerHTML = '<span class="ed-help">Nessun eroe nella campagna.</span>'; return box; }
+    ids.forEach(heroId => {
+        const row = document.createElement('label');
+        row.className = 'ed-special-row ed-special';
+        const name = (lib.eroi[heroId] && lib.eroi[heroId].name) || `${heroId} (non trovato)`;
+        row.innerHTML = `${esc(name)} <input type="number" step="1" value="${map[heroId] ?? ''}" placeholder="0">`;
+        row.querySelector('input').addEventListener('change', e => {
+            const v = Math.round(Number(e.target.value) || 0);
+            const cur = obj[f.k] && typeof obj[f.k] === 'object' ? obj[f.k] : {};
+            if (v) cur[heroId] = v; else delete cur[heroId];
+            if (Object.keys(cur).length) obj[f.k] = cur; else delete obj[f.k];
+            onChange(f.k);
+        });
+        box.appendChild(row);
+    });
+    return box;
+}
+
 // Campi da mostrare: quelli che valgono per questo elemento (showIf) e, con Avanzate spente, non avanzati
 function visibleFields(fields, obj, advanced = document.body.classList.contains('ed-advanced')) {
     return fields.filter(f => (!f.showIf || f.showIf(obj)) && (advanced || !f.avanzato));
@@ -798,6 +823,13 @@ function renderForm(container, obj, fields, onChange) {
         // Potenziamenti di una benedizione: statistica e valore, uno per riga
         if (f.type === 'bufflist') {
             wrap.appendChild(buffListEditor(obj, f, onChange));
+            form.appendChild(wrap);
+            return;
+        }
+
+        // Bonus o malus per eroe di una prova: un numero per ogni eroe della campagna
+        if (f.type === 'herobonus') {
+            wrap.appendChild(heroBonusEditor(obj, f, onChange));
             form.appendChild(wrap);
             return;
         }

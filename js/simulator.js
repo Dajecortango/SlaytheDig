@@ -25,7 +25,7 @@ const SIM_MAX_COMBAT_ROUNDS = 30;  // sicurezza anti-stallo in combattimento
 // Lancio della panca: lancia l'oggetto che rende di più, danni della rarità meno quanto vale tenerlo (simItemValue)
 function simThrowChoice(hero) {
     let best = 0, score = -Infinity;
-    hero.items.forEach((it, i) => { const v = throwDamage(it) - simItemValue(it); if (v > score) { score = v; best = i; } });
+    hero.items.forEach((it, i) => { const v = throwDamage(it) - simItemValue(it, hero); if (v > score) { score = v; best = i; } });
     return best;
 }
 
@@ -70,11 +70,12 @@ function simBestFaithIntHero(alive) {
 // di tutto (ogni colpo a segno toglie di più), poi la Forza (si colpisce più spesso), poi l'armatura.
 // Gli effetti speciali si stimano da soli (simSpecialsValue). I consumabili valgono poco ma non zero.
 // Pesi in SIM_ITEM_WEIGHTS (js/regole.js).
-function simItemValue(item) {
+function simItemValue(item, hero = null) {
     if (item.type && item.type.startsWith('consumable')) return 0.5;
-    // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): stimati per un eroe con 3 punti
+    // Bonus in scala con Fede/Intelligenza (vedi refreshScaledBonuses): con l'eroe, sui suoi punti veri
+    // (Stilo da Battaglia vale +1 Forza per Alastorta, niente per Pancrazio); senza eroe, per uno con 3 punti
     const scaled = (item.scaling || []).reduce((sum, sc) => sum + (SIM_ITEM_WEIGHTS[sc.stat] || 1) *
-        Math.min(sc.max != null ? sc.max : 99, Math.floor(3 / Math.max(1, sc.every || 1))), 0);
+        Math.min(sc.max != null ? sc.max : 99, Math.floor((hero ? (hero[sc.per] || 0) : 3) / Math.max(1, sc.every || 1))), 0);
     const stats = Object.entries(SIM_ITEM_WEIGHTS).reduce((sum, [k, w]) => sum + w * (Number(item[k]) || 0), 0);
     return stats - 2 * (item.att_penalty || 0) + scaled + simSpecialsValue(itemSpecials(item));
 }
@@ -174,9 +175,9 @@ function simDuelValue(list) {
 // Quanto migliora l'eroe con questo oggetto: valore dell'oggetto meno quello che dovrebbe scartare
 // (zaino pieno). Le armi vanno di preferenza a chi colpisce meglio (più Forza).
 function simItemGain(item, hero) {
-    if (stackableSlot(hero, item)) return simItemValue(item);
-    let gain = simItemValue(item);
-    if (hero.items.length >= BACKPACK_SIZE) gain -= Math.min(...hero.items.map(simItemValue));
+    if (stackableSlot(hero, item)) return simItemValue(item, hero);
+    let gain = simItemValue(item, hero);
+    if (hero.items.length >= BACKPACK_SIZE) gain -= Math.min(...hero.items.map(it => simItemValue(it, hero)));
     if (item.dmg || item.str) gain += 0.1 * (hero.str || 0);
     return gain;
 }
@@ -194,7 +195,7 @@ function simBestRecipient(item) {
 function simChooseDiscard(hero) {
     let worstIdx = 0, worstVal = Infinity;
     hero.items.forEach((it, idx) => {
-        const v = simItemValue(it);
+        const v = simItemValue(it, hero);
         if (v < worstVal) { worstVal = v; worstIdx = idx; }
     });
     return worstIdx;
@@ -456,7 +457,9 @@ function simIncoming() {
     const dmg = perHit * Math.max(1, r.turnoColpi || 1);
     const mode = r.turnoBersaglio || 'scelto';
     const alive = stato.party.filter(h => h.hp > 0);
+    const nemesi = mode !== 'tutti' && enemyNemesis(enemy);
     const targets = mode === 'tutti' ? alive
+        : nemesi ? [nemesi]
         : mode === 'scelto' ? [simExpertTarget(alive, dmg)].filter(Boolean)
         : mode === 'casuale' ? [] : eliteTargets(mode);
     // Colpo d'Odio: secondo colpo al più robusto fra gli altri (con più bersagli o a caso: il più robusto di tutti)

@@ -134,7 +134,9 @@ body.no-anim .phase-banner { animation: none; }
 
 /* Rune (Alastorta): scelta alla creazione del party e scambio al riposo */
 .rune-hint { margin: 4px 0 8px; }
-.rest-rune-area { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.rest-rune-area { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.rune-swap-btn { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.rune-swap-btn .prayer-icon { width: 28px; height: 28px; flex-basis: 28px; }
 .rest-rune-area:empty { display: none; }
 
 /* Preghiera ai riposi (renderRestPrayer in js/prove.js) e benedizioni sulla carta dell'eroe (heroBlessingsHtml) */

@@ -31,7 +31,7 @@
                     v.src = enemy.video;
                     preloadedVideos.push(v);
                 }
-                ['sfxAttack', 'sfxHit', 'sfxDeath'].forEach(slot => {
+                ['sfxAttack', 'sfxHit', 'sfxDeath', 'sfxNemesi'].forEach(slot => {
                     const src = enemy[slot];
                     if (!src || preloadedAssets.has(src)) return;
                     preloadedAssets.add(src);
