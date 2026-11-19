@@ -41,7 +41,8 @@ module.exports = (t, carica) => {
                 const [k, sub] = f.k.split('.');
                 const c = S[kind][k];
                 t.ok(c, `${nome}: "${k}" non è nella scheda di ${kind}`);
-                if (c && sub) t.ok(c.schema && c.schema[sub], `${nome}: "${f.k}" non è nella scheda di ${kind}`);
+                // "testiSacrificio.0": una voce di un elenco
+                if (c && sub && !(c.tipo === 'elenco' && /^\d+$/.test(sub))) t.ok(c.schema && c.schema[sub], `${nome}: "${f.k}" non è nella scheda di ${kind}`);
             });
         });
     });

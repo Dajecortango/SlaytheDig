@@ -423,18 +423,18 @@ window.LIBRERIA.reliquie = {
             { "quando": "difesa", "fai": "bonus_tiro", "val": 1 }
         ]
     },
-    "tomo_illustrato_celestica": {
+    "sigillo_dell_equilibrio": {
         "type": "relic",
-        "name": "Tomo Illustrato della Celestica",
-        "desc": "Tavole dei glifi che contengono le radiazioni dell'Yrtite: +1 Intelligenza a un eroe (chi supera la prova)",
+        "name": "Sigillo dell'Equilibrio",
+        "desc": "Un sigillo degli Atani rimasto intatto sotto le arcate: +1 Fede a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "hero_stat", "stat": "int", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ]
     },
-    "placca_argento_runica": {
+    "corde_d_ancoraggio": {
         "type": "relic",
-        "name": "Placca d'Argento Runica",
-        "desc": "Un glifo di schermatura da porre sul cuore: la prima volta che un eroe andrebbe a 0 HP resta in piedi con 1 HP, poi la placca si consuma",
+        "name": "Corde d'Ancoraggio",
+        "desc": "Legati in cordata: la prima volta che un eroe andrebbe a 0 HP resta in piedi con 1 HP, poi le corde si spezzano",
         "speciali": [
             { "quando": "colpo_mortale", "fai": "rialza", "val": 1, "rompe": true }
         ]

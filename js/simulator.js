@@ -665,6 +665,7 @@ function simSacrifice(original) {
     for (;;) {
         const pronti = stato.party.filter(h => canSacrifice(h, c) && h.hp - 1 >= Math.ceil(h.maxHp * SIM_SACRIFICIO_SOGLIA));
         if (!pronti.length) break;
+        // Con "unSoloEroe" canSacrifice lascia solo chi ha già cominciato
         resolveSacrifice(pronti.reduce((b, h) => h.hp / h.maxHp > b.hp / b.maxHp ? h : b), c);
     }
     return c.sacrifici || 0;

@@ -31,13 +31,16 @@
         /* Sfida del sacrificio (stat "hp", nell'editor "Sacrificio di HP"): niente dado. Un eroe alla volta dà 1 HP in cambio
            di Scudi, quante volte la compagnia vuole, fino a "massimo" sacrifici in tutto (vuoto = SACRIFICIO_MASSIMO).
            Nessuno scende sotto 1 HP. Scudi per HP: "scudiPerHp" (vuoto = SACRIFICIO_SCUDI). Niente premio né punizione.
+           "unSoloEroe": dopo il primo sacrificio può continuare solo lo stesso eroe (challenge.eroeSacrificio).
+           "testiSacrificio": un testo per ogni sacrificio (il primo dopo il primo HP, ...), mostrato dall'interfaccia.
            I sacrifici fatti si contano in challenge.sacrifici (stato.challengeState è una copia della sfida). */
         const isSacrifice = c => !!c && c.stat === 'hp';
         function sacrificeRules(c) {
             return { scudi: Number(c.scudiPerHp) || SACRIFICIO_SCUDI, massimo: Number(c.massimo) || SACRIFICIO_MASSIMO };
         }
         const sacrificesLeft = c => Math.max(0, sacrificeRules(c).massimo - (c.sacrifici || 0));
-        const canSacrifice = (hero, c) => !!hero && hero.hp > 1 && sacrificesLeft(c) > 0;
+        const canSacrifice = (hero, c) => !!hero && hero.hp > 1 && sacrificesLeft(c) > 0
+            && !(c.unSoloEroe && c.eroeSacrificio && c.eroeSacrificio !== hero.name);
         function resolveSacrifice(hero, c) {
             if (!canSacrifice(hero, c)) return null;
             const { scudi } = sacrificeRules(c);
@@ -45,6 +48,7 @@
             stato.partyCoins += scudi;
             c.sacrifici = (c.sacrifici || 0) + 1;
             c.scudiSacrificio = (c.scudiSacrificio || 0) + scudi;
+            if (c.unSoloEroe) c.eroeSacrificio = hero.name;
             return { hero: hero.name, scudi, fatti: c.sacrifici, restano: sacrificesLeft(c) };
         }
 

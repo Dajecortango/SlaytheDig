@@ -98,11 +98,13 @@
             const { scudi } = sacrificeRules(c);
             const restano = sacrificesLeft(c);
             const fatti = c.sacrifici || 0;
-            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(c.desc)}`;
+            // Dopo ogni sacrificio il suo testo ("testiSacrificio"), se la sfida ne ha
+            const testo = (fatti && (c.testiSacrificio || [])[fatti - 1]) || c.desc;
+            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(testo)}`;
             document.getElementById('challengeStage1').classList.add('hidden');
             document.getElementById('challengeStage2').classList.remove('hidden');
             // Sopra i ritratti, sempre in vista: quanto vale un HP, quanto avete dato, quante volte ancora (mai sotto 1 HP)
-            document.getElementById('challengePickLabel').textContent = (restano ? `Chi offre 1 HP? +${scudi} Scudi ciascuno, ancora ${restano} ${restano === 1 ? 'volta' : 'volte'}, nessuno sotto 1 HP.` : 'Non potete offrire altro.')
+            document.getElementById('challengePickLabel').textContent = (restano ? `${c.unSoloEroe && c.eroeSacrificio ? `${c.eroeSacrificio} offre ancora 1 HP?` : (c.unSoloEroe ? 'Chi offre 1 HP? Poi potrà continuare solo quell’eroe.' : 'Chi offre 1 HP?')} +${scudi} Scudi ciascuno, ancora ${restano} ${restano === 1 ? 'volta' : 'volte'}, nessuno sotto 1 HP.` : 'Non potete offrire altro.')
                 + (fatti ? ` Finora: ${fatti} HP per ${c.scudiSacrificio} Scudi.` : '');
             selectedChallengeHero = null;
             document.getElementById('challengeHeroPick').innerHTML = restano ? heroPickHtml(stato.party.filter(h => canSacrifice(h, c)), 'confirmChallengeHero', {
@@ -127,7 +129,7 @@
             if (!isSacrifice(c)) return;
             const fatti = c.sacrifici || 0;
             document.getElementById('challengeNarrativeBox').innerHTML = fatti
-                ? `<strong>Descrizione:</strong> ${kw(c.successText || '')}<br><br>Avete dato <b>${fatti} HP</b> e guadagnato <b>${c.scudiSacrificio} Scudi</b>.`
+                ? `<strong>Descrizione:</strong> ${kw(c.successText || (c.testiSacrificio || [])[fatti - 1] || '')}<br><br>Avete dato <b>${fatti} HP</b> e guadagnato <b>${c.scudiSacrificio} Scudi</b>.`
                 : `<strong>Descrizione:</strong> ${kw(c.ignoreText || '')}`;
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('closeChallengeBtn').classList.remove('hidden');

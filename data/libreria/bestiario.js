@@ -1800,14 +1800,14 @@ window.LIBRERIA.bestiario = {
     "tessitori_del_buio": {
         "name": "I Tessitori del Buio",
         "image": "",
-        "hp": 20,
-        "maxHp": 20,
-        "att": 7,
+        "hp": 21,
+        "maxHp": 21,
+        "att": 8,
         "dmg": 2,
         "ca": 8,
-        "desc": "Attraversate le strette vie del Quartiere delle Osservazioni Astronomiche, camminando all'ombra di alte torri piegate in angoli impossibili. Nel tempo trascorso dalla vostra prima spedizione, una nidiata di Ragni Neri Imperiali ha completamente avvolto le altezze del quartiere con tele vischiose e resistenti come l'acciaio: grandi quanto cerbiatti e con un'estensione delle zampe pari a una ruota di mulino, calano dall'alto facendo scattare le loro tredici propaggini chitinose — gli otto artigli, le doppie zanne articolate e l'aculeo sacrale gocciolante di veleno paralizzante.",
+        "desc": "Risalite attraverso le vie strette del Quartiere delle Osservazioni Astronomiche mentre le torri piegate si spezzano una dopo l'altra. Stanati dal crollo dei propri nidi sulle guglie, dei Ragni Neri Imperiali e degli Aracnomantropi calano in massa dall'alto sbarrandovi il cammino.",
         "speciali": [
-            { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2 }
+            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
         ]
     },
     "fiere_corrotte_abisso": {
@@ -2113,42 +2113,16 @@ window.LIBRERIA.bestiario = {
         ]
     },
     "custodi_sala_circolare": {
-        "name": "I Custodi della Sala Circolare",
+        "name": "I Custodi della Biblioteca",
         "image": "",
-        "hp": 13,
-        "maxHp": 13,
-        "att": 6,
-        "dmg": 1,
-        "ca": 7,
-        "desc": "Superato l'atrio del Palazzo dove avete sconfitto Eldric, varcate la grande porta di bronzo ornata da rilievi intricati ed entrate nella vasta Sala del Consiglio e della Biblioteca dei Firmamentisti. Mentre Alastorta e Cassio riconoscono l'ambiente che esplorarono oltre due anni fa con Emrys, Pancrazio, Pandora, Ofelia e Temistocle ammirano per la prima volta il grande tavolo di pietra centrale e gli alti scaffali che salgono fino al soffitto inclinato. Dalle librerie emergono però delle ombre: degli Spettri dei Tumuli — legati ad antichi astrolabi che fungono da loro ancore terrene — e dei Morrkath dai sei occhi luminosi come stelle, attirati dalle pulsazioni dell'Yrtite sotto il palazzo, vi sbarrano il passo verso il muro di fondo cercando di spingervi alla pazzia.",
+        "hp": 19,
+        "maxHp": 19,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Riemergete dal passaggio segreto nella Sala del Consiglio avvolta dal fumo e dall'acqua che scroscia dal soffitto. Tra gli scaffali che crollano, degli Spettri dei Tumuli e dei Morrkath dai sei occhi luminosi si avventano su di voi, cercando di seminarvi il panico nella mente proprio mentre dovete scortare Alastorta fuori dall'edificio.",
         "speciali": [
-            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 25 }
-        ]
-    },
-    "agguato_nelle_tenebre": {
-        "name": "L'Agguato nelle Tenebre",
-        "image": "",
-        "hp": 14,
-        "maxHp": 14,
-        "att": 6,
-        "dmg": 1,
-        "ca": 7,
-        "desc": "Alastorta guida il gruppo verso la sezione del muro leggermente fuori posto che aveva scoperto oltre due anni fa sul fondo della Biblioteca, azionando il meccanismo che apre il passaggio segreto verso le viscere di Loch Ein. Appena vi inoltrate nel buio opprimente della scalinata, tuttavia, scoprite che il varco è presidiato: una retroguardia di Cavalcantici minori, scesi con i calchi trafugati da Emrys, vi tende un agguato nell'ombra per impedirvi di disturbare l'estrazione nella camera sigillata.",
-        "speciali": [
-            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
-        ]
-    },
-    "parassiti_dell_oscurita": {
-        "name": "I Parassiti dell'Oscurità",
-        "image": "",
-        "hp": 14,
-        "maxHp": 14,
-        "att": 6,
-        "dmg": 1,
-        "ca": 6,
-        "desc": "Imboccate il passaggio segreto dietro il muro della Biblioteca, scendendo nelle cavità più strette sotto il Palazzo dove l'aria è ferma dal giorno del Disastro del 178 d.F., oltre mezzo secolo fa. Nel tratto più angusto della discesa, dove la luce delle vostre torce fatica a penetrare, degli Aracnomantropi dal volto umanoide e delle Mantombre si calano silenziosamente dal soffitto basso.",
-        "speciali": [
-            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 30 }
         ]
     },
     "divoratori_di_essenze": {
@@ -2159,7 +2133,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Avanzando nei corridoi profondi sotto la Biblioteca, l'aria si fa gelida e pesante. Dalle fessure del sottosuolo risalgono dei Mangiaufi Essèderi assieme ad alcuni spettri: a differenza dei Necrèderi che divorano la carne, queste creature puntano a prosciugare la vostra essenza intangibile, tentando di spegnere le vostre fonti di calore e di luce per sopraffarvi nel buio.",
+        "desc": "Avanzando nei vestiboli gelidi che precedono la fascia del limbo, l'energia che trasuda dal corpo consumato di Alastorta attira come un faro dei Mangiaufi Essèderi e degli spettri affamati. Le creature cercano di spegnere le vostre torce per avventarsi sul Primarca privo di sensi e prosciugarne l'ultima scintilla vitale.",
         "speciali": [
             { "quando": "colpisce", "fai": "cura", "val": 1 }
         ]
@@ -2172,7 +2146,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Addentrandovi nella zona in cui il limbo dell'Yrtite altera la realtà, la bruma sotterranea inizia a muoversi controcorrente. L'anomalia ha attirato dei Silfidi Eterei: esseri incorporei, cangianti e quasi indistinguibili dai vostri sensi, che avvolgono il vostro gruppo cercando di indebolire le vostre intenzioni e rendere vacillante persino la mente più solida.",
+        "desc": "Risalendo la zona in cui il limbo si squarcia, la bruma sotterranea inizia a vorticare controcorrente. Dei Silfidi Eterei, spettri incorporei resi frenetici dalla morte della bolla temporale, vi avvolgono cercando di spezzare la lucidità dei cinque rimasti in piedi e farvi abbandonare Alastorta nel buio.",
         "speciali": [
             { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 30 }
         ]
@@ -2185,7 +2159,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "In questa sezione profonda del tunnel, il limbo dell'Yrtite ha intrappolato frammenti vividi del 178 d.F., il giorno in cui i Kin guidati dal Cenn Mag Cuibbe e i Lyanti di Re Eòghleb V si scontrarono fino alla rovina della città. Dalle nebbie temporali emergono le figure distorte e non-morte di antichi campioni caduti durante quell'ultima battaglia di mezzo secolo fa: bloccati in un ciclo eterno di guerra, vi attaccano scambiandovi per gli invasori.",
+        "desc": "La fine del ciclo del 178 d.F. scaraventa fuori dalle nebbie temporali gli antichi campioni Kin e Lyanti caduti mezzo secolo fa nel Salone delle Risposte. Intrappolati per l'ultima volta nella loro guerra, avanzano verso Temistocle e Cassio che sorreggono Alastorta privo di sensi: Pancrazio, ormai fuori di sé dalla rabbia per ogni istante perso laggiù, carica per primo urlando come una belva per travolgerli.",
         "fasi": [
             { "soglia": 66, "testo": "Gli echi della battaglia del 178 d.F. si fanno assordanti: i campioni senza tempo levano il loro grido di guerra.", "azioni": ["grido_di_battaglia"] },
             { "soglia": 33, "testo": "Bloccati nel loro ciclo eterno, i guerrieri combattono con la furia dell'ultimo giorno di Loch Ein.", "azioni": ["furore"] }
@@ -2199,7 +2173,7 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 7,
-        "desc": "Avvicinandovi ai livelli che precedono il Salone delle Risposte, l'avvelenamento scaturito dall'Yrtite violata si fa soffocante: le pareti trasudano un'oscurità densa e malsana. Dalle fenditure della roccia scaturiscono abomini Nefasti Sinèspesi ed Esùridi, creature e cadaveri completamente deformati dal morbo violaceo del cristallo e guidati da una fame insaziabile.",
+        "desc": "Mentre le acque scure invadono le camere dietro di voi, dalle fenditure della roccia scaturiscono in massa abomini Nefasti Sinèspesi ed Esùridi, deformati dal morbo violaceo e impazziti dal terrore dell'allagamento. Dovete falciarli prima che raggiungano la barella improvvisata su cui giace Alastorta.",
         "speciali": [
             { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "eroe", "prob": 35 }
         ]
@@ -2212,32 +2186,22 @@ window.LIBRERIA.bestiario = {
         "att": 7,
         "dmg": 1,
         "ca": 8,
-        "desc": "Lungo il corridoio saturato dall'infezione che filtra dal Salone delle Risposte, l'oscurità stessa sembra convergere e prendere forma con una volontà propria e famelica. Creature di pura tenebra e Silfidi Nècubri vi circondano risucchiando il calore delle torce e inducendo violenti attacchi di panico e malori.",
+        "desc": "Lungo il corridoio saturato dall'infezione, l'oscurità converge con una volontà famelica dritta verso il frammento di Yrtite stretto sul petto di Alastorta incosciente. Creature di tenebra e Silfidi Nècubri risucchiano il calore delle torce inducendo nausea e panico mentre dovete fare quadrato attorno al Primarca.",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti" }
         ]
     },
-    "guardiani_del_velo": {
-        "name": "I Guardiani del Velo",
-        "image": "",
-        "hp": 18,
-        "maxHp": 18,
-        "att": 7,
-        "dmg": 2,
-        "ca": 8,
-        "desc": "Scendete lungo la scalinata inferiore dove il velo della realtà si sta assottigliando fino a squarciarsi. Qui un gruppo di Golem primordiali incrostati di minerali luminescenti e antichi spettri, presidia l'accesso alla galleria della porta sigillata, attaccando chiunque tenti di violare il santuario più profondo di Loch Ein."
-    },
     "rituale_di_anoeth": {
-        "name": "Il Rituale di Anoeth",
+        "name": "Gli Ultimi Emissari degli Otto",
         "image": "",
         "hp": 28,
         "maxHp": 28,
         "att": 8,
         "dmg": 2,
         "ca": 8,
-        "desc": "Poco prima della galleria vi imbattete nel nucleo operativo della spedizione di Foscoclivo: gli emissari scelti inviati da \"gli Otto\" grazie al calco dell'iscrizione trafugato da Emrys oltre due anni fa. Hanno appena aperto il varco principale ma sono stati respinti all'indietro dall'orrore scaturito dal fallimento del loro Portatore sacrificale: vedendovi arrivare, decidono di sterminarvi per usare uno di voi come nuovo vaso vivente per l'Yrtite!",
+        "desc": "Proprio davanti al meccanismo d'uscita del passaggio segreto vi sbarra la strada una squadra scelta di emissari de \"gli Otto\", rimasta tagliata fuori dal crollo del Palazzo. Vedendo Alastorta privo di sensi ma ancora vivo con l'Yrtite addosso, decidono di sterminare voi cinque per impossessarsi del corpo del Primarca e usarlo come contenitore vivente fino alla superficie!",
         "fasi": [
-            { "soglia": 66, "testo": "Gli emissari degli Otto puntano il più debole di voi: vogliono un nuovo vaso vivente.", "azioni": ["predatore"] },
+            { "soglia": 66, "testo": "Gli emissari degli Otto puntano il più debole di voi: vogliono il corpo del Primarca come vaso vivente.", "azioni": ["predatore"] },
             { "soglia": 33, "testo": "Il rito di Anoeth si nutre del vostro sangue.", "azioni": ["sete_di_sangue"] }
         ],
         "speciali": [
@@ -2245,162 +2209,118 @@ window.LIBRERIA.bestiario = {
         ]
     },
     "sentinelle_della_porta": {
-        "name": "Le Sentinelle della Porta",
+        "name": "Le Sentinelle dei Bassorilievi",
         "image": "",
-        "hp": 19,
-        "maxHp": 19,
-        "att": 7,
-        "dmg": 2,
-        "ca": 8,
-        "desc": "Raggiungete la camera davanti alla monumentale porta di pietra scolpita con le figure di Miska, Eòghar e Cenn Nimoe, dove oltre due anni fa Emrys tradì Alastorta e Cassio. Le radiazioni dell'Yrtite che filtrano dalla porta socchiusa hanno animato le antiche statue di guardia dei Firmamentisti e attirato dei feroci Nefasti Auracàri, che vi assalgono davanti ai bassorilievi per impedirvi di varcare la soglia.",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Sbucate dal Salone delle Risposte nella camera davanti alla porta di pietra scolpita con le figure di Miska, Eòghar e Cenn Nimoe. Le scosse e l'energia dell'Yrtite che brucia sul petto di Alastorta svenuto hanno animato le statue di guardia dei Firmamentisti e attirato dei Nefasti Auracàri. Pancrazio ringhia serrando l'elsa fino a farsi sbiancare le nocche, pronto a fare a pezzi qualsiasi cosa rallenti la fuga di suo padre.",
         "speciali": [
-            { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 30 }
-        ]
-    },
-    "spettri_del_duello": {
-        "name": "Gli Spettri del Duello",
-        "image": "",
-        "hp": 19,
-        "maxHp": 19,
-        "att": 7,
-        "dmg": 2,
-        "ca": 8,
-        "desc": "Varcate per la prima volta la soglia monumentale ed entrate nel leggendario Salone delle Risposte, il cuore segreto di Loch Ein dove nel 178 d.F. si affrontarono in duello mortale Re Eòghleb V e il Cenn Mag Cuibbe. Nel vasto salone segnato dalle cicatrici di quell'antica esplosione, gli spiriti inquieti delle guardie reali dei Lyanti e dei campioni Kin continuano a darsi battaglia nell'ombra da cinquant'anni e si scagliano su di voi con ferocia sovrumana.",
-        "speciali": [
-            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 }
+            { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "casuale" }
         ]
     },
     "creature_del_cristallo": {
         "name": "Le Creature del Cristallo",
         "image": "",
+        "hp": 14,
+        "maxHp": 14,
+        "att": 6,
+        "dmg": 1,
+        "ca": 6,
+        "desc": "Appena oltre la porta dei bassorilievi, la perdita del nucleo di Yrtite fa impazzire le vene minerali delle pareti: frammenti di roccia cristallizzata e schegge d'energia prendono vita sotto forma di Silfidi erratici e costrutti luminosi che vi minacciano nel tratto più stretto della galleria.",
+        "speciali": [
+            { "quando": "inizio_scontro", "fai": "stordisci", "bersaglio": "casuale" }
+        ]
+    },
+    "ombre_del_sigillo": {
+        "name": "Le Ombre del Sigillo",
+        "image": "",
+        "hp": 13,
+        "maxHp": 13,
+        "att": 6,
+        "dmg": 1,
+        "ca": 7,
+        "desc": "Appena il frammento di Yrtite è stato strappato al nucleo, Alastorta è crollato privo di sensi tra le braccia di Pancrazio, e la bolla di realtà alterata che dal 178 d.F. teneva sospesa Loch Ein si è spaccata con un boato apocalittico. Mentre Temistocle e Cassio si caricano sulle spalle il corpo inerme del Primarca — sul cui avambraccio le vene iniziano già a pulsare di un viola malato sotto le rune —, la rottura del sigillo libera gli Spettri dei Tumuli e le ombre rimaste prigioniere nel Salone delle Risposte. Vedendo suo padre svenuto e braccato, Pancrazio esplode in un ruggito di furia cieca e si getta in prima linea per aprirvi la strada verso la porta.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "malus", "val": 1, "durata": 1, "bersaglio": "tutti", "prob": 25 }
+        ]
+    },
+    "superstiti_di_foscoclivo": {
+        "name": "I Superstiti di Foscoclivo in Fuga",
+        "image": "",
+        "hp": 18,
+        "maxHp": 18,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Sulle ultime rampe del passaggio segreto che riportano alla Biblioteca vi scontrate con un drappello di Cavalcantici superstiti in preda al panico per il crollo della città. Vedendo che state trascinando Alastorta svenuto con l'Yrtite, vi attaccano per aprirsi la fuga e rubarvi il cristallo. Alla vista delle loro insegne, la rabbia di Pancrazio esplode: urla contro i nemici che hanno ridotto così suo padre e si abbatte sui loro scudi."
+    },
+    "bestie_in_fuga_dall_abisso": {
+        "name": "Le Bestie in Fuga",
+        "image": "",
         "hp": 19,
         "maxHp": 19,
         "att": 7,
         "dmg": 2,
         "ca": 8,
-        "desc": "Appena mettete piede nel Salone delle Risposte, teatro del cataclisma del 178 d.F., l'aria crepita di pura energia primordiale. Attorno al perimetro interno del salone, frammenti minori di roccia cristallizzata e schegge staccatesi dal cuore di Yr Drazul hanno preso vita sotto forma di Silfidi erratici e costrutti luminosi che vi bombardano di dardi accecanti.",
+        "desc": "Uscendo dall'atrio semidistrutto del Palazzo dei Firmamentisti, venite travolti dalla fuga cieca delle bestie stanate dai sotterranei allagati: un branco di Aracnomantropi e Huund mutati (simili ai Mastini di Bokgar) vi assale tra le colonne per farsi strada verso i livelli superiori.",
         "speciali": [
             { "quando": "inizio_scontro", "fai": "danni", "val": 1, "bersaglio": "tutti" }
         ]
     },
-    "custode_sigillo_yr_drazul": {
-        "name": "Il Custode del Sigillo di Yr Drazul",
+    "crollo_delle_colonne": {
+        "name": "Il Crollo delle Colonne d'Ingresso",
         "image": "",
-        "hp": 34,
-        "maxHp": 34,
-        "att": 8,
+        "hp": 19,
+        "maxHp": 19,
+        "att": 7,
         "dmg": 2,
-        "ca": 9,
-        "desc": "Avanzando verso il centro del Salone delle Risposte, dove splende il cristallo di Yrtite, vi sbarra la strada l'ultima difesa creata dai Firmamentisti e dai sovrani del 178 d.F.: un antico e colossale guardiano plasmato dall'energia stessa di Yr Drazul e dalle arti della Celestica, programmato per annientare chiunque tenti di rimuovere il cuore che tiene sospesa Loch Ein.",
-        "fasi": [
-            { "soglia": 60, "testo": "L'energia di Yr Drazul si addensa sul guardiano come una corazza di cristallo.", "azioni": ["corazza_di_pietra"] },
-            { "soglia": 30, "testo": "Il Custode scarica la Celestica tutto intorno a sé.", "azioni": ["colpo_area"] }
+        "ca": 8,
+        "desc": "Attraversate l'atrio di marmo che si sgretola fino alla soglia esterna del Palazzo dei Firmamentisti, dove la cascata dalla volta è ormai diventata un diluvio assordante. Dalle macerie del colonnato emergono dei Golem Terrigeni impazziti per lo sconvolgimento tellurico che cercano di schiacciarvi.",
+        "speciali": [
+            { "quando": "colpito", "fai": "veleno", "val": 1, "durata": 2 }
         ]
     },
-    "araldo_dell_infezione": {
-        "name": "L'Araldo dell'Infezione",
+    "il_vendicatore": {
+        "name": "Il Vendicatore della Retroguardia",
         "image": "",
         "hp": 32,
         "maxHp": 32,
         "att": 8,
         "dmg": 2,
         "ca": 9,
-        "desc": "A pochi passi dal santuario centrale del Salone delle Risposte, dal buio emerge un orrore che vi gela il sangue: è il Portatore sacrificale inviato dagli Otto di Foscoclivo! Le fasce di cuoio e la sua stessa carne incisa con l'alfabeto runico di Foscoclivo sono state squarciate dall'interno: poiché l'uomo non possedeva una vera scintilla ancestrale, non appena ha sfiorato l'Yrtite il cristallo lo ha divorato con il suo avvelenamento fulminante, fondendolo con le ombre infette della camera. Trasformato in un abominevole Araldo dell'Infezione avvolto da un'aura violacea che divora la luce delle torce, il mostro si scaglia su di voi mostrandovi il destino che attende chi tocca l'Yrtite senza esserne degno!",
+        "desc": "Sui gradoni sconvolti davanti al Palazzo, un comandante d'élite dei Cavalcantici di Foscoclivo ha radunato gli ultimi guerrieri rimasti vivi. Vedendo Alastorta privo di sensi con il bagliore dell'Yrtite che filtra dalle sue vesti, l'ufficiale ghigna con fanatismo: vuole farvi precipitare dalla scalinata nella piazza che sprofonda. A quella provocazione, Pancrazio perde ogni freno e si avventa sul comandante con una ferocia mai vista prima.",
         "fasi": [
-            { "soglia": 66, "testo": "L'aura violacea dell'Araldo divora la luce delle torce.", "azioni": ["terrore"] },
-            { "soglia": 33, "testo": "Il morbo del cristallo si nutre della vostra carne.", "azioni": ["sete_di_sangue"] }
+            { "soglia": 66, "testo": "Il comandante urla ai suoi di non lasciarvi scampo: il suo fanatismo vi gela le mani.", "azioni": ["terrore"] },
+            { "soglia": 33, "testo": "Ferito, il Vendicatore si avventa sul sangue che bagna i gradoni.", "azioni": ["sete_di_sangue"] }
         ],
         "speciali": [
             { "quando": "colpisce", "fai": "veleno", "val": 1, "durata": 2, "bersaglio": "eroe" }
         ]
     },
-    "ombre_del_sigillo": {
-        "name": "Le Ombre del Sigillo",
-        "image": "",
-        "hp": 21,
-        "maxHp": 21,
-        "att": 7,
-        "dmg": 2,
-        "ca": 8,
-        "desc": "Rimossa l'Yrtite dal suo piedistallo, il ciclo del limbo si spezza con un boato assordante e il lago soprastante inizia a reclamare Loch Ein. Mentre le rune di contenimento bruciano sulla pelle del portatore per rallentare il veleno del cristallo che cerca di divorarlo, la rottura del sigillo libera tutte le entità d'ombra e i Nefasti rimasti intrappolati nel Salone delle Risposte dal 178 d.F.: nel caos dei crolli, uno sciame di creature impazzite vi assale per trascinarvi nell'abisso.",
-        "speciali": [
-            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 30 }
-        ]
-    },
-    "superstiti_di_foscoclivo": {
-        "name": "I Superstiti di Foscoclivo in Fuga",
-        "image": "",
-        "hp": 21,
-        "maxHp": 21,
-        "att": 8,
-        "dmg": 2,
-        "ca": 8,
-        "desc": "Risalite a perdifiato le scale del passaggio segreto che riportano verso la Biblioteca, sorreggendo chi porta l'Yrtite mentre le prime striature scure dell'avvelenamento iniziano a pulsare sotto le rune tracciate sulle sue braccia. A metà della rampa vi scontrate con un gruppo di Cavalcantici superstiti: in preda al panico per il crollo della città ma decisi a strapparvi il cristallo, vi attaccano prima che il tunnel si allaghi.",
-        "speciali": [
-            { "quando": "colpisce", "fai": "ruba_scudi", "val": 3 }
-        ]
-    },
-    "bestie_in_fuga_dall_abisso": {
-        "name": "Le Bestie in Fuga dall'Abisso",
-        "image": "",
-        "hp": 21,
-        "maxHp": 21,
-        "att": 7,
-        "dmg": 2,
-        "ca": 8,
-        "desc": "Mentre correte lungo le scale del passaggio segreto verso la Biblioteca e l'Yrtite emana ondate di calore tossico a stento frenate dalle rune di contenimento, vi accorgete che non solo gli uomini stanno fuggendo: dalle cavità inferiori risalgono in branco Aracnomantropi e Huund mutati delle rovine (simili ai Mastini di Bokgar) terrorizzati dall'acqua che sale, pronti a travolgere e azzannare chiunque ostacoli la loro corsa verso l'alto.",
-        "speciali": [
-            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
-        ]
-    },
-    "crollo_delle_colonne": {
-        "name": "Il Crollo delle Colonne",
+    "predatori_delle_acque": {
+        "name": "I Predatori delle Acque",
         "image": "",
         "hp": 22,
         "maxHp": 22,
         "att": 7,
         "dmg": 2,
         "ca": 9,
-        "desc": "Uscite dalla Biblioteca attraversando l'atrio del Palazzo che si sgretola fino a raggiungere la soglia esterna, dove la cascata dalla volta è ormai diventata un diluvio assordante: qui dei Golem Terrigeni impazziti per lo sconvolgimento tellurico della caverna emergono dalle macerie del colonnato e cercano di schiacciarvi."
+        "desc": "Fuggendo attraverso i quartieri accademici che scivolano verso il baratro, vi ritrovate nei vicoli inclinati già invasi dalle acque del lago soprastante: Serpulidi di Goli'ja e Sirenidi nuotano tra le case sommerse a metà, cercando di afferrarvi le gambe e trascinarvi sul fondo."
     },
-    "il_vendicatore": {
-        "name": "Il Vendicatore",
-        "image": "",
-        "hp": 38,
-        "maxHp": 38,
-        "att": 8,
-        "dmg": 4,
-        "ca": 9,
-        "desc": "Uscite dal Palazzo sulla Grande Piazza Circolare: metà della spianata è già sprofondata nell'abisso senza fondo e il resto sta scivolando lentamente nel vuoto. Sulle ultime lastre ancora emerse, un comandante d'élite dei Cavalcantici di Foscoclivo ha radunato i suoi ultimi guerrieri: vedendo il bagliore dell'Yrtite pulsare tra le mani insanguinate e coperte di rune del vostro portatore, decide di sacrificare la propria vita pur di abbatterlo e farvi sprofondare con la città.",
-        "fasi": [
-            { "soglia": 70, "testo": "Il comandante punta il vostro portatore e lo sfida da solo.", "azioni": ["duellante"] },
-            { "soglia": 35, "testo": "Con la piazza che sprofonda, il Vendicatore colpisce senza più badare a difendersi.", "azioni": ["frenesia"] }
-        ]
-    },
-    "predatori_delle_acque": {
-        "name": "I Predatori delle Acque",
+    "orda_dei_senza_pace": {
+        "name": "L'Orda dei Senza Pace",
         "image": "",
         "hp": 23,
         "maxHp": 23,
         "att": 8,
         "dmg": 3,
         "ca": 8,
-        "desc": "Fuggendo dalla piazza centrale attraverso i quartieri accademici che scivolano verso il baratro, vi ritrovate nei vicoli inclinati già invasi dalle acque del lago soprastante: Serpulidi di Goli'ja e Sirenidi nuotano tra le case sommerse a metà, cercando di afferrarvi le gambe e trascinarvi sul fondo.",
+        "desc": "Il collasso di Loch Ein ha squarciato tutte le antiche cripte e le rovine sepolte dal 178 d.F.: un'orda di Ghoul e Spettri dei Tumuli emerge dalle macerie dei vicoli in un ultimo, folle assalto contro i vivi.",
         "speciali": [
             { "quando": "colpito", "fai": "danni", "val": 1, "bersaglio": "eroe", "prob": 35 }
-        ]
-    },
-    "orda_dei_senza_pace": {
-        "name": "L'Orda dei Senza Pace",
-        "image": "",
-        "hp": 24,
-        "maxHp": 24,
-        "att": 8,
-        "dmg": 3,
-        "ca": 8,
-        "desc": "Risalendo lungo il fianco occidentale verso l'uscita della città, passate accanto al settore dell'Anfiteatro ormai sommerso. Il collasso di Loch Ein ha squarciato tutte le antiche cripte e le rovine sepolte dal 178 d.F.: un'orda di Ghoul e Spettri dei Tumuli emerge dalle macerie in un ultimo, folle assalto contro i vivi.",
-        "speciali": [
-            { "quando": "colpisce", "fai": "cura", "val": 1 }
         ]
     },
     "stormo_nel_panico": {
@@ -2424,7 +2344,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 4,
         "ca": 9,
-        "desc": "Proprio mentre raggiungete la fenditura rocciosa in cima alle scalinate per lasciare la città caduta, dall'abisso in cui sta sprofondando Loch Ein si protende un gigantesco orrore tentacolare e corrotto – una fusione mostruosa di Nefasti e roccia animata dall'infezione residua – che tenta di sbarrarvi il passaggio sulla soglia d'uscita della città.",
+        "desc": "Proprio mentre raggiungete la fenditura rocciosa in cima alle scalinate per lasciare la città caduta, dall'abisso in cui sta sprofondando Loch Ein si protende un gigantesco orrore tentacolare e corrotto – una fusione mostruosa di Nefasti e roccia animata dall'infezione residua – che tenta di sbarrarvi il passaggio sulla soglia d'uscita della città. Mentre i tentacoli cercano di strappare Alastorta incosciente dalle braccia di Cassio e Ofelia, Pancrazio scatena tutta la propria furia spezzandoli a colpi d'acciaio per aprirvi il varco verso le grotte.",
         "fasi": [
             { "soglia": 66, "testo": "I tentacoli dell'Abominio spazzano la soglia d'uscita.", "azioni": ["travolge"] },
             { "soglia": 33, "testo": "L'infezione residua rimargina la roccia viva dell'Abominio.", "azioni": ["rigenerazione"] }
@@ -2438,7 +2358,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 4,
         "ca": 9,
-        "desc": "Rientrati a fatica nelle grotte naturali di calcite e pirite che precedono il bacino d'immersione, scoprite che il collasso dei giacimenti minerari ha reso furiosi gli ultimi Golem Terrigeni e Brachidani della grotta, che rotolano e colpiscono all'impazzata nel tunnel in rovina."
+        "desc": "Rientrati a fatica nelle grotte naturali di calcite e pirite che precedono il bacino d'immersione, scoprite che il collasso dei giacimenti minerari ha reso furiosi gli ultimi Golem Terrigeni e Brachidani della grotta, che rotolano e colpiscono all'impazzata nel tunnel in rovina. Dovete tenere Golem Terrigeni e Brachidani lontani da Alastorta mentre si avvertono i primi lamenti febbrili del Primarca che riprende conoscenza solo per un attimo tra le scosse."
     },
     "spettri_dell_acqua": {
         "name": "Gli Spettri dell'Acqua",
@@ -2461,7 +2381,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 4,
         "ca": 9,
-        "desc": "Raggiungete la riva interna della caverna naturale proprio davanti al bacino d'acqua che conduce al tunnel sottomarino verso la superficie. Qui gli ultimi superstiti d'élite della spedizione dei Cavalcantici di Foscoclivo vi attendono in formazione disperata: vedendo che il vostro portatore è riuscito là dove il loro ha fallito, tentano il tutto per tutto per abbatterlo e strappargli l'Yrtite all'ultimo metro prima dell'immersione.",
+        "desc": "Raggiungete la riva interna della caverna naturale proprio davanti al bacino d'acqua che conduce al tunnel sottomarino verso la superficie. Qui gli ultimi superstiti d'élite dei Cavalcantici di Foscoclivo vi attendono in formazione disperata per strapparvi l'Yrtite all'ultimo metro prima dell'immersione. Vedendo i nemici puntare dritti verso Alastorta inerme adagiato sulla roccia, Pancrazio si piazza davanti a suo padre con la furia di un leone, affiancato da Temistocle, Pandora, Cassio e Ofelia.",
         "fasi": [
             { "soglia": 70, "testo": "Gli ultimi Cavalcantici serrano la formazione con un grido disperato.", "azioni": ["grido_di_battaglia"] },
             { "soglia": 40, "testo": "Tutte le lame cercano il vostro portatore.", "azioni": ["bersaglio_marcato"] }
@@ -2488,7 +2408,7 @@ window.LIBRERIA.bestiario = {
         "att": 8,
         "dmg": 5,
         "ca": 9,
-        "desc": "State per tuffarvi nel passaggio sottomarino finale quando le acque e le ombre della caverna esplodono davanti a voi. A sbarrarvi l'unica via di salvezza mentre Loch Ein muore alle vostre spalle c'è Emrys dei Cavalcantici, l'uomo che oltre due anni fa chiuse Alastorta e Cassio nella camera del sigillo fuggendo con il calco dell'iscrizione; ma non è solo. Accanto a lui si erge il corpo rianimato e posseduto di Morwenna, avvolta da flussi di tenebra vivente e con gli occhi vitrei spalancati — quello stesso corpo che Emrys aveva deposto oltre due anni fa nella stanza buia della fortezza di Anoeth. Dalle labbra esangui della Cavalcantica caduta risuona quella voce profonda, rauca e antica che si era risvegliata ad Anoeth e che ha manovrato nell'ombra persino Foscoclivo per attendere che un portatore dotato della scintilla ancestrale liberasse per lei l'Yrtite: \"Dignitas... portatori inconsapevoli... l'energia si propaga e il banchetto è finalmente pronto!\" Mentre Pandora sente un brivido gelido percorrerle la schiena di fronte a quell'entità primordiale che persino a lei appare come un abisso divoratore, la volta della caverna precipita in frantumi e le acque del lago irrompono con furia omicida. Con il portatore dell'Yrtite che lotta contro il veleno nelle proprie vene, dovete affrontare Emrys e l’Incarnazione dell'Entità Affamata in un ultimo, disperato scontro per conquistare la superficie e riportare il segreto di Loch Ein a Zefiro!",
+        "desc": "State per immergervi nel passaggio sottomarino finale con Alastorta svenuto quando le acque e le ombre della caverna esplodono davanti a voi. A sbarrarvi l'unica via di salvezza mentre Loch Ein muore alle vostre spalle c'è Emrys dei Cavalcantici — il traditore che oltre due anni fa chiuse Alastorta e Cassio nella camera del sigillo — affiancato dal corpo rianimato e posseduto di Morwenna, avvolta da flussi di tenebra vivente e con gli occhi vitrei spalancati. Dalle labbra esangui della Cavalcantica caduta risuona quella voce profonda, rauca e antica che si era risvegliata ad Anoeth: \"Dignitas... portatori inconsapevoli... l'energia si propaga e il banchetto è finalmente pronto!\". Alla vista di Emrys che sorride fissando il corpo inerme e avvelenato di suo padre, Pancrazio esplode di una furia glaciale e incontenibile, piantandosi davanti ad Alastorta, mentre Ofelia, Cassio e Temistocle serrano i ranghi attorno al Primarca. Accanto a loro, Pandora fa un passo avanti stringendo l'alabarda con la lucida, amara certezza di chi ha appena compreso la propria nudità spirituale: non può più nascondersi dietro il nome di Arvale né sperare nella grazia di Asi che non le rispondono più per colpa delle sue stesse mancanze, proprio come Balinor le aveva fatto intuire tra queste stesse rovine. Senza alcuna voce divina alle proprie spalle, ma forte soltanto del proprio ferro e del legame con i propri cugini, si prepara a combattere al fianco di Pancrazio, Cassio, Ofelia e Temistocle contro Emrys e l'Incarnazione dell'Entità Affamata, in un ultimo scontro mortale per portare in salvo Alastorta e il segreto di Loch Ein fino alla superficie!",
         "fasi": [
             { "soglia": 75, "testo": "La voce antica dell'Entità risuona dalle labbra di Morwenna: il terrore vi stringe il cuore.", "azioni": ["terrore"] },
             { "soglia": 50, "testo": "L'Entità Affamata si nutre: il banchetto è cominciato.", "azioni": ["sete_di_sangue"] },
@@ -2696,6 +2616,73 @@ window.LIBRERIA.bestiario = {
         ],
         "speciali": [
             { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "casuale", "prob": 30 }
+        ]
+    },
+    "colosso_di_macerie": {
+        "name": "Il Colosso di Macerie",
+        "image": "",
+        "hp": 34,
+        "maxHp": 34,
+        "att": 8,
+        "dmg": 2,
+        "ca": 9,
+        "desc": "Scendendo la scalinata monumentale che collega il Palazzo alla Grande Piazza Circolare, le ultime ondate d'energia liberate dall'Yrtite fondono i detriti della scalinata e i cristalli della volta in un gigantesco guardiano di pietra viva e luce malata, deciso a impedirvi di portare il cuore di Loch Ein oltre i confini del Palazzo.",
+        "fasi": [
+            { "soglia": 60, "testo": "Le macerie si saldano attorno al colosso come una corazza di pietra viva.", "azioni": ["corazza_di_pietra"] },
+            { "soglia": 30, "testo": "Il colosso si spacca e scaglia schegge di pietra e luce malata tutto intorno.", "azioni": ["colpo_area"] }
+        ]
+    },
+    "abomini_della_piazza": {
+        "name": "Gli Abomini della Piazza",
+        "image": "",
+        "hp": 21,
+        "maxHp": 21,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "La metà inferiore della Grande Piazza è ormai un lago ribollente di detriti e schiuma. Dalle crepe allagate emergono Esùridi e creature d'ombra scatenate dal collasso di Loch Ein, che si avventano su di voi mentre cercate di raggiungere i viali verso i quartieri alti.",
+        "speciali": [
+            { "quando": "inizio_round", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 30 }
+        ]
+    },
+    "cavalcantici_intrappolati": {
+        "name": "I Cavalcantici Intrappolati",
+        "image": "",
+        "hp": 21,
+        "maxHp": 21,
+        "att": 7,
+        "dmg": 2,
+        "ca": 8,
+        "desc": "Tra i frammenti delle torri astronomiche incrociate una pattuglia di Cavalcantici rimasta tagliata fuori dalla ritirata: disperati e furiosi, tentano di abbattervi per rubare le vostre attrezzature di risalita e il frammento di Yrtite. Pancrazio, col volto contratto in una smorfia di rabbia incontenibile, non lascia loro nemmeno il tempo di finire la frase prima di caricarli.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "danni", "val": 1, "bersaglio": "piu_debole", "prob": 25 }
+        ]
+    },
+    "campione_corrotto": {
+        "name": "Il Campione Corrotto",
+        "image": "",
+        "hp": 38,
+        "maxHp": 38,
+        "att": 8,
+        "dmg": 4,
+        "ca": 9,
+        "desc": "Lungo il viale principale del Quartiere dei Calcoli Matematici ormai mezzo sommerso, un veterano corazzato di Foscoclivo — con gli occhi iniettati del bagliore violaceo dell'infezione che ha respirato laggiù — guida i suoi ultimi uomini in un assalto suicida pur di non farvi uscire vivi con l'Yrtite.",
+        "fasi": [
+            { "soglia": 70, "testo": "Il veterano punta il più forte di voi e lo sfida da solo.", "azioni": ["duellante"] },
+            { "soglia": 35, "testo": "Con il viale che sprofonda, il Campione colpisce senza più badare a difendersi.", "azioni": ["frenesia"] }
+        ]
+    },
+    "acque_nere": {
+        "name": "Le Acque Nere",
+        "image": "",
+        "hp": 24,
+        "maxHp": 24,
+        "att": 8,
+        "dmg": 3,
+        "ca": 8,
+        "desc": "Risalendo lungo il fianco occidentale verso l'uscita della città, costeggiate il margine allagato del grande Anfiteatro in rovina. Dalle pozze nere che hanno sommerso l'antico mosaico di Yr Drazul balzano fuori predatori acquatici mutati e Mantombre di lago, che tentano di trascinare nell'arena voi e il Primarca svenuto.",
+        "speciali": [
+            { "quando": "colpisce", "fai": "cura", "val": 1 }
         ]
     }
 };

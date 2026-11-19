@@ -13,7 +13,8 @@ function getPath(obj, path) {
 function setPath(obj, path, value) {
     const keys = path.split('.');
     const last = keys.pop();
-    const target = keys.reduce((o, k) => (o[k] && typeof o[k] === 'object' ? o[k] : (o[k] = {})), obj);
+    // Una chiave numerica dopo (es. "testiSacrificio.0") crea un elenco, non un oggetto
+    const target = keys.reduce((o, k, i) => (o[k] && typeof o[k] === 'object' ? o[k] : (o[k] = /^\d+$/.test(keys[i + 1] ?? last) ? [] : {})), obj);
     target[last] = value;
 }
 function deletePath(obj, path) {

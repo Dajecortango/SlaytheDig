@@ -53,7 +53,8 @@ function formatJson(value, indent = 0) {
     const isFlat = x => x === null || typeof x !== 'object' || (Array.isArray(x) && x.every(y => y === null || typeof y !== 'object'));
     if (value === null || typeof value !== 'object') return JSON.stringify(value);
     if (Array.isArray(value)) {
-        if (value.every(isFlat)) return JSON.stringify(value).replace(/,/g, ', ');
+        // Elenco corto su una riga (le virgola dentro i testi restano come sono); testi lunghi uno per riga
+        if (value.every(isFlat) && !value.some(x => typeof x === 'string' && x.length > 120)) return '[' + value.map(x => formatJson(x)).join(', ') + ']';
         return '[\n' + value.map(x => padIn + formatJson(x, indent + 4)).join(',\n') + '\n' + pad + ']';
     }
     const entries = Object.entries(value);
