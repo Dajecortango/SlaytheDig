@@ -326,6 +326,13 @@ window.CAMPAIGNS["loch_ein_parte_3"] = {
                     { "effect": "party_damage", "val": 1 }
                 ]
             }
+        },
+        "fontana_dell_essenza": {
+            "title": "La Fontana dell'Essenza",
+            "desc": "In una nicchia del salone allagato una fontana dei Firmamentisti pulsa ancora di luce azzurra: una conca d'argento coperta di glifi, che chiede \"essenza viva\" in cambio delle monete di Loch Ein custodite nel basamento. Alastorta riconosce lo schema: con questo congegno i Firmamentisti pagavano chi estraeva l'Yrtite, prendendo in cambio un po' della sua forza. Ogni goccia versata nella conca fa scivolare fuori una moneta antica, e il saccheggiatore accampato poco più avanti le accetterà di certo.",
+            "ignoreText": "Lasciate la fontana alla sua luce azzurra: il sangue vi servirà tutto per uscire vivi da Loch Ein.",
+            "successText": "La conca beve il vostro sangue e il basamento lascia cadere monete d'argento antiche, fredde come l'acqua del lago. Le stringete in pugno, pallidi ma più ricchi.",
+            "stat": "hp"
         }
     },
     "merchants": {
@@ -382,10 +389,10 @@ window.CAMPAIGNS["loch_ein_parte_3"] = {
         { "id": 28, "level": 11, "x": 550, "type": "rest", "title": "Livello 12 - Il Cerchio dei Firmamentisti", "icon": "⛺", "done": false, "active": false, "next": [29], "image": "", "restId": "cerchio_dei_firmamentisti" },
         { "id": 29, "level": 12, "x": 440, "type": "story", "title": "Livello 13 - Il Cuore di Loch Ein", "icon": "📜", "done": false, "active": false, "next": [30, 31, 32], "image": "", "storyId": "presa_dell_yrtite" },
         { "id": 30, "level": 13, "x": 220, "type": "challenge", "title": "Livello 14 - Il Crollo del Salone delle Risposte", "icon": "❓", "done": false, "active": false, "next": [33], "image": "", "challengeId": "crollo_salone_delle_risposte" },
-        { "id": 31, "level": 13, "x": 440, "type": "combat", "title": "Livello 14 - Le Ombre del Sigillo", "icon": "🗡️", "done": false, "active": false, "next": [33, 34], "image": "", "enemy": "ombre_del_sigillo" },
+        { "id": 31, "level": 13, "x": 440, "type": "combat", "title": "Livello 14 - Le Ombre del Sigillo", "icon": "🗡️", "done": false, "active": false, "next": [33, 58, 34], "image": "", "enemy": "ombre_del_sigillo" },
         { "id": 32, "level": 13, "x": 660, "type": "challenge", "title": "Livello 14 - L'Onda d'Urto nelle Gallerie", "icon": "❓", "done": false, "active": false, "next": [34], "image": "", "challengeId": "onda_d_urto_nelle_gallerie" },
-        { "id": 33, "level": 14, "x": 330, "type": "combat", "title": "Livello 15 - I Superstiti di Foscoclivo in Fuga", "icon": "🗡️", "done": false, "active": false, "next": [35, 36], "image": "", "enemy": "superstiti_di_foscoclivo" },
-        { "id": 34, "level": 14, "x": 550, "type": "combat", "title": "Livello 15 - Le Bestie in Fuga dall'Abisso", "icon": "🗡️", "done": false, "active": false, "next": [36, 37], "image": "", "enemy": "bestie_in_fuga_dall_abisso" },
+        { "id": 33, "level": 14, "x": 220, "type": "combat", "title": "Livello 15 - I Superstiti di Foscoclivo in Fuga", "icon": "🗡️", "done": false, "active": false, "next": [35, 36], "image": "", "enemy": "superstiti_di_foscoclivo" },
+        { "id": 34, "level": 14, "x": 660, "type": "combat", "title": "Livello 15 - Le Bestie in Fuga dall'Abisso", "icon": "🗡️", "done": false, "active": false, "next": [36, 37], "image": "", "enemy": "bestie_in_fuga_dall_abisso" },
         { "id": 35, "level": 15, "x": 220, "type": "challenge", "title": "Livello 16 - La Biblioteca in Fiamme", "icon": "❓", "done": false, "active": false, "next": [38], "image": "", "challengeId": "biblioteca_in_fiamme" },
         { "id": 36, "level": 15, "x": 440, "type": "merchant", "title": "Livello 16 - Il Saccheggiatore Disperato", "icon": "🪙", "done": false, "active": false, "next": [38, 39], "image": "", "merchantId": "saccheggiatore_disperato" },
         { "id": 37, "level": 15, "x": 660, "type": "combat", "title": "Livello 16 - Il Crollo delle Colonne", "icon": "🗡️", "done": false, "active": false, "next": [39], "image": "", "enemy": "crollo_delle_colonne" },
@@ -408,6 +415,7 @@ window.CAMPAIGNS["loch_ein_parte_3"] = {
         { "id": 54, "level": 22, "x": 550, "type": "combat", "title": "Livello 23 - Il Ritorno delle Mantombre", "icon": "🗡️", "done": false, "active": false, "next": [56], "image": "", "enemy": "ritorno_delle_mantombre" },
         { "id": 55, "level": 23, "x": 330, "type": "rest", "title": "Livello 24 - La Roccia dell'Immersione", "icon": "⛺", "done": false, "active": false, "next": [57], "image": "", "restId": "roccia_dell_immersione" },
         { "id": 56, "level": 23, "x": 550, "type": "rest", "title": "Livello 24 - L'Arco di Calcite", "icon": "⛺", "done": false, "active": false, "next": [57], "image": "", "restId": "arco_di_calcite" },
-        { "id": 57, "level": 24, "x": 440, "type": "combat", "title": "Livello 25 - Il Banchetto dell'Ombra e il Traditore di Anoeth", "icon": "👑", "done": false, "active": false, "next": [], "image": "", "enemy": "emrys_e_l_entita_affamata" }
+        { "id": 57, "level": 24, "x": 440, "type": "combat", "title": "Livello 25 - Il Banchetto dell'Ombra e il Traditore di Anoeth", "icon": "👑", "done": false, "active": false, "next": [], "image": "", "enemy": "emrys_e_l_entita_affamata" },
+        { "id": 58, "level": 14, "x": 440, "type": "challenge", "title": "Livello 15 - La Fontana dell'Essenza", "icon": "❓", "done": false, "active": false, "next": [36], "image": "", "challengeId": "fontana_dell_essenza" }
     ]
 };

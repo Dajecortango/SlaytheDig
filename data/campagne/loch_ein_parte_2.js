@@ -401,7 +401,7 @@ window.CAMPAIGNS["loch_ein_parte_2"] = {
             "done": false,
             "active": false,
             "next": [13, 14],
-            "image": "immagini/10_osservatorio_minore.webp",
+            "image": "immagini/l_osservatorio_minore.webp",
             "challengeId": "astrolabio_firmamentisti"
         },
         { "id": 12, "level": 5, "x": 220, "type": "elite", "title": "Livello 6 - L'Agente dell'Ombra", "icon": "👹", "done": false, "active": false, "next": [15], "image": "immagini/03_agente_dell_ombra.webp", "enemy": "agente_ombra_anoeth" },
@@ -448,7 +448,7 @@ window.CAMPAIGNS["loch_ein_parte_2"] = {
             "image": "immagini/inondazione_nella_citta_sotterranea_in_rovina.webp",
             "enemy": "necubri_inondazione"
         },
-        { "id": 20, "level": 8, "x": 330, "type": "rest", "title": "Livello 9 - L'Osservatorio Minore", "icon": "⛺", "done": false, "active": false, "next": [22], "image": "immagini/01_casa_dalle_finestre_a_stella.webp", "restId": "osservatorio_minore" },
+        { "id": 20, "level": 8, "x": 330, "type": "rest", "title": "Livello 9 - L'Osservatorio Minore", "icon": "⛺", "done": false, "active": false, "next": [22], "image": "immagini/10_osservatorio_minore.webp", "restId": "osservatorio_minore" },
         { "id": 21, "level": 8, "x": 550, "type": "challenge", "title": "Livello 9 - Il Torrente Sotterraneo", "icon": "❓", "done": false, "active": false, "next": [22], "image": "immagini/il_torrente_sotterraneo.webp", "challengeId": "torrente_sotterraneo" },
         { "id": 22, "level": 9, "x": 440, "type": "story", "title": "Livello 10 - Il cuore di Loch Ein", "icon": "📜", "done": false, "active": false, "next": [23, 24, 25], "image": "", "storyId": "trama_meta_percorso" },
         { "id": 23, "level": 10, "x": 220, "type": "combat", "title": "Livello 11 - Le Gradinate Spezzate", "icon": "🗡️", "done": false, "active": false, "next": [26], "image": "immagini/le_gradinate_spezzate.webp", "enemy": "aracnomantropi_gradinate" },

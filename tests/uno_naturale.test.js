@@ -17,9 +17,6 @@ module.exports = (t, carica) => {
         aiace.immaginiUno.forEach((p, i) => t.ok(img[i].includes(p), `immagine ${i + 1} a turno`));
         t.ok(img[giri].includes(aiace.immaginiUno[giri % aiace.immaginiUno.length]), 'poi ricomincia');
         aiace.suoniUno.forEach((p, i) => t.uguale(p, suoni[i]));
-        // Online il suono viaggia nell'elemento: la pagina del giocatore lo suona una volta per comparsa (data-uno)
-        t.uguale(suoni[giri], g.eval('__ultimo.dataset.suono'));
-        t.ok(g.eval('__ultimo.dataset.uno') !== undefined);
         g.mostraImmagineUno(1, 'Aiace Dignitas');  // anche col solo nome (preghiera)
         t.uguale(giri + 2, g.eval('__suoni').length);
     });

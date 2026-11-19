@@ -81,13 +81,24 @@ function curseText(curse) {
     return typeof curse === 'string' ? curse : curse.text;
 }
 
+function relicHeroTarget(effects) {
+    const e = (effects || []).find(x => /^hero_/.test(x.effect));
+    if (!e) return null;
+    const vivi = stato.party.filter(h => h.hp > 0);
+    if (!vivi.length) return null;
+    return e.stat ? vivi.reduce((b, h) => (h[e.stat] || 0) < (b[e.stat] || 0) ? h : b) : vivi[0];
+}
+
 // Dà al party la reliquia della libreria con questo id (bottino degli elite, mercante)
 function grantRelic(relicId) {
     const relic = LIBRERIA.reliquie[relicId];
     if (!relic || hasRelic(relicId)) return null;
     const owned = { ...relic, id: relicId };
     stato.unlockedRelics.push(owned);
-    applyEffects(relic.effects);
+    // Effetti "hero_*" (es. +1 Fede a un eroe): senza una prova vanno a un eroe solo, quello in piedi
+    // con la statistica più bassa (il primo della compagnia a parità), non a tutti
+    const eroe = relicHeroTarget(relic.effects);
+    applyEffects(relic.effects, eroe);
     discover('relics', relic.name);
     return owned;
 }

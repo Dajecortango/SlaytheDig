@@ -24,7 +24,8 @@
 
         function startChallenge(challengeId) {
             showScreen('screenChallenge');
-            stato.challengeState = challengesData[challengeId] || {
+            // Una copia: la sfida del sacrificio conta lì i sacrifici fatti, senza toccare i dati della campagna
+            stato.challengeState = { ...(challengesData[challengeId] || {
                 title: "Sfida",
                 desc: "descrizione da scrivere",
                 ignoreText: "descrizione da scrivere",
@@ -32,7 +33,7 @@
                 failText: "descrizione da scrivere",
                 stat: "str",
                 cd: 6
-            };
+            }) };
 
             document.getElementById('challengeTitle').textContent = stato.challengeState.title;
             roadPaidSnapshot = null;
@@ -48,12 +49,18 @@
             const roadBox = document.getElementById('challengeRoads');
             if (roadBox) roadBox.innerHTML = roads.map((r, i) => `<button class="btn-block" ${azione('challengeChooseRoad', i)} ${roadCoinCost(r) > stato.partyCoins ? 'disabled' : ''}>${String.fromCharCode(97 + i)}) ${esc(roadLabel(r, stato.challengeState))}</button>`).join('');
             const approachBtn = document.querySelector('#challengeStage1 [data-args=\'[true]\']');
-            if (approachBtn) approachBtn.classList.toggle('hidden', roads.length > 0);
+            // Sfida del sacrificio: niente strade, un pulsante solo per offrire HP
+            const sacrificio = isSacrifice(stato.challengeState);
+            if (roadBox && sacrificio) roadBox.innerHTML = '';
+            if (approachBtn) {
+                approachBtn.classList.toggle('hidden', roads.length > 0 && !sacrificio);
+                approachBtn.textContent = sacrificio ? 'a) Offrite il vostro sangue' : 'a) Uno di voi si avvicina';
+            }
             // La prova finale non si può lasciar perdere
             const ignoreBtn = document.querySelector('#challengeStage1 [data-args=\'[false]\']');
             if (ignoreBtn) ignoreBtn.classList.toggle('hidden', isFinalNode());
             // La lettera di "Lascia perdere" segue quelle dei modi di affrontarla
-            if (ignoreBtn) ignoreBtn.textContent = `${String.fromCharCode(97 + Math.max(1, roads.length))}) Lascia perdere`;
+            if (ignoreBtn) ignoreBtn.textContent = `${String.fromCharCode(97 + Math.max(1, sacrificio ? 1 : roads.length))}) Lascia perdere`;
             document.getElementById('challengeStage2').classList.add('hidden');
             document.getElementById('diceChallengeSection').classList.add('hidden');
             document.getElementById('closeChallengeBtn').classList.add('hidden');
@@ -68,7 +75,11 @@
                 document.getElementById('closeChallengeBtn').classList.remove('hidden');
                 return;
             }
+            if (isSacrifice(stato.challengeState)) { renderSacrifice(); return; }
             document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> Un membro della compagnia si fa avanti per affrontare la prova.`;
+            document.getElementById('challengePickLabel').textContent = 'Scegli quale eroe affronta la sfida:';
+            document.getElementById('challengeSacrificeDoneBtn').classList.add('hidden');
+            document.getElementById('challengeHeroBackBtn').classList.remove('hidden');
             document.getElementById('challengeStage1').classList.add('hidden');
             document.getElementById('challengeStage2').classList.remove('hidden');
             selectedChallengeHero = null;
@@ -78,6 +89,48 @@
                 chance: h => challengeChanceInfo(challengeModifiers(h)).pct,
                 sub: h => { const mods = challengeModifiers(h); const bonus = mods.heroBonus ? ` ${mods.heroBonus > 0 ? '+' : '−'}${Math.abs(mods.heroBonus)}` : ''; return `${esc(label)} ${mods.statValue}${bonus} · ${challengeChanceInfo(mods).pct}%`; },
                 tip: h => challengeChanceInfo(challengeModifiers(h)).long });
+        }
+
+        // Sfida del sacrificio (regole in js/motore/prove.js): si tocca un eroe per dare 1 HP alla volta, "Basta così" chiude.
+        // Prima del primo sacrificio si può tornare indietro e lasciar perdere
+        function renderSacrifice() {
+            const c = stato.challengeState;
+            const { scudi } = sacrificeRules(c);
+            const restano = sacrificesLeft(c);
+            const fatti = c.sacrifici || 0;
+            document.getElementById('challengeNarrativeBox').innerHTML = `<strong>Descrizione:</strong> ${kw(c.desc)}`;
+            document.getElementById('challengeStage1').classList.add('hidden');
+            document.getElementById('challengeStage2').classList.remove('hidden');
+            // Sopra i ritratti, sempre in vista: quanto vale un HP, quanto avete dato, quante volte ancora (mai sotto 1 HP)
+            document.getElementById('challengePickLabel').textContent = (restano ? `Chi offre 1 HP? +${scudi} Scudi ciascuno, ancora ${restano} ${restano === 1 ? 'volta' : 'volte'}, nessuno sotto 1 HP.` : 'Non potete offrire altro.')
+                + (fatti ? ` Finora: ${fatti} HP per ${c.scudiSacrificio} Scudi.` : '');
+            selectedChallengeHero = null;
+            document.getElementById('challengeHeroPick').innerHTML = restano ? heroPickHtml(stato.party.filter(h => canSacrifice(h, c)), 'confirmChallengeHero', {
+                sub: h => `HP ${h.hp}/${h.maxHp} · +${scudi} Scudi`,
+                tip: h => `Perde 1 HP (resta a ${h.hp - 1}) e la compagnia guadagna ${scudi} Scudi` }) : '';
+            const done = document.getElementById('challengeSacrificeDoneBtn');
+            done.classList.toggle('hidden', !fatti);
+            document.getElementById('challengeHeroBackBtn').classList.toggle('hidden', fatti > 0);
+        }
+        function challengeSacrifice(nome) {
+            const c = stato.challengeState;
+            const hero = stato.party.find(h => h.name === nome);
+            const r = resolveSacrifice(hero, c);
+            if (!r) { uiError('Non può offrire altro sangue'); return; }
+            updatePartyStatusBars();
+            uiMessage(`${r.hero}: −1 HP, +${r.scudi} Scudi`);
+            synthSfx('hit');
+            renderSacrifice();
+        }
+        function challengeSacrificeDone() {
+            const c = stato.challengeState;
+            if (!isSacrifice(c)) return;
+            const fatti = c.sacrifici || 0;
+            document.getElementById('challengeNarrativeBox').innerHTML = fatti
+                ? `<strong>Descrizione:</strong> ${kw(c.successText || '')}<br><br>Avete dato <b>${fatti} HP</b> e guadagnato <b>${c.scudiSacrificio} Scudi</b>.`
+                : `<strong>Descrizione:</strong> ${kw(c.ignoreText || '')}`;
+            document.getElementById('challengeStage2').classList.add('hidden');
+            document.getElementById('closeChallengeBtn').classList.remove('hidden');
         }
 
         // Scelta di una strada: la prova prende statistica, difficoltà, testi, premio e punizione di quella strada
@@ -157,6 +210,7 @@
         let selectedChallengeHero = null;
         let challengeRetryPending = false;   // Era solo una prova!: il primo tiro è fallito, si aspetta il secondo
         function confirmChallengeHero(nome) {
+            if (isSacrifice(stato.challengeState)) { challengeSacrifice(nome); return; }
             const scelto = stato.party.find(p => p.hp > 0 && p.name === nome);
             if (!scelto) return;
             challengeRetryPending = false;

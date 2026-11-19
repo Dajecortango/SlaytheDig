@@ -171,6 +171,13 @@ window.CAMPAIGNS["fredlos_parte_3"] = {
                     { "effect": "party_damage", "val": 2 }
                 ]
             }
+        },
+        "pozzo_dei_voti_di_sangue": {
+            "title": "Il Pozzo dei Voti di Sangue",
+            "desc": "Ai piedi di un menhir annerito dal fuoco si apre un pozzo di pietra colmo di monete d'argento ossidate e di anelli spezzati: è un antico pozzo votivo, dove i viandanti del Nord versavano il proprio sangue in cambio della protezione degli Asi. Sul bordo una fila di rune detta l'unica regola del luogo: chi offre sangue può prendere tanto argento quanto vale la sua offerta. Le gocce ancora fresche sulla pietra dicono che Kesia è passata di qui, e che non ha pagato nulla.",
+            "ignoreText": "Nessuno di voi vuole versare sangue per un pugno d'argento: lasciate il pozzo ai morti e riprendete la caccia.",
+            "successText": "Il sangue scivola lungo le rune del bordo e l'acqua nera del pozzo sembra accettarlo. Raccogliete l'argento che vi spetta, con le mani ancora tremanti, e proseguite verso il campo del gothi.",
+            "stat": "hp"
         }
     },
     "merchants": {
@@ -414,14 +421,14 @@ window.CAMPAIGNS["fredlos_parte_3"] = {
             "icon": "🗡️",
             "done": false,
             "active": false,
-            "next": [22],
+            "next": [22, 34],
             "image": "immagini/fredlos_parte_3/9c_cercatori_di_saghe_di_fredlos_l_oppresso.webp",
             "enemy": "cercatori_di_saghe"
         },
         {
             "id": 21,
             "level": 9,
-            "x": 330,
+            "x": 220,
             "type": "rest",
             "title": "Livello 10 - L'Antico Rifugio tra Zavstra e Leblya",
             "icon": "⛺",
@@ -434,7 +441,7 @@ window.CAMPAIGNS["fredlos_parte_3"] = {
         {
             "id": 22,
             "level": 9,
-            "x": 550,
+            "x": 440,
             "type": "challenge",
             "title": "Livello 10 - Il Sonno del Kornugan",
             "icon": "❓",
@@ -562,6 +569,7 @@ window.CAMPAIGNS["fredlos_parte_3"] = {
             "image": "immagini/fredlos_parte_3/14b_cerchio_dei_monoliti_neri.webp",
             "restId": "cerchio_dei_monoliti_neri"
         },
-        { "id": 33, "level": 14, "x": 440, "type": "combat", "title": "Livello 15 - L'Ultima Prova di Kesia", "icon": "👑", "done": false, "active": false, "next": [], "image": "immagini/fredlos_parte_3/15a_ultima_prova_di_kesia.webp", "enemy": "kesia_ultima_prova" }
+        { "id": 33, "level": 14, "x": 440, "type": "combat", "title": "Livello 15 - L'Ultima Prova di Kesia", "icon": "👑", "done": false, "active": false, "next": [], "image": "immagini/fredlos_parte_3/15a_ultima_prova_di_kesia.webp", "enemy": "kesia_ultima_prova" },
+        { "id": 34, "level": 9, "x": 660, "type": "challenge", "title": "Livello 10 - Il Pozzo dei Voti di Sangue", "icon": "❓", "done": false, "active": false, "next": [25], "image": "", "challengeId": "pozzo_dei_voti_di_sangue" }
     ]
 };

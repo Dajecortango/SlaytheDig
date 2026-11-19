@@ -175,11 +175,11 @@ window.CAMPAIGNS["fredlos_parte_2"] = {
             "stat": "fth",
             "cd": 9,
             "reward": {
-                "type": "coins",
+                "type": "item",
                 "name": "Il carico della slitta",
-                "desc": "+18 Scudi alla cassa della compagnia",
+                "desc": "Chi ha recuperato il carico trova una Pozione di cura",
                 "effects": [
-                    { "effect": "coins", "val": 18 }
+                    { "effect": "hero_item", "item": "pozione", "val": 1 }
                 ]
             },
             "punishment": {

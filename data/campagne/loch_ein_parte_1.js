@@ -150,7 +150,14 @@ window.CAMPAIGNS["loch_ein_parte_1"] = {
             "failText": "Appena spostate la prima pietra, il terreno fangoso cede di schianto; una piccola frana vi travolge gli arti inferiori, costringendovi a uno sforzo logorante per liberarvi dai detriti.",
             "stat": "str",
             "cd": 9,
-            "reward": "sacca_del_contrabbandiere",
+            "reward": {
+                "type": "item",
+                "name": "Le scorte della prima spedizione",
+                "desc": "Chi si è calato nello scavo recupera due Unguenti Fortificanti",
+                "effects": [
+                    { "effect": "hero_item", "item": "unguento_fortificante", "val": 2 }
+                ]
+            },
             "punishment": {
                 "type": "injury",
                 "name": "Travolti dalla frana",

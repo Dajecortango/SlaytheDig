@@ -46,9 +46,14 @@
         #onlineBar { position: fixed; left: 210px; top: 6px; z-index: 1100; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: calc(50% - 360px); }
         #onlineBar .wc-panel { padding: 3px 10px; font-size: 0.85em; }
         #onlineBar .btn-small { padding: 2px 8px; }
-        @media (max-width: 1100px) { #onlineBar { left: 8px; top: calc(var(--top-h, 56px) + 6px); max-width: calc(100% - 16px); } }
+        @media (max-width: 1100px) { #onlineBar { left: 8px; top: calc(var(--top-h, 56px) + 6px); max-width: calc(100% - 16px); }
+            /* Sotto la barra (che qui scende sotto la barra in alto), non dietro */
+            #onlineScelta { top: calc(var(--top-h, 56px) + 78px); } }
         #onlineBar .wc-panel { padding: 8px 14px; }
         #onlineBar button.mio { outline: 2px solid var(--wc-yellow, gold); }
+        /* Musica ed effetti (disegnaBarra in server/public/online.js): spento = grigio e barrato */
+        #onlineBar .online-audio { min-width: 34px; }
+        #onlineBar .online-audio.spento { filter: grayscale(1) brightness(0.7); text-decoration: line-through; }
         #onlineAvviso { position: fixed; top: calc(var(--top-h, 56px) + 8px); left: 50%; transform: translateX(-50%); z-index: 1100; }
         #onlineTurno { color: var(--wc-yellow, gold); font-weight: bold; }
         .online-hidden { display: none !important; }
@@ -138,6 +143,7 @@
     <div id="wc3Tooltip" class="wc3-tooltip" role="tooltip"></div>
     <audio id="onlineMusica" loop preload="none"></audio>
     <script src="js/online-regole.js"></script>
+    <script src="js/suoni-sintetici.js"></script>
     <script src="js/vendor/morphdom-umd.min.js"></script>
     <script src="online-client.js"></script>
 </body>

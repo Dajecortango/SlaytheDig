@@ -16,12 +16,10 @@
 
         // Immagini "1 sul dado" degli eroi per nome (campo immaginiUno dei dati): a ogni 1 naturale ne appare
         // una, a rotazione, in dissolvenza sopra la schermata. È un figlio del body: online la vedono anche i giocatori.
-        // Insieme suona uno dei suoniUno, anche questi a rotazione. Online il suono viaggia nell'elemento
-        // (data-suono, data-uno = numero della comparsa): la pagina del giocatore lo suona una volta (suonaUno).
+        // Insieme suona uno dei suoniUno, anche questi a rotazione (online arriva ai giocatori come gli altri effetti, onlineSuono).
         const HERO_UNO_IMAGES = {};
         const HERO_UNO_SOUNDS = {};
         const heroUnoTurno = {};
-        let unoComparse = 0;
         const prossimoUno = (chiave, list) => { const i = (heroUnoTurno[chiave] || 0) % list.length; heroUnoTurno[chiave] = i + 1; return list[i]; };
         function mostraImmagineUno(valore, hero) {
             const name = hero && (typeof hero === 'string' ? hero : hero.name);
@@ -36,8 +34,6 @@
             const box = document.createElement('div');
             box.className = 'uno-apparizione';
             box.setAttribute('aria-hidden', 'true');
-            box.dataset.uno = String(++unoComparse);
-            if (suono) box.dataset.suono = suono;
             box.innerHTML = `<img src="${esc(src)}" alt="">`;
             box.style.animationDuration = `${animTime(3500)}ms`;
             box.addEventListener('animationend', () => box.remove());

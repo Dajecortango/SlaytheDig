@@ -77,9 +77,10 @@ function validateCampaign() {
     if (!camp.initialArmory.length) add('warn', 'Nessun oggetto iniziale: gli eroi partono senza oggetti da scegliere', 'items');
 
     Object.entries(camp.challenges).forEach(([k, c]) => {
-        if (!['int', 'fth', 'str'].includes(c.stat)) add('error', `Sfida <b>${k}</b>: statistica non valida`, 'challenges', k);
-        if (typeof c.cd !== 'number') add('error', `Sfida <b>${k}</b>: classe di difficoltà mancante`, 'challenges', k);
-        ['desc', 'successText', 'failText', 'ignoreText'].forEach(f => { if (!c[f]) add('warn', `Sfida <b>${k}</b>: testo "${f}" vuoto`, 'challenges', k); });
+        if (!['int', 'fth', 'str', 'hp'].includes(c.stat)) add('error', `Sfida <b>${k}</b>: statistica non valida`, 'challenges', k);
+        const sacrificio = c.stat === 'hp';
+        if (typeof c.cd !== 'number' && !sacrificio) add('error', `Sfida <b>${k}</b>: classe di difficoltà mancante`, 'challenges', k);
+        (sacrificio ? ['desc', 'successText', 'ignoreText'] : ['desc', 'successText', 'failText', 'ignoreText']).forEach(f => { if (!c[f]) add('warn', `Sfida <b>${k}</b>: testo "${f}" vuoto`, 'challenges', k); });
         [['reward', 'reliquie', 'ricompensa'], ['punishment', 'maledizioni', 'punizione']].forEach(([field, kind, label]) => {
             const v = c[field];
             if (typeof v === 'string' && !lib[kind][v]) add('error', `Sfida <b>${k}</b>: ${label} "${esc(v)}" non trovata in ${LIB_LABELS[kind]}`, 'challenges', k);
@@ -128,6 +129,7 @@ function validateCampaign() {
         if (!n.active && !incoming.has(n.id)) add('warn', `${name}: irraggiungibile (nessun nodo porta qui)`, 'map', n.id);
         if (checkImage(n.image) === 'missing') add('warn', `${name}: immagine non trovata ${n.image}`, 'map', n.id);
     });
+    if (!procedurale) sfideScudiSenzaMercante(camp, lib.reliquie).forEach(n => add('warn', `Nodo <b>${esc(n.title || n.id)}</b>: la sfida dà Scudi ma dopo non c'è più un mercante (spostala prima di un mercante o cambia il premio)`, 'map', n.id));
     const maxLevel = Math.max(0, ...nodes.map(n => n.level));
     if (nodes.length && !nodes.some(n => n.level === maxLevel && (n.next || []).length === 0)) add('warn', 'Nessun nodo finale senza collegamenti all\'ultimo livello', 'map');
 

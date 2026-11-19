@@ -7,9 +7,9 @@ window.LIBRERIA.reliquie = {
     "anello_d_arvale": {
         "type": "relic",
         "name": "Anello d'Arvale",
-        "desc": "+1 fede a tutti",
+        "desc": "+1 Fede a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "fth", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ]
     },
     "armatura_d_ordinanza": {
@@ -23,17 +23,17 @@ window.LIBRERIA.reliquie = {
     "benedetti_da_jag_antar": {
         "type": "relic",
         "name": "Benedetti da Jag Àntar",
-        "desc": "+1 ai tiri di attacco",
+        "desc": "+1 ai tiri di attacco a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "att_bonus", "val": 1 }
+            { "effect": "hero_stat", "stat": "att_bonus", "val": 1 }
         ]
     },
     "mappa_della_regione": {
         "type": "relic",
         "name": "Mappa della regione",
-        "desc": "+1 intelligenza al party",
+        "desc": "+1 Intelligenza a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "int", "val": 1 }
+            { "effect": "hero_stat", "stat": "int", "val": 1 }
         ]
     },
     "corno_antico": {
@@ -79,9 +79,9 @@ window.LIBRERIA.reliquie = {
     "frammento_di_yr_drazul": {
         "type": "relic",
         "name": "Bussola dell'Occhio Cieco",
-        "desc": "+1 a tutti i tiri di dado",
+        "desc": "+1 ai prossimi 6 tiri di dado, poi si rompe",
         "speciali": [
-            { "quando": "tiro", "fai": "bonus_tiro", "val": 1 }
+            { "quando": "tiro", "fai": "bonus_tiro", "val": 1, "limite": "capitolo", "volte": 6, "rompe": true }
         ]
     },
     "favore_di_valgoren": {
@@ -135,9 +135,9 @@ window.LIBRERIA.reliquie = {
     "lanterna_dei_morti": {
         "type": "relic",
         "name": "Lanterna dei morti",
-        "desc": "+1 permanente alla caratteristica Fede di tutti gli eroi",
+        "desc": "+1 permanente alla Fede a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "fth", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ]
     },
     "stendardo_da_battaglia": {
@@ -200,9 +200,9 @@ window.LIBRERIA.reliquie = {
     "benedizione_del_primigenio": {
         "type": "relic",
         "name": "Benedizione del Primigenio",
-        "desc": "+1 Fede a tutti",
+        "desc": "+1 Fede a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "fth", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ]
     },
     "sacca_del_contrabbandiere": {
@@ -242,25 +242,25 @@ window.LIBRERIA.reliquie = {
     "frammento_di_chiarezza": {
         "type": "relic",
         "name": "Frammento di Chiarezza",
-        "desc": "+1 ai tiri per colpire",
+        "desc": "+1 ai tiri per colpire a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "att_bonus", "val": 1 }
+            { "effect": "hero_stat", "stat": "att_bonus", "val": 1 }
         ]
     },
     "bussola_del_sopravvissuto": {
         "type": "relic",
         "name": "Bussola del Sopravvissuto",
-        "desc": "+1 Intelligenza a tutti",
+        "desc": "+1 Intelligenza a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "int", "val": 1 }
+            { "effect": "hero_stat", "stat": "int", "val": 1 }
         ]
     },
     "reliquia_del_monolite": {
         "type": "relic",
         "name": "Reliquia del Monolite",
-        "desc": "+1 Danno a tutti",
+        "desc": "+1 Danno a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "dmg", "val": 1 }
+            { "effect": "hero_stat", "stat": "dmg", "val": 1 }
         ]
     },
     "erbe_di_montagna": {
@@ -274,9 +274,9 @@ window.LIBRERIA.reliquie = {
     "lascito_del_caduto": {
         "type": "relic",
         "name": "Lascito del Caduto",
-        "desc": "La prova della tenacia di un Dignitas",
+        "desc": "La prova della tenacia di un Dignitas: +1 Forza a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "val": 1, "stat": "str" }
+            { "effect": "hero_stat", "val": 1, "stat": "str" }
         ]
     },
     "radice_delle_montagne": {
@@ -306,9 +306,9 @@ window.LIBRERIA.reliquie = {
     "polvere_boreale": {
         "type": "relic",
         "name": "Polvere Boreale",
-        "desc": "La scia luminescente del Gheist illumina il vero sentiero: +1 ai tiri delle prove",
+        "desc": "La scia luminescente del Gheist illumina il vero sentiero: +1 al tiro delle prossime 2 prove, poi si consuma",
         "speciali": [
-            { "quando": "prova", "fai": "bonus_tiro", "val": 1 }
+            { "quando": "prova", "fai": "bonus_tiro", "val": 1, "limite": "capitolo", "volte": 2, "rompe": true }
         ]
     },
     "scudo_dei_dignitas": {
@@ -354,9 +354,9 @@ window.LIBRERIA.reliquie = {
     "lamina_astrale_celestica": {
         "type": "relic",
         "name": "Lamina Astrale della Celestica",
-        "desc": "Costellazioni e ideogrammi universali della Celestica: +1 ai tiri delle prove",
+        "desc": "Costellazioni e ideogrammi universali della Celestica: +1 al tiro delle prossime 2 prove, poi si consuma",
         "speciali": [
-            { "quando": "prova", "fai": "bonus_tiro", "val": 1 }
+            { "quando": "prova", "fai": "bonus_tiro", "val": 1, "limite": "capitolo", "volte": 2, "rompe": true }
         ]
     },
     "appunti_sul_portatore": {
@@ -426,9 +426,9 @@ window.LIBRERIA.reliquie = {
     "tomo_illustrato_celestica": {
         "type": "relic",
         "name": "Tomo Illustrato della Celestica",
-        "desc": "Tavole dei glifi che contengono le radiazioni dell'Yrtite: +1 Intelligenza a tutti",
+        "desc": "Tavole dei glifi che contengono le radiazioni dell'Yrtite: +1 Intelligenza a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "int", "val": 1 }
+            { "effect": "hero_stat", "stat": "int", "val": 1 }
         ]
     },
     "placca_argento_runica": {
@@ -459,9 +459,9 @@ window.LIBRERIA.reliquie = {
     "bagliore_incorporeo_fiumi": {
         "type": "relic",
         "name": "Bagliore Incorporeo dei Fiumi",
-        "desc": "Il richiamo dei fiumi sotterranei di Yr: +1 Fede a tutti",
+        "desc": "Il richiamo dei fiumi sotterranei di Yr: +1 Fede a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "fth", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ]
     },
     "circuito_runico_tre_sovrani": {
@@ -499,9 +499,9 @@ window.LIBRERIA.reliquie = {
     "manoscritti_firmamentisti": {
         "type": "relic",
         "name": "Manoscritti dei Firmamentisti",
-        "desc": "Gli ultimi scritti salvati dalle fiamme: +1 ai tiri delle prove",
+        "desc": "Gli ultimi scritti salvati dalle fiamme: +1 al tiro delle prossime 2 prove, poi si consuma",
         "speciali": [
-            { "quando": "prova", "fai": "bonus_tiro", "val": 1 }
+            { "quando": "prova", "fai": "bonus_tiro", "val": 1, "limite": "capitolo", "volte": 2, "rompe": true }
         ]
     },
     "frammento_statua_sovrani": {
@@ -587,9 +587,9 @@ window.LIBRERIA.reliquie = {
     "benedizione_onirica_foscogelo": {
         "type": "relic",
         "name": "Benedizione Onirica dei Foscogelo",
-        "desc": "Un sogno degli Asi dalla Torre dei Sogni: +1 Fede a tutti",
+        "desc": "Un sogno degli Asi dalla Torre dei Sogni: +1 Fede a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "fth", "val": 1 }
+            { "effect": "hero_stat", "stat": "fth", "val": 1 }
         ]
     },
     "scheggia_del_flusside": {
@@ -627,9 +627,9 @@ window.LIBRERIA.reliquie = {
     "guanti_del_ghiacceterno": {
         "type": "relic",
         "name": "Guanti del Ghiacceterno",
-        "desc": "Presa salda sul ghiaccio vivo: +1 Forza a tutti",
+        "desc": "Presa salda sul ghiaccio vivo: +1 Forza a un eroe (chi supera la prova)",
         "effects": [
-            { "effect": "party_stat", "stat": "str", "val": 1 }
+            { "effect": "hero_stat", "stat": "str", "val": 1 }
         ]
     }
 };

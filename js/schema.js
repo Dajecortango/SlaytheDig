@@ -101,7 +101,9 @@ const DATI_SCHEMA = {
         difficolta: campo('oggetto', { schema: { vittoriaMin: NUMERO, vittoriaMax: NUMERO } }), procedurale: campo('oggetto')
     },
     sfida: {
-        title: OBBL(TESTO), stat: OBBL(campo('scelta', { valori: STATISTICHE_PROVA })), cd: OBBL(NUMERO), malus: NUMERO, bonusEroi: campo('oggetto'),
+        // stat "hp" = sfida del sacrificio (js/motore/prove.js): niente dado né CD, Scudi per HP e sacrifici al massimo
+        title: OBBL(TESTO), stat: OBBL(campo('scelta', { valori: { ...STATISTICHE_PROVA, hp: 'Sacrificio di HP' } })), cd: NUMERO, malus: NUMERO, bonusEroi: campo('oggetto'),
+        scudiPerHp: NUMERO, massimo: NUMERO,
         desc: TESTO, ignoreText: TESTO, successText: TESTO, failText: TESTO,
         reward: campo('riferimento'), punishment: campo('riferimento'), strade: campo('elenco', { schema: SCHEMA_STRADA })
     },

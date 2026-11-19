@@ -109,7 +109,7 @@
         ultimoSegnale = Date.now();
         const on = (ev, fn) => flusso.addEventListener(ev, e => { ultimoSegnale = Date.now(); try { fn(JSON.parse(e.data)); } catch (err) { console.error(err); } });
         on('parti', p => { codaParti = codaParti.then(() => p && p.z ? decomprimi(p.z) : p).then(applicaParti).catch(err => console.error(err)); });
-        on('stato', s => { stato = s || {}; aggiornaNome(); disegnaBarra(); musica(); segnaEroi(); disegnaScelta(); });
+        on('stato', s => { stato = s || {}; aggiornaNome(); disegnaBarra(); musica(); suoni(); segnaEroi(); disegnaScelta(); });
         on('master', m => mostraAvviso(m.online ? '' : (m.chiusa ? 'Il master ha chiuso la partita' : 'Il master non è collegato'), !m.online));
         on('avviso', a => mostraAvviso(a.testo));
         on('gmstato', renderModPanel);  // solo per il moderatore: il server manda questo evento solo ai suoi flussi
@@ -164,16 +164,6 @@
             if (v.paused) v.play().catch(() => {});
         });
     }
-    // 1 sul dado di un eroe (mostraImmagineUno in js/ritratti.js): l'immagine arriva con le sovrimpressioni,
-    // il suono è scritto nell'elemento; si suona una volta sola per comparsa (data-uno), anche se la regione si riaggiorna
-    let unoSuonato = null;
-    function suonaUno() {
-        const el = document.querySelector('#onlineOverlays .uno-apparizione[data-suono]');
-        if (!el || el.dataset.uno === unoSuonato) return;
-        unoSuonato = el.dataset.uno;
-        const a = new Audio(el.dataset.suono);
-        a.play().catch(() => {});
-    }
     function applicaParti(parti) {
         Object.entries(parti || {}).forEach(([k, html]) => {
             if (k === 'body') { document.body.className = 'online-guest ' + (html || ''); return; }
@@ -203,7 +193,6 @@
             applicaScorrimento(trasforma(vecchio, elementoDa(html)));
         });
         avviaVideo();
-        suonaUno();
         segnaEroi();
         disegnaScelta();  // i ritratti del pannello si prendono dalle regioni appena arrivate
     }
@@ -420,7 +409,11 @@
                 `<button class="btn-small ${mio === o.id ? 'mio' : ''}" data-action="onlineVota" data-args='${esc(JSON.stringify([v.id, o.id]))}'>${esc(o.label)} ${conta(v, o.id)}</button>`).join(' ')}</div>`);
         }
         if (stato.pronti && !spettatore) parti.push(`<div class="wc-panel">Pronti: ${stato.pronti.fatti.length}/${stato.pronti.totale}${stato.pronti.fatti.includes(nome) ? ' ✓' : ''}${ruolo === 'master' ? ' <button class="btn-small" data-action="onlineForzaPronti">Si parte</button>' : ''}</div>`);
-        parti.push(`<div class="wc-panel"><button class="btn-small" data-action="onlineMusica">${musicaAccesa() ? '🔊' : '🔇'} Musica</button></div>`);
+        // Due icone piccole (non scritte): la barra resta su una riga e non copre la scena
+        const tasto = (azione, acceso, icona, cosa) => `<button class="btn-small online-audio${acceso ? '' : ' spento'}" data-action="${azione}" title="${cosa} ${acceso ? 'accesa: tocca per spegnere' : 'spenta: tocca per accendere'}" aria-label="${cosa}" aria-pressed="${acceso}">${icona}</button>`;
+        // Nello stesso pannello del nome (il primo), così la barra sta su una riga
+        const audio = ` ${tasto('onlineMusica', musicaAccesa(), '🎵', 'Musica')} ${tasto('onlineEffetti', effettiAccesi(), '🔔', 'Effetti')}${audioBloccato && effettiAccesi() ? ' <button class="btn-small mio" data-action="onlineSbloccaAudio">Tocca per l’audio</button>' : ''}`;
+        parti[0] = parti[0].slice(0, -'</div>'.length) + audio + '</div>';
         $('onlineBar').innerHTML = parti.join('');
     }
     const conta = (v, id) => { const n = Object.values(v.voti || {}).filter(x => x === id).length; return n ? `· ${n}` : ''; };
@@ -436,6 +429,41 @@
 
     const musicaAccesa = () => { try { return localStorage.getItem('dignitas_online_musica') === '1'; } catch (e) { return false; } };
     window.onlineMusica = () => { try { localStorage.setItem('dignitas_online_musica', musicaAccesa() ? '0' : '1'); } catch (e) {} musica(); disegnaBarra(); };
+    // Effetti sonori del master (onlineSuono in js/online.js): file audio o suoni generati (js/suoni-sintetici.js).
+    // Accesi di base; si suonano solo i numeri nuovi, e al primo stato ricevuto quelli vecchi si danno per sentiti
+    const effettiAccesi = () => { try { return localStorage.getItem('dignitas_online_effetti') !== '0'; } catch (e) { return true; } };
+    window.onlineSbloccaAudio = () => { audioBloccato = false; disegnaBarra(); };  // il tocco stesso sblocca (pointerdown)
+    window.onlineEffetti = () => { try { localStorage.setItem('dignitas_online_effetti', effettiAccesi() ? '0' : '1'); } catch (e) {} disegnaBarra(); };
+    let ultimoSuono = null;
+    // Il browser non ha ancora avuto un tocco e rifiuta l'audio: la barra lo dice ("Tocca per l'audio") finché non si tocca
+    var audioBloccato = false;  // var: disegnaBarra può leggerla prima di questa riga
+    const bloccato = () => { if (!audioBloccato) { audioBloccato = true; disegnaBarra(); } };
+    function suoni() {
+        const lista = stato.suoni || [];
+        const ultimo = lista.length ? lista[lista.length - 1].n : 0;
+        // Primo stato, o il master ha ricominciato a contare (pagina ricaricata): niente suoni vecchi
+        if (ultimoSuono === null || ultimo < ultimoSuono) { ultimoSuono = ultimo; return; }
+        const nuovi = lista.filter(x => x.n > ultimoSuono);
+        ultimoSuono = ultimo;
+        if (!effettiAccesi()) return;
+        nuovi.forEach(x => {
+            if (x.synth) {
+                if (typeof suonoSintetico !== 'function') return;
+                suonoSintetico(x.synth, x.durata, 0.8);
+                if (sfxCtx && sfxCtx.state !== 'running') bloccato();
+                return;
+            }
+            if (!x.src) return;
+            const a = new Audio(x.src);
+            a.volume = Math.min(1, (x.volume || 0.7) * 0.8);
+            a.play().catch(e => { if (e && e.name === 'NotAllowedError') bloccato(); });
+        });
+    }
+    // I telefoni sbloccano l'audio solo dopo un tocco: al primo si sveglia il contesto dei suoni generati
+    document.addEventListener('pointerdown', () => {
+        try { if (typeof suonoSintetico === 'function' && (!sfxCtx || sfxCtx.state !== 'running')) { sfxCtx = sfxCtx || new (window.AudioContext || window.webkitAudioContext)(); sfxCtx.resume(); } } catch (e) {}
+        if (audioBloccato) { audioBloccato = false; disegnaBarra(); }
+    }, true);
     function musica() {
         const a = $('onlineMusica');
         const src = musicaAccesa() && stato.musica ? stato.musica : '';

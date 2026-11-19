@@ -548,4 +548,22 @@ module.exports = (t, carica) => {
         h.onlineEseguiClic({ giocatore: null, azione: '__vota', args: [id, 'a'] });
         t.uguale({}, h.eval('onlineState.voto.voti'));
     });
+
+    t.test('effetti sonori del master: vanno ai giocatori con un numero, non il clic dei pulsanti né il passaggio del mouse', () => {
+        const h = carica();
+        h.eval(`globalThis.Audio = function () { return { play: () => Promise.resolve() }; };
+            globalThis.__post = []; globalThis.onlinePost = (url, body) => { __post.push({ url, body }); return Promise.resolve({}); };`);
+        h.playSfx('audio/abilita/hee_hee.ogg', 0.9);
+        t.uguale(0, h.eval('onlineSuoni.length'), 'partita non online: niente');
+        h.eval('onlineState.attivo = true; suonoSintetico = () => {};');
+        h.playSfx('audio/abilita/hee_hee.ogg', 0.9);
+        h.playSfx('audio/click.ogg', 0.8);
+        h.synthSfx('hover');
+        h.synthSfx('hit');
+        t.uguale([{ n: 1, src: 'audio/abilita/hee_hee.ogg', volume: 0.9 }, { n: 2, synth: 'hit', durata: 0.6 }], h.eval('onlineSuoni'));
+        for (let i = 0; i < 20; i++) h.synthSfx('dice-land');
+        t.uguale(12, h.eval('onlineSuoni.length'), 'restano solo gli ultimi');
+        h.onlineInviaStato();
+        t.uguale(22, h.eval(`__post.find(p => p.url === '/api/online/stato').body.suoni.at(-1).n`));
+    });
 };

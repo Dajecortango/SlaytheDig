@@ -318,3 +318,35 @@ const HERO_PORTRAIT_DEFAULTS = { pos: '50% 38%', zoom: 1.7 };
 function strikeZoomFor(zoom) {
     return Math.round((1 + (zoom - 1) * 0.45) * 100) / 100;
 }
+
+// Sfide che danno Scudi senza un mercante raggiungibile dopo (gli Scudi non servirebbero più): premio con effetto
+// "coins", reliquia che dà Scudi, anche nei modi di affrontarla, e sfide del sacrificio di HP (stat "hp").
+// Rete di sicurezza dell'editor (js/editor/controlli.js) e test (tests/sfide_scudi.test.js). Ritorna i nodi
+function sfideScudiSenzaMercante(camp, reliquie = {}) {
+    const nodi = camp.mapNodes || [];
+    const perId = new Map(nodi.map(n => [n.id, n]));
+    const daScudi = r => {
+        const x = typeof r === 'string' ? reliquie[r] : r;
+        if (!x) return false;
+        return (x.effects || []).some(e => e.effect === 'coins' && e.val > 0) || (x.speciali || []).some(e => e.fai === 'monete' && e.val > 0);
+    };
+    const mercanteDopo = n => {
+        const visti = new Set(), coda = [...(n.next || [])];
+        while (coda.length) {
+            const id = coda.pop();
+            if (visti.has(id)) continue;
+            visti.add(id);
+            const m = perId.get(id);
+            if (!m) continue;
+            if (m.type === 'merchant') return true;
+            coda.push(...(m.next || []));
+        }
+        return false;
+    };
+    return nodi.filter(n => {
+        const c = n.type === 'challenge' && (camp.challenges || {})[n.challengeId];
+        if (!c) return false;
+        const scudi = c.stat === 'hp' || daScudi(c.reward) || (c.strade || []).some(r => daScudi(r.reward));
+        return scudi && !mercanteDopo(n);
+    });
+}

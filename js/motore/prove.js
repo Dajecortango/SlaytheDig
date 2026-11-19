@@ -28,6 +28,26 @@
             return out;
         }
 
+        /* Sfida del sacrificio (stat "hp", nell'editor "Sacrificio di HP"): niente dado. Un eroe alla volta dà 1 HP in cambio
+           di Scudi, quante volte la compagnia vuole, fino a "massimo" sacrifici in tutto (vuoto = SACRIFICIO_MASSIMO).
+           Nessuno scende sotto 1 HP. Scudi per HP: "scudiPerHp" (vuoto = SACRIFICIO_SCUDI). Niente premio né punizione.
+           I sacrifici fatti si contano in challenge.sacrifici (stato.challengeState è una copia della sfida). */
+        const isSacrifice = c => !!c && c.stat === 'hp';
+        function sacrificeRules(c) {
+            return { scudi: Number(c.scudiPerHp) || SACRIFICIO_SCUDI, massimo: Number(c.massimo) || SACRIFICIO_MASSIMO };
+        }
+        const sacrificesLeft = c => Math.max(0, sacrificeRules(c).massimo - (c.sacrifici || 0));
+        const canSacrifice = (hero, c) => !!hero && hero.hp > 1 && sacrificesLeft(c) > 0;
+        function resolveSacrifice(hero, c) {
+            if (!canSacrifice(hero, c)) return null;
+            const { scudi } = sacrificeRules(c);
+            hero.hp -= 1;
+            stato.partyCoins += scudi;
+            c.sacrifici = (c.sacrifici || 0) + 1;
+            c.scudiSacrificio = (c.scudiSacrificio || 0) + scudi;
+            return { hero: hero.name, scudi, fatti: c.sacrifici, restano: sacrificesLeft(c) };
+        }
+
         // La strada con la migliore probabilità di riuscita per l'eroe più adatto (simulatore). Ritorna { i, challenge, pct }
         function bestChallengeRoad(challenge) {
             const alive = stato.party.filter(h => h.hp > 0);
@@ -465,7 +485,7 @@
     // perché interfaccia, simulatore e test li chiamano per nome. Funzioni solo interne: blessingUseful.
     const api = {
         gmProvaMod,
-        isFinalNode, challengeWithRoad, bestChallengeRoad, roadCoinCost, roadPriceText, roadLabel,
+        isFinalNode, challengeWithRoad, isSacrifice, sacrificeRules, sacrificesLeft, canSacrifice, resolveSacrifice, bestChallengeRoad, roadCoinCost, roadPriceText, roadLabel,
         challengeRollMode, heroLibId, challengeHeroBonus, challengeModifiers, challengeChanceInfo, resolveChallenge, applyPunishment, removeCurseAt,
         resolveRest, storyChoiceLabel, resolveStoryChoice, blessingData, hasBlessing, pickBlessings,
         prayerRoll, applyBlessing, applyCombatBlessings, resolveCaptainAction

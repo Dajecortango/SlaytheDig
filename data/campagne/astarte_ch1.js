@@ -206,7 +206,7 @@ window.CAMPAIGNS["astarte_ch1"] = {
             "title": "Il ceppo del giuramento",
             "desc": "Nel mezzo delle montagne, una foresta vi ospita, accogliendovi in una radura. Volete approfittare di tale radura e della sua sicurezza per accamparvi, quando vedete al centro di essa un mucchio di pietre consacrate attorno ad un'antica insegna militare oramai consunta. L'insegna, di cui oramai è impossibile riconoscere colori e stemmi, è però decorata con nastri votivi lasciati da guardie e viandanti durante il percorso.",
             "ignoreText": "Gli Asi Minori delle rotte e delle strade non fermeranno le lame né vi daranno ciò che volete, tirate dritto senza perdere tempo in preghiere da Gothi.",
-            "successText": "Riannodate i nastri votivi, recitate preghiere e ponete un sasso in cima al tumulo in segno di rispetto. Un senso di incrollabile fermezza e sollievo spirituale si posa sulla compagnia.",
+            "successText": "Riannodate i nastri votivi, recitate preghiere e ponete un sasso in cima al tumulo in segno di rispetto. Un senso di incrollabile fermezza e sollievo spirituale si posa su chi ha guidato le preghiere.",
             "failText": "Durante la deposizione del sasso, un gesto distratto fa franare l'intero cumulo sul fango. Il silenzio che segue è cupo e accusatorio, lasciando la carovana priva di conforto.",
             "stat": "fth",
             "cd": 8,

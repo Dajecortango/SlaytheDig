@@ -56,6 +56,12 @@ const MEDIC_PRICE_PER_HP = 5;      // fisso: niente rincari, contrattazione o sc
 const MEDIC_MAX_HP = 4;            // HP che il medico cura in tutto a ogni mercante
 const MEDIC_CONFIRM_SHARE = 0.5;   // chiede conferma se la cura costa almeno questa parte degli Scudi
 
+// Sfida del sacrificio (statistica "hp" di una sfida, js/motore/prove.js): Scudi per ogni HP dato e sacrifici
+// al massimo per sfida, quando la sfida non li scrive (campi "scudiPerHp" e "massimo"). Gli Scudi per HP restano
+// sotto il prezzo del medico (MEDIC_PRICE_PER_HP), così non si guadagna a sacrificare e farsi curare subito
+const SACRIFICIO_SCUDI = 4;
+const SACRIFICIO_MASSIMO = 6;
+
 // Bottino degli scontri: quanti oggetti si vedono (se ne tiene uno)
 const LOOT_CHOICES = 3;
 

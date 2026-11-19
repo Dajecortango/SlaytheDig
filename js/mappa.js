@@ -325,8 +325,27 @@
         }
 
         // Immagine della scena: quella del nodo o il segnaposto del tipo (senza, resterebbe l'immagine del nodo precedente)
+        // Immagine della scena di un nodo. Le immagini con proporzioni lontane da quelle della scena (strisce larghe,
+        // quadrate) si vedono intere invece di essere tagliate e ingrandite: classe "scena-intera" sul riquadro,
+        // con la stessa immagine sfocata dietro al posto delle bande vuote (.scena-sfondo, css/gioco-03-schermate.css;
+        // un elemento con lo stile in linea, così il percorso vale dalla pagina, anche per i giocatori online)
+        const SCENA_PROPORZIONI = { min: 1.25, max: 1.85 };
         function setSceneImage(imgId, src, kind) {
-            document.getElementById(imgId).src = src || `immagini/segnaposto/${kind}.svg`;
+            const img = document.getElementById(imgId);
+            const box = img.parentElement;
+            box.classList.remove('scena-intera');
+            box.querySelectorAll(':scope > .scena-sfondo').forEach(el => el.remove());
+            img.onload = () => {
+                const r = img.naturalWidth / Math.max(1, img.naturalHeight);
+                if (!src || !img.naturalWidth || (r >= SCENA_PROPORZIONI.min && r <= SCENA_PROPORZIONI.max)) return;
+                box.classList.add('scena-intera');
+                const sfondo = document.createElement('div');
+                sfondo.className = 'scena-sfondo';
+                sfondo.setAttribute('aria-hidden', 'true');
+                sfondo.style.backgroundImage = `url("${src}")`;
+                box.prepend(sfondo);
+            };
+            img.src = src || `immagini/segnaposto/${kind}.svg`;
         }
 
         function enterStsNode(id) {

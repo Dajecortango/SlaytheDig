@@ -584,8 +584,9 @@
                             </div>
 
                             <div id="challengeStage2" class="hidden" style="margin-top:10px;">
-                                <p class="panel-label">Scegli quale eroe affronta la sfida:</p>
+                                <p class="panel-label" id="challengePickLabel">Scegli quale eroe affronta la sfida:</p>
                                 <div id="challengeHeroPick" class="hero-pick"></div>
+                                <button id="challengeSacrificeDoneBtn" class="hidden btn-block" data-action="challengeSacrificeDone">Basta così</button>
                                 <button id="challengeHeroBackBtn" class="btn-small combat-back-btn" data-action="challengeBackToStart" data-tip="Indietro [Esc]||Torna alla scelta di come affrontare la prova. Un prezzo già pagato viene restituito.">Indietro</button>
                             </div>
 
@@ -834,6 +835,7 @@
     <script src="js/motore/prove.js"></script>
     <script src="js/prove.js"></script>
     <script src="js/salvataggi.js"></script>
+    <script src="js/suoni-sintetici.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/mappa.js"></script>
     <script src="js/combattimento.js"></script>

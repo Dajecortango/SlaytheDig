@@ -553,6 +553,7 @@ function simExpertNodeScore(node) {
             const challenge = challengesData && challengesData[node.challengeId];
             const alive = party.filter(h => h.hp > 0);
             if (!challenge || !alive.length) return 0.5;
+            if (isSacrifice(challenge)) return hpRatio >= 0.7 ? 1.2 : 0.3;  // Scudi in cambio di HP: solo se la compagnia sta bene
             const best = bestChallengeRoad(challenge).pct / 100;
             return 2 * best - 0.5;
         }
@@ -656,9 +657,23 @@ function simChooseNextNode(available, profile, runCtx) {
     return candidates[Math.floor(rng() * candidates.length)];
 }
 
+// Sfida del sacrificio: tutti i profili danno HP solo dagli eroi sopra il 60% della vita, uno alla volta dal più in forma
+const SIM_SACRIFICIO_SOGLIA = 0.6;
+function simSacrifice(original) {
+    const c = { ...original };
+    stato.challengeState = c;
+    for (;;) {
+        const pronti = stato.party.filter(h => canSacrifice(h, c) && h.hp - 1 >= Math.ceil(h.maxHp * SIM_SACRIFICIO_SOGLIA));
+        if (!pronti.length) break;
+        resolveSacrifice(pronti.reduce((b, h) => h.hp / h.maxHp > b.hp / b.maxHp ? h : b), c);
+    }
+    return c.sacrifici || 0;
+}
+
 function simResolveChallengeNode(campaignData, node, profile) {
     const original = campaignData.challenges[node.challengeId];
     if (!original) return { defeat: false, finalVictory: false };
+    if (isSacrifice(original)) { simSacrifice(original); return { defeat: false, finalVictory: false }; }
     // Con le strade si sceglie quella con la migliore probabilità di riuscita
     const best = bestChallengeRoad(original);
     const challenge = best.challenge;

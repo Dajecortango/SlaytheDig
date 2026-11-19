@@ -163,7 +163,7 @@
         if (!url || !svg || typeof openModal !== 'function') return;
         const safeName = heroName.replace(/</g, '&lt;');
         openModal(`QR — ${safeName}`, `
-            <div style="text-align:center;">
+            <div class="online-privata" style="text-align:center;">
                 <div style="background:#fff; display:inline-block; padding:10px; border:1px solid #000;">${svg}</div>
                 <p style="margin-top:10px; font-size:0.8rem; color:var(--text-dim); word-break:break-all;">${url}</p>
             </div>`,

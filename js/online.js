@@ -12,6 +12,17 @@ const ONLINE_BASE = (typeof location !== 'undefined' && /^https?:$/.test(locatio
 const onlineState = { attivo: false, code: null, segreto: null, chiaveMaster: null, giocatori: [], voto: null, pronti: null, modalOwner: null, attore: null,
     ultimoClicMaster: 0, creando: null, creandoGiocatore: false, bozze: {} };
 const onlineDopoClic = [];
+// Effetti sonori del master (playSfx e synthSfx in js/audio.js) da suonare anche sulla pagina dei giocatori:
+// gli ultimi viaggiano in "suoni" dello stato, ognuno col suo numero; la pagina suona solo i numeri nuovi
+const ONLINE_SUONI_TENUTI = 12;
+let onlineSuoni = [], onlineSuoniN = 0, onlineSuoniTimer = null;
+function onlineSuono(suono) {
+    if (!onlineState.attivo) return;
+    onlineSuoni.push({ n: ++onlineSuoniN, ...suono });
+    if (onlineSuoni.length > ONLINE_SUONI_TENUTI) onlineSuoni = onlineSuoni.slice(-ONLINE_SUONI_TENUTI);
+    // Più suoni insieme (dado, colpo, armatura) partono in un solo invio
+    if (!onlineSuoniTimer) onlineSuoniTimer = setTimeout(() => { onlineSuoniTimer = null; onlineInviaStato(); }, 40);
+}
 let onlineMasterStream = null;
 
 const onlineAttivo = () => onlineState.attivo;
@@ -99,9 +110,10 @@ function onlineScenaMenu() {
 function onlineRegioni() {
     const screen = document.querySelector('#gameContainer > div:not(.hidden)');
     const modal = document.getElementById('wc3Modal');
-    // Pannello di Controllo (js/combattimento.js, gmOpenPanel): resta privato sullo schermo del master,
-    // non si specchia mai ai giocatori collegati (il moderatore ha il suo pannello a parte, vedi gmstato)
-    const modaleGM = !modal.classList.contains('hidden') && modal.querySelector('.gm-panel-modal');
+    // Finestre private dello schermo del master, mai specchiate ai giocatori: il Pannello di Controllo (js/combattimento.js,
+    // gmOpenPanel; il moderatore ha il suo pannello a parte, vedi gmstato) e quelle con .online-privata (link della stanza
+    // con la chiave del master a distanza, QR del telefono di un eroe)
+    const modaleGM = !modal.classList.contains('hidden') && modal.querySelector('.gm-panel-modal, .online-privata');
     const overlays = onlineSovrimpressioni(document.body.children, ONLINE_FIGLI_STATICI);
     return {
         body: document.body.className,
@@ -152,6 +164,7 @@ function onlineInviaStato() {
         // I giocatori vedono "Il master si sta riconnettendo" se chi guida da lontano è caduto
         masterRemoto: onlineMastriRemoti().length ? { connesso: onlineMastriRemoti().some(gi => gi.connected) } : null,
         musica: (typeof musicActive !== 'undefined' && musicActive && musicActive.getAttribute('src')) || null,
+        suoni: onlineSuoni,
         // Eroi che si possono scegliere (il server la usa anche per validare /api/online/scegli)
         rosa: onlineRosa(),
         giocatori: onlineState.giocatori
@@ -349,12 +362,12 @@ function onlineLinkMaster() {
     return onlineState.chiaveMaster ? `${onlineLink()}?master=${onlineState.chiaveMaster}` : '';
 }
 function onlineMostraLink() {
-    openModal('Partita online', `<p>Manda questo link ai giocatori (su Discord):</p>
+    openModal('Partita online', `<div class="online-privata"><p>Manda questo link ai giocatori (su Discord):</p>
         <p><input id="onlineLinkBox" readonly value="${esc(onlineLink())}" style="width:100%"></p>
         ${onlineLinkMaster() ? `<p><b>Master a distanza</b>: se a guidare la partita è un altro, manda <b>solo a lui</b> questo link.
             Potrà fare tutto quello che fai tu da qui. Tieni questa finestra aperta e in primo piano (non ridotta a icona) finché si gioca.</p>
         <p><input id="onlineLinkMasterBox" readonly value="${esc(onlineLinkMaster())}" style="width:100%"></p>` : ''}
-        <p>Per giocare fuori casa attiva prima il <b>tunnel ngrok</b> dalle Opzioni (Compagnia connessa via QR): il link userà il suo indirizzo.</p>`,
+        <p>Per giocare fuori casa attiva prima il <b>tunnel ngrok</b> dalle Opzioni (Compagnia connessa via QR): il link userà il suo indirizzo.</p></div>`,
         [{ label: 'OK', className: 'btn-proceed' }], { wide: true });
 }
 
