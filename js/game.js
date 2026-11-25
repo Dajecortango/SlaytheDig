@@ -183,6 +183,69 @@ function breakRelic(relicId) {
             return Object.values(campaignsDatabase).filter(c => (c.heroes || []).length > 0);
         }
 
+        /* ---------- Progressi: capitoli, avventure ed eroi che si sbloccano giocando ----------
+           Le campagne vinte restano in localStorage (dignitas_progresso). Un capitolo si apre vincendo quello prima;
+           un'avventura con "dopo" (data/libreria/avventure.js) si apre finendo l'avventura indicata; gli eroi in
+           "eroiDopo" di una campagna ({ avventura: [id degli eroi] }) si possono scegliere solo finita quell'avventura.
+           L'opzione "Sblocca tutto" (per il master) apre tutto senza toccare i progressi. */
+        const PROGRESSO_KEY = 'dignitas_progresso';
+        function campagneCompletate() {
+            try { return new Set(JSON.parse(localStorage.getItem(PROGRESSO_KEY) || '[]')); } catch (e) { return new Set(); }
+        }
+        const tuttoSbloccato = () => typeof gameOptions !== 'undefined' && !!gameOptions.sbloccaTutto;
+        const capitoliAvventura = advId => playableCampaigns().filter(c => c.avventura === advId).sort((a, b) => (a.capitolo || 0) - (b.capitolo || 0));
+        function avventuraCompletata(advId, fatte = campagneCompletate()) {
+            const capitoli = capitoliAvventura(advId);
+            return capitoli.length > 0 && capitoli.every(c => fatte.has(c.id));
+        }
+        // Perché un'avventura è ancora chiusa ('' = aperta)
+        function bloccoAvventura(advId, fatte = campagneCompletate()) {
+            const avventure = LIBRERIA.avventure || {};
+            const adv = avventure[advId];
+            if (tuttoSbloccato() || !adv || !adv.dopo || !avventure[adv.dopo] || avventuraCompletata(adv.dopo, fatte)) return '';
+            return `Si sblocca completando «${avventure[adv.dopo].title}»`;
+        }
+        // Perché una campagna è ancora chiusa ('' = si può giocare): l'avventura è chiusa o manca un capitolo prima
+        function bloccoCampagna(campaignId, fatte = campagneCompletate()) {
+            const c = campaignsDatabase[campaignId];
+            const adv = c && c.avventura && (LIBRERIA.avventure || {})[c.avventura];
+            if (tuttoSbloccato() || !adv) return '';
+            const chiusa = bloccoAvventura(c.avventura, fatte);
+            if (chiusa) return chiusa;
+            const capitoli = capitoliAvventura(c.avventura);
+            const prima = capitoli.slice(0, capitoli.findIndex(x => x.id === c.id)).find(x => !fatte.has(x.id));
+            return prima ? `Si sblocca completando «${chapterLabel(prima, adv.title)}»` : '';
+        }
+        // Eroi di una campagna ancora chiusi: { libId: titolo dell'avventura da finire }
+        function eroiBloccati(camp, fatte = campagneCompletate()) {
+            const chiusi = {};
+            if (tuttoSbloccato()) return chiusi;
+            Object.entries((camp && camp.eroiDopo) || {}).forEach(([advId, ids]) => {
+                const adv = (LIBRERIA.avventure || {})[advId];
+                if (adv && !avventuraCompletata(advId, fatte)) (ids || []).forEach(id => { chiusi[id] = adv.title; });
+            });
+            return chiusi;
+        }
+        // Tutto ciò che è aperto con queste campagne vinte: per dire cosa si è appena sbloccato
+        function sbloccatiCon(fatte) {
+            const nomi = new Set();
+            playableCampaigns().forEach(c => {
+                if (c.avventura && !bloccoCampagna(c.id, fatte)) nomi.add(c.title);
+                const chiusi = eroiBloccati(c, fatte);
+                (c.heroes || []).forEach(h => { if (c.eroiDopo && !chiusi[h.libId]) nomi.add(h.name); });
+            });
+            return nomi;
+        }
+        // Campagna vinta: resta nei progressi; restituisce i nomi di ciò che si è appena aperto
+        function segnaCampagnaCompletata(campaignId) {
+            const fatte = campagneCompletate();
+            if (!campaignId || fatte.has(campaignId)) return [];
+            const prima = sbloccatiCon(fatte);
+            fatte.add(campaignId);
+            try { localStorage.setItem(PROGRESSO_KEY, JSON.stringify([...fatte])); } catch (e) { /* senza archivio i progressi valgono per questa pagina */ }
+            return [...sbloccatiCon(fatte)].filter(n => !prima.has(n));
+        }
+
         /* ---------- Avventure e capitoli ----------
            Il menu "Nuova Partita" mostra le avventure (LIBRERIA.avventure, data/libreria/avventure.js) e le campagne
            a sé. Una campagna con "avventura" è un capitolo: si sceglie nella pagina dell'avventura (screenAdventure),
@@ -195,7 +258,7 @@ function breakRelic(relicId) {
                 const adv = c.avventura && avventure[c.avventura];
                 if (!adv) { entries.push({ kind: 'campagna', id: c.id, title: c.title, badge: c.badge || '', description: c.description || '', cover: c.coverImage }); return; }
                 if (!byAdventure[c.avventura]) {
-                    byAdventure[c.avventura] = { kind: 'avventura', id: c.avventura, title: adv.title, badge: adv.badge || 'Avventura', description: adv.description || '', chapters: [] };
+                    byAdventure[c.avventura] = { kind: 'avventura', id: c.avventura, title: adv.title, badge: adv.badge || 'Avventura', description: adv.description || '', chapters: [], blocco: bloccoAvventura(c.avventura) };
                     entries.push(byAdventure[c.avventura]);
                 }
                 byAdventure[c.avventura].chapters.push(c);
@@ -223,14 +286,15 @@ function breakRelic(relicId) {
             const grid = document.getElementById('campaignsGridList');
             const entries = campaignMenuEntries();
             grid.innerHTML = entries.map((e, idx) => `
-                <div class="campaign-card" tabindex="0" role="button" data-index="${idx}" ${azione('onCampaignCardClick', idx, e.kind, e.id)} ${azioneSu('enter', 'openMenuEntry', e.kind, e.id)}>
+                <div class="campaign-card${e.blocco ? ' is-locked' : ''}" tabindex="0" role="button" data-index="${idx}" ${azione('onCampaignCardClick', idx, e.kind, e.id)} ${azioneSu('enter', 'openMenuEntry', e.kind, e.id)}>
                     <div>
                         <div class="campaign-cover"><img src="${esc(e.cover || 'immagini/segnaposto/cover.svg')}" alt="${esc(e.title)}" ${IMG_LAZY}></div>
                         <span class="campaign-badge">${esc(e.badge)}${e.kind === 'avventura' ? ` · ${e.chapters.length} ${e.chapters.length === 1 ? 'capitolo' : 'capitoli'}` : ''}</span>
                         <h3>${esc(e.title)}</h3>
                         <p>${esc(e.description)}</p>
+                        ${e.blocco ? `<p class="campaign-lock">${esc(e.blocco)}</p>` : ''}
                     </div>
-                    <button class="btn-small" tabindex="-1">${e.kind === 'avventura' ? 'Scegli Capitolo' : 'Scegli Spedizione'}</button>
+                    <button class="btn-small" tabindex="-1">${e.blocco ? 'Bloccata' : e.kind === 'avventura' ? 'Scegli Capitolo' : 'Scegli Spedizione'}</button>
                 </div>
             `).join('');
 
@@ -250,6 +314,8 @@ function breakRelic(relicId) {
 
         // Voce del menu scelta: un'avventura apre la sua pagina, una campagna a sé parte subito
         function openMenuEntry(kind, id) {
+            const blocco = kind === 'avventura' ? bloccoAvventura(id) : bloccoCampagna(id);
+            if (blocco) { uiMessage(blocco); return; }
             if (kind === 'avventura') openAdventure(id);
             else selectCampaign(id);
         }
@@ -259,15 +325,17 @@ function breakRelic(relicId) {
         function openAdventure(id, chapterId) {
             const entry = campaignMenuEntries().find(e => e.kind === 'avventura' && e.id === id);
             if (!entry) return;
-            const selected = Math.max(0, entry.chapters.findIndex(c => c.id === chapterId));
+            // Senza un capitolo indicato si parte dall'ultimo aperto: quello a cui si è arrivati
+            const aperti = entry.chapters.map(c => !bloccoCampagna(c.id));
+            const selected = Math.max(0, chapterId ? entry.chapters.findIndex(c => c.id === chapterId) : aperti.lastIndexOf(true));
             currentAdventure = { id, entry, selected };
             showScreen('screenAdventure');
             document.getElementById('adventureBadge').textContent = entry.badge;
             document.getElementById('adventureTitle').textContent = entry.title;
             document.getElementById('adventureChapters').innerHTML = entry.chapters.map((c, i) => `
-                <button class="adventure-chapter" role="option" data-index="${i}" ${azione('selectAdventureChapter', i)} ${azioneSu('dblclick', 'playAdventureChapter', i)}>
+                <button class="adventure-chapter${aperti[i] ? '' : ' is-locked'}" role="option" data-index="${i}" ${azione('selectAdventureChapter', i)} ${azioneSu('dblclick', 'playAdventureChapter', i)}>
                     <span class="adventure-chapter-num">${romanNumeral(i + 1)}</span>
-                    <span class="adventure-chapter-name">${esc(chapterLabel(c, entry.title))}</span>
+                    <span class="adventure-chapter-name">${esc(chapterLabel(c, entry.title))}${aperti[i] ? '' : ' · bloccato'}</span>
                 </button>
             `).join('');
             bindAdventureKeys();
@@ -287,14 +355,18 @@ function breakRelic(relicId) {
             document.getElementById('adventureCover').src = c.coverImage || currentAdventure.entry.cover || 'immagini/segnaposto/cover.svg';
             document.getElementById('adventureCover').alt = c.title;
             document.getElementById('adventureChapterTitle').textContent = c.title;
-            document.getElementById('adventureChapterDesc').textContent = c.description || currentAdventure.entry.description;
+            const blocco = bloccoCampagna(c.id);
+            document.getElementById('adventureChapterDesc').textContent = (blocco ? blocco + '. ' : '') + (c.description || currentAdventure.entry.description);
         }
 
         // "Gioca" (o doppio clic sul capitolo): si parte come scegliendo la campagna
         function playAdventureChapter(i) {
             if (!currentAdventure) return;
             const c = currentAdventure.entry.chapters[i == null ? currentAdventure.selected : i];
-            if (c) selectCampaign(c.id);
+            if (!c) return;
+            const blocco = bloccoCampagna(c.id);
+            if (blocco) { uiMessage(blocco); return; }
+            selectCampaign(c.id);
         }
 
         function adventureBack() {
@@ -387,12 +459,41 @@ function breakRelic(relicId) {
                     camp.title = `[Prova] ${camp.title}`;
                     camp.badge = "Prova dall'editor";
                     campaignsDatabase[camp.id] = camp;
+                    // "Prova da qui" dell'editor: compagnia già fatta, si parte dal nodo scelto
+                    if (data.partenza && new URLSearchParams(location.search).get('nodo') != null) { startPlaytestFromNode(camp.id, data.partenza); return; }
                     // Apre subito la scelta: la pagina dell'avventura con il capitolo di prova, o la campagna al centro
                     if (camp.avventura && (LIBRERIA.avventure || {})[camp.avventura]) openAdventure(camp.avventura, camp.id);
                     else goToCampaigns(camp.id);
                 };
             };
         })();
+
+        /* "Prova da qui" dell'editor (js/editor/progetto.js): partenza = { nodeId, eroi: [nomi] }.
+           La compagnia si crea da sola (prima abilità e primo oggetto che l'eroe può portare, come il
+           simulatore: simBuildHero) e sulla mappa è raggiungibile solo il nodo scelto. */
+        function startPlaytestFromNode(campaignId, partenza) {
+            selectCampaign(campaignId);
+            const camp = stato.currentCampaign;
+            if (!camp) return;
+            const dati = { heroes: camp.heroes || [], abilities: campaignAbilities, armory: campaignArmory };
+            registerCampaignHeroPortraits(dati.heroes);
+            stato.party = (partenza.eroi || []).filter(nome => dati.heroes.some(h => h.name === nome)).map(nome => {
+                const base = dati.heroes.find(h => h.name === nome);
+                return simBuildHero(dati, nome, 0, dati.armory.findIndex(it => heroCanUseItem(base, it)));
+            });
+            if (!stato.party.length) { uiError('Prova da qui: nessuno degli eroi scelti è nella campagna'); return; }
+            partySize = stato.party.length;
+            updatePartyStatusBars();
+            const nodo = stato.stsMapNodes.find(n => n.id === partenza.nodeId);
+            if (nodo) {
+                stato.stsMapNodes.forEach(n => { n.active = false; });
+                nodo.active = true;
+                // Il segnalino della compagnia parte dal punto che porta lì (la vista si centra sul nodo)
+                const prima = stato.stsMapNodes.find(n => (n.next || []).includes(nodo.id));
+                if (prima) prima.done = true;
+            } else uiMessage('Il punto scelto non c\'è in questa mappa: si parte dall\'inizio');
+            startExpedition();
+        }
 
         function scrollCampaigns(dir) {
             goToCampaignSlide(activeCampaignSlide + dir);
@@ -479,7 +580,11 @@ function breakRelic(relicId) {
             merchantsData = stato.currentCampaign.merchants;
             treasuresData = stato.currentCampaign.treasures;
 
-            campaignHeroes = stato.currentCampaign.heroes || [];
+            // Eroi ancora da sbloccare (eroiDopo): non si possono scegliere finché l'avventura non è finita
+            const chiusi = eroiBloccati(stato.currentCampaign);
+            campaignHeroes = (stato.currentCampaign.heroes || []).filter(h => !chiusi[h.libId]);
+            const daFinire = [...new Set(Object.values(chiusi))];
+            if (daFinire.length) uiMessage(`Altri eroi si sbloccano completando ${daFinire.map(t => `«${t}»`).join(', ')}`);
             registerCampaignHeroPortraits(campaignHeroes);
             campaignAbilities = rawCamp.abilities || {};
             campaignArmory = stato.currentCampaign.initialArmory || [];
@@ -499,8 +604,8 @@ function breakRelic(relicId) {
         function setupPartySizeSelector() {
             const sizeSelect = document.getElementById('partySizeSelect');
             const totalHeroes = campaignHeroes.length;
-            const minSize = Math.min(3, totalHeroes);
-            const maxSize = Math.max(minSize, partyMaxSize(stato.currentCampaign));
+            const minSize = partyMinSize(stato.currentCampaign);
+            const maxSize = Math.min(totalHeroes, Math.max(minSize, partyMaxSize(stato.currentCampaign)));
 
             sizeSelect.innerHTML = '';
             for(let s = minSize; s <= maxSize; s++) {

@@ -206,3 +206,7 @@ body.no-anim .hero-blessing { animation: none; }
 @media (prefers-reduced-motion: reduce) { .roll-banner { animation-name: roll-banner-calm; } }
 body.no-anim .roll-banner { animation: none; }
 
+/* Attività al falò (renderRestActivities in js/prove.js) */
+.rest-activity-area { margin-top: 10px; }
+.rest-activity-area:empty { display: none; }
+.rest-activities { grid-template-columns: repeat(2, minmax(0, 1fr)); }

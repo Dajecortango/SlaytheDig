@@ -235,8 +235,41 @@ function ownersIdentita(party) {
     return Object.fromEntries((party || []).map(h => [h.name, h.name]));
 }
 
+// Reazioni degli spettatori e dei giocatori (pannello della pagina dei giocatori → fumetto sullo schermo del master):
+// solo queste voci, niente testo libero. Al massimo una ogni ONLINE_REAZIONE_MS per persona (lo controlla il server)
+const ONLINE_REAZIONI = [
+    { id: 'tifo', icona: '📣', testo: 'Forza, così!' },
+    { id: 'famiglia', icona: '⚔️', testo: 'Per la Famiglia!' },
+    { id: 'impreca', icona: '💢', testo: 'Maledetto dado!' },
+    { id: 'risata', icona: '😂', testo: 'Ahahah!' },
+    { id: 'paura', icona: '😱', testo: 'Si salvi chi può!' },
+    { id: 'applauso', icona: '👏', testo: 'Che colpo!' }
+];
+const ONLINE_REAZIONE_MS = 3000;
+// { ok: true, reazione } oppure { ok: false, motivo }. ultima = ora dell'ultima reazione accettata di quella persona (0 = mai);
+// opzioni = { ruolo, spente (il master le ha spente) }. Il master a distanza non ne manda: è il master
+function esitoReazione(id, ultima, ora, opzioni) {
+    const o = opzioni || {};
+    const reazione = ONLINE_REAZIONI.find(r => r.id === id);
+    if (!reazione) return { ok: false, motivo: 'Reazione sconosciuta' };
+    if (o.spente) return { ok: false, motivo: 'Il master ha spento le reazioni' };
+    if (o.ruolo === 'master') return { ok: false, motivo: 'Il master non manda reazioni' };
+    if (ultima && ora - ultima < ONLINE_REAZIONE_MS) return { ok: false, motivo: 'Aspetta un attimo prima della prossima' };
+    return { ok: true, reazione };
+}
+
+// Avviso dei giocatori quando il master non è collegato (evento "master" del server): scadenza = quando la stanza si
+// chiude da sola (null se non si sa)
+function testoMasterAssente(m, ora) {
+    if (!m || m.online) return '';
+    if (m.chiusa) return m.scaduta ? 'Il master non è tornato: la partita è chiusa' : 'Il master ha chiuso la partita';
+    if (!m.scadenza) return 'Il master si è disconnesso, attendere…';
+    const minuti = Math.max(1, Math.ceil((m.scadenza - ora) / 60000));
+    return `Il master si è disconnesso, attendere… (stanza aperta ancora ${minuti} min)`;
+}
+
 // Node (server e test fuori da vm): stesse funzioni come modulo
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { rosaOnline, esitoSceltaEroe, nomeModeratore, ownersIdentita, ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, ONLINE_AZIONI_MODERATORE, ONLINE_RUOLI_SENZA_EROE, ruoloSenzaEroe, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
+    module.exports = { ONLINE_REAZIONI, ONLINE_REAZIONE_MS, esitoReazione, testoMasterAssente, rosaOnline, esitoSceltaEroe, nomeModeratore, ownersIdentita, ONLINE_MASTER, ONLINE_PERMESSI, ONLINE_VOTO_AZIONI, ONLINE_AZIONI_MODERATORE, ONLINE_RUOLI_SENZA_EROE, ruoloSenzaEroe, onlineRegola, onlineCanRun, votoAnnullatoDa, nomeGiocatoreValido,
         elementoCliccabile, ONLINE_OSSERVA, resolveVote, capoSpedizione, classiNodoGiocatore, nodiVisibiliGiocatori, changedRegions, leggeroUrl, rendiLeggero };
 }

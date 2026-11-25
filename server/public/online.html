@@ -54,7 +54,8 @@
         /* Musica ed effetti (disegnaBarra in server/public/online.js): spento = grigio e barrato */
         #onlineBar .online-audio { min-width: 34px; }
         #onlineBar .online-audio.spento { filter: grayscale(1) brightness(0.7); text-decoration: line-through; }
-        #onlineAvviso { position: fixed; top: calc(var(--top-h, 56px) + 8px); left: 50%; transform: translateX(-50%); z-index: 1100; }
+        /* Sopra la barra del giocatore (1100): un avviso lungo ("Il master si è disconnesso…") non le finisce sotto */
+        #onlineAvviso { position: fixed; top: calc(var(--top-h, 56px) + 8px); left: 50%; transform: translateX(-50%); z-index: 1160; max-width: calc(100% - 32px); }
         #onlineTurno { color: var(--wc-yellow, gold); font-weight: bold; }
         .online-hidden { display: none !important; }
         /* Il mio eroe (server/public/online.js, segnaEroi): cornice dorata che pulsa e targhetta "TU"; gli altri un poco spenti */
@@ -92,6 +93,14 @@
         .onmod-prova[data-segno="-1"] { color: #ff8a70; }
         .onmod-actions { display: flex; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
         .onmod-actions button { flex: 1; padding: 6px 8px; font-size: 0.74em; min-width: 0; margin: 0; }
+        /* Reazioni (server/public/online.js, disegnaReazioni): un pulsantino in basso a sinistra, sopra la console;
+           le voci si aprono verso l'alto e si richiudono dopo l'invio */
+        #onlineReazioni { position: fixed; left: 8px; bottom: calc(var(--console-h, 188px) + 8px); z-index: 1100;
+            display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 6px; }
+        #onlineReazioniApri { margin: 0; padding: 4px 10px; }
+        #onlineReazioniVoci { display: flex; flex-direction: column; gap: 4px; padding: 8px; }
+        #onlineReazioniVoci button { margin: 0; text-align: left; white-space: nowrap; }
+        #onlineReazioniVoci button:disabled { filter: grayscale(1) brightness(0.65); cursor: wait; }
     </style>
 </head>
 <body class="online-guest">
@@ -131,6 +140,11 @@
     <div id="onlineOverlays"></div>
     <div id="onlineAvviso" class="online-hidden wc-panel"></div>
     <div id="onlineBar"></div>
+    <!-- Reazioni per il master (solo voci fisse, ONLINE_REAZIONI in js/online-regole.js): le riempie server/public/online.js -->
+    <div id="onlineReazioni" class="online-hidden">
+        <button type="button" class="btn-small" id="onlineReazioniApri" aria-expanded="false" data-tip="Reazioni||Manda al master un tifo, una risata o un grido: compare per pochi secondi sul suo schermo">💬 Reazioni</button>
+        <div id="onlineReazioniVoci" class="wc-panel online-hidden"></div>
+    </div>
     <!-- Pannello del moderatore: solo sui dati che arrivano via "gmstato" (SSE), mai una finestra specchiata.
          Il pulsante lo apre/chiude solo su questa pagina: nessuno (master o altri giocatori) lo vede o lo sa. -->
     <div id="onlineModPanel" class="online-hidden">

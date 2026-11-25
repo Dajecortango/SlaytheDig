@@ -11,6 +11,15 @@ module.exports = (t, carica) => {
         t.uguale(4, g.partyMaxSize({ heroes: eroi(4), maxEroi: 6 }));
     });
 
+    t.test('partyMinSize: 3 di norma, minEroi se indicato, mai più del massimo; il Drakengrad si gioca in 4', () => {
+        t.uguale(3, g.partyMinSize({ heroes: eroi(7) }));
+        t.uguale(2, g.partyMinSize({ heroes: eroi(2) }));
+        t.uguale(4, g.partyMinSize({ heroes: eroi(7), minEroi: 4, maxEroi: 4 }));
+        t.uguale(5, g.partyMinSize({ heroes: eroi(7), minEroi: 6 }));
+        const d = g.simCampaignData('drakengrad').campaign;
+        t.uguale([4, 4], [g.partyMinSize(d), g.partyMaxSize(d)]);
+    });
+
     t.test('Loch Ein parte 1 e 2: si possono scegliere 6 eroi', () => {
         for (const id of ['loch_ein_parte_1', 'loch_ein_parte_2']) {
             t.uguale(6, g.partyMaxSize(g.simCampaignData(id).campaign), id);

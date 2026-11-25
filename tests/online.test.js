@@ -90,7 +90,7 @@ module.exports = (t, carica) => {
         t.ok(h.applySaveData(JSON.parse(JSON.stringify(data))));
         t.uguale({ 'Curio Dignitas': 'Marco' }, stato.onlineOwners);
         const vecchio = h.migrateSave({ version: 4, campaignId: 'tutorial', stato: { party: [], activeCurses: [] } });
-        t.uguale(7, vecchio.version);
+        t.uguale(8, vecchio.version);
         t.uguale({}, vecchio.stato.onlineOwners);
     });
 

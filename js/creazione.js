@@ -276,6 +276,13 @@
                 document.getElementById('heroCreationArea').classList.remove('hidden');
                 loadHeroGridOptions();
             } else {
+                // Compagnia completa: sinergie della Famiglia (solo nelle campagne che le hanno, js/motore/prove.js)
+                const sinergie = applicaSinergie(stato.currentCampaign);
+                updatePartyStatusBars();
                 showScreen('screenCampaignIntro');
+                const box = document.getElementById('campaignIntroSinergie');
+                if (box) box.innerHTML = sinergie.length
+                    ? `<p class="panel-label">Legami della Famiglia</p>${sinergie.map(x => `<p class="sinergia-line"><img class="prayer-icon" src="${esc(x.icon)}" alt=""> ${esc(x.testo)}</p>`).join('')}`
+                    : '';
             }
         }

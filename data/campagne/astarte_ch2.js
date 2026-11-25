@@ -7,6 +7,7 @@ window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["astarte_ch2"] = {
     "id": "astarte_ch2",
     "title": "Caccia alla Bestia, Capitolo Due",
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "avventura": "caccia_alla_bestia",
     "capitolo": 2,
     "terreno": "neve",

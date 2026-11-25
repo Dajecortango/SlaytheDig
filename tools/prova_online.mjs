@@ -38,7 +38,7 @@ function flusso(p, host, gzip) {
     return eventi;
 }
 
-const server = spawn(process.execPath, [path.join(ROOT, 'server', 'server.js')], { env: { ...process.env, PORT: String(PORT), SSE_PING_MS: '500', ONLINE_DISCONNECT_MS: '1500' }, stdio: 'ignore' });
+const server = spawn(process.execPath, [path.join(ROOT, 'server', 'server.js')], { env: { ...process.env, PORT: String(PORT), SSE_PING_MS: '500', ONLINE_DISCONNECT_MS: '1500', ONLINE_MASTER_ATTESA_MS: '2500' }, stdio: 'ignore' });
 try {
     await wait(800);
     const fuori = `abc.ngrok-free.app`;
@@ -162,7 +162,38 @@ try {
     await prendi('/leggero/immagini/%25');
     await prendi('/%');
     ok((await prendi('/js/online-regole.js')).statusCode === 200, 'un percorso con codifica sbagliata non fa cadere il server');
+    // Reazioni: solo voci fisse, una ogni 3 secondi per persona, spente dal master
+    const tifoso = (await req('POST', '/api/online/entra', { code }, fuori)).body;
+    ok((await req('POST', '/api/online/reazione', { code, token: tifoso.token, reazione: 'tifo' }, fuori)).body.ok, 'uno spettatore manda una reazione');
+    await wait(200);
+    ok(master.some(([e, d]) => e === 'reazione' && d.reazione === 'tifo' && d.chi === null), 'la reazione arriva al master (senza nome: "Uno spettatore")');
+    ok(/Aspetta/.test((await req('POST', '/api/online/reazione', { code, token: tifoso.token, reazione: 'risata' }, fuori)).body.error || ''), 'la seconda subito dopo è rifiutata');
+    ok((await req('POST', '/api/online/reazione', { code, token: rientro.token, reazione: 'Che schifo di master' }, fuori)).body.error === 'Reazione sconosciuta', 'niente testo libero');
+    ok((await req('POST', '/api/online/reazione', { code, token: 'falso', reazione: 'tifo' }, fuori)).status === 403, 'reazione con token falso rifiutata');
+    await req('POST', '/api/online/stato', { reazioni: false, rosa: { fase: 'partita', eroi: [{ nome: 'Marco', stato: 'creato' }] } });
+    ok((await req('POST', '/api/online/reazione', { code, token: rientro.token, reazione: 'paura' }, fuori)).body.error === 'Il master ha spento le reazioni', 'spente dal master: rifiutate');
+    // Riconnessione del master: la stanza resta, i giocatori aspettano, il master ritrova codice e giocatori
+    const fr = flusso(`/api/online/flusso?code=${code}&token=${rientro.token}`, fuori, false);
+    await wait(200);
     master.chiudi();
+    await wait(300);
+    const assente = fr.find(([e, d]) => e === 'master' && !d.online && !d.chiusa);
+    ok(assente && assente[1].scadenza > Date.now(), 'master caduto: i giocatori sanno che è assente e fino a quando resta la stanza');
+    ok((await req('POST', '/api/online/clic', { code, token: rientro.token, azione: 'x' }, fuori)).body.error === 'Il master si è disconnesso, attendere…', 'i clic dicono di attendere');
+    ok((await req('POST', '/api/online/info', {}, `localhost:${PORT}`, false)).status === 403, 'info senza segreto rifiutata');
+    ok((await req('POST', '/api/online/info', {}, fuori)).status === 403, 'info da fuori rifiutata');
+    const info = (await req('POST', '/api/online/info', {})).body;
+    ok(info.code === code && info.masterCollegato === false && info.giocatori.some(gi => gi.name === 'Marco'), 'info: la stanza c\'è ancora, senza master, con Marco');
+    const riaperta = (await req('POST', '/api/online/apri', {})).body;
+    ok(riaperta.code === code && riaperta.segreto === segreto && riaperta.giocatori.some(gi => gi.name === 'Marco' && gi.connected), 'il master riapre: stesso codice, stesso segreto, Marco ancora collegato col suo eroe');
+    const master2 = flusso(`/api/online/master?segreto=${segreto}`, `localhost:${PORT}`, false);
+    await wait(300);
+    ok(fr.some(([e, d], i) => e === 'master' && d.online && i > fr.indexOf(assente)), 'i giocatori vedono il master tornato');
+    master2.chiudi();
+    await wait(2500 + 600);
+    ok(fr.some(([e, d]) => e === 'master' && d.chiusa && d.scaduta), 'master che non torna: dopo il tempo massimo la stanza si chiude');
+    ok((await prendi(`/online/${code}`)).statusCode === 404, 'la stanza scaduta non c\'è più');
+    fr.chiudi();
 } finally {
     server.kill();
 }

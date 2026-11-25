@@ -9,7 +9,7 @@ window.CAMPAIGNS["fredlos_parte_2"] = {
     "title": "Fredlös, Parte II: L'Inseguimento di Kesia",
     "avventura": "fredlos",
     "capitolo": 2,
-    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 35 },
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "terreno": "neve",
     "badge": "Parte II",
     "description": "Dalla sponda orientale dell'Hemsil alle porte di Svalbard: inseguite Kesia attraverso le Brughiere del Lander, la Roccia di Zamak, le terre di Ravndal, il Colle Sovrano, le Sorgenti di Fuocogelo e la Piana del Val.",

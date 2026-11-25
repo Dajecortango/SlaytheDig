@@ -36,6 +36,11 @@ function partyMaxSize(camp) {
     return Math.min((camp && camp.maxEroi) || PARTY_MAX, ((camp && camp.heroes) || []).length);
 }
 
+// Eroi al minimo nella compagnia (campo "minEroi", altrimenti PARTY_MIN), mai più del massimo
+function partyMinSize(camp) {
+    return Math.min((camp && camp.minEroi) || PARTY_MIN, partyMaxSize(camp));
+}
+
 // Testo sicuro dentro l'HTML (nomi e descrizioni scritti nelle campagne)
 const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

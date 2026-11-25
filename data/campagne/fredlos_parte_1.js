@@ -7,6 +7,7 @@ window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["fredlos_parte_1"] = {
     "id": "fredlos_parte_1",
     "title": "Fredlös, Parte I: La Danza di Kesia",
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "avventura": "fredlos",
     "capitolo": 1,
     "terreno": "neve",

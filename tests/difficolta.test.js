@@ -2,10 +2,12 @@
 // gli altri profili hanno stili sbagliati apposta e abbassavano la media) e con ogni gruppo di eroi della
 // dimensione massima scelta nel gioco (partyMaxSize; prima abilità e primo oggetto iniziale). Se la campagna ha il
 // campo "difficolta" ({ vittoriaMin, vittoriaMax } in %), avvisa quando la vittoria esce dal margine.
-// È un avviso e non un errore: il risultato è casuale e oscilla di qualche punto. Per una misura più
+// Di poco fuori è un avviso: il risultato è casuale e oscilla di qualche punto (con 60 partite per gruppo anche
+// 10). Oltre MARGINE_ERRORE punti è un errore, che ferma il commit: lì non è più il caso. Per una misura più
 // precisa (scelte iniziali migliori, ricerca a simulazioni, margine d'errore): node tools/difficolta.mjs
 const RUNS = 60;  // partite per gruppo
 const MAX_GRUPPI = 8;
+const MARGINE_ERRORE = 20;  // punti percentuali oltre vittoriaMin / vittoriaMax che rendono il test un errore
 
 module.exports = (t, carica) => {
     const g = carica();
@@ -35,6 +37,10 @@ module.exports = (t, carica) => {
             const d = g.CAMPAIGNS[id].difficolta || {};
             const min = d.vittoriaMin ?? null, max = d.vittoriaMax ?? null;
             console.log(`      ${id}: Esperto vince il ${media}%${min != null || max != null ? ` (obiettivo ${min ?? 0}–${max ?? 100}%)` : ' (nessun obiettivo indicato)'}`);
+            // Fuori di poco: avviso (il caso oscilla). Fuori di più di MARGINE_ERRORE punti: errore, il bilanciamento
+            // si è rotto davvero (un nemico sparito, un oggetto troppo forte...) e il controllo prima del commit si ferma
+            if (min != null && media < min - MARGINE_ERRORE) t.ok(false, `${id}: bilanciamento rotto, l'Esperto vince il ${media}%, più di ${MARGINE_ERRORE} punti sotto il ${min}%`);
+            if (max != null && media > max + MARGINE_ERRORE) t.ok(false, `${id}: bilanciamento rotto, l'Esperto vince il ${media}%, più di ${MARGINE_ERRORE} punti sopra il ${max}%`);
             if (min != null && media < min) t.avviso(`${id}: troppo difficile, l'Esperto vince il ${media}%, sotto il ${min}%`);
             if (max != null && media > max) t.avviso(`${id}: troppo facile, l'Esperto vince il ${media}%, sopra il ${max}%`);
         });

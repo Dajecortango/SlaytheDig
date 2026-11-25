@@ -20,7 +20,7 @@
            I nodi tengono solo lo stato: il contenuto viene dalla campagna attuale.
            Per cambiare il formato: alza SAVE_VERSION e aggiungi in SAVE_MIGRATIONS la funzione
            che porta un salvataggio dalla versione precedente a quella nuova. */
-        const SAVE_VERSION = 7;
+        const SAVE_VERSION = 8;
         const SAVE_MIGRATIONS = {
             // Versione 1 (senza "version"): campi della partita sparsi al primo livello, nodi completi
             1: old => ({
@@ -94,7 +94,10 @@
                 return { ...old, version: 6, stato: { ...s, partyFlags } };
             },
             // Versione 6 -> 7: bonus/malus del master alle prove (Pannello di Controllo), zero per le partite di prima
-            6: old => ({ ...old, version: 7, stato: { ...old.stato, gmProvaMod: Number(old.stato.gmProvaMod) || 0 } })
+            6: old => ({ ...old, version: 7, stato: { ...old.stato, gmProvaMod: Number(old.stato.gmProvaMod) || 0 } }),
+            // Versione 7 -> 8: le mappe procedurali sono dungeon a piani. Una partita procedurale di prima non si può
+            // riprendere (dal seme uscirebbe un'altra mappa): il salvataggio non è più valido
+            7: old => (campaignsDatabase[old.campaignId] && campaignsDatabase[old.campaignId].procedurale ? null : { ...old, version: 8 })
         };
 
         // Porta un salvataggio di qualunque versione al formato attuale (null se non è un salvataggio valido)
@@ -105,6 +108,7 @@
                 const step = SAVE_MIGRATIONS[version];
                 if (!step) return null;
                 data = step(data);
+                if (!data) return null;
                 version = data.version;
             }
             if (version > SAVE_VERSION || !data.stato || !Array.isArray(data.stato.party)) return null;
@@ -117,6 +121,68 @@
 
         function writeSave(slot, data) {
             localStorage.setItem(saveKey(slot), JSON.stringify(data));
+        }
+
+        /* ---------- Spazio nella memoria del browser (localStorage) ----------
+           I browser danno circa 5 milioni di caratteri per sito (Chrome, Edge, Firefox): MEMORIA_LIMITE è una stima.
+           memoriaUsata conta chiavi e valori del gioco (dignitas_*) e il totale. Sopra MEMORIA_AVVISO si avvisa e si
+           propone "Esporta tutto": un solo file .json con salvataggi, progressi, compendio e opzioni (backupCompleto). */
+        const MEMORIA_LIMITE = 5 * 1024 * 1024;
+        const MEMORIA_AVVISO = 0.8;
+        const BACKUP_TIPO = 'slay-the-dig-backup';
+
+        function memoriaUsata() {
+            let totale = 0, gioco = 0;
+            const chiavi = [];
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    const n = k.length + (localStorage.getItem(k) || '').length;
+                    totale += n;
+                    if (k.startsWith('dignitas_')) { gioco += n; chiavi.push({ k, n }); }
+                }
+            } catch (e) {}
+            return { totale, gioco, chiavi, quota: Math.min(1, totale / MEMORIA_LIMITE) };
+        }
+
+        function memoriaHtml() {
+            const m = memoriaUsata();
+            const pct = Math.round(m.quota * 100);
+            const pieno = m.quota >= MEMORIA_AVVISO;
+            return `<p class="save-memory${pieno ? ' is-full' : ''}">Memoria del browser: <b>${pct}%</b> usata (circa ${Math.ceil(m.totale / 1024)} KB su ${MEMORIA_LIMITE / 1024 / 1024} MB)${pieno
+                ? '. Quasi piena: esporta tutto in un file ed elimina i salvataggi che non servono.' : ''}</p>`;
+        }
+
+        // Dopo un salvataggio riuscito: avviso se la memoria è quasi piena
+        function avvisaMemoria() {
+            const m = memoriaUsata();
+            if (m.quota >= MEMORIA_AVVISO) uiError(`Memoria del browser quasi piena (${Math.round(m.quota * 100)}%): da Carica partita usa "Esporta tutto"`);
+        }
+
+        // Tutto ciò che il gioco tiene nel browser (chiavi dignitas_*), per un file di riserva
+        function backupCompleto() {
+            const chiavi = {};
+            memoriaUsata().chiavi.forEach(({ k }) => { chiavi[k] = localStorage.getItem(k); });
+            return { tipo: BACKUP_TIPO, data: new Date().toISOString(), saveVersion: SAVE_VERSION, chiavi };
+        }
+
+        function esportaTutto() {
+            const blob = new Blob([JSON.stringify(backupCompleto(), null, 1)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `slay-the-dig_tutto_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            uiMessage('Salvataggi, progressi e opzioni esportati nella cartella dei download');
+        }
+
+        // Rimette nel browser un file di "Esporta tutto" (solo chiavi dignitas_*). true se riuscito
+        function ripristinaBackup(backup) {
+            if (!backup || backup.tipo !== BACKUP_TIPO || !backup.chiavi || typeof backup.chiavi !== 'object') return false;
+            const voci = Object.entries(backup.chiavi).filter(([k, v]) => k.startsWith('dignitas_') && typeof v === 'string');
+            try { voci.forEach(([k, v]) => localStorage.setItem(k, v)); } catch (e) { return false; }
+            return true;
         }
 
         // Fotografia della partita in corso nel formato attuale
@@ -224,7 +290,7 @@
                 const current = slot === currentSaveSlot ? ' <em class="save-current">partita attuale</em>' : '';
                 rows.push(saveSlotHtml(slot, readSave(slot), `<button class="btn-small" ${azione('saveToSlot', slot)}>Salva qui</button>${current}`));
             }
-            openModal('Salva partita', `<div class="save-slots">${rows.join('')}</div>`,
+            openModal('Salva partita', `<div class="save-slots">${rows.join('')}</div>${memoriaHtml()}`,
                 [{ label: 'Esporta in un file', className: 'btn-proceed', onClick: () => downloadSave(buildSaveData()) },
                  { label: 'Annulla', className: 'btn-danger' }], { wide: true });
         }
@@ -237,9 +303,11 @@
                     writeSave(slot, saveData);
                     currentSaveSlot = slot;
                     checkSavedGame();
-                    openModal('Partita salvata', `<p>Salvata nello slot ${slot} (${saveData.timestamp}).</p>`);
+                    openModal('Partita salvata', `<p>Salvata nello slot ${slot} (${saveData.timestamp}).</p>${memoriaHtml()}`);
+                    avvisaMemoria();
                 } catch (e) {
-                    openModal('Errore', '<p>Salvataggio non riuscito: memoria piena o non disponibile.</p>');
+                    openModal('Errore', `<p>Salvataggio non riuscito: memoria piena o non disponibile.</p>${memoriaHtml()}<p>Esporta questa partita in un file, poi elimina i salvataggi vecchi da Carica partita.</p>`,
+                        [{ label: 'Esporta questa partita', className: 'btn-proceed', onClick: () => downloadSave(saveData) }, { label: 'Chiudi', className: 'btn-danger' }]);
                 }
             };
             closeModal();
@@ -261,8 +329,9 @@
                     : '';
                 rows.push(saveSlotHtml(slot, data, actions));
             }
-            openModal('Carica partita', `<div class="save-slots">${rows.join('')}</div>`,
+            openModal('Carica partita', `<div class="save-slots">${rows.join('')}</div>${memoriaHtml()}`,
                 [{ label: 'Importa da file', className: 'btn-proceed', onClick: () => setTimeout(pickSaveFile, 0) },
+                 { label: 'Esporta tutto', className: 'btn-proceed', onClick: () => esportaTutto() },
                  { label: 'Chiudi', className: 'btn-danger' }], { wide: true });
         }
 
@@ -395,7 +464,20 @@
         // Controlla il file importato e chiede in quale slot metterlo
         function importSaveText(text) {
             let data = null;
-            try { data = migrateSave(JSON.parse(text)); } catch (e) {}
+            let grezzo = null;
+            try { grezzo = JSON.parse(text); } catch (e) {}
+            // File di "Esporta tutto": rimette salvataggi, progressi, compendio e opzioni (chiede conferma)
+            if (grezzo && grezzo.tipo === BACKUP_TIPO) {
+                const n = Object.keys(grezzo.chiavi || {}).length;
+                openModal('Ripristinare tutto?', `<p>Il file contiene ${n} voci (salvataggi, progressi, compendio, opzioni) del ${esc(String(grezzo.data || '').slice(0, 10))}.</p><p>Quelle con lo stesso nome nel browser vengono sostituite.</p>`,
+                    [{ label: 'Annulla', className: 'btn-proceed' }, { label: 'Ripristina', className: 'btn-danger', onClick: () => {
+                        if (!ripristinaBackup(grezzo)) { setTimeout(() => openModal('Errore', '<p>Ripristino non riuscito: memoria piena o file rovinato.</p>'), 0); return; }
+                        checkSavedGame();
+                        uiMessage('Ripristinato: ricarica la pagina per vedere progressi e opzioni');
+                    } }]);
+                return;
+            }
+            try { data = migrateSave(grezzo); } catch (e) {}
             if (!data) {
                 openModal('File non valido', '<p>Il file non è un salvataggio di Slay the Dig, oppure è di una versione più recente del gioco.</p>');
                 return;

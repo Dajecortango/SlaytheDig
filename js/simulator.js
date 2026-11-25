@@ -635,6 +635,7 @@ function simBuildHero(campaignData, heroName, abilityIdx, itemIdx) {
 function simBuildParty(campaignData, heroSelection) {
     stato.party = [];
     heroSelection.forEach(sel => stato.party.push(simBuildHero(campaignData, sel.name, sel.abilityIdx, sel.itemIdx)));
+    if (typeof applicaSinergie === 'function') applicaSinergie(campaignData.campaign);  // come nextHero in js/creazione.js
 }
 
 /* ==========================================================================
@@ -920,6 +921,30 @@ function simRunCombat(enemyData, profile, runCtx) {
 
 // Preghiera al riposo: prega l'eroe con più Fede; tra le benedizioni pescate tiene la prima utile in quest'ordine
 const SIM_BLESSING_ORDER = ['furia_sacra', 'fede_incrollabile', 'abbondanza', 'purificazione', 'scudo_della_fede', 'lama_consacrata', 'mano_guidata', 'veglia'];
+// Attività al falò (doRestActivity in js/motore/prove.js), AL POSTO della preghiera, uguale per tutti i profili:
+// via una maledizione se si può, altrimenti veglia sul più ferito se gli mancano almeno 2 HP; se nessuno ha Fede 3
+// (preghiera sotto il 50%) allenamento della Forza di chi colpisce meglio se avanzano Scudi, se no la lama affilata.
+// True se ha fatto un'attività (allora niente preghiera)
+function simRestActivity() {
+    if (typeof restActivities !== 'function') return false;
+    const acts = Object.fromEntries(restActivities().map(a => [a.id, a]));
+    const can = id => acts[id] && !acts[id].blocco;
+    const attacker = list => simAliveMaxBy(list, h => (h.str || 0) + (h.dmg || 0));
+    const ferito = simAliveMaxBy(restActivityHeroes('veglia'), h => h.maxHp - h.hp);
+    if (can('purificarsi')) {
+        const hero = simAliveMaxBy(restActivityHeroes('purificarsi'), h => h.hp);
+        if (hero && doRestActivity('purificarsi', { hero: hero.name, curse: 0 })) return true;
+    }
+    if (can('veglia') && ferito && ferito.maxHp - ferito.hp >= 2 && doRestActivity('veglia', { hero: ferito.name })) return true;
+    if (stato.party.some(h => h.hp > 0 && (h.fth || 0) >= 3)) return false;
+    if (can('allenarsi') && stato.partyCoins >= REST_ACTIVITIES.allenarsi.costo + 20) {
+        const hero = attacker(restActivityHeroes('allenarsi'));
+        if (hero && doRestActivity('allenarsi', { hero: hero.name, stat: 'str' })) return true;
+    }
+    const hero = attacker(restActivityHeroes('affilare'));
+    return !!(hero && can('affilare') && doRestActivity('affilare', { hero: hero.name }));
+}
+
 function simPray() {
     const praying = simAliveMaxBy(stato.party, h => h.fth || 0);
     if (!praying) return;
@@ -946,7 +971,7 @@ function simResolveNode(campaignData, node, profile, runCtx) {
         return { defeat: !!outcome.defeat, finalVictory: false };
     }
     if (node.type === 'challenge') return simResolveChallengeNode(campaignData, node, profile);
-    if (node.type === 'rest') { resolveRest(); simPray(); return { defeat: false, finalVictory: false }; }
+    if (node.type === 'rest') { resolveRest(); if (!simRestActivity()) simPray(); return { defeat: false, finalVictory: false }; }
     if (node.type === 'merchant') { simResolveMerchantNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'treasure') { simResolveTreasureNode(campaignData, node, profile, runCtx); return { defeat: false, finalVictory: false }; }
     if (node.type === 'story') return { defeat: false, finalVictory: false };  // solo racconto

@@ -16,3 +16,4 @@
 @import url('gioco-12-presentazione-scontro.css');  /* presentazione dello scontro, della mappa e degli eventi, schieramento */
 @import url('gioco-13-abbellimenti.css');  /* carte che reagiscono, riposo, titolo del capitolo, fine partita, polvere, diario */
 @import url('gioco-14-bottoni-e-movimento.css');  /* bottoni, catene a maglie, cornici con spessore, nastro, ingressi a scaletta */
+@import url('gioco-15-online.css');  /* partita online: reazioni dei giocatori sullo schermo del master */

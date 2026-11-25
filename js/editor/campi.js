@@ -50,6 +50,12 @@ const GENERAL_FIELDS = [
       help: 'Ordine nell\'elenco dei capitoli dell\'avventura (1, 2, 3...)' },
     { k: 'maxEroi', label: 'Eroi al massimo nella compagnia', type: 'number', omitEmpty: true,
       help: 'Quanti eroi si possono scegliere al massimo (vuoto = 5). Non più degli eroi della campagna' },
+    { k: 'sinergie', label: 'Legami della Famiglia: gli eroi della stessa avventura si danno forza a vicenda', type: 'checkbox', omitEmpty: true, wide: true,
+      help: 'Con almeno 3 eroi venuti dalla stessa avventura nella compagnia, ognuno riceve un bonus (Armatura, Forza, HP massimi o Fede secondo il gruppo). I gruppi e i bonus sono in SINERGIE di js/regole.js. Oggi solo nel Drakengrad' },
+    { k: 'eroiDopo', label: 'Eroi da sbloccare', type: 'json', nullable: true, avanzato: true, wide: true, gruppo: 'Avanzate',
+      help: 'Eroi che si possono scegliere solo dopo aver finito un\'avventura: { "id_avventura": ["id_eroe", ...] }. Gli altri sono liberi da subito' },
+    { k: 'minEroi', label: 'Eroi al minimo nella compagnia', type: 'number', omitEmpty: true,
+      help: 'Quanti eroi bisogna scegliere almeno (vuoto = 3). Uguale al massimo = compagnia di grandezza fissa' },
     { k: 'terreno', label: 'Terreno sulla mappa', type: 'select', omitEmpty: true,
       options: () => [['', 'Terra'], ['neve', 'Neve'], ['fango', 'Fango'], ['pietra', 'Pietra']],
       help: 'Colore delle impronte e suono dei passi quando la compagnia si muove sulla mappa' },
@@ -57,7 +63,7 @@ const GENERAL_FIELDS = [
     { k: 'description', label: 'Descrizione breve', type: 'textarea', wide: true },
     { k: 'introText', label: 'Testo introduttivo', type: 'textarea', wide: true },
     { k: 'difficolta.vittoriaMin', label: 'Difficoltà voluta: vittorie minime (%)', type: 'number', omitEmpty: true,
-      help: 'Percentuale di vittoria media del simulatore (tutti i profili, party di 3 eroi). I test avvisano se si scende sotto' },
+      help: 'Percentuale di vittoria del simulatore con il profilo Esperto e la compagnia più numerosa (vedi "Difficoltà stimata" qui sotto). I test avvisano se si scende sotto' },
     { k: 'difficolta.vittoriaMax', label: 'Difficoltà voluta: vittorie massime (%)', type: 'number', omitEmpty: true,
       help: 'I test avvisano se la campagna diventa più facile di così' }
 ];
@@ -351,7 +357,10 @@ const ADVENTURE_FIELDS = [
     { k: 'badge', label: 'Etichetta', help: 'Sopra il nome nel menu, es. "Avventura"' },
     { k: 'coverImage', label: 'Immagine di copertina', type: 'image', folder: 'immagini', wide: true,
       help: 'Vuota: si usa la copertina del primo capitolo' },
-    { k: 'description', label: 'Descrizione', type: 'textarea', wide: true }
+    { k: 'description', label: 'Descrizione', type: 'textarea', wide: true },
+    { k: 'dopo', label: 'Si sblocca dopo l\'avventura', type: 'select', omitEmpty: true,
+      options: () => [['', 'Aperta da subito'], ...keysOf(lib.avventure || {}).map(k => [k, lib.avventure[k].title || k])],
+      help: 'Nel menu del gioco resta chiusa finché non si vincono tutti i capitoli dell\'avventura scelta. I capitoli si aprono sempre uno dopo l\'altro' }
 ];
 
 // Benedizioni degli Asi (data/libreria/benedizioni.js): cosa fanno lo dice "effetto" (applyBlessing in js/prove.js)

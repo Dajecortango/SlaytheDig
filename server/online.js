@@ -13,12 +13,16 @@ const zlib = require('zlib');
 const PUBLIC = path.join(__dirname, 'public');
 const DISCONNECT_MS = process.env.ONLINE_DISCONNECT_MS ? parseInt(process.env.ONLINE_DISCONNECT_MS, 10) : 20000;
 const PING_MS = process.env.SSE_PING_MS ? parseInt(process.env.SSE_PING_MS, 10) : 15000;
-const { esitoSceltaEroe, nomeModeratore } = require('../js/online-regole.js');
+// Senza master (pagina ricaricata, browser chiuso, rete caduta) la stanza resta aperta per questo tempo, poi si chiude
+const ATTESA_MASTER_MS = process.env.ONLINE_MASTER_ATTESA_MS ? parseInt(process.env.ONLINE_MASTER_ATTESA_MS, 10) : 30 * 60 * 1000;
+const { esitoSceltaEroe, nomeModeratore, esitoReazione } = require('../js/online-regole.js');
 
 // { code, segreto, chiaveMaster, giocatori: Map(token -> { id, name (null finché non sceglie un eroe), connected, flussi: Set, timer, ruolo }), regioni: {},
 //   regioniMaster: {}, stato: null }. regioniMaster = la schermata come la vede il master a distanza (mappa intera)
 let stanza = null;
 const masters = new Set(); // stream SSE del master
+// Master assente: quando la stanza si chiude da sola (millisecondi) e il timer che la chiude
+let scadenzaMaster = null, timerMaster = null;
 
 // Master: chiamata dal PC stesso (loopback; anche ngrok arriva da qui, ma con l'Host pubblico) e con Host locale.
 // Dopo l'apertura della stanza serve anche il segreto (intestazione X-Online-Segreto o ?segreto= per lo stream).
@@ -79,6 +83,23 @@ function partiAiGiocatori(parti, partiMaster) {
 }
 const applicaRegioni = (dove, parti) => Object.entries(parti || {}).forEach(([k, v]) => { if (v === null) delete dove[k]; else dove[k] = v; });
 const avvisaStanza = () => alMaster('stanza', { giocatori: elencoGiocatori() });
+// Stato del master per i giocatori: collegato, oppure assente con l'ora in cui la stanza si chiude
+const statoMaster = () => masters.size ? { online: true } : { online: false, scadenza: scadenzaMaster };
+function chiudiStanza(scaduta) {
+    clearTimeout(timerMaster); timerMaster = null; scadenzaMaster = null;
+    aiGiocatori('master', { online: false, chiusa: true, scaduta: !!scaduta });
+    if (stanza) stanza.giocatori.forEach(gi => gi.flussi.forEach(f => f.chiudi()));
+    stanza = null;
+}
+// Il master se n'è andato: i giocatori aspettano ("Il master si è disconnesso"), la stanza vive ATTESA_MASTER_MS
+function masterAssente() {
+    if (!stanza || masters.size) return;
+    clearTimeout(timerMaster);
+    scadenzaMaster = Date.now() + ATTESA_MASTER_MS;
+    timerMaster = setTimeout(() => { if (!masters.size) chiudiStanza(true); }, ATTESA_MASTER_MS);
+    aiGiocatori('master', statoMaster());
+}
+function masterTornato() { clearTimeout(timerMaster); timerMaster = null; scadenzaMaster = null; }
 
 function giocatoreDaToken(code, token) {
     if (!stanza || stanza.code !== code || !token) return null;
@@ -142,28 +163,33 @@ function leggero(req, res, pathname) {
 function gestisci(req, res, pathname) {
     if (pathname.startsWith('/leggero/')) { leggero(req, res, pathname); return true; }
     // ----- Master (Host locale) -----
-    if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso', 'libera', 'gmstato'].includes(pathname.slice(12))) {
+    if (pathname.startsWith('/api/online/') && ['apri', 'chiudi', 'master', 'parti', 'stato', 'avviso', 'libera', 'gmstato', 'info'].includes(pathname.slice(12))) {
         const cosa = pathname.slice(12);
         if (!eLocale(req) || (cosa !== 'apri' && !haSegreto(req))) { json(res, 403, { error: 'Solo il master' }); return true; }
         if (cosa === 'apri' && req.method === 'POST') {
             if (!stanza) stanza = { code: crypto.randomBytes(5).toString('hex'), segreto: crypto.randomBytes(16).toString('hex'),
                 chiaveMaster: crypto.randomBytes(12).toString('hex'), giocatori: new Map(), regioni: {}, regioniMaster: {}, stato: null, gmStato: null };
-            json(res, 200, { code: stanza.code, segreto: stanza.segreto, chiaveMaster: stanza.chiaveMaster });
+            // Una stanza già aperta (il master torna dopo aver ricaricato la pagina) si riprende com'è, con i suoi giocatori
+            json(res, 200, { code: stanza.code, segreto: stanza.segreto, chiaveMaster: stanza.chiaveMaster, giocatori: elencoGiocatori() });
             return true;
         }
         if (cosa === 'chiudi' && req.method === 'POST') {
-            aiGiocatori('master', { online: false, chiusa: true });
-            if (stanza) stanza.giocatori.forEach(gi => gi.flussi.forEach(f => f.chiudi()));
-            stanza = null;
+            chiudiStanza(false);
             json(res, 200, { ok: true });
+            return true;
+        }
+        // Il master che riapre il gioco chiede se la sua stanza (codice e segreto salvati nel browser) c'è ancora
+        if (cosa === 'info') {
+            json(res, 200, { code: stanza.code, giocatori: elencoGiocatori(), masterCollegato: masters.size > 0, scadenza: scadenzaMaster });
             return true;
         }
         if (cosa === 'master') {
             const f = apriFlusso(req, res);
             masters.add(f);
+            masterTornato();
             f.scrivi('stanza', { giocatori: elencoGiocatori() });
             aiGiocatori('master', { online: true });
-            req.on('close', () => { masters.delete(f); if (!masters.size) aiGiocatori('master', { online: false }); });
+            req.on('close', () => { masters.delete(f); if (!masters.size) masterAssente(); });
             return true;
         }
         leggiJson(req, data => {
@@ -275,7 +301,7 @@ function gestisci(req, res, pathname) {
         scriviParti(f, gi.ruolo === 'master' ? stanza.regioniMaster : stanza.regioni);
         if (stanza.stato) f.scrivi('stato', stanza.stato);
         if (['moderatore', 'master'].includes(gi.ruolo) && stanza.gmStato) f.scrivi('gmstato', stanza.gmStato);
-        f.scrivi('master', { online: masters.size > 0 });
+        f.scrivi('master', statoMaster());
         req.on('close', () => {
             gi.flussi.delete(f);
             if (gi.flussi.size) return;
@@ -289,7 +315,7 @@ function gestisci(req, res, pathname) {
             const gi = data && giocatoreDaToken(data.code, data.token);
             if (!gi) { json(res, 403, { error: 'Token non valido' }); return; }
             if ((gi.ruolo || 'giocatore') === 'giocatore' && gi.name === null) { json(res, 403, { error: 'Scegli prima un eroe' }); return; }
-            if (!masters.size) { json(res, 200, { error: 'Il master non è collegato' }); return; }
+            if (!masters.size) { json(res, 200, { error: 'Il master si è disconnesso, attendere…' }); return; }
             alMaster('clic', { giocatore: gi.name, azione: String(data.azione || ''), tipo: data.tipo || 'click',
                 regione: data.regione || null, percorso: Array.isArray(data.percorso) ? data.percorso : [],
                 args: Array.isArray(data.args) ? data.args : [], valori: data.valori || {} });
@@ -307,6 +333,23 @@ function gestisci(req, res, pathname) {
             if (!masters.size) { json(res, 200, { error: 'Il master non è collegato' }); return; }
             alMaster('clic-moderatore', { giocatore: gi.name, azione: String((data && data.azione) || ''),
                 args: Array.isArray(data && data.args) ? data.args : [] });
+            json(res, 200, { ok: true });
+        });
+        return true;
+    }
+    // Reazioni (tifo, risata, paura...): solo voci predefinite (ONLINE_REAZIONI in js/online-regole.js), al massimo una
+    // ogni ONLINE_REAZIONE_MS per persona; il master le mostra per pochi secondi e può spegnerle (reazioni: false nello stato)
+    if (pathname === '/api/online/reazione' && req.method === 'POST') {
+        leggiJson(req, data => {
+            const gi = data && giocatoreDaToken(data.code, data.token);
+            if (!gi) { json(res, 403, { error: 'Token non valido' }); return; }
+            if (!masters.size) { json(res, 200, { error: 'Il master si è disconnesso, attendere…' }); return; }
+            const ora = Date.now();
+            const esito = esitoReazione(String(data.reazione || ''), gi.ultimaReazione || 0, ora,
+                { ruolo: gi.ruolo || 'giocatore', spente: !!(stanza.stato && stanza.stato.reazioni === false) });
+            if (!esito.ok) { json(res, 200, { error: esito.motivo }); return; }
+            gi.ultimaReazione = ora;
+            alMaster('reazione', { reazione: esito.reazione.id, chi: gi.name || null });
             json(res, 200, { ok: true });
         });
         return true;

@@ -6,7 +6,7 @@
    ========================================================================== */
 
         /* ---------- 19. Opzioni di gioco ---------- */
-        const DEFAULT_OPTIONS = { textSpeed: 2, textSize: 1, musicVolume: 0.5, sfxVolume: 0.8, animations: true, floatingNumbers: true, fastAnimations: false, autoAdvance: true };
+        const DEFAULT_OPTIONS = { textSpeed: 2, textSize: 1, musicVolume: 0.5, sfxVolume: 0.8, animations: true, floatingNumbers: true, fastAnimations: false, autoAdvance: true, sbloccaTutto: false };
         let gameOptions = Object.assign({}, DEFAULT_OPTIONS);
         try { Object.assign(gameOptions, JSON.parse(localStorage.getItem('dignitas_options') || '{}')); } catch (e) {}
 
@@ -186,6 +186,10 @@
                         <span class="option-label">Numeri fluttuanti<small>Danni, cure e armatura sopra i bersagli</small></span>
                         <label class="option-toggle"><input type="checkbox" id="optNumbers" ${gameOptions.floatingNumbers ? 'checked' : ''}> Attivi</label>
                     </div>
+                    <div class="option-row">
+                        <span class="option-label">Sblocca tutto<small>Per il master: apre subito tutti i capitoli, le avventure e gli eroi</small></span>
+                        <label class="option-toggle"><input type="checkbox" id="optSblocca" ${gameOptions.sbloccaTutto ? 'checked' : ''}> Attivo</label>
+                    </div>
                 </div>`,
                 [
                     { label: 'Chiudi', className: 'btn-proceed' },
@@ -210,4 +214,5 @@
             document.getElementById('optSfx').addEventListener('change', () => playSfx(CLICK_SFX, 0.8));
             bind('optAnim', 'change', el => { gameOptions.animations = el.checked; applyOptions(); });
             bind('optNumbers', 'change', el => { gameOptions.floatingNumbers = el.checked; });
+            bind('optSblocca', 'change', el => { gameOptions.sbloccaTutto = el.checked; });
         }

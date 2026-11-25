@@ -228,12 +228,13 @@
         // opts: sub(h) = riga sotto il nome (testo già protetto), tip(h) = descrizione del tooltip,
         // chance(h) = % di riuscita (colora la riga: alta, media, bassa), cls = classe in più su ogni pulsante.
         function heroPickHtml(heroes, action, opts = {}) {
-            return heroes.map(h => {
+            return heroes.map((h, i) => {
                 const pct = opts.chance ? opts.chance(h) : null;
                 const livello = pct === null ? '' : (pct >= 67 ? 'high' : (pct >= 34 ? 'mid' : 'low'));
                 const tip = opts.tip ? opts.tip(h) : `HP ${h.hp}/${h.maxHp}`;
                 return `<button class="hero-pick-btn${opts.cls ? ' ' + opts.cls : ''}" data-hero="${esc(h.name)}" ${azione(action, h.name)}
                     data-tip="${esc(h.name)}||${esc(tip)}">
+                    ${i < 9 ? `<span class="hero-pick-key" aria-hidden="true">${i + 1}</span>` : ''}
                     <span class="hero-portrait ${heroPortraitClass(h.name)}" style="--hue:${heroHue(h.name)}">${heroPortraitInner(h.name, h.hp, h.maxHp)}</span>
                     <span class="hero-pick-name">${esc(h.name)}</span>
                     <span class="hero-pick-sub"${livello ? ` data-chance="${livello}"` : ''}>${opts.sub ? opts.sub(h) : `HP ${h.hp}/${h.maxHp}`}</span>
@@ -498,17 +499,59 @@
             // Esc in combattimento, prima del tiro: dal dado torna alle azioni, dalle azioni alla scelta dell'eroe
             if (e.key === 'Escape') {
                 const back = ['combatDiceBackBtn', 'combatChangeHeroBtn', 'challengeDiceBackBtn', 'challengeHeroBackBtn',
-                    'prayerDiceBackBtn', 'prayerHeroBackBtn', 'captainDiceBackBtn'].map(id => document.getElementById(id)).find(isUsable);
+                    'prayerDiceBackBtn', 'prayerHeroBackBtn', 'captainDiceBackBtn'].map(id => document.getElementById(id)).find(isUsable)
+                    || Array.from(document.querySelectorAll('#restActivityArea [data-action="restActivityBack"]')).find(isUsable);
                 if (back) { e.preventDefault(); back.click(); return; }
             }
 
-            if (e.key === ' ' && document.activeElement.tagName !== 'BUTTON') {
-                const roll = ['rollCombatBtn', 'rollChallengeBtn', 'rollCaptainBtn']
-                    .map(id => document.getElementById(id))
-                    .find(isUsable);
+            const onButton = document.activeElement && document.activeElement.tagName === 'BUTTON';
+            const rollBtn = () => ['rollCombatBtn', 'rollChallengeBtn', 'rollCaptainBtn', 'rollPrayerBtn']
+                .map(id => document.getElementById(id))
+                .find(isUsable);
+
+            if (e.key === ' ' && !onButton) {
+                const roll = rollBtn();
                 if (roll) { e.preventDefault(); roll.click(); }
+                return;
             }
+
+            // Invio: il dado se c'è, altrimenti l'unico "Avanti" della schermata (mai quelli rossi: uscire dal mercante...)
+            if (e.key === 'Enter' && !onButton) {
+                const roll = rollBtn();
+                const avanti = Array.from(document.querySelectorAll('.btn-proceed:not(.btn-danger)')).filter(isUsable);
+                const target = roll || (avanti.length === 1 ? avanti[0] : null);
+                if (target) { e.preventDefault(); target.click(); }
+                return;
+            }
+
+            // 1-9: l'eroe nella scelta degli eroi, la benedizione o l'attività del falò, la stanza sulla mappa (da sinistra)
+            if (/^[1-9]$/.test(e.key)) {
+                const visibili = sel => Array.from(document.querySelectorAll(sel)).filter(isUsable);
+                let gruppo = visibili('.hero-pick-btn');
+                if (!gruppo.length) gruppo = visibili('.prayer-choice');
+                if (!gruppo.length) gruppo = visibili('#screenMap .sts-node[data-action]')
+                    .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+                const el = gruppo[Number(e.key) - 1];
+                if (el) { e.preventDefault(); el.click(); }
+                return;
+            }
+
+            if (e.key === '?' || e.key.toLowerCase() === 'h') { e.preventDefault(); showHotkeysHelp(); }
         });
+
+        // Finestra dei tasti rapidi (tasto ? o H)
+        function showHotkeysHelp() {
+            const rows = [
+                ['Q W E R T', 'Attacca, Difendi, Aiuta, Oggetto, Abilità (in combattimento)'],
+                ['Spazio', 'Tira il dado (scontro, prova, preghiera, capitano)'],
+                ['Invio', 'Tira il dado, oppure "Avanti" quando ce n\'è uno solo'],
+                ['1 - 9', 'Sceglie l\'eroe, la benedizione o l\'attività del falò; sulla mappa la stanza (da sinistra)'],
+                ['Esc', 'Indietro prima del tiro; chiude le finestre'],
+                ['? / H', 'Questa finestra']
+            ];
+            openModal('Tasti rapidi', `<table class="hotkeys-table">${rows.map(([k, d]) => `<tr><th>${esc(k)}</th><td>${esc(d)}</td></tr>`).join('')}</table>`,
+                [{ label: 'Chiudi' }]);
+        }
 
         /* ---------- Segnaposto per immagini mancanti ---------- */
         function markMissingImage(img) {

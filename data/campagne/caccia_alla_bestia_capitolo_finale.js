@@ -5,7 +5,7 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["caccia_alla_bestia_capitolo_finale"] = {
-    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 25 },
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "id": "caccia_alla_bestia_capitolo_finale",
     "title": "Caccia Alla Bestia - Capitolo Finale",
     "avventura": "caccia_alla_bestia",

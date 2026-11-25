@@ -466,7 +466,114 @@
                     return false;
                 });
             });
+            // Preparativi del falò (attività "affilare"): valgono per un solo scontro, come le benedizioni
+            stato.party.filter(h => h.hp > 0 && h.restPrep && h.restPrep.length).forEach(h => {
+                h.restPrep.forEach(p => {
+                    applyTempBuff(h, { buff_stat: p.stat, buff_val: p.val, buff_rounds: 0, name: p.name, icon: p.icon });
+                    used.push({ hero: h, b: { name: p.name, desc: p.desc } });
+                });
+                h.restPrep = [];
+            });
             return used;
+        }
+
+        /* ---------- Sinergie della Famiglia (SINERGIE in js/regole.js) ----------
+           Solo nelle campagne con "sinergie": true. Pure sullo stato: le usano creazione, simulatore e test. */
+        function sinergieAttive(party, campagna) {
+            if (!campagna || !campagna.sinergie) return [];
+            const ids = (party || []).map(heroLibId);
+            return SINERGIE.map(s => {
+                const membri = (party || []).filter((h, i) => s.eroi.includes(ids[i]));
+                const soglie = s.soglie.filter(x => membri.length >= x.n);
+                return { id: s.id, name: s.name, icon: s.icon, membri, soglie };
+            }).filter(s => s.soglie.length);
+        }
+
+        // Applica le sinergie (una volta: quando la compagnia è completa). Restituisce le righe per l'interfaccia
+        function applicaSinergie(campagna) {
+            const attive = sinergieAttive(stato.party, campagna);
+            attive.forEach(s => s.membri.forEach(h => s.soglie.forEach(x => (x.effects || []).forEach(e => {
+                if (e.effect === 'hero_stat') h[e.stat] = (h[e.stat] || 0) + e.val;
+            }))));
+            stato.party.forEach(h => { if (typeof refreshScaledBonuses === 'function') refreshScaledBonuses(h); });
+            return attive.map(s => ({ id: s.id, name: s.name, icon: s.icon, eroi: s.membri.map(h => h.name),
+                testo: `${s.name} (${s.membri.map(h => h.name).join(', ')}): ${s.soglie.map(x => x.desc).join(', ')} a ciascuno` }));
+        }
+
+        /* ---------- Attività al falò ----------
+           Una per riposo, scelta dalla compagnia (dal master online), oltre alla cura e alla preghiera.
+           Numeri in REST_ACTIVITIES (js/regole.js). Funzioni pure sullo stato: le usano schermata, simulatore e test. */
+        const REST_ACTIVITY_INFO = {
+            veglia: { name: 'Vegliare un ferito', icon: 'immagini/icone/BTNHealingSalve.png',
+                desc: () => `Bende pulite e qualcuno che resta sveglio al suo fianco: +${REST_ACTIVITIES.veglia.hp} HP a un eroe ferito.` },
+            affilare: { name: 'Affilare le lame', icon: 'immagini/icone/BTNSteelMelee.png',
+                desc: () => `Un eroe passa la notte alla cote: +${REST_ACTIVITIES.affilare.val} ${BUFF_STATS[REST_ACTIVITIES.affilare.stat] || REST_ACTIVITIES.affilare.stat} per tutto il prossimo scontro.` },
+            allenarsi: { name: 'Allenarsi', icon: 'immagini/icone/BTNTomeOfIntelligence.png',
+                desc: () => `Un eroe paga un maestro d'armi o di preghiera: +1 permanente a Forza, Intelligenza o Fede per ${REST_ACTIVITIES.allenarsi.costo} Scudi (al massimo ${REST_ACTIVITIES.allenarsi.massimo} volte per eroe).` },
+            purificarsi: { name: 'Purificarsi', icon: 'immagini/icone/BTNDispelMagic.png',
+                desc: () => `Un rito di sangue presso il fuoco: un eroe perde ${REST_ACTIVITIES.purificarsi.hp} HP e la compagnia si libera di una maledizione a scelta.` }
+        };
+        const REST_STAT_NAMES = { str: 'Forza', int: 'Intelligenza', fth: 'Fede' };
+
+        // Eroi che possono fare l'attività (in piedi; per allenarsi sotto il massimo, per purificarsi con HP da dare)
+        function restActivityHeroes(id) {
+            const alive = stato.party.filter(h => h.hp > 0);
+            if (id === 'allenarsi') return alive.filter(h => (h.allenamenti || 0) < REST_ACTIVITIES.allenarsi.massimo);
+            if (id === 'purificarsi') return alive.filter(h => h.hp > REST_ACTIVITIES.purificarsi.hp);
+            if (id === 'veglia') return alive.filter(h => h.hp < h.maxHp);
+            return alive;
+        }
+
+        // Attività del falò con il motivo per cui non si possono fare ora ("" = si può)
+        function restActivities() {
+            return Object.keys(REST_ACTIVITIES).filter(id => REST_ACTIVITY_INFO[id]).map(id => {
+                const info = REST_ACTIVITY_INFO[id];
+                let blocco = '';
+                if (!restActivityHeroes(id).length) blocco = id === 'allenarsi' ? 'Nessun eroe può allenarsi ancora'
+                    : id === 'purificarsi' ? 'Nessuno ha HP da dare' : id === 'veglia' ? 'Nessuno è ferito' : 'Nessun eroe in piedi';
+                else if (id === 'allenarsi' && stato.partyCoins < REST_ACTIVITIES.allenarsi.costo) blocco = `Servono ${REST_ACTIVITIES.allenarsi.costo} Scudi`;
+                else if (id === 'purificarsi' && !stato.activeCurses.length) blocco = 'Nessuna maledizione da togliere';
+                return { id, name: info.name, icon: info.icon, desc: info.desc(), blocco,
+                    serveEroe: true, serveStat: id === 'allenarsi', serveMaledizione: id === 'purificarsi' };
+            });
+        }
+
+        // Esegue l'attività. opts: { hero (nome), stat (allenarsi), curse (indice in activeCurses, purificarsi) }.
+        // Restituisce il testo dell'esito, o null se non si può fare (lo stato resta com'era).
+        function doRestActivity(id, opts = {}) {
+            const act = restActivities().find(a => a.id === id);
+            if (!act || act.blocco) return null;
+            const hero = act.serveEroe ? restActivityHeroes(id).find(h => h.name === opts.hero) : null;
+            if (act.serveEroe && !hero) return null;
+            if (id === 'veglia') {
+                const gained = healHero(hero, REST_ACTIVITIES.veglia.hp);
+                return `Qualcuno veglia su ${hero.name} fino all'alba: +${gained} HP (${hero.hp}/${hero.maxHp}).`;
+            }
+            if (id === 'affilare') {
+                const cfg = REST_ACTIVITIES.affilare;
+                const statName = BUFF_STATS[cfg.stat] || cfg.stat;
+                (hero.restPrep = hero.restPrep || []).push({ stat: cfg.stat, val: cfg.val, name: 'Lama affilata', icon: REST_ACTIVITY_INFO.affilare.icon,
+                    desc: `+${cfg.val} ${statName} per tutto lo scontro` });
+                return `${hero.name} affila la lama: +${cfg.val} ${statName} per tutto il prossimo scontro.`;
+            }
+            if (id === 'allenarsi') {
+                const cfg = REST_ACTIVITIES.allenarsi;
+                if (!cfg.stats.includes(opts.stat)) return null;
+                stato.partyCoins -= cfg.costo;
+                hero[opts.stat] = (hero[opts.stat] || 0) + 1;
+                hero.allenamenti = (hero.allenamenti || 0) + 1;
+                if (typeof refreshScaledBonuses === 'function') refreshScaledBonuses(hero);
+                return `${hero.name} si allena: +1 ${REST_STAT_NAMES[opts.stat]} (−${cfg.costo} Scudi).`;
+            }
+            if (id === 'purificarsi') {
+                const curse = stato.activeCurses[opts.curse];
+                if (!curse) return null;
+                const name = curse.text || curse.id;
+                hero.hp -= REST_ACTIVITIES.purificarsi.hp;
+                removeCurseAt(opts.curse);
+                return `${hero.name} offre il proprio sangue al fuoco (−${REST_ACTIVITIES.purificarsi.hp} HP): svanisce ${name}.`;
+            }
+            return null;
         }
 
         // Risolve l'azione del finale "capitano": 'force' dimezza gli HP, 'faith'/'int' tirano contro CD 6.
@@ -492,7 +599,8 @@
         isFinalNode, challengeWithRoad, isSacrifice, sacrificeRules, sacrificesLeft, canSacrifice, resolveSacrifice, bestChallengeRoad, roadCoinCost, roadPriceText, roadLabel,
         challengeRollMode, heroLibId, challengeHeroBonus, challengeModifiers, challengeChanceInfo, resolveChallenge, applyPunishment, removeCurseAt,
         resolveRest, storyChoiceLabel, resolveStoryChoice, blessingData, hasBlessing, pickBlessings,
-        prayerRoll, applyBlessing, applyCombatBlessings, resolveCaptainAction
+        prayerRoll, applyBlessing, applyCombatBlessings, resolveCaptainAction,
+        restActivities, restActivityHeroes, doRestActivity, REST_STAT_NAMES, sinergieAttive, applicaSinergie
     };
     window.Motore = window.Motore || {};
     window.Motore.prove = api;

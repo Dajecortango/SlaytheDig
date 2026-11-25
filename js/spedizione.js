@@ -302,6 +302,9 @@
         function mostraRiepilogo(esito) {
             const box = document.getElementById(esito === 'vittoria' ? 'victorySummary' : 'defeatSummary');
             if (box) box.innerHTML = riepilogoHtml(datiRiepilogo(stato, esito));
+            // Vittoria: la campagna resta nei progressi e si dice cosa si è aperto (capitoli, avventure, eroi)
+            const nuovi = esito === 'vittoria' && stato.currentCampaign ? segnaCampagnaCompletata(stato.currentCampaign.id) : [];
+            if (box && nuovi.length) box.insertAdjacentHTML('beforeend', `<p class="run-summary-unlock"><b>Sbloccato:</b> ${nuovi.map(esc).join(', ')}</p>`);
             if (box) fxFinePartita(box, esito);
         }
 

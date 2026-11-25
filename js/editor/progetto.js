@@ -493,7 +493,9 @@ async function downloadProjectZip() {
 
 /* Prova nel gioco: il gioco legge la campagna (e la libreria modificata) dalla chiave "playtest" (vedi js/game.js) */
 const playtestedIds = new Set();   // campagne provate in questa sessione (passo 3 di "Cosa fare adesso")
-async function playtest() {
+// partenza (facoltativa, da "Prova da qui"): { nodeId, eroi: [nomi] }; il gioco crea la compagnia da solo
+// e la mette sulla mappa con solo quel punto raggiungibile (startPlaytestFromNode in js/game.js)
+async function playtest(partenza = null) {
     if (!camp) return;
     playtestedIds.add(camp.id);
     renderIssues();
@@ -501,10 +503,40 @@ async function playtest() {
         await kvSet('playtest', {
             campaign: deepCopy(camp),
             library: libDirty.size ? deepCopy(lib) : null,
-            assets: [...pendingAssets].map(([p, a]) => [p, a.blob])
+            assets: [...pendingAssets].map(([p, a]) => [p, a.blob]),
+            partenza: partenza && Array.isArray(partenza.eroi) ? partenza : null
         });
-        window.open(`index.html?prova=${encodeURIComponent(camp.id)}`, '_blank');
+        window.open(`index.html?prova=${encodeURIComponent(camp.id)}${partenza && Array.isArray(partenza.eroi) ? `&nodo=${encodeURIComponent(partenza.nodeId)}` : ''}`, '_blank');
     } catch (e) {
         alert('Impossibile preparare la prova: archivio del browser non disponibile.');
     }
+}
+
+/* "Prova da qui": finestra con gli eroi della campagna (spuntati i primi, fino al massimo della compagnia),
+   poi il gioco parte da quel nodo. provaEroi tiene le spunte: la finestra si chiude prima dell'azione. */
+let provaEroi = new Set();
+const campaignHeroNames = c => (c.heroes || []).map(ref => typeof ref === 'string' ? (lib.eroi[ref] || {}).name : ref && ref.name).filter(Boolean);
+
+function playtestFromNodeAsk(nodeId) {
+    closeNodeMenu();
+    const node = camp && camp.mapNodes.find(n => n.id === nodeId);
+    if (!node) return;
+    const nomi = campaignHeroNames(camp);
+    if (!nomi.length) { edToast('Prima scegli gli eroi della campagna'); return; }
+    const max = Math.max(1, partyMaxSize({ ...camp, heroes: nomi }));
+    provaEroi = new Set(nomi.slice(0, max));
+    edConfirm({
+        title: `Prova da «${node.title || `punto ${node.id}`}»`,
+        ok: 'Apri il gioco',
+        html: `<p>Il gioco si apre in una nuova scheda con la compagnia già pronta (prima abilità e primo oggetto di ciascuno) e solo questo punto raggiungibile sulla mappa. Niente viene salvato.</p>
+            <div class="ed-prova-eroi">${nomi.map(n => `<label><input type="checkbox" ${provaEroi.has(n) ? 'checked' : ''} ${azioneSu('change', 'provaToggleEroe', n, '$checked')}> ${esc(n)}</label>`).join('')}</div>
+            <p class="ed-hint">Nel gioco la compagnia va da ${partyMinSize({ ...camp, heroes: nomi })} a ${max} eroi.</p>`
+    }, () => {
+        const eroi = nomi.filter(n => provaEroi.has(n));
+        if (!eroi.length) { edToast('Scegli almeno un eroe'); return; }
+        playtest({ nodeId: node.id, eroi });
+    });
+}
+function provaToggleEroe(nome, on) {
+    if (on) provaEroi.add(nome); else provaEroi.delete(nome);
 }

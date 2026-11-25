@@ -5,9 +5,13 @@
    ricaricando torna la stessa mappa). Nemici da tutto il bestiario (normali, elite
    con fasi, boss: procEnemyRole), il resto riciclato dalle altre campagne: sfide ed
    eventi (trame con scelte) con le loro immagini, testi e immagini di mercanti,
-   riposi e tesori. La difficoltà cresce in modo costante col livello:
-   nemici scelti tra i più forti man mano che si sale e con vita e statistiche
-   aumentate (DRAKENGRAD_SCALA), sfide più difficili verso la fine.
+   riposi e tesori.
+
+   La mappa è un dungeon a piani (campo "procedurale": { piani, stanze }): ogni piano ha
+   "stanze" livelli di stanze a bivi, poi un accampamento (riposo o mercante) e un guardiano
+   da battere per scendere: un elite, il boss all'ultimo piano. La difficoltà cresce a ogni
+   livello: nemici scelti tra i più forti man mano che si scende, con vita, Attacco e CA
+   aumentati (PROC_SCALA in js/regole.js), sfide più difficili verso la fine.
 
    Caricato dopo js/libreria.js e js/comune.js, prima di js/game.js.
    campaignForPlay(id, seed) è il punto d'ingresso per gioco, salvataggi e simulatore.
@@ -106,8 +110,14 @@ function generateProceduralCampaign(raw, seed) {
     const camp = resolveCampaign({ ...raw, mapNodes: [], challenges: {}, merchants: {}, rests: {}, treasures: {}, stories: {} });
     const pools = procPools(raw.id);
     const cfg = raw.procedurale || {};
-    const levels = Math.max(6, cfg.livelli || 16);
+    // Piani del dungeon: "stanze" livelli a bivi, un accampamento e il guardiano (stanze + 2 livelli per piano)
+    const piani = Math.max(1, cfg.piani || 3);
+    const stanze = Math.max(2, cfg.stanze || 4);
+    const perPiano = stanze + 2;
+    const levels = piani * perPiano;
     const last = levels - 1;
+    const pianoDi = level => Math.floor(level / perPiano);
+    const postoDi = level => level % perPiano;  // 0..stanze-1 stanze, stanze = accampamento, stanze + 1 = guardiano
     camp.enemies = {};
     camp.mapNodes = [];
 
@@ -128,6 +138,7 @@ function generateProceduralCampaign(raw, seed) {
         e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * PROC_SCALA.hp(p)));
         e.att += PROC_SCALA.att(p);
         e.ca += PROC_SCALA.ca(p);
+
         camp.enemies[id] = e;
         return { id, image: src.image || e.image };
     }
@@ -161,26 +172,27 @@ function generateProceduralCampaign(raw, seed) {
         return { key, image: pools.images[kind].length ? pick(pools.images[kind]) : '' };
     }
 
-    // Quanti nodi per livello: 2-4, uno solo per il boss, due riposi prima del boss
+    // Quanti nodi per livello: 2-4 nelle stanze, due all'accampamento (riposo e mercante), uno solo il guardiano
     const counts = [];
-    for (let l = 0; l < levels; l++) counts.push(l === last ? 1 : l === last - 1 ? 2 : l === 0 ? 2 + Math.floor(rng() * 2) : 2 + Math.floor(rng() * 3));
+    for (let l = 0; l < levels; l++) {
+        const posto = postoDi(l);
+        counts.push(posto === stanze + 1 ? 1 : posto === stanze ? 2 : l === 0 ? 2 + Math.floor(rng() * 2) : 2 + Math.floor(rng() * 3));
+    }
 
-    // Tipi: primo livello solo scontri; elite dal quinto livello (almeno uno a 1/3 e a 2/3 del percorso);
-    // mercante garantito circa ogni 4 livelli; riposi prima del boss
-    const eliteLevels = [Math.round(last * 0.38), Math.round(last * 0.7)];
-    const merchantLevels = [3, Math.round(last * 0.5), last - 3];
+    // Tipi: all'ingresso solo scontri; ogni piano ha almeno un mercante a metà; dal secondo piano
+    // può uscire un elite anche nelle stanze; il guardiano è un elite, il boss all'ultimo piano
     function typeFor(level, idx) {
-        if (level === last) return 'boss';
-        if (level === last - 1) return 'rest';
+        const posto = postoDi(level), piano = pianoDi(level);
+        if (posto === stanze + 1) return level === last ? 'boss' : 'elite';
+        if (posto === stanze) return idx === 0 ? 'rest' : 'merchant';
         if (level === 0) return 'combat';
-        if (idx === 0 && eliteLevels.includes(level)) return 'elite';
-        if (idx === 1 && merchantLevels.includes(level)) return 'merchant';
+        if (idx === 1 && posto === Math.floor(stanze / 2)) return 'merchant';
         const r = rng();
-        if (level >= 4 && r < 0.12) return 'elite';
-        if (r < 0.52) return 'combat';
-        if (r < 0.74) return 'challenge';
-        if (r < 0.84) return 'merchant';
-        if (r < 0.93) return 'rest';
+        if (piano >= 1 && r < 0.1) return 'elite';
+        if (r < 0.54) return 'combat';
+        if (r < 0.78) return 'challenge';
+        if (r < 0.86) return 'rest';
+        if (r < 0.93) return 'merchant';
         return 'treasure';
     }
 
@@ -191,13 +203,15 @@ function generateProceduralCampaign(raw, seed) {
         const xs = Array.from({ length: count }, (_, i) => Math.round(count === 1 ? 400 : 140 + i * (520 / (count - 1)) + (rng() - 0.5) * 40));
         return xs.map((x, idx) => {
             let type = typeFor(level, idx);
+            const guardiano = postoDi(level) === stanze + 1;
+            const dove = guardiano ? `Piano ${pianoDi(level) + 1}` : postoDi(level) === stanze ? `Piano ${pianoDi(level) + 1}, accampamento` : `Piano ${pianoDi(level) + 1}, stanza ${postoDi(level) + 1}`;
             const node = { id: nextId++, level, x, type, title: '', icon: '', done: false, active: level === 0, next: [], image: '' };
             if (type === 'boss' || type === 'combat' || type === 'elite') {
                 const e = enemyFor(type === 'combat' ? 'normal' : type, level);
                 node.type = type === 'boss' ? 'combat' : type;
                 node.enemy = e.id;
                 node.image = e.image || '';
-                node.title = type === 'boss' ? `Livello ${level + 1} - ${camp.enemies[e.id].name} (Boss)` : `Livello ${level + 1} - ${LABEL[type]}`;
+                node.title = type === 'boss' ? `${dove} - ${camp.enemies[e.id].name} (Boss)` : guardiano ? `${dove} - ${camp.enemies[e.id].name} (Guardiano)` : `${dove} - ${LABEL[type]}`;
                 node.icon = ICON[node.type];
             } else if (type === 'challenge' && pools.events.length && procRng((seed ^ Math.imul(node.id + 1, 0x85EBCA6B)) >>> 0 || 1)() < PROC_EVENTI) {
                 // Evento al posto della sfida: deciso per nodo con una sequenza a parte, la forma della mappa non cambia
@@ -205,7 +219,7 @@ function generateProceduralCampaign(raw, seed) {
                 node.type = 'story';
                 node.storyId = ev.key;
                 node.image = ev.image || '';
-                node.title = `Livello ${level + 1} - ${ev.title || 'Evento'}`;
+                node.title = `${dove} - ${ev.title || 'Evento'}`;
             } else if (type === 'challenge') {
                 const ch = challengeFor(level);
                 node.challengeId = ch.key;
@@ -215,7 +229,7 @@ function generateProceduralCampaign(raw, seed) {
                 node[{ merchant: 'merchantId', rest: 'restId', treasure: 'treasureId' }[type]] = t.key;
                 node.image = t.image;
             }
-            if (!node.title) node.title = `Livello ${level + 1} - ${LABEL[node.type]}`;
+            if (!node.title) node.title = `${dove} - ${LABEL[node.type]}`;
             if (!node.icon) node.icon = ICON[node.type];
             camp.mapNodes.push(node);
             return node;

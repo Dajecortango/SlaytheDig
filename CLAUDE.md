@@ -31,6 +31,7 @@ App web statica in JavaScript puro: niente build, niente npm, niente bundler. Te
 - Browser vero: `node tools/prova_browser.mjs [--seme N] [--eroi "a,b"] [--editor] [--foto <cartella>]` (opzioni in `docs/sviluppo.md`).
 - Difficoltà: `node tools/difficolta.mjs [campagne] [--senza-ricerca]`; un nemico: `node tools/scontro.mjs <nemico> --eroi "a,b"`.
 - Formato dei dati: `node tools/formatta_dati.mjs --applica` (lo stesso formato che scrive l'editor).
+- Versione per gli amici: `node tools/crea_eseguibile.mjs` (cartella con `Slay the Dig.exe` e .zip in `dist/`, vedi `docs/sviluppo.md`).
 - Hook prima di ogni commit (sintassi e test): `git config core.hooksPath .githooks`, una volta per copia del progetto.
 
 ## Regole che valgono sempre

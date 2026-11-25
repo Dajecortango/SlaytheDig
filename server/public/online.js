@@ -109,8 +109,9 @@
         ultimoSegnale = Date.now();
         const on = (ev, fn) => flusso.addEventListener(ev, e => { ultimoSegnale = Date.now(); try { fn(JSON.parse(e.data)); } catch (err) { console.error(err); } });
         on('parti', p => { codaParti = codaParti.then(() => p && p.z ? decomprimi(p.z) : p).then(applicaParti).catch(err => console.error(err)); });
-        on('stato', s => { stato = s || {}; aggiornaNome(); disegnaBarra(); musica(); suoni(); segnaEroi(); disegnaScelta(); });
-        on('master', m => mostraAvviso(m.online ? '' : (m.chiusa ? 'Il master ha chiuso la partita' : 'Il master non è collegato'), !m.online));
+        on('stato', s => { stato = s || {}; aggiornaNome(); disegnaBarra(); musica(); suoni(); segnaEroi(); disegnaScelta(); disegnaReazioni(); });
+        // Master assente (pagina ricaricata, rete caduta): la stanza resta aperta e si aspetta (testoMasterAssente, js/online-regole.js)
+        on('master', m => { statoMaster = m; mostraAvviso(testoMasterAssente(m, Date.now()), !m.online); });
         on('avviso', a => mostraAvviso(a.testo));
         on('gmstato', renderModPanel);  // solo per il moderatore: il server manda questo evento solo ai suoi flussi
         on('ping', () => {});
@@ -121,6 +122,38 @@
     const rientroInCorso = () => !!riprova || entrando;
     setInterval(() => { if (token && !rientroInCorso() && Date.now() - ultimoSegnale > 35000) collega(); }, 10000);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && token && !rientroInCorso() && Date.now() - ultimoSegnale > 20000) collega(); });
+
+    // L'avviso del master assente dice quanti minuti restano: si aggiorna ogni mezzo minuto
+    let statoMaster = { online: true };
+    setInterval(() => { if (!statoMaster.online && !statoMaster.chiusa) mostraAvviso(testoMasterAssente(statoMaster, Date.now()), true); }, 30000);
+
+    /* ---------- Reazioni (tifo, risata, paura...) ----------
+       Voci fisse di ONLINE_REAZIONI (js/online-regole.js): il server le passa al master, che le mostra per pochi secondi
+       come fumetti (e le spegne dalle Opzioni: reazioni false nello stato). Non per il master a distanza. */
+    function disegnaReazioni() {
+        const box = $('onlineReazioni');
+        const visibile = !!token && ruolo !== 'master' && stato.reazioni !== false && typeof ONLINE_REAZIONI !== 'undefined';
+        box.classList.toggle('online-hidden', !visibile);
+        if (!visibile || $('onlineReazioniVoci').childElementCount) return;
+        $('onlineReazioniVoci').innerHTML = ONLINE_REAZIONI.map(r =>
+            `<button type="button" class="btn-small" data-reazione="${esc(r.id)}" title="${esc(r.testo)}" aria-label="${esc(r.testo)}">${r.icona} ${esc(r.testo)}</button>`).join('');
+    }
+    $('onlineReazioniApri').addEventListener('click', () => {
+        const voci = $('onlineReazioniVoci');
+        voci.classList.toggle('online-hidden');
+        $('onlineReazioniApri').setAttribute('aria-expanded', String(!voci.classList.contains('online-hidden')));
+    });
+    $('onlineReazioniVoci').addEventListener('click', e => {
+        const b = e.target.closest('button[data-reazione]');
+        if (!b || b.disabled) return;
+        const tutti = [...$('onlineReazioniVoci').querySelectorAll('button')];
+        // Pausa fra una reazione e l'altra (il server la controlla comunque): pulsanti spenti per ONLINE_REAZIONE_MS
+        tutti.forEach(x => { x.disabled = true; });
+        setTimeout(() => tutti.forEach(x => { x.disabled = false; }), typeof ONLINE_REAZIONE_MS === 'number' ? ONLINE_REAZIONE_MS : 3000);
+        post('/api/online/reazione', { code, token, reazione: b.dataset.reazione })
+            .then(r => { if (r && r.error) mostraAvviso(r.error); else $('onlineReazioniVoci').classList.add('online-hidden'); })
+            .catch(() => mostraAvviso('Connessione persa, riprova'));
+    });
 
     /* ---------- Regioni ---------- */
     // Le regioni compresse si decomprimono in ordine d'arrivo (una coda: due eventi non si scavalcano)
@@ -480,6 +513,7 @@
     function applicaRuolo() {
         $('onlineModPanel').classList.toggle('online-hidden', !['moderatore', 'master'].includes(ruolo));
         document.documentElement.dataset.ruolo = ruolo;
+        disegnaReazioni();
         disegnaBarra();
         disegnaScelta();
     }

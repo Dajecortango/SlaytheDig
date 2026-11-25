@@ -5,7 +5,7 @@
 // Nemici, oggetti, reliquie e maledizioni sono richiamati per id da data/libreria/.
 window.CAMPAIGNS = window.CAMPAIGNS || {};
 window.CAMPAIGNS["astarte_ch1"] = {
-    "difficolta": { "vittoriaMin": 20, "vittoriaMax": 25 },
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "id": "astarte_ch1",
     "title": "Caccia alla Bestia, Capitolo Uno",
     "avventura": "caccia_alla_bestia",

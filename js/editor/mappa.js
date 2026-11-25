@@ -36,7 +36,10 @@ function renderMapTab() {
             <button class="ed-adv-only" data-action="duplicateNode" ${sel ? '' : 'disabled'}>Duplica</button>
             <button class="ed-adv-only" data-action="renumberNodes">Rinumera id</button>
             <button class="ed-danger" data-action="deleteNode" ${sel ? '' : 'disabled'}>Elimina</button>
+            <button ${sel ? azione('playtestFromNodeAsk', sel.id) : 'disabled'} title="Apre il gioco direttamente da questo punto, con una compagnia scelta da te">▶ Prova da qui</button>
+            <button ${azione('difficultyEstimate')} title="Il simulatore gioca ${SIM_PARTITE} partite della campagna così com'è">Difficoltà stimata</button>
         </div>
+        ${nodeTemplatesHtml()}
         <div class="ed-split">
             <div class="ed-list">${sorted.map(n => `
                 <div class="ed-list-item ${n.id === selection.map ? 'active' : ''} ${problemNodes.includes(n) ? 'ed-has-problem' : ''}" ${azione('selectNode', n.id)}>
@@ -484,6 +487,7 @@ function openNodeMenu(id, x, y) {
         <span class="ed-node-menu-label">Cambia tipo</span>
         <div class="ed-node-types">${Object.entries(NODE_TYPES).map(([k, t]) => `<button type="button" class="${k === node.type ? 'on' : ''}" style="--c:${t.color}" title="${esc(t.label)}" ${azione('nodeSetType', id, k)}>${NODE_ICONS[k] || ''} ${esc(t.label)}</button>`).join('')}</div>
         <button type="button" ${azione('nodeEdit', id)}>✎ Modifica</button>
+        <button type="button" ${azione('playtestFromNodeAsk', id)}>▶ Prova da qui</button>
         <button type="button" class="ed-danger" ${azione('nodeDelete', id)}>Elimina</button>`;
     document.body.appendChild(menu);
     const w = menu.offsetWidth, h = menu.offsetHeight;

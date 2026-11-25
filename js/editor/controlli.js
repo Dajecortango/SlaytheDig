@@ -215,6 +215,8 @@ function validateCampaign() {
     Object.entries(camp.stories || {}).forEach(([k, s]) => fromSchema(controllaElemento(DATI_SCHEMA.trama, s, `Trama ${k}`), 'map',
         ((camp.mapNodes || []).find(n => n.storyId === k) || {}).id));
     (camp.mapNodes || []).forEach(n => fromSchema(controllaElemento(DATI_SCHEMA.nodo, n, `Nodo ${n.id}`), 'map', n.id));
+    // Controllo dei testi (js/editor/testi.js): lunghezza, refusi, "Scudi" minuscolo, testi vuoti; ogni avviso porta al campo
+    if (typeof textIssues === 'function') issues.push(...textIssues(camp));
     return issues;
 }
 
@@ -269,7 +271,11 @@ function renderIssues() {
         if (CAMPAIGN_TABS.includes(issue.tab)) campaignChosen = true;
         switchTab(issue.tab);
         // Il riquadro dell'elemento lampeggia: è qui che c'è da sistemare
-        const target = document.getElementById('edDetail') || document.getElementById('edContent');
+        const field = issue.field && document.querySelector(`#edContent ${issue.field}`);
+        const target = (field && (field.closest('.ed-field') || field)) || document.getElementById('edDetail') || document.getElementById('edContent');
+        // Avviso su un testo: il cursore va nella sua casella
+        const box = field && (field.matches('input, textarea, select') ? field : field.querySelector('textarea, input, select'));
+        if (box) setTimeout(() => box.focus({ preventScroll: true }), 0);
         if (target) {
             target.classList.remove('ed-flash');
             void target.offsetWidth;

@@ -11,6 +11,8 @@
 /* ---------- Eroi ---------- */
 // Eroi al massimo nella compagnia, se la campagna non dice altro (campo "maxEroi"; partyMaxSize in js/comune.js)
 const PARTY_MAX = 5;
+// Eroi al minimo, se la campagna non dice altro (campo "minEroi"; partyMinSize in js/comune.js)
+const PARTY_MIN = 3;
 // Un eroe è ferito (ritratto da ferito) con WOUNDED_HP o meno, ma ancora in piedi
 const WOUNDED_HP = 2;
 
@@ -74,6 +76,36 @@ const PRAYER_MAJOR_TOTAL = 9;
 const PRAYER_CHOICES = 3;
 // Le benedizioni (nome, icona, effetto) sono nella libreria data/libreria/benedizioni.js (scheda Benedizioni
 // dell'editor); PRAYER_BLESSINGS in js/comune.js.
+
+// Attività al falò (js/motore/prove.js, restActivities / doRestActivity): a ogni riposo la compagnia ne sceglie
+// UNA AL POSTO della preghiera, oltre alla cura. veglia: HP in più a un eroe in piedi e ferito; affilare: potenziamento a un eroe per
+// tutto il prossimo scontro (al posto della preghiera: o si prega o si fa un'attività); allenarsi: +1 permanente a una statistica di un eroe, per Scudi, al massimo
+// "massimo" volte per eroe in tutta la partita; purificarsi: toglie una maledizione scelta al prezzo di HP di un eroe.
+// Sinergie della Famiglia (sinergieAttive / applicaSinergie in js/motore/prove.js): solo nelle campagne con il campo
+// "sinergie" acceso (oggi il Drakengrad). Gli eroi che hanno vissuto la stessa avventura combattono meglio insieme:
+// con almeno "n" eroi del gruppo nella compagnia, ognuno di loro riceve gli effetti della soglia (si sommano le soglie
+// raggiunte; una soglia a 4 con +1 Danno rendeva il Drakengrad troppo facile, misurato col simulatore). Effetti come applyEffects (hero_stat, ...), applicati una volta sola quando la compagnia è completa.
+const SINERGIE = [
+    { id: 'vecchia_guardia', name: 'Vecchia guardia', icon: 'immagini/icone/BTNDefend.png',
+        eroi: ['curio_dignitas', 'prometeo_dignitas', 'temistocle_dignitas', 'caino_dignitas', 'ottavio_dignitas'],
+        soglie: [{ n: 3, desc: '+1 Armatura', effects: [{ effect: 'hero_stat', stat: 'base_armor', val: 1 }, { effect: 'hero_stat', stat: 'current_armor', val: 1 }] }] },
+    { id: 'cacciatori', name: 'Compagni di caccia', icon: 'immagini/icone/BTNRallyPoint.png',
+        eroi: ['icaro', 'astarte', 'dioforo', 'ascadeo'],
+        soglie: [{ n: 3, desc: '+1 Forza', effects: [{ effect: 'hero_stat', stat: 'str', val: 1 }] }] },
+    { id: 'reduci_fredlos', name: 'Reduci del Fredlös', icon: 'immagini/icone/BTNEnchantedGemstone.png',
+        eroi: ['zeno', 'aiace_dignitas', 'aurelio_dignitas', 'enea_dignitas'],
+        soglie: [{ n: 3, desc: '+1 HP massimi', effects: [{ effect: 'hero_stat', stat: 'maxHp', val: 1 }, { effect: 'hero_stat', stat: 'hp', val: 1 }] }] },
+    { id: 'superstiti_loch_ein', name: 'Superstiti di Loch Ein', icon: 'immagini/icone/BTNDevotion.png',
+        eroi: ['ofelia_dignitas', 'pandora_dignitas', 'pancrazio_dignitas', 'alastorta_dignitas'],
+        soglie: [{ n: 3, desc: '+1 Fede', effects: [{ effect: 'hero_stat', stat: 'fth', val: 1 }] }] }
+];
+
+const REST_ACTIVITIES = {
+    veglia: { hp: 2 },
+    affilare: { stat: 'str', val: 1 },
+    allenarsi: { costo: 40, massimo: 1, stats: ['str', 'int', 'fth'] },
+    purificarsi: { hp: 1 }
+};
 
 // Pozioni di cura da questa rarità in su rialzano anche gli eroi caduti (0 HP)
 const REVIVE_MIN_RARITY = 'raro';
@@ -140,7 +172,7 @@ const DICE_BAG = { size: 6, ones: 1, sixes: 1 };
 /* ---------- Campagne procedurali (js/procedurale.js) ----------
    Crescita della difficoltà (p = avanzamento da 0 al primo livello a 1 al boss) */
 const PROC_SCALA = {
-    hp: p => 0.8 + 0.5 * p,          // vita dei nemici: dall'80% al 130% di quella originale
+    hp: p => 0.47 + 0.6 * p,         // vita dei nemici: dal 47% al 107% di quella originale (tarata per 4 eroi, circa 35% di vittorie)
     att: p => (p >= 0.5 ? 1 : 0),     // +1 Attacco dalla metà del percorso
     ca: p => (p >= 0.8 ? 1 : 0),      // +1 CA nell'ultimo tratto
     cd: p => (p >= 0.6 ? 1 : 0)       // +1 CD alle sfide dell'ultimo tratto

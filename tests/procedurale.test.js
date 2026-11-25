@@ -36,9 +36,27 @@ module.exports = (t, carica) => {
         }
         // Tutti i boss escono, non solo i più forti
         const usciti = new Set();
-        // (150 mappe: con una ventina di boss nel bestiario 60 non bastano a vederli tutti)
-        for (let seme = 1; seme <= 150; seme++) usciti.add(g.campaignForPlay('drakengrad', seme).mapNodes.find(n => !n.next.length).enemy.replace(/__l\d+$/, ''));
-        ids('boss').forEach(id => t.ok(usciti.has(id), `boss ${id} mai uscito in 150 mappe`));
+        // (400 mappe: con una trentina di boss nel bestiario 150 non bastano a vederli tutti)
+        for (let seme = 1; seme <= 400; seme++) usciti.add(g.campaignForPlay('drakengrad', seme).mapNodes.find(n => !n.next.length).enemy.replace(/__l\d+$/, ''));
+        ids('boss').forEach(id => t.ok(usciti.has(id), `boss ${id} mai uscito in 400 mappe`));
+    });
+
+    t.test('dungeon a piani: stanze, accampamento e guardiano; nemici più forti a ogni piano', () => {
+        const hpMedio = [0, 0, 0], quanti = [0, 0, 0];
+        for (const seme of [1, 2, 3, 777]) {
+            const c = g.campaignForPlay('drakengrad', seme);
+            const livelli = l => c.mapNodes.filter(n => n.level === l);
+            t.uguale(17, Math.max(...c.mapNodes.map(n => n.level)), '3 piani da 4 stanze + accampamento + guardiano');
+            [5, 11, 17].forEach((l, piano) => {
+                t.uguale(['merchant', 'rest'], livelli(l - 1).map(n => n.type).sort(), `seme ${seme}: accampamento del piano ${piano + 1}`);
+                t.uguale(1, livelli(l).length, 'un solo guardiano');
+                t.uguale(piano === 2 ? 'combat' : 'elite', livelli(l)[0].type, 'elite, boss in fondo');
+            });
+            t.ok(livelli(0).every(n => n.type === 'combat'), 'ingresso: solo scontri');
+            c.mapNodes.filter(n => n.type === 'combat' && n.next.length).forEach(n => { const p = Math.floor(n.level / 6); hpMedio[p] += c.enemies[n.enemy].maxHp; quanti[p]++; });
+        }
+        const m = hpMedio.map((h, i) => h / quanti[i]);
+        t.ok(m[0] < m[1] && m[1] < m[2], `vita media per piano ${m.map(x => x.toFixed(1)).join(' < ')}`);
     });
 
     t.test('eventi degli altri capitoli: prendono il posto di alcune sfide, la forma della mappa non cambia', () => {

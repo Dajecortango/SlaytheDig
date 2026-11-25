@@ -11,12 +11,14 @@ window.LIBRERIA.avventure = {
         "coverImage": ""
     },
     "fredlos": {
+        "dopo": "caccia_alla_bestia",
         "title": "Fredlös",
         "badge": "Avventura",
         "description": "Dall'Arce delle Storie di Aebeltoff al fiume Hemsil, alle porte di Svalbard e fino alla Bocca del Bianco: sulle tracce di Kesia, figlia di Fredlös l'Oppresso.",
         "coverImage": ""
     },
     "loch_ein": {
+        "dopo": "fredlos",
         "title": "Loch Ein",
         "badge": "Avventura",
         "description": "Da Seistad alla conca di Loch Ein e giù, nelle viscere della Caduta dai Cieli, fino al Salone delle Risposte, dove splende l'Yrtite, e alla fuga dalla città che sprofonda.",

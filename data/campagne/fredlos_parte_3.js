@@ -9,7 +9,7 @@ window.CAMPAIGNS["fredlos_parte_3"] = {
     "title": "Fredlös, Parte III: La Caccia a Kesia",
     "avventura": "fredlos",
     "capitolo": 3,
-    "difficolta": { "vittoriaMin": 15, "vittoriaMax": 35 },
+    "difficolta": { "vittoriaMin": 28, "vittoriaMax": 42 },
     "terreno": "neve",
     "badge": "Parte III",
     "description": "Da Svalbard alla Bocca del Bianco: il fiume Vorma, il Cammino di Piotr, il Ponte di Porunn sul Driva, il Deserto del Kalle e Kallekot, fino all'orlo del Ghiacceterno dove Kesia vi attende per l'ultima prova.",

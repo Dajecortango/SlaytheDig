@@ -90,15 +90,15 @@ const DATI_SCHEMA = {
         icon: PERCORSO, desc: TESTO, buffs: campo('elenco'), val: NUMERO, speciali: SCHEMA_SPECIALI
     },
     // Avventure (data/libreria/avventure.js): raggruppano le campagne in capitoli nel menu del gioco
-    avventure: { title: OBBL(TESTO), badge: TESTO, description: TESTO, coverImage: PERCORSO },
+    avventure: { title: OBBL(TESTO), badge: TESTO, description: TESTO, coverImage: PERCORSO, dopo: campo('scelta', { valori: () => schemaLibreria().avventure || {} }) },
     // Parti di una campagna (data/campagne/<id>.js)
     campagna: {
         id: OBBL(TESTO), title: OBBL(TESTO), badge: TESTO,
         avventura: campo('scelta', { valori: () => schemaLibreria().avventure || {} }), capitolo: NUMERO, description: TESTO, coverImage: PERCORSO, introText: TESTO,
-        heroes: campo('elenco'), maxEroi: NUMERO, terreno: campo('scelta', { valori: () => ({ neve: 1, fango: 1, pietra: 1 }) }), initialArmory: campo('elenco'), lootItems: campo('elenco'), abilities: campo('oggetto'),
+        heroes: campo('elenco'), maxEroi: NUMERO, minEroi: NUMERO, terreno: campo('scelta', { valori: () => ({ neve: 1, fango: 1, pietra: 1 }) }), initialArmory: campo('elenco'), lootItems: campo('elenco'), abilities: campo('oggetto'),
         challenges: campo('oggetto'), merchants: campo('oggetto'), rests: campo('oggetto'), treasures: campo('oggetto'),
         stories: campo('oggetto'), mapNodes: campo('elenco'), enemies: campo('oggetto'),
-        difficolta: campo('oggetto', { schema: { vittoriaMin: NUMERO, vittoriaMax: NUMERO } }), procedurale: campo('oggetto')
+        difficolta: campo('oggetto', { schema: { vittoriaMin: NUMERO, vittoriaMax: NUMERO } }), procedurale: campo('oggetto'), eroiDopo: campo('oggetto'), sinergie: BOOL
     },
     sfida: {
         // stat "hp" = sfida del sacrificio (js/motore/prove.js): niente dado né CD, Scudi per HP e sacrifici al massimo

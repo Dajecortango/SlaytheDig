@@ -1,0 +1,25 @@
+/* Partita online sullo schermo del master (e, come sovrimpressione, sulla pagina dei giocatori).
+   Reazioni dei giocatori (js/online.js, onlineMostraReazione): fumetti in alto a sinistra per pochi secondi,
+   sopra le barre (z-index 1000) e sotto le finestre (2000). Non rubano mai un clic. */
+#onlineReazioniStrato {
+    position: fixed; left: 16px; top: calc(var(--top-h, 50px) + 64px); z-index: 1500;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    max-width: min(320px, calc(100% - 32px));
+    pointer-events: none;
+}
+#onlineReazioniStrato * { pointer-events: none; }
+.online-reazione {
+    padding: 6px 12px; font-size: 13px; line-height: 1.35; color: var(--text-main, #e8dcc0);
+    background: rgba(12, 9, 5, 0.9); border: 1px solid #8a6a2a; border-radius: 14px 14px 14px 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    animation: online-reazione 4.5s ease-out both;
+}
+.online-reazione b { margin-right: 4px; color: var(--wc-yellow, #ffcc00); font-family: var(--font-title); font-weight: normal; }
+.online-reazione-icona { margin-right: 6px; font-size: 1.15em; }
+@keyframes online-reazione {
+    0% { opacity: 0; transform: translateX(-24px); }
+    8% { opacity: 1; transform: none; }
+    82% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) { .online-reazione { animation: none; } }

@@ -201,4 +201,7 @@ function renderGeneralTab() {
     content.innerHTML = `<div class="ed-detail" id="edDetail"></div>`;
     // Scegliendo l'avventura compare (o sparisce) il numero del capitolo
     renderForm(document.getElementById('edDetail'), camp, GENERAL_FIELDS, k => { markDirty(); if (k === 'avventura') renderGeneralTab(); });
+    // Stima della difficoltà con il simulatore (js/editor/difficolta.js), accanto alla difficoltà voluta
+    content.insertAdjacentHTML('beforeend', `<div class="ed-sim-cta"><button type="button" ${azione('difficultyEstimate')}>Difficoltà stimata</button>
+        <span class="ed-hint">Il simulatore gioca ${SIM_PARTITE} partite della campagna così com'è e dice quante ne vince.</span></div>`);
 }

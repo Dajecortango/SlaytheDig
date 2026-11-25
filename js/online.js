@@ -165,6 +165,8 @@ function onlineInviaStato() {
         masterRemoto: onlineMastriRemoti().length ? { connesso: onlineMastriRemoti().some(gi => gi.connected) } : null,
         musica: (typeof musicActive !== 'undefined' && musicActive && musicActive.getAttribute('src')) || null,
         suoni: onlineSuoni,
+        // Reazioni dei giocatori (false: il server le rifiuta e la pagina dei giocatori nasconde il pannello)
+        reazioni: onlineReazioniAccese(),
         // Eroi che si possono scegliere (il server la usa anche per validare /api/online/scegli)
         rosa: onlineRosa(),
         giocatori: onlineState.giocatori
@@ -323,31 +325,77 @@ if (typeof openMedicHeal === 'function') {
     };
 }
 
+/* ---------- Stanza ricordata (riconnessione del master) ----------
+   Il server tiene la stanza aperta anche senza master (ATTESA_MASTER_MS in server/online.js, 30 minuti): codice, segreto
+   e chiave restano in questo browser (chiave a parte, non nei salvataggi), così chi ricarica la pagina o riapre il gioco
+   ritrova la stessa stanza con i suoi giocatori. salvataggio = codice della stanza a cui appartiene lo slot 'online'
+   (scritto a ogni ritorno sulla mappa, onlineSalvaAutomatico): solo allora "Riprendi" rimette in gioco anche la partita. */
+const ONLINE_STANZA_KEY = 'dignitas_online_stanza';
+function onlineMemoria() {
+    try { const m = JSON.parse(localStorage.getItem(ONLINE_STANZA_KEY) || 'null'); return m && m.code && m.segreto ? m : null; } catch (e) { return null; }
+}
+function onlineRicorda(m) { try { localStorage.setItem(ONLINE_STANZA_KEY, JSON.stringify(m)); } catch (e) {} }
+function onlineDimentica() { try { localStorage.removeItem(ONLINE_STANZA_KEY); } catch (e) {} }
+
 /* ---------- Attivazione ---------- */
-function onlineApri() {
+// riprendi: il master torna nella stanza ricordata (offerta all'avvio o pulsante delle Opzioni): se lo slot 'online' è
+// di quella stanza la partita riparte dall'ultima mappa, e i giocatori tengono i loro eroi
+function onlineApri(riprendi) {
     if (location.protocol === 'file:') { uiError('La partita online funziona solo dal server: avvia avvia-server.bat'); return; }
     onlinePost('/api/online/apri').then(r => {
         if (r.error || !r.code) { uiError(r.error || 'Server non raggiungibile'); return; }
-        onlineState.attivo = true; onlineState.code = r.code; onlineState.segreto = r.segreto; onlineState.chiaveMaster = r.chiaveMaster || null;
-        if (onlineMasterStream) onlineMasterStream.close();
-        onlineMasterStream = new EventSource(`${ONLINE_BASE}/api/online/master?segreto=${encodeURIComponent(onlineState.segreto)}`);
-        onlineMasterStream.addEventListener('stanza', e => { onlineState.giocatori = JSON.parse(e.data).giocatori; onlineStanzaCambiata(); });
-        onlineMasterStream.addEventListener('clic', e => onlineEseguiClic(JSON.parse(e.data)));
-        onlineMasterStream.addEventListener('clic-moderatore', e => onlineEseguiClicModeratore(JSON.parse(e.data)));
-        onlineMasterStream.addEventListener('scelta', e => onlineSceltaEroe(JSON.parse(e.data)));
-        if (onlineOsservatore) onlineOsservatore.observe(document.body, ONLINE_OSSERVA);
-        document.addEventListener('scroll', onlinePianificaInvio, true);  // lo scorrimento non cambia il DOM
+        onlineAttiva(r, riprendi === true);
+    });
+}
+// La stanza c'è (nuova o ripresa): flusso del master, osservatore della pagina, partita ripresa se è la stessa stanza
+function onlineAttiva(r, riprendi) {
+    const memo = onlineMemoria();
+    const stessa = !!memo && memo.code === r.code;
+    onlineState.attivo = true; onlineState.code = r.code; onlineState.segreto = r.segreto; onlineState.chiaveMaster = r.chiaveMaster || null;
+    onlineState.giocatori = r.giocatori || [];
+    onlineRicorda({ code: r.code, segreto: r.segreto, chiaveMaster: r.chiaveMaster || null, salvataggio: stessa ? memo.salvataggio || null : null });
+    onlineCollegaMaster();
+    if (onlineOsservatore) onlineOsservatore.observe(document.body, ONLINE_OSSERVA);
+    document.addEventListener('scroll', onlinePianificaInvio, true);  // lo scorrimento non cambia il DOM
+    onlineUltimeRegioni = {}; onlineUltimeRegioniMaster = null;
+    if (riprendi && stessa) {
+        if (memo.salvataggio === r.code && readSave('online')) onlineRiprendi();
+        uiMessage(`Partita online ${r.code} ripresa`);
+    } else onlineMostraLink();
+    onlinePianificaInvio();
+    onlineInviaStato();
+}
+// Flusso del master: stanza, clic, scelte, reazioni. Se cade (rete) il browser lo riapre da solo: a ogni apertura la
+// schermata si manda di nuovo intera. Chiuso del tutto (403: la stanza non c'è più, server riavviato o stanza scaduta) si esce
+function onlineCollegaMaster() {
+    if (onlineMasterStream) onlineMasterStream.close();
+    if (typeof EventSource !== 'function') return;
+    const flusso = new EventSource(`${ONLINE_BASE}/api/online/master?segreto=${encodeURIComponent(onlineState.segreto)}`);
+    onlineMasterStream = flusso;
+    flusso.addEventListener('stanza', e => { onlineState.giocatori = JSON.parse(e.data).giocatori; onlineStanzaCambiata(); });
+    flusso.addEventListener('clic', e => onlineEseguiClic(JSON.parse(e.data)));
+    flusso.addEventListener('clic-moderatore', e => onlineEseguiClicModeratore(JSON.parse(e.data)));
+    flusso.addEventListener('scelta', e => onlineSceltaEroe(JSON.parse(e.data)));
+    flusso.addEventListener('reazione', e => onlineMostraReazione(JSON.parse(e.data)));
+    flusso.onopen = () => {
+        if (!onlineState.attivo || onlineMasterStream !== flusso) return;
         onlineUltimeRegioni = {}; onlineUltimeRegioniMaster = null;
         onlinePianificaInvio();
         onlineInviaStato();
-        onlineMostraLink();
-    });
+    };
+    flusso.onerror = () => {
+        if (flusso.readyState !== 2 || onlineMasterStream !== flusso || !onlineState.attivo) return;
+        uiError('La stanza online non esiste più: aprine una nuova dalle Opzioni');
+        onlineDimentica();
+        onlineChiudi(true);
+    };
 }
-function onlineChiudi() {
-    onlinePost('/api/online/chiudi');
+// soloQui: la stanza sul server non c'è già più (niente /chiudi)
+function onlineChiudi(soloQui) {
+    if (soloQui !== true) { onlinePost('/api/online/chiudi'); onlineDimentica(); }
     onlineState.attivo = false; onlineState.code = null; onlineState.segreto = null; onlineState.chiaveMaster = null; onlineState.giocatori = []; onlineState.voto = null; onlineState.pronti = null;
     onlineState.creando = null; onlineState.creandoGiocatore = false; onlineState.bozze = {};
-    if (onlineMasterStream) onlineMasterStream.close();
+    if (onlineMasterStream) { onlineMasterStream.close(); onlineMasterStream = null; }
     if (onlineOsservatore) onlineOsservatore.disconnect();
     document.removeEventListener('scroll', onlinePianificaInvio, true);
     onlineDisegnaLobby();
@@ -525,7 +573,7 @@ if (typeof startPartyCreation === 'function') {
         if (onlineState.attivo) {
             onlineLiberaNomi([], ONLINE_MOTIVO_CAPITOLO);
             onlineState.bozze = {}; onlineState.creando = null; onlineState.creandoGiocatore = false;
-            const sel = document.getElementById('partySizeSelect'), n = campaignHeroes.length;
+            const sel = document.getElementById('partySizeSelect'), n = stato.currentCampaign && stato.currentCampaign.maxEroi ? partyMaxSize(stato.currentCampaign) : campaignHeroes.length;
             if (![...sel.options].some(o => Number(o.value) === n)) sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n} Eroi</option>`);
             sel.value = String(n);
             confirmPartySize();
@@ -720,7 +768,9 @@ function onlineForzaPronti() {
 /* ---------- Salvataggio automatico e ripresa ---------- */
 function onlineSalvaAutomatico() {
     if (!onlineState.attivo || !stato.currentCampaign) return;
-    try { writeSave('online', buildSaveData()); } catch (e) { console.error('Salvataggio online non riuscito', e); }
+    try { writeSave('online', buildSaveData()); } catch (e) { console.error('Salvataggio online non riuscito', e); return; }
+    const memo = onlineMemoria();
+    if (memo && memo.code === onlineState.code) onlineRicorda({ ...memo, salvataggio: onlineState.code });
 }
 function onlineRiprendi() {
     if (!readSave('online')) { uiError('Nessuna partita online salvata'); return; }
@@ -753,6 +803,75 @@ function onlineAvvisoConnessioni() {
     if (onlineState.pronti && ora.length && ora.every(n => onlineState.pronti.has(n))) onlineForzaPronti();
 }
 
+/* ---------- Reazioni dei giocatori ----------
+   Il server manda l'evento 'reazione' (voci fisse di ONLINE_REAZIONI, js/online-regole.js, una ogni 3 secondi per
+   persona): qui diventa un fumetto per pochi secondi in alto a sinistra, sopra le barre e sotto le finestre, senza
+   rubare clic (pointer-events: none, css/gioco-15-online.css). Lo strato è una sovrimpressione: lo vedono anche i giocatori. */
+const ONLINE_REAZIONE_DURATA_MS = 4500, ONLINE_REAZIONI_MAX = 4, ONLINE_REAZIONI_KEY = 'dignitas_online_reazioni';
+function onlineReazioniAccese() { try { return localStorage.getItem(ONLINE_REAZIONI_KEY) !== '0'; } catch (e) { return true; } }
+function onlineCambiaReazioni() {
+    const accese = !onlineReazioniAccese();
+    try { localStorage.setItem(ONLINE_REAZIONI_KEY, accese ? '1' : '0'); } catch (e) {}
+    if (!accese) { const strato = document.getElementById('onlineReazioniStrato'); if (strato) strato.remove(); }
+    uiMessage(accese ? 'Reazioni dei giocatori accese' : 'Reazioni dei giocatori spente');
+    onlineInviaStato();
+    const modale = document.getElementById('wc3Modal');
+    if (typeof openOptions === 'function' && modale && !modale.classList.contains('hidden')) openOptions();
+}
+function onlineMostraReazione(d) {
+    if (!onlineState.attivo || !onlineReazioniAccese()) return;
+    const r = ONLINE_REAZIONI.find(x => x.id === (d && d.reazione));
+    if (!r) return;
+    let strato = document.getElementById('onlineReazioniStrato');
+    if (!strato) {
+        strato = document.createElement('div');
+        strato.id = 'onlineReazioniStrato';
+        strato.setAttribute('aria-live', 'polite');
+        document.body.appendChild(strato);
+    }
+    const fumetto = document.createElement('div');
+    fumetto.className = 'online-reazione';
+    fumetto.innerHTML = `<span class="online-reazione-icona">${r.icona}</span><b>${esc(d.chi || 'Uno spettatore')}</b> ${esc(r.testo)}`;
+    strato.appendChild(fumetto);
+    while (strato.children.length > ONLINE_REAZIONI_MAX) strato.firstElementChild.remove();
+    setTimeout(() => fumetto.remove(), ONLINE_REAZIONE_DURATA_MS);
+}
+
+/* ---------- Riprendi la partita online (all'avvio) ----------
+   Il master ha ricaricato la pagina o riaperto il gioco: se la stanza ricordata è ancora aperta sul server (/info, con il
+   segreto) si offre di riprenderla; se non c'è più se ne dimentica. Solo dal server (http), mai da file:// né nei test. */
+function onlineControllaRipresa() {
+    const memo = onlineMemoria();
+    if (!memo || onlineState.attivo || typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return;
+    fetch(ONLINE_BASE + '/api/online/info', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Online-Segreto': memo.segreto }, body: '{}' })
+        .then(r => r.ok ? r.json() : null)
+        .then(info => {
+            if (!info || info.code !== memo.code) { onlineDimentica(); return; }
+            if (!onlineState.attivo) onlineOffriRipresa(memo, info);
+        })
+        .catch(() => {});  // server spento: niente offerta (il pulsante "Riprendi la stanza" resta nelle Opzioni)
+}
+function onlineOffriRipresa(memo, info) {
+    const collegati = (info.giocatori || []).filter(gi => gi.connected && gi.name != null && !ruoloSenzaEroe(gi.ruolo)).map(gi => esc(gi.name));
+    const partita = memo.salvataggio === memo.code ? readSave('online') : null;
+    const doveRiparte = partita
+        ? `La partita riparte dall'ultima volta sulla mappa (${esc(partita.timestamp || '')}), con gli stessi eroi.`
+        : 'Non c\'è una partita salvata di questa stanza: si riparte dal menu, con gli stessi giocatori.';
+    openModal('Partita online in corso', `<p>La stanza <b>${esc(memo.code)}</b> è ancora aperta: i giocatori aspettano il master.</p>
+        <p>${collegati.length ? `Collegati: <b>${collegati.join(', ')}</b>.` : 'In questo momento nessun giocatore con un eroe è collegato.'}</p>
+        <p>${doveRiparte}</p>${info.masterCollegato ? '<p class="kw-curse">La stanza risulta già aperta in un\'altra finestra del gioco: chiudila prima di riprendere da qui.</p>' : ''}`,
+        [{ label: `Riprendi la partita online ${memo.code}`, className: 'btn-proceed', onClick: () => onlineApri(true) },
+         { label: 'Più tardi' },
+         { label: 'Chiudi la stanza', className: 'btn-danger', onClick: () => onlineChiudiRicordata(memo) }]);
+}
+// Chiude sul server la stanza ricordata senza riprenderla (i giocatori vedono "Il master ha chiuso la partita")
+function onlineChiudiRicordata(memo) {
+    fetch(ONLINE_BASE + '/api/online/chiudi', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Online-Segreto': memo.segreto }, body: '{}' }).catch(() => {});
+    onlineDimentica();
+    uiMessage('Stanza online chiusa');
+}
+if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('DOMContentLoaded', () => setTimeout(onlineControllaRipresa, 600));
+
 /* ---------- Pannello nelle Opzioni ---------- */
 if (typeof openOptions === 'function') {
     const opzioniOrig = openOptions;
@@ -764,9 +883,11 @@ if (typeof openOptions === 'function') {
         box.className = 'options-grid';
         box.innerHTML = onlineState.attivo
             ? `<span class="option-label">Partita online attiva<small>${esc(onlineGiocatoriCollegati().join(', ') || 'Nessun giocatore collegato')}</small></span>
-               <span><button class="btn-small" ${azione('onlineMostraLink')}>Link</button>${readSave('online') ? ` <button class="btn-small" ${azione('onlineRiprendi')}>Riprendi l'ultima</button>` : ''} <button class="btn-small btn-danger" ${azione('onlineChiudi')}>Chiudi</button></span>`
+               <span><button class="btn-small" ${azione('onlineMostraLink')}>Link</button>${readSave('online') ? ` <button class="btn-small" ${azione('onlineRiprendi')}>Riprendi l'ultima</button>` : ''} <button class="btn-small btn-danger" ${azione('onlineChiudi')}>Chiudi</button></span>
+               <span class="option-label">Reazioni dei giocatori<small>Tifo, risate e paure mandate dal link compaiono per pochi secondi sul tuo schermo</small></span>
+               <span><button class="btn-small" ${azione('onlineCambiaReazioni')}>${onlineReazioniAccese() ? 'Accese' : 'Spente'}</button></span>`
             : `<span class="option-label">Partita online<small>Tu sei il master: i giocatori si collegano con un link e comandano un eroe ciascuno</small></span>
-               <span><button class="btn-small btn-proceed" ${azione('onlineApri')}>Apri la stanza</button></span>`;
+               <span><button class="btn-small btn-proceed" ${azione('onlineApri')}>Apri la stanza</button>${onlineMemoria() ? ` <button class="btn-small" ${azione('onlineApri', true)}>Riprendi la stanza ${esc(onlineMemoria().code)}</button>` : ''}</span>`;
         body.appendChild(box);
     };
 }

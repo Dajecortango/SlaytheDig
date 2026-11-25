@@ -325,6 +325,8 @@
                             <div class="narrative-desc-box" id="campaignIntroDesc">
                                 <strong>Descrizione:</strong>
                             </div>
+                            <!-- Sinergie della Famiglia attive (nextHero in js/creazione.js; solo campagne con "sinergie") -->
+                            <div id="campaignIntroSinergie" class="sinergie-box"></div>
                         </div>
                         <button data-action="startExpedition" class="btn-proceed">Inizia</button>
                     </div>
@@ -635,6 +637,8 @@
                             </div>
                             <!-- Rune (Alastorta): uno scambio per eroe a ogni riposo, accanto alla preghiera (renderRestRuneButtons in js/prove.js) -->
                             <div id="restRuneArea" class="rest-rune-area"></div>
+                            <!-- Attività al falò: una per riposo (renderRestActivities in js/prove.js) -->
+                            <div id="restActivityArea" class="rest-activity-area"></div>
 
                             <div id="prayerStage2" class="hidden" style="margin-top:10px;">
                                 <p class="panel-label">Scegli quale eroe prega:</p>
@@ -814,7 +818,6 @@
     <script src="data/campagne/drakengrad.js"></script>
     <!-- Ricostruisce le campagne complete a partire dai riferimenti alla libreria -->
     <script src="js/azioni.js"></script>
-    <script src="data/campagne/prova_di_fede.js"></script>
     <script src="js/libreria.js"></script>
     <script src="js/regole.js"></script>
     <script src="js/online-regole.js"></script>

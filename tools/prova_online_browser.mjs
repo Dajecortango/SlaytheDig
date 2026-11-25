@@ -204,7 +204,38 @@ try {
     console.log(`  Effetti: il master ne ha mandati ${inviati}; il giocatore ha suonato ${au.file} file e ${au.synth} suoni generati${au.ko.length ? ', rifiutati: ' + [...new Set(au.ko)].slice(0, 4).join(', ') : ''}`);
     ok(inviati === 0 || au.file + au.synth > 0, 'il giocatore sente gli effetti sonori del master');
     ok(!au.ko.length, 'nessun effetto rifiutato dal browser del giocatore');
-    for (const p of [master, gioc]) {
+
+    // ---------- Reazioni: dal pannello del giocatore al fumetto sullo schermo del master ----------
+    await gioc.valuta(`document.getElementById('onlineReazioniApri').click(); true`);
+    await wait(200);
+    await gioc.valuta(`document.querySelector('#onlineReazioniVoci button[data-reazione="famiglia"]').click(); true`);
+    ok(await aspetta(master, `[...document.querySelectorAll('#onlineReazioniStrato .online-reazione')].some(f => f.textContent.includes(${JSON.stringify(eroe)}) && f.textContent.includes('Per la Famiglia!'))`, 4000),
+        'la reazione del giocatore compare sullo schermo del master col nome del suo eroe');
+    ok(await master.valuta(`getComputedStyle(document.getElementById('onlineReazioniStrato')).pointerEvents === 'none'`), 'il fumetto non ruba i clic');
+    await gioc.foto('4_reazione.png');
+
+    // ---------- Riconnessione del master: chiude la pagina, i giocatori aspettano, riapre e riprende ----------
+    const salvataIn = await master.valuta(`(onlineMemoria() || {}).salvataggio || null`);
+    const erroriPrima = [...master.errori];
+    await master.cdp('Page.close').catch(() => {});  // la finestra del master si chiude (browser chiuso, pagina persa)
+    ok(await aspetta(gioc, `/Il master si è disconnesso, attendere/.test(document.getElementById('onlineAvviso').textContent) && !document.getElementById('onlineAvviso').classList.contains('online-hidden')`, 6000),
+        'master andato via: il giocatore vede "Il master si è disconnesso, attendere…"');
+    await gioc.foto('5_attesa_master.png');
+    const master2 = await nuovaPagina('master riaperto', `http://localhost:${PORTA}/index.html?seme=${SEME}`);
+    master2.errori.push(...erroriPrima);
+    ok(await aspetta(master2, `document.getElementById('wc3ModalTitle').textContent === 'Partita online in corso' && !document.getElementById('wc3Modal').classList.contains('hidden')`, 10000),
+        'il master che riapre il gioco trova l\'offerta di riprendere la stanza');
+    await master2.foto('6_offerta.png');
+    await master2.valuta(`document.querySelector('#wc3ModalActions [data-modal-btn="0"]').click(); true`);
+    ok(await aspetta(master2, `onlineState.attivo && onlineState.code === ${JSON.stringify(code)}`), 'stessa stanza, stesso codice');
+    ok(await aspetta(master2, `onlineState.giocatori.some(g => g.name === ${JSON.stringify(eroe)} && g.connected)`), 'il giocatore è ancora collegato col suo eroe');
+    if (salvataIn === code) {
+        ok(await aspetta(master2, `currentScreenId === 'screenMap' && stato.party.some(h => h.name === ${JSON.stringify(eroe)}) && stato.onlineOwners[${JSON.stringify(eroe)}] === ${JSON.stringify(eroe)}`),
+            'la partita riparte dall\'ultima mappa con gli stessi eroi');
+        ok(await aspetta(gioc, `(document.querySelector('#gameContainer > div') || {}).id === 'screenMap'`), 'il giocatore vede di nuovo la mappa del master');
+    } else console.log('  (nessun ritorno sulla mappa durante la prova: niente partita da riprendere)');
+    ok(await aspetta(gioc, `document.getElementById('onlineAvviso').classList.contains('online-hidden') || !/disconnesso/.test(document.getElementById('onlineAvviso').textContent)`), 'l\'avviso del giocatore sparisce');
+    for (const p of [master2, gioc]) {
         const e = [...new Set(p.errori)];
         ok(!e.length, `${p.nome}: nessun errore JavaScript${e.length ? ':\n      ' + e.slice(0, 8).join('\n      ') : ''}`);
     }

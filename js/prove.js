@@ -499,20 +499,22 @@
         // Preghiera dal telefono dell'eroe: stessa prova, con il dado che gira sullo schermo del gioco
         function remotePray(heroName) {
             // Niente se qualcuno ha già pregato o ha già scelto l'eroe sul PC (dado in vista)
-            if (currentScreenId !== 'screenRest' || restPrayer || !document.getElementById('dicePrayerSection').classList.contains('hidden')) return false;
+            if (currentScreenId !== 'screenRest' || restPrayer || (restAct && restAct.text) || !document.getElementById('dicePrayerSection').classList.contains('hidden')) return false;
             if (!stato.party.some(h => h.hp > 0 && h.name === heroName)) return false;
             document.getElementById('prayerStage1').classList.add('hidden');
             confirmPrayerHero(heroName);
             executePrayerRoll();
+            renderRestActivities();
             return true;
         }
 
         // Come le sfide: prima si sceglie chi prega (con Fede e probabilità), poi si tira il dado
         function startPrayer() {
-            if (restPrayer) return;
+            if (restPrayer || (restAct && restAct.text)) return;
             document.getElementById('prayerStage1').classList.add('hidden');
             document.getElementById('prayerStage2').classList.remove('hidden');
             selectedPrayerHero = null;
+            renderRestActivities();
             document.getElementById('prayerHeroPick').innerHTML = heroPickHtml(stato.party.filter(h => h.hp > 0), 'confirmPrayerHero', {
                 chance: h => prayerChance(h).pct,
                 sub: h => `Fede ${h.fth || 0} · ${prayerChance(h).pct}%`,
@@ -524,6 +526,7 @@
             if (restPrayer || selectedPrayerHero) return;
             document.getElementById('prayerStage2').classList.add('hidden');
             document.getElementById('prayerStage1').classList.remove('hidden');
+            renderRestActivities();
         }
         // Indietro dal dado (prima di tirare): di nuovo la scelta di chi prega
         function prayerBackToHeroes() {
@@ -619,9 +622,95 @@
             revealInView(box.lastElementChild || box);
         }
 
+        /* ---------- Attività al falò (una per riposo; regole in js/motore/prove.js, numeri in REST_ACTIVITIES) ----------
+           Al posto della preghiera: o si prega o si fa un'attività (insieme erano troppo generose, misurato col simulatore).
+           restAct: null = nessuna scelta; { id, stat, curse } = scelta in corso; { text } = fatta (testo dell'esito) */
+        let restAct = null;
+
+        // La preghiera è cominciata (scelta di chi prega, dado o esito): niente più attività
+        function restPrayerStarted() {
+            return !!restPrayer || !document.getElementById('prayerStage2').classList.contains('hidden')
+                || !document.getElementById('dicePrayerSection').classList.contains('hidden');
+        }
+
+        function renderRestActivities() {
+            const box = document.getElementById('restActivityArea');
+            if (!box) return;
+            if (restAct && restAct.text) {
+                box.innerHTML = `<p class="panel-label">Attività al falò</p><p class="prayer-result done">${esc(restAct.text)}</p>`;
+                return;
+            }
+            if (currentScreenId === 'screenRest' && restPrayerStarted()) { box.innerHTML = ''; return; }
+            const acts = restActivities();
+            if (!restAct) {
+                box.innerHTML = `<p class="panel-label">Oppure un'attività al falò <span class="tile-sub">(al posto della preghiera)</span></p>
+                    <div class="prayer-choices rest-activities">${acts.map(a => `
+                    <button class="armory-btn prayer-choice" ${azione('chooseRestActivity', a.id)} ${a.blocco ? 'disabled' : ''}
+                        data-tip="${esc(a.name)}||${esc(a.desc)}${a.blocco ? `<br><b>${esc(a.blocco)}</b>` : ''}">
+                        <img class="prayer-icon" src="${esc(a.icon)}" alt="">
+                        <span class="tile-text"><strong>${esc(a.name)}</strong><span class="tile-sub">${esc(a.blocco || a.desc)}</span></span>
+                    </button>`).join('')}</div>`;
+                return;
+            }
+            const a = acts.find(x => x.id === restAct.id);
+            let html = `<p class="panel-label">${esc(a.name)}</p><p class="tile-sub">${esc(a.desc)}</p>`;
+            if (a.serveStat && !restAct.stat) {
+                html += `<p class="panel-label">Quale statistica?</p><div class="prayer-heroes">${REST_ACTIVITIES.allenarsi.stats
+                    .map(s => `<button class="btn-proceed prayer-hero-btn" ${azione('pickRestActivityOption', 'stat', s)}>${esc(REST_STAT_NAMES[s] || s)}</button>`).join('')}</div>`;
+            } else if (a.serveMaledizione && restAct.curse == null) {
+                html += `<p class="panel-label">Quale maledizione?</p><div class="prayer-heroes">${stato.activeCurses
+                    .map((c, i) => `<button class="btn-proceed prayer-hero-btn" ${azione('pickRestActivityOption', 'curse', i)}>${esc(c.text || c.id)}</button>`).join('')}</div>`;
+            } else {
+                const heroes = restActivityHeroes(a.id);
+                const sub = h => a.id === 'allenarsi' ? `${REST_STAT_NAMES[restAct.stat]} ${h[restAct.stat] || 0} → ${(h[restAct.stat] || 0) + 1}`
+                    : a.id === 'purificarsi' ? `HP ${h.hp} → ${h.hp - REST_ACTIVITIES.purificarsi.hp}` : `HP ${h.hp}/${h.maxHp}`;
+                html += `<p class="panel-label">Quale eroe?</p><div class="hero-pick">${heroPickHtml(heroes, 'confirmRestActivity', { sub, tip: sub })}</div>`;
+            }
+            html += `<button class="btn-small combat-back-btn" data-action="restActivityBack" data-tip="Indietro [Esc]||Torna alla scelta dell'attività.">Indietro</button>`;
+            box.innerHTML = html;
+            revealInView(box.lastElementChild || box);
+        }
+
+        function chooseRestActivity(id) {
+            if (currentScreenId !== 'screenRest' || restAct) return;
+            const a = restActivities().find(x => x.id === id);
+            if (!a || a.blocco) return;
+            restAct = { id, stat: null, curse: null };
+            renderRestActivities();
+        }
+
+        function pickRestActivityOption(key, val) {
+            if (!restAct || restAct.text) return;
+            restAct[key] = val;
+            renderRestActivities();
+        }
+
+        function confirmRestActivity(heroName) {
+            if (!restAct || restAct.text) return;
+            finishRestActivity(restAct.id, { hero: heroName, stat: restAct.stat, curse: restAct.curse });
+        }
+
+        function finishRestActivity(id, opts) {
+            const text = doRestActivity(id, opts);
+            if (!text) { uiError('Questa attività non si può fare adesso'); return; }
+            restAct = { text };
+            document.getElementById('prayerStage1').classList.add('hidden');  // fatta l'attività, stanotte non si prega
+            synthSfx('swell', 0.6);
+            uiMessage(text);
+            renderRestActivities();
+            updatePartyStatusBars();
+        }
+
+        function restActivityBack() {
+            if (!restAct || restAct.text) return;
+            restAct = null;
+            renderRestActivities();
+        }
+
         function startRest(restId) {
             showScreen('screenRest');
             restRuneSwapped = [];
+            restAct = null;
             const restDesc = restsData[restId] || restsData.default || "Trovate un luogo sicuro dove riposare e recuperare le forze.";
             document.getElementById('restDescBox').innerHTML = `<strong>Descrizione:</strong> ${kw(restDesc)}`;
 
@@ -638,6 +727,7 @@
             (res.notes || []).forEach(text => { document.getElementById('restDescBox').innerHTML += `<br>✨ ${esc(text)}`; });
             renderRestRuneButtons();
             resetPrayerUI();
+            renderRestActivities();
             document.getElementById('rollPrayerBtn').classList.remove('hidden');
             updatePartyStatusBars();
         }

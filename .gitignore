@@ -42,3 +42,6 @@ tools/prova_browser.png
 
 # Grafo del codice di graphify (si rigenera con /graphify)
 graphify-out/
+
+# Versione per gli amici (tools/crea_eseguibile.mjs): cartella con l'eseguibile e .zip
+dist/

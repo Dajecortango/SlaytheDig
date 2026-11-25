@@ -213,3 +213,19 @@ body.no-anim .hero-mini-card.fx-fall { animation: none !important; }
         .hero-pick-sub[data-chance="high"] { color: #8dff78; }
         .hero-pick-sub[data-chance="mid"] { color: #ffe08a; }
         .hero-pick-sub[data-chance="low"] { color: #ff8a70; }
+
+/* Tasti rapidi: numero dell'eroe nella scelta (tasti 1-9, js/interfaccia.js) e finestra dei tasti (? o H) */
+.hero-pick-btn { position: relative; }
+.hero-pick-key {
+    position: absolute; top: 3px; left: 5px;
+    font-size: 11px; font-weight: bold; color: #e8d9a8; background: #1a1209; border: 1px solid #6b5422;
+    border-radius: 3px; padding: 0 4px; line-height: 15px;
+}
+.hotkeys-table { border-collapse: collapse; width: 100%; }
+.hotkeys-table th { text-align: left; white-space: nowrap; padding: 4px 12px 4px 0; color: #f0d78c; font-size: 13px; }
+.hotkeys-table td { padding: 4px 0; color: #e6dcc4; font-size: 13px; }
+
+/* Legami della Famiglia all'inizio della spedizione (nextHero in js/creazione.js) */
+.sinergie-box:empty { display: none; }
+.sinergie-box { margin-top: 10px; }
+.sinergia-line { display: flex; align-items: center; gap: 8px; margin: 4px 0; color: #e6dcc4; font-size: 13px; }

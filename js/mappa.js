@@ -191,6 +191,27 @@
 
             renderPartyToken(nodesContainer, containerHeight, stepY);
             renderExpeditionProgress(maxLevel);
+            precaricaProssimiNodi();
+        }
+
+        /* Precarica le immagini delle stanze raggiungibili (e del loro nemico), così entrando la scena è già pronta
+           invece del lampo del segnaposto. Ogni percorso una volta sola per pagina; Image() senza DOM. */
+        const immaginiPrecaricate = new Set();
+        function immaginiDelNodo(node) {
+            const out = [node.image];
+            const nemico = node.enemy && enemies[node.enemy];
+            if (nemico) out.push(nemico.image);
+            return out.filter(src => typeof src === 'string' && src);
+        }
+        function precaricaProssimiNodi() {
+            if (typeof Image !== 'function') return;
+            stato.stsMapNodes.filter(n => n.active && !n.done).flatMap(immaginiDelNodo).forEach(src => {
+                if (immaginiPrecaricate.has(src)) return;
+                immaginiPrecaricate.add(src);
+                const img = new Image();
+                img.decoding = 'async';
+                img.src = src;
+            });
         }
 
         /* ---------- Segnalino della compagnia sulla mappa ---------- */

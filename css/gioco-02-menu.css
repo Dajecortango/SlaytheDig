@@ -310,6 +310,12 @@
             color: var(--text-dim);
         }
         .campaign-card h3 { font-size: 1.75rem; margin: 8px 0 6px; }
+        /* Avventura o capitolo ancora da sbloccare: spento con il colore, non con l'opacità */
+        .campaign-card.is-locked .campaign-cover img { filter: grayscale(1) brightness(0.45); }
+        .campaign-card.is-locked h3 { color: #8f8672; background: none; -webkit-text-fill-color: currentColor; }
+        .campaign-lock { color: #e0b65a; font-weight: bold; }
+        .adventure-chapters .adventure-chapter.is-locked { color: #7d745f; }
+        .run-summary-unlock { margin-top: 12px; color: #f3e6c2; text-align: center; }
         .campaign-card .btn-small { align-self: center; pointer-events: none; font-size: 1rem; padding: 10px 28px; }
         .campaign-card p { font-size: 1.08rem; color: #d8cba8; line-height: 1.55; margin: 0 auto; max-width: 62ch; }
         .campaign-card:hover {
